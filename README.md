@@ -8,6 +8,7 @@
 **Table of Contents**
 
 - [Installation](#installation)
+- [Goals](#goals)
 - [License](#license)
 
 ## Installation
@@ -15,6 +16,15 @@
 ```console
 pip install mismo
 ```
+
+## Goals
+
+- More performant than `dedupe` by using vectorized operations
+  (e.g. `numpy` instead of operating on individual records)
+- Works with larger-than-memory datasets (using `modin`)
+- Consistent, duck-typing-based API similar to `sklearn`
+  (eg a "Blocker" has a `block` method with a certain signature)
+- More intuitive model persistence than `dedupe`
 
 ## License
 
