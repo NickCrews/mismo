@@ -23,6 +23,8 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
+  "modin[all]",
+  "recordlinkage",
   "sklearn",
 ]
 dynamic = ["version"]
