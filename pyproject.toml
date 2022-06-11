@@ -42,7 +42,7 @@ path = "mismo/__about__.py"
 
 [tool.hatch.envs.default]
 dependencies = [
-  "black",
+  "black[jupyter]",
   "flake8",
   "isort",
   "mypy",
