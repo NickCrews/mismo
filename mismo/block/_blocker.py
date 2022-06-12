@@ -3,7 +3,7 @@ from typing import Any, Iterable, Protocol
 import modin.pandas as pd
 
 from mismo._typing import Data, LabeledLinks, Links, Self
-from mismo.block.fingerprint import PFingerprinter, check_fingerprints
+from mismo.block._fingerprint import PFingerprinter, check_fingerprints
 
 
 class PBlocker(Protocol):
