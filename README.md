@@ -25,6 +25,7 @@ pip install mismo
 - Consistent, duck-typing-based API similar to `sklearn`
   (eg a "Blocker" has a `block` method with a certain signature)
 - More intuitive model persistence than `dedupe`
+- Support determinism using `random_state` (unlike `dedupe`)
 
 ## License
 
