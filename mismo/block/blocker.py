@@ -1,8 +1,8 @@
-from typing import Iterable, Protocol
+from typing import Any, Iterable, Protocol
 
 import modin.pandas as pd
 
-from mismo._typing import Data, Links
+from mismo._typing import Data, LabeledLinks, Links, Self
 from mismo.block.fingerprint import PFingerprinter, check_fingerprints
 
 
@@ -58,6 +58,27 @@ class FingerprintBlocker(PBlocker):
             result.append(pair)
         # mypy doesn't understand that pair is length 2.
         return result  # type: ignore
+
+
+class PBlockLearner(Protocol):
+    blocker_: PBlocker | None
+
+    def fit(self: Self, data1: Data, data2: Data, y: LabeledLinks) -> Self:
+        ...
+
+    def predict(self, data1: Data, data2: Data) -> Links:
+        ...
+
+
+class PActiveBlockLearner(Protocol):
+    def query(
+        self, data1: Data, data2: Data, y: LabeledLinks, **kwargs: dict[str, Any]
+    ) -> Links:
+        """Given the input and labeled links, returns links that should be labeled next.
+
+        Based off of the query() from scikit-activeml.
+        https://scikit-activeml.github.io/scikit-activeml-docs/generated/api/skactiveml.pool.RandomSampling.html#skactiveml.pool.RandomSampling.query
+        """
 
 
 def merge_fingerprints(fp1: pd.DataFrame, fp2: pd.DataFrame) -> Links:
