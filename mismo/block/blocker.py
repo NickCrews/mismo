@@ -49,13 +49,11 @@ class FingerprintBlocker(PBlocker):
             pair = tuple(fp)
             if not len(pair) == 2:
                 raise ValueError(
-                    "Fingerprinters must be a sequence of length 2. ",
-                    f"Got {pair}",
+                    f"Fingerprinters must be a sequence of length 2. Got {pair}",
                 )
             if not cls._is_fingerprinter(pair[0]) or not cls._is_fingerprinter(pair[1]):
                 raise ValueError(
-                    "Fingerprinters must be instances of Fingerprinter. ",
-                    f"Got {pair}",
+                    f"Fingerprinters must be instances of Fingerprinter. Got {pair}",
                 )
             result.append(pair)
         # mypy doesn't understand that pair is length 2.
