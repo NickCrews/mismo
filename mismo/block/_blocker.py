@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import namedtuple
-from typing import Any, Iterable
+from typing import Any, Iterable, Tuple
 
 import numpy as np
 import pandas as pd
@@ -15,7 +15,7 @@ class PBlocker(Protocol):
         ...
 
 
-FingerprinterPair = tuple[PFingerprinter, PFingerprinter]
+FingerprinterPair = Tuple[PFingerprinter, PFingerprinter]
 FingerprinterPairsLike = Iterable[FingerprinterPair]
 
 
