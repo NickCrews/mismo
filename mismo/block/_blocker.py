@@ -29,7 +29,7 @@ class FingerprintBlocker(PBlocker):
         link_chunks = self.links(data1, data2, self.fingerprinters)
         links: pd.DataFrame = pd.concat(link_chunks)
         links.drop_duplicates(inplace=True)
-        links.sort_values(by=["index_1", "index_2"], inplace=True)
+        links.sort_values(by=["index_left", "index_right"], inplace=True)
         return links
 
     @staticmethod
@@ -61,7 +61,7 @@ class LinkTranslator:
     def link_ids_to_links(self, linkids: pd.Series) -> Links:
         return pd.DataFrame(
             [linkids // self.modulus, linkids % self.modulus],
-            columns=["index_1", "index_2"],
+            columns=["index_left", "index_right"],
         )
 
 
@@ -178,9 +178,9 @@ def merge_fingerprints(fp1: pd.DataFrame, fp2: pd.DataFrame) -> Links:
         fp2,
         left_on=non_index1,
         right_on=non_index2,
-        suffixes=("_1", "_2"),
+        suffixes=("_left", "_right"),
     )
-    links = links[["index_1", "index_2"]]
+    links = links[["index_left", "index_right"]]
     links = links.drop_duplicates()
     return links
 
