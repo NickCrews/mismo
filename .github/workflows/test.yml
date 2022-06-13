@@ -37,3 +37,31 @@ jobs:
 
       - name: Run tests
         run: hatch run cov
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+
+      - name: Install Hatch
+        run: pip install --upgrade hatch
+
+      - name: mypy
+        run: hatch run mypy
+
+      - name: flake8
+        if: always()
+        run: hatch run flake8
+
+      - name: black
+        if: always()
+        run: hatch run black .
+
+      - name: isort
+        if: always()
+        run: hatch run isort .
