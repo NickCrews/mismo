@@ -1,8 +1,6 @@
-from typing import Protocol
+import pandas as pd
 
-import modin.pandas as pd
-
-from mismo._typing import ClusterIds, Data, Features, Links, Scores
+from mismo._typing import ClusterIds, Data, Features, Links, Protocol, Scores
 from mismo.block import PBlocker
 
 

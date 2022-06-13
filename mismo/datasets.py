@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import modin.pandas as pd
+import pandas as pd
 from recordlinkage.datasets import load_febrl1 as _load_febrl1
 
 

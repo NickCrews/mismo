@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import Callable, Protocol, Sequence, Union
+from typing import Callable, Sequence, Union
 
-import modin.pandas as pd
 import numpy as np
+import pandas as pd
 
-from mismo._typing import Data
+from mismo._typing import Data, Protocol
 
 # One column "index", is the index of the row in the dataframe.
 # The other columns (1 or more), are any values that can be grouped on.

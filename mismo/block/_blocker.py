@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from collections import namedtuple
-from typing import Any, Iterable, Protocol
+from typing import Any, Iterable
 
 import numpy as np
 import pandas as pd
 
-from mismo._typing import Data, LabeledLinks, Links, Self
+from mismo._typing import Data, LabeledLinks, Links, Protocol, Self
 from mismo.block._fingerprint import PFingerprinter, check_fingerprints
 
 

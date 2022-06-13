@@ -1,6 +1,13 @@
+import sys
 from typing import TypeVar
 
-import modin.pandas as pd
+import pandas as pd
+
+if sys.version_info < (3, 8):
+    from typing_extensions import Protocol as Protocol  # noqa: F401
+else:
+    from typing import Protocol as Protocol  # noqa: F401
+
 
 Links = pd.DataFrame  # 2xN array of indices, an edge list
 # 3xN array. First 2 columns are Links. Third column is 0 or 1, that edge exists

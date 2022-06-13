@@ -23,7 +23,7 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "modin[all]",
+  # "modin[all]",
   "recordlinkage",
   "sklearn",
 ]
