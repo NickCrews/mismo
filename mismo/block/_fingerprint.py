@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Sequence, Union
+from typing import Callable, Iterable, Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -29,15 +29,21 @@ def check_fingerprints(fingerprints: pd.DataFrame) -> None:
 
 
 class PFingerprinter(Protocol):
-    columns: Columns
-
     def fingerprint(self, data: Data) -> pd.DataFrame:
         ...
 
 
-class BaseFingerprinter(PFingerprinter):
-    def __init__(self, columns: Columns) -> None:
-        self.columns = columns
+class ColumnsFingerprinter(PFingerprinter):
+    columns: str | list[str] | None
+
+    def __init__(self, columns: Columns = None) -> None:
+        if columns is None or isinstance(columns, str):
+            self.columns = columns
+        else:
+            cols = list(columns)
+            if not all(isinstance(c, str) for c in cols):
+                raise ValueError("Columns must be strings")
+            self.columns = cols
 
     def _select_columns(self, data: Data) -> Data:
         if self.columns is None:
@@ -45,25 +51,50 @@ class BaseFingerprinter(PFingerprinter):
         else:
             return data[self.columns]
 
+    def _func(self, subset: Data | pd.Series) -> pd.DataFrame:
+        raise NotImplementedError()
 
-class FunctionFingerprinter(BaseFingerprinter):
-    def __init__(self, *, func: FingerprintFunction, columns: Columns = None) -> None:
+    def fingerprint(self, data: Data) -> pd.DataFrame:
+        return self._func(self._select_columns(data))
+
+
+class SingleColumnFingerprinter(PFingerprinter):
+    def __init__(self, column: str) -> None:
+        if not isinstance(column, str):
+            raise ValueError("column must be a string")
+        self.column = column
+
+    def _func(self, subset: pd.Series) -> pd.DataFrame:
+        raise NotImplementedError()
+
+    def fingerprint(self, data: Data) -> pd.DataFrame:
+        series = data[self.column]
+        return self._func(series)
+
+
+class FunctionFingerprinter(PFingerprinter):
+    def __init__(self, func: FingerprintFunction) -> None:
         self.func = func
-        self.columns = columns
 
     def fingerprint(self, data: Data) -> pd.DataFrame:
-        return self.func(self._select_columns(data))
+        return self.func(data)
 
 
-class Equals(BaseFingerprinter):
-    def fingerprint(self, data: Data) -> pd.DataFrame:
-        return add_range_index(self._select_columns(data))
+class Equals(ColumnsFingerprinter):
+    def _func(self, subset: Data | pd.Series) -> pd.DataFrame:
+        return add_index(subset)
 
 
-def add_range_index(values: pd.DataFrame | pd.Series) -> pd.DataFrame:
-    index = np.arange(len(values))
+def add_index(
+    values: pd.DataFrame | pd.Series, index: Iterable[int] | None = None
+) -> pd.DataFrame:
+    if index is None:
+        index = np.arange(len(values))
     if values.ndim == 1:
-        return pd.DataFrame({"index": index, "value": values})
+        val_name = getattr(values, "name", None)
+        if val_name is None:
+            val_name = "value"
+        return pd.DataFrame({"index": index, val_name: values})
     elif values.ndim == 2:
         values = pd.DataFrame(values)
         return values.insert(0, "index", index)
