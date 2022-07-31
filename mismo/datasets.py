@@ -1,30 +1,38 @@
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
+import vaex
 from recordlinkage.datasets import load_febrl1 as _load_febrl1
+from vaex.dataframe import DataFrame
 
 
-def load_febrl1() -> tuple[pd.DataFrame, pd.DataFrame]:
-    df, links = _load_febrl1(return_links=True)
-    index_iloc_mapping = {idx: i for i, idx in enumerate(df.index)}
-    df.index = range(len(df))
+def load_febrl1() -> tuple[DataFrame, DataFrame]:
+    pdf: pd.DataFrame
+    links_multi_index: pd.MultiIndex
+
+    pdf, links_multi_index = _load_febrl1(return_links=True)
+    index_iloc_mapping = {idx: i for i, idx in enumerate(pdf.index)}
+    pdf = pdf.reset_index(drop=True)
+    vdf = vaex.from_pandas(pdf)
     dtypes = {
-        "given_name": "string[pyarrow]",
-        "surname": "string[pyarrow]",
-        "street_number": "string[pyarrow]",  # keep as string for leading 0s
-        "address_1": "string[pyarrow]",
-        "address_2": "string[pyarrow]",
-        "suburb": "string[pyarrow]",
-        "postcode": "string[pyarrow]",  # keep as string for leading 0s
-        "state": "string[pyarrow]",
-        "soc_sec_id": np.int32,  # 7 digits long, never null
-        "date_of_birth": "string[pyarrow]",  # contains some BS dates like 19371233
+        "given_name": "str",
+        "surname": "str",
+        "street_number": "str",  # keep as string for leading 0s
+        "address_1": "str",
+        "address_2": "str",
+        "suburb": "str",
+        "postcode": "str",  # keep as string for leading 0s
+        "state": "str",
+        "soc_sec_id": "int32",  # 7 digits long, never null, no leading 0s
+        "date_of_birth": "str",  # contains some BS dates like 19371233
     }
-    df = df.astype(dtypes)
-    link_df: pd.DataFrame = links.to_frame()
-    link_df = link_df.reset_index(drop=True)
-    link_df.columns = ["index_left", "index_right"]
-    link_df["index_left"] = link_df["index_left"].map(index_iloc_mapping)
-    link_df["index_right"] = link_df["index_right"].map(index_iloc_mapping)
-    return df, link_df
+    for col, dtype in dtypes.items():
+        vdf[col] = vdf[col].astype(dtype)
+
+    links: pd.DataFrame = links_multi_index.to_frame(
+        index=False, name=["index_left", "index_right"]
+    )
+    vlinks = vaex.from_pandas(links)
+    vlinks["index_left"] = vlinks["index_left"].map(index_iloc_mapping)
+    vlinks["index_right"] = vlinks["index_right"].map(index_iloc_mapping)
+    return vdf, vlinks

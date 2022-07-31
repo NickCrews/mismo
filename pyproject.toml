@@ -23,9 +23,9 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  # "modin[all]",
   "recordlinkage",
   "sklearn",
+  "vaex",
 ]
 dynamic = ["version"]
 
@@ -41,6 +41,7 @@ path = "mismo/__about__.py"
 [tool.hatch.build.targets.wheel]
 
 [tool.hatch.envs.default]
+python = "39"
 dependencies = [
   "black[jupyter]",
   "flake8",

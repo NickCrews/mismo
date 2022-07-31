@@ -5,13 +5,24 @@ from typing import Any, Iterable, Tuple
 
 import numpy as np
 import pandas as pd
+from vaex.dataframe import DataFrame
 
-from mismo._typing import Data, LabeledLinks, Links, Protocol, Self
-from mismo.block._fingerprint import PFingerprinter, check_fingerprints
+from mismo._typing import Protocol, Self
+from mismo.block._fingerprint import (
+    PFingerprinter,
+    check_fingerprints,
+    is_fingerprinter,
+)
 
 
 class PBlocker(Protocol):
-    def block(self, data1: Data, data2: Data) -> Links:
+    """A "Blocker" takes two frames of data, and returns a frame of "links" to compare
+
+    The links are a frame of pairs of indices, where the "index_left" is from the
+    first frame, and the second index is from the second frame.
+    """
+
+    def block(self, datal: DataFrame, datar: DataFrame) -> DataFrame:
         ...
 
 
@@ -25,8 +36,8 @@ class FingerprintBlocker(PBlocker):
     def __init__(self, fingerprinters: FingerprinterPairsLike) -> None:
         self.fingerprinters = convert_fingerprinters(fingerprinters)
 
-    def block(self, data1: Data, data2: Data) -> Links:
-        link_chunks = self.links(data1, data2, self.fingerprinters)
+    def block(self, datal: DataFrame, datar: DataFrame) -> DataFrame:
+        link_chunks = self.links(datal, datar, self.fingerprinters)
         links: pd.DataFrame = pd.concat(link_chunks)
         links.drop_duplicates(inplace=True)
         links.sort_values(by=["index_left", "index_right"], inplace=True)
@@ -34,8 +45,8 @@ class FingerprintBlocker(PBlocker):
 
     @staticmethod
     def links(
-        data1: Data, data2: Data, fingerprinters: FingerprinterPairsLike
-    ) -> Links:
+        data1: DataFrame, data2: DataFrame, fingerprinters: FingerprinterPairsLike
+    ) -> DataFrame:
         fps = convert_fingerprinters(fingerprinters)
         links = []
         for fp1, fp2 in fps:
@@ -47,18 +58,18 @@ class FingerprintBlocker(PBlocker):
 
 
 class PBlockLearner(Protocol):
-    def fit(self: Self, data1: Data, data2: Data, y: LabeledLinks) -> PBlocker:
+    def fit(self: Self, data1: DataFrame, data2: DataFrame, y: DataFrame) -> PBlocker:
         ...
 
 
 class LinkTranslator:
-    def __init__(self, data1: Data, data2: Data) -> None:
+    def __init__(self, data1: DataFrame, data2: DataFrame) -> None:
         self.modulus = len(data1)
 
-    def links_to_link_ids(self, links: Links) -> pd.Series:
+    def links_to_link_ids(self, links: DataFrame) -> pd.Series:
         return links.iloc[0, :] * self.modulus + links.iloc[1, :]
 
-    def link_ids_to_links(self, linkids: pd.Series) -> Links:
+    def link_ids_to_links(self, linkids: pd.Series) -> DataFrame:
         return pd.DataFrame(
             [linkids // self.modulus, linkids % self.modulus],
             columns=["index_left", "index_right"],
@@ -72,7 +83,9 @@ class FingerprintBlockLearner(PBlockLearner):
         self.fingerprinter_candidates = convert_fingerprinters(fingerprinter_candidates)
         self.recall = recall
 
-    def fit(self, data1: Data, data2: Data, y: LabeledLinks) -> FingerprintBlocker:
+    def fit(
+        self, data1: DataFrame, data2: DataFrame, y: DataFrame
+    ) -> FingerprintBlocker:
         translator = LinkTranslator(data1, data2)
         pos_links = y[y.iloc[2, :]]
         pos_ids = translator.links_to_link_ids(pos_links)
@@ -134,8 +147,8 @@ def set_cover(universe: pd.Series, sets: list[pd.Series]) -> list[int]:
     """
     Solve the Set Cover Problem.
 
-    Takes a universe of elements to cover (in our case these represent Links)
-    and a collection of sets (one set for each fingerprinter, each set is the Links
+    Takes a universe of elements to cover (in our case these represent DataFrame)
+    and a collection of sets (one set for each fingerprinter, each set is the DataFrame
     that that fingerprinter covers). Returns the indexes of the sets whose union
     is the universe, while minimizing the cost. The cost is the number of links
     covered that aren't part of the universe.
@@ -159,8 +172,12 @@ def set_cover(universe: pd.Series, sets: list[pd.Series]) -> list[int]:
 
 class PActiveBlockLearner(Protocol):
     def query(
-        self, data1: Data, data2: Data, y: LabeledLinks, **kwargs: dict[str, Any]
-    ) -> Links:
+        self,
+        data1: DataFrame,
+        data2: DataFrame,
+        y: DataFrame,
+        **kwargs: dict[str, Any],
+    ) -> DataFrame:
         """Given the input and labeled links, returns links that should be labeled next.
 
         Based off of the query() from scikit-activeml.
@@ -168,25 +185,23 @@ class PActiveBlockLearner(Protocol):
         """
 
 
-def merge_fingerprints(fp1: pd.DataFrame, fp2: pd.DataFrame) -> Links:
-    check_fingerprints(fp1)
-    check_fingerprints(fp2)
-    non_index1 = [c for c in fp1.columns if c != "index"]
-    non_index2 = [c for c in fp2.columns if c != "index"]
-    links: pd.DataFrame = pd.merge(
-        fp1,
-        fp2,
-        left_on=non_index1,
-        right_on=non_index2,
-        suffixes=("_left", "_right"),
+def merge_fingerprints(fpl: DataFrame, fpr: DataFrame) -> DataFrame:
+    check_fingerprints(fpl)
+    check_fingerprints(fpr)
+    non_indexl = [c for c in fpl.column_names if c != "index"]
+    non_indexr = [c for c in fpr.column_names if c != "index"]
+    fpl["key"] = fpl.mismo.hash_rows(non_indexl)
+    fpr["key"] = fpr.mismo.hash_rows(non_indexr)
+    links: pd.DataFrame = fpl.join(
+        fpr,
+        on="key",
+        lsuffix="_left",
+        rsuffix="_right",
+        allow_duplication=True,
     )
     links = links[["index_left", "index_right"]]
     links = links.drop_duplicates()
     return links
-
-
-def is_fingerprinter(fp):
-    return hasattr(fp, "fingerprint")
 
 
 def convert_fingerprinters(fps: FingerprinterPairsLike) -> list[FingerprinterPair]:
