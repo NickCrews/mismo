@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import pandas as pd
 import vaex
-from recordlinkage.datasets import load_febrl1 as _load_febrl1
+from recordlinkage import datasets as rlds
 from vaex.dataframe import DataFrame
 
 
-def load_febrl1() -> tuple[DataFrame, DataFrame]:
+def _wrap_febrl(load_febrl: callable) -> tuple[DataFrame, DataFrame]:
     pdf: pd.DataFrame
     links_multi_index: pd.MultiIndex
 
-    pdf, links_multi_index = _load_febrl1(return_links=True)
+    pdf, links_multi_index = load_febrl(return_links=True)
     index_iloc_mapping = {idx: i for i, idx in enumerate(pdf.index)}
     pdf = pdf.reset_index(drop=True)
     vdf = vaex.from_pandas(pdf)
@@ -36,3 +36,19 @@ def load_febrl1() -> tuple[DataFrame, DataFrame]:
     vlinks["index_left"] = vlinks["index_left"].map(index_iloc_mapping)
     vlinks["index_right"] = vlinks["index_right"].map(index_iloc_mapping)
     return vdf, vlinks
+
+
+def load_febrl1() -> tuple[DataFrame, DataFrame]:
+    return _wrap_febrl(rlds.load_febrl1)
+
+
+def load_febrl2() -> tuple[DataFrame, DataFrame]:
+    return _wrap_febrl(rlds.load_febrl2)
+
+
+def load_febrl3() -> tuple[DataFrame, DataFrame]:
+    return _wrap_febrl(rlds.load_febrl3)
+
+
+# Don't bother wrapping load_febrl4 because it has a different API,
+# could add that later if it's needed.
