@@ -3,13 +3,7 @@ from vaex.dataframe import DataFrame
 
 from mismo._typing import Protocol
 from mismo.block import PBlocker
-
-
-class PFeaturizer(Protocol):
-    def featurize(
-        self, data1: DataFrame, data2: DataFrame, links: DataFrame
-    ) -> DataFrame:
-        ...
+from mismo.compare import PComparer
 
 
 class PScorer(Protocol):
@@ -18,7 +12,7 @@ class PScorer(Protocol):
 
 
 class PClusterer(Protocol):
-    def cluster(self, links: DataFrame, scores: DataFrame) -> DataFrame:
+    def cluster(self, scores: DataFrame) -> DataFrame:
         ...
 
 
@@ -26,32 +20,32 @@ class Pipeline:
     def __init__(
         self,
         blocker: PBlocker,
-        featurizer: PFeaturizer,
+        comparer: PComparer,
         scorer: PScorer,
         clusterer: PClusterer,
     ):
         self.blocker = blocker
-        self.featurizer = featurizer
+        self.comparer = comparer
         self.scorer = scorer
         self.clusterer = clusterer
 
-    def block(self, data1: DataFrame, data2: DataFrame) -> DataFrame:
-        return self.blocker.block(data1, data2)
+    def block(self, datal: DataFrame, datar: DataFrame) -> DataFrame:
+        return self.blocker.block(datal, datar)
 
-    def featurize(
-        self, data1: DataFrame, data2: DataFrame, links: DataFrame
+    def compare(
+        self, datal: DataFrame, datar: DataFrame, links: DataFrame
     ) -> DataFrame:
-        return self.featurizer.featurize(data1, data2, links)
+        return self.comparer.compare(datal, datar, links)
 
-    def score(self, data: DataFrame) -> DataFrame:
-        return self.scorer.score(data)
+    def score(self, comparisons: DataFrame) -> DataFrame:
+        return self.scorer.score(comparisons)
 
-    def cluster(self, links: DataFrame, scores: DataFrame) -> DataFrame:
-        return self.clusterer.cluster(links, scores)
+    def cluster(self, scores: DataFrame) -> DataFrame:
+        return self.clusterer.cluster(scores)
 
     def dedupe(self, data: DataFrame) -> pd.Series:
         links = self.block(data, data)
-        features = self.featurize(data, data, links)
-        scores = self.score(features)
-        clusters = self.cluster(links, scores)
+        comparisons = self.compare(data, data, links)
+        similarities = self.score(comparisons)
+        clusters = self.cluster(similarities)
         return clusters
