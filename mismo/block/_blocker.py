@@ -5,6 +5,7 @@ from typing import Any, Iterable, Tuple
 
 import numpy as np
 import pandas as pd
+import vaex
 from vaex.dataframe import DataFrame
 
 from mismo._typing import Protocol, Self
@@ -38,9 +39,9 @@ class FingerprintBlocker(PBlocker):
 
     def block(self, datal: DataFrame, datar: DataFrame) -> DataFrame:
         link_chunks = self.links(datal, datar, self.fingerprinters)
-        links: pd.DataFrame = pd.concat(link_chunks)
-        links.drop_duplicates(inplace=True)
-        links.sort_values(by=["index_left", "index_right"], inplace=True)
+        links: DataFrame = vaex.concat(link_chunks)
+        links = links.mismo.drop_duplicates()
+        links = links.sort(by=["index_left", "index_right"])
         return links
 
     @staticmethod
@@ -192,7 +193,7 @@ def merge_fingerprints(fpl: DataFrame, fpr: DataFrame) -> DataFrame:
     non_indexr = [c for c in fpr.column_names if c != "index"]
     fpl["key"] = fpl.mismo.hash_rows(non_indexl)
     fpr["key"] = fpr.mismo.hash_rows(non_indexr)
-    links: pd.DataFrame = fpl.join(
+    links: DataFrame = fpl.join(
         fpr,
         on="key",
         lsuffix="_left",
@@ -200,7 +201,7 @@ def merge_fingerprints(fpl: DataFrame, fpr: DataFrame) -> DataFrame:
         allow_duplication=True,
     )
     links = links[["index_left", "index_right"]]
-    links = links.drop_duplicates()
+    links = links.mismo.drop_duplicates()
     return links
 
 

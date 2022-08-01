@@ -53,6 +53,17 @@ class MismoOps:
             columns = [columns]
         return self.df.apply(_hash_rows_chunk, columns, vectorize=True)
 
+    def drop_duplicates(self) -> DataFrame:
+        """Return a :class:`DataFrame` object with no duplicates in the given columns.
+        .. warning:: The resulting dataframe will be in memory, use with caution.
+        :return: :class:`DataFrame` object with duplicates filtered away.
+
+        From https://github.com/vaexio/vaex/pull/1623
+        """
+        return self.df.groupby(
+            self.df.get_column_names(), agg={"__hidden_count": vaex.agg.count()}
+        ).drop(["__hidden_count"])
+
 
 @vaex.register_function(on_expression=True)
 def struct_get(column: pa.Array | pa.ChunkedArray, field: str | int) -> pa.StructArray:

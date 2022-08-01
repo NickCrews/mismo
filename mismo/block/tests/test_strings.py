@@ -1,3 +1,4 @@
+import pandas._testing as tm
 import pyarrow as pa
 import pytest
 import vaex
@@ -48,4 +49,5 @@ def test_TokenFingerprinter(string_df):
         ]
     )
     expected = vaex.from_arrays(index=index, token=token)
-    assert result.to_list() == expected.to_list()
+    expected["index"] = expected["index"].astype("uint64")
+    tm.assert_equal(result.to_pandas_df(), expected.to_pandas_df())
