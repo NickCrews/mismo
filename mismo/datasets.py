@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Callable
 
 import pandas as pd
 import vaex
@@ -10,7 +11,9 @@ from vaex.dataframe import DataFrame
 from mismo.config import MISMO_HOME
 
 
-def _wrap_febrl(load_febrl: callable) -> tuple[DataFrame, DataFrame]:
+def _wrap_febrl(
+    load_febrl: Callable[..., tuple[pd.DataFrame, pd.MultiIndex]]
+) -> tuple[DataFrame, DataFrame]:
     pdf: pd.DataFrame
     links_multi_index: pd.MultiIndex
 

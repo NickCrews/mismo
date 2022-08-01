@@ -1,7 +1,7 @@
 from vaex.dataframe import DataFrame
 
 
-def to_code(df: DataFrame):
+def to_code(df: DataFrame) -> str:
     """Convert a vaex :class:`DataFrame` object to a python code snippet.
 
     With this you can do `print(to_code(df))` to get a code snippet that can be
