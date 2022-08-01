@@ -35,6 +35,7 @@ def _wrap_febrl(load_febrl: callable) -> tuple[DataFrame, DataFrame]:
     vlinks = vaex.from_pandas(links)
     vlinks["index_left"] = vlinks["index_left"].map(index_iloc_mapping)
     vlinks["index_right"] = vlinks["index_right"].map(index_iloc_mapping)
+    vlinks = vlinks.sort(["index_left", "index_right"])
     return vdf, vlinks
 
 
