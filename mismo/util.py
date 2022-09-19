@@ -67,7 +67,7 @@ class MismoOps:
 
 @vaex.register_function(on_expression=True)
 def struct_get(column: pa.Array | pa.ChunkedArray, field: str | int) -> pa.StructArray:
-    """Workaround for a byg where Expression.struct.get() breaks for chunked arrays"""
+    """Workaround for a bug where Expression.struct.get() breaks for chunked arrays"""
     if isinstance(column, pa.Array):
         return column.field(field)
     elif isinstance(column, pa.ChunkedArray):
