@@ -1,9 +1,9 @@
 import pandas as pd
 from vaex.dataframe import DataFrame
 
-from mismo.block import PBlocker
+from mismo.block._blocker import PBlocker, PBlocking
 from mismo.partition import PPartitioner
-from mismo.score import PScorer
+from mismo.score import PScorer, PScoring
 
 
 class Deduper:
@@ -17,17 +17,17 @@ class Deduper:
         self.scorer = scorer
         self.partitioner = partitioner
 
-    def block(self, data: DataFrame) -> DataFrame:
+    def block(self, data: DataFrame) -> PBlocking:
         return self.blocker.block(data, data)
 
-    def score(self, data: DataFrame, links: DataFrame) -> DataFrame:
-        return self.scorer.score(data, data, links)
+    def score(self, data: DataFrame, blocking: PBlocking) -> PScoring:
+        return self.scorer.score(data, data, blocking)
 
-    def partition(self, scores: DataFrame) -> DataFrame:
+    def partition(self, scores: PScoring) -> DataFrame:
         return self.partitioner.partition(scores)
 
     def dedupe(self, data: DataFrame) -> pd.Series:
-        links = self.block(data)
-        scores = self.score(data, links)
+        blocking = self.block(data)
+        scores = self.score(data, blocking)
         partitions = self.partition(scores)
         return partitions
