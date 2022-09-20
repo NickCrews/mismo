@@ -17,10 +17,8 @@ FingerprinterPairsLike = Iterable[FingerprinterPair]
 
 
 class FingerprintBlocker(PBlocker):
-    fingerprinters: list[FingerprinterPair]
-
     def __init__(self, fingerprinters: FingerprinterPairsLike) -> None:
-        self.fingerprinters = convert_fingerprinters(fingerprinters)
+        self._fingerprinters = convert_fingerprinters(fingerprinters)
 
     def block(self, datal: DataFrame, *, datar: DataFrame | None = None) -> DataFrame:
         if datar is None:
@@ -30,6 +28,10 @@ class FingerprintBlocker(PBlocker):
         links = links.mismo.drop_duplicates()
         links = links.sort(by=["index_left", "index_right"])
         return links
+
+    @property
+    def fingerprinters(self) -> list[FingerprinterPair]:
+        return self._fingerprinters
 
     @staticmethod
     def links(
