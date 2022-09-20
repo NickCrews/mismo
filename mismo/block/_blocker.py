@@ -36,6 +36,13 @@ class PBlocking(Protocol):
     materialize the result, or to iterate over it.
     """
 
+    SCHEMA: pa.Schema = pa.schema(
+        [
+            pa.field("left", pa.int32()),
+            pa.field("right", pa.int32()),
+        ]
+    )
+
     @property
     def n_pairs(self) -> int | None:
         """Return the number of pairs, or None if unknown."""
