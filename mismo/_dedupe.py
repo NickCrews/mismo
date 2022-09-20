@@ -27,7 +27,7 @@ class Deduper:
         return self.partitioner.partition(scores)
 
     def dedupe(self, data: DataFrame) -> pd.Series:
-        links = self.block(data, data)
-        scores = self.score(data, data, links)
+        links = self.block(data)
+        scores = self.score(data, links)
         partitions = self.partition(scores)
         return partitions

@@ -8,6 +8,16 @@ from vaex.expression import Expression
 
 from mismo._typing import Protocol
 
+
+class PFingerprinter(Protocol):
+    def fingerprint(self, data: DataFrame) -> DataFrame:
+        ...
+
+
+def is_fingerprinter(fp):
+    return hasattr(fp, "fingerprint") and callable(fp.fingerprint)
+
+
 # One column "index", is the index of the row in the dataframe.
 # The other columns (1 or more), are any values that can be grouped on.
 FingerprintFunction = Callable[[DataFrame], DataFrame]
@@ -27,15 +37,6 @@ def check_fingerprints(fingerprints: DataFrame) -> None:
         raise ValueError(
             f"Fingerprints column 'index' must be of type uint or int. Got {dtype}"
         )
-
-
-class PFingerprinter(Protocol):
-    def fingerprint(self, data: DataFrame) -> DataFrame:
-        ...
-
-
-def is_fingerprinter(fp):
-    return hasattr(fp, "fingerprint") and callable(fp.fingerprint)
 
 
 class ColumnsFingerprinter(PFingerprinter):

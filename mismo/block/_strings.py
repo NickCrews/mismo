@@ -6,7 +6,7 @@ import spacy
 from vaex.dataframe import DataFrame
 from vaex.expression import Expression
 
-from mismo.block._fingerprint import SingleColumnFingerprinter, add_index
+from mismo.fingerprint._fingerprinter import SingleColumnFingerprinter, add_index
 
 logger = logging.getLogger(__name__)
 

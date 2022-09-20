@@ -2,7 +2,7 @@ import pandas._testing as tm
 import pytest
 import vaex
 
-from mismo.block import Equals, FingerprintBlocker
+from mismo.fingerprint import Equals, FingerprintBlocker
 
 
 @pytest.fixture
