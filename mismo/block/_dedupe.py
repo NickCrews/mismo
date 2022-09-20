@@ -5,10 +5,10 @@ from typing import Iterable, Tuple
 
 import pyarrow as pa
 from dedupe import Dedupe, RecordLink
+from dedupe._typing import Data as DedupeData
 from dedupe._typing import RecordPair
 from dedupe.blocking import Fingerprinter
 from dedupe.predicates import Predicate
-from vaex.dataframe import DataFrame
 
 from mismo.block._blocker import PBlocker, PBlocking
 
@@ -19,18 +19,19 @@ class DedupeBlocker(PBlocker):
         self._in_memory = in_memory
 
     def block(
-        self, datal: DataFrame, *, datar: DataFrame | None = None
+        self, datal: pa.Table, *, datar: pa.Table | None = None
     ) -> IdPairsBlocking:
         if datar is None:
             dd = Dedupe.__new__(Dedupe)
             dd.fingerprinter = self._fingerprinter
             dd.in_memory = self._in_memory
-            return IdPairsBlocking.from_pairs(dd.pairs(datal))
+            pairs = dd.pairs(_table_to_DedupeData(datal))
         else:
             rl = RecordLink.__new__(RecordLink)
             rl.fingerprinter = self._fingerprinter
             rl.in_memory = self._in_memory
-            return IdPairsBlocking.from_pairs(rl.pairs(datal, datar))
+            pairs = rl.pairs(_table_to_DedupeData(datal), _table_to_DedupeData(datar))
+        return IdPairsBlocking.from_pairs(pairs)
 
 
 IdPair = Tuple[int, int]
@@ -76,3 +77,7 @@ def _chunk(iterable, n):
             chunk = []
     if chunk:
         yield chunk
+
+
+def _table_to_DedupeData(data: pa.Table) -> DedupeData:
+    return {i: row for i, row in enumerate(data.to_pydict())}
