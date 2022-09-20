@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Iterable, Tuple
 
 import vaex
@@ -20,7 +22,9 @@ class FingerprintBlocker(PBlocker):
     def __init__(self, fingerprinters: FingerprinterPairsLike) -> None:
         self.fingerprinters = convert_fingerprinters(fingerprinters)
 
-    def block(self, datal: DataFrame, datar: DataFrame) -> DataFrame:
+    def block(self, datal: DataFrame, *, datar: DataFrame | None = None) -> DataFrame:
+        if datar is None:
+            datar = datal
         link_chunks = self.links(datal, datar, self.fingerprinters)
         links: DataFrame = vaex.concat(link_chunks)
         links = links.mismo.drop_duplicates()

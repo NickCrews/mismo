@@ -44,6 +44,6 @@ def test_basic_blocking(simple_df):
         (Equals("strings"), Equals("strings")),
     ]
     blocker = FingerprintBlocker(predicates)
-    result = blocker.block(simple_df, simple_df)
+    result = blocker.block(simple_df)
     expected = get_expected()
     tm.assert_equal(result.to_pandas_df(), expected.to_pandas_df())
