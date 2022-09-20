@@ -9,18 +9,27 @@ from mismo._typing import Protocol
 
 
 class PBlocker(Protocol):
-    """A "Blocker" takes two frames of data, and returns a frame of "links" to compare
+    """A ``PBlocker`` determines which pairs of records should be compared.
 
-    The links are a frame of pairs of indices, where the "index_left" is from the
-    first frame, and the second index is from the second frame.
+    Either you can compare a set of records to itself, or you can compare two
+    different sets of records.
+
+    Args:
+        datal: The left set of records.
+        datar: The right set of records. If ``None``, then ``datal`` is compared to
+            itself.
+
+    Returns:
+        A ``PBlocking`` object, which can be used to materialize the result, or to
+        iterate over it.
     """
 
-    def block(self, datal: DataFrame, datar: DataFrame) -> PBlocking:
+    def block(self, datal: DataFrame, *, datar: DataFrame | None = None) -> PBlocking:
         ...
 
 
 class PBlocking(Protocol):
-    """The result of running Blocker.block().
+    """A collection of pairs of records that should be compared.
 
     Since the result might be larger than memory, we might not want to materialize the
     whole thing. So this class is a wrapper around the result, which can be used to

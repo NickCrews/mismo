@@ -18,7 +18,7 @@ class Deduper:
         self.partitioner = partitioner
 
     def block(self, data: DataFrame) -> PBlocking:
-        return self.blocker.block(data, data)
+        return self.blocker.block(data)
 
     def score(self, data: DataFrame, blocking: PBlocking) -> PScoring:
         return self.scorer.score(data, data, blocking)
