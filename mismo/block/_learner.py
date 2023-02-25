@@ -1,33 +1,19 @@
 from __future__ import annotations
 
-from typing import Any, NamedTuple
+from typing import NamedTuple
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from vaex.dataframe import DataFrame
+from ibis.expr.types import Table
 
 from mismo._typing import Protocol, Self
 from mismo.block._blocker import PBlocker
 
 
 class PBlockLearner(Protocol):
-    def fit(self: Self, data1: DataFrame, data2: DataFrame, y: DataFrame) -> PBlocker:
+    def fit(self: Self, data1: Table, data2: Table, y: Table) -> PBlocker:
         ...
-
-
-class LinkTranslator:
-    def __init__(self, data1: DataFrame, data2: DataFrame) -> None:
-        self.modulus = len(data1)
-
-    def links_to_link_ids(self, links: DataFrame) -> pd.Series:
-        return links.iloc[0, :] * self.modulus + links.iloc[1, :]
-
-    def link_ids_to_links(self, linkids: pd.Series) -> DataFrame:
-        return pd.DataFrame(
-            [linkids // self.modulus, linkids % self.modulus],
-            columns=["index_left", "index_right"],
-        )
 
 
 class SetScore(NamedTuple):
@@ -104,18 +90,3 @@ def set_cover(universe: pd.Series, sets: list[pd.Series]) -> list[int]:
         best_set = scores[best_set_idx]
         uncovered = np.setdiff1d(uncovered, best_set.new_covers)
     return result
-
-
-class PActiveBlockLearner(Protocol):
-    def query(
-        self,
-        data1: DataFrame,
-        data2: DataFrame,
-        y: DataFrame,
-        **kwargs: dict[str, Any],
-    ) -> DataFrame:
-        """Given the input and labeled links, returns links that should be labeled next.
-
-        Based off of the query() from scikit-activeml.
-        https://scikit-activeml.github.io/scikit-activeml-docs/generated/api/skactiveml.pool.RandomSampling.html#skactiveml.pool.RandomSampling.query
-        """

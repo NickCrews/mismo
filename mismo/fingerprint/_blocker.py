@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from typing import Iterable, Tuple
 
-import vaex
-from vaex.dataframe import DataFrame
+import ibis
+from ibis.expr.types import Table
 
 from mismo.block import PBlocker
-from mismo.fingerprint._fingerprinter import (  # NOQA
+from mismo.fingerprint._fingerprinter import (
     PFingerprinter,
-    check_fingerprints,
     is_fingerprinter,
 )
 
@@ -17,53 +16,26 @@ FingerprinterPairsLike = Iterable[FingerprinterPair]
 
 
 class FingerprintBlocker(PBlocker):
-    def __init__(self, fingerprinters: FingerprinterPairsLike) -> None:
-        self._fingerprinters = convert_fingerprinters(fingerprinters)
-
-    def block(self, datal: DataFrame, *, datar: DataFrame | None = None) -> DataFrame:
-        if datar is None:
-            datar = datal
-        link_chunks = self.links(datal, datar, self.fingerprinters)
-        links: DataFrame = vaex.concat(link_chunks)
-        links = links.mismo.drop_duplicates()
-        links = links.sort(by=["index_left", "index_right"])
-        return links
+    def __init__(self, fingerprinter_pairs: FingerprinterPairsLike) -> None:
+        self._fp_pairs = convert_fingerprinters(fingerprinter_pairs)
 
     @property
-    def fingerprinters(self) -> list[FingerprinterPair]:
-        return self._fingerprinters
+    def fingerprinter_pairs(self) -> list[FingerprinterPair]:
+        return self._fp_pairs
 
-    @staticmethod
-    def links(
-        data1: DataFrame, data2: DataFrame, fingerprinters: FingerprinterPairsLike
-    ) -> DataFrame:
-        fps = convert_fingerprinters(fingerprinters)
-        links = []
-        for fp1, fp2 in fps:
-            prints1 = fp1.fingerprint(data1)
-            prints2 = fp2.fingerprint(data2)
-            link_chunk = merge_fingerprints(prints1, prints2)
-            links.append(link_chunk)
-        return links
-
-
-def merge_fingerprints(fpl: DataFrame, fpr: DataFrame) -> DataFrame:
-    check_fingerprints(fpl)
-    check_fingerprints(fpr)
-    non_indexl = [c for c in fpl.column_names if c != "index"]
-    non_indexr = [c for c in fpr.column_names if c != "index"]
-    fpl["key"] = fpl.mismo.hash_rows(non_indexl)
-    fpr["key"] = fpr.mismo.hash_rows(non_indexr)
-    links: DataFrame = fpl.join(
-        fpr,
-        on="key",
-        lsuffix="_left",
-        rsuffix="_right",
-        allow_duplication=True,
-    )
-    links = links[["index_left", "index_right"]]
-    links = links.mismo.drop_duplicates()
-    return links
+    def block(self, datal: Table, datar: Table | None = None) -> Table:
+        if datar is None:
+            datar = datal
+        chunks = [
+            block_on_one_pair(datal, datar, fp1, fp2)
+            for fp1, fp2 in self.fingerprinter_pairs
+        ]
+        if len(chunks) == 0:
+            return datal.cross_join(datar, suffixes=("_l", "_r")).limit(0)
+        elif len(chunks) == 1:
+            return chunks[0].distinct()
+        else:
+            return ibis.union(*chunks, distinct=True)
 
 
 def convert_fingerprinters(fps: FingerprinterPairsLike) -> list[FingerprinterPair]:
@@ -84,3 +56,15 @@ def convert_fingerprinters(fps: FingerprinterPairsLike) -> list[FingerprinterPai
         result.append(pair)
     # mypy doesn't understand that pair is length 2.
     return result  # type: ignore
+
+
+def block_on_one_pair(
+    data1: Table, data2: Table, fp1: PFingerprinter, fp2: PFingerprinter
+) -> Table:
+    prints1 = fp1.fingerprint(data1)
+    prints2 = fp2.fingerprint(data2)
+    with_prints1 = data1.mutate(__mismo_key=prints1.unnest())
+    with_prints2 = data2.mutate(__mismo_key=prints2.unnest())
+    return with_prints1.inner_join(
+        with_prints2, "__mismo_key", suffixes=("_l", "_r")
+    ).drop("__mismo_key")

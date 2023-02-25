@@ -1,7 +1,7 @@
-from vaex.dataframe import DataFrame
+from ibis.expr.types import Table
 
-from mismo.block._learner import LinkTranslator, PBlockLearner, set_cover
-from mismo.fingerprint._blocker import (  # NOQA
+from mismo.block._learner import PBlockLearner
+from mismo.fingerprint._blocker import (
     FingerprintBlocker,
     FingerprinterPairsLike,
     convert_fingerprinters,
@@ -15,16 +15,10 @@ class FingerprintBlockLearner(PBlockLearner):
         self.fingerprinter_candidates = convert_fingerprinters(fingerprinter_candidates)
         self.recall = recall
 
-    def fit(
-        self, data1: DataFrame, data2: DataFrame, y: DataFrame
+    def fit(  # type: ignore
+        self,
+        data1: Table,
+        data2: Table,
+        y: Table,
     ) -> FingerprintBlocker:
-        translator = LinkTranslator(data1, data2)
-        pos_links = y[y.iloc[2, :]]
-        pos_ids = translator.links_to_link_ids(pos_links)
-        candidates = FingerprintBlocker.links(
-            data1, data2, self.fingerprinter_candidates
-        )
-        cand_ids = [translator.links_to_link_ids(c) for c in candidates]
-        covering_set = set_cover(pos_ids, cand_ids)
-        final_fingerprinters = [self.fingerprinter_candidates[i] for i in covering_set]
-        return FingerprintBlocker(final_fingerprinters)
+        ...

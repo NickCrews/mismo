@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "mismo"
 description = ''
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 license = "LGPL-3.0-or-later"
 keywords = []
 authors = [
@@ -24,9 +24,8 @@ classifiers = [
 ]
 dependencies = [
   "dedupe",
+  "ibis-framework @ git+https://github.com/ibis-project/ibis@63f985521588935ab4b1e66f0015b68b7753cc73#ibis-framework[duckdb]",
   "recordlinkage",
-  "sklearn",
-  "vaex",
 ]
 dynamic = ["version"]
 
@@ -42,10 +41,11 @@ path = "mismo/__about__.py"
 [tool.hatch.build.targets.wheel]
 
 [tool.hatch.envs.default]
-python = "39"
+python = "311"
 dependencies = [
   "black[jupyter]",
   "flake8",
+  "ipykernel",
   "isort",
   "mypy",
   "pre-commit",
@@ -58,7 +58,7 @@ lint = "flake8 . && isort --check-only --diff . && black --check . && mypy ."
 no-cov = "cov --no-cov"
 
 [[tool.hatch.envs.test.matrix]]
-python = ["37", "38", "39", "310"]
+python = ["38", "39", "310", "311"]
 
 [tool.coverage.run]
 branch = true

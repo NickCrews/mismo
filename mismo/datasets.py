@@ -1,27 +1,23 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Callable
 
+import ibis
 import pandas as pd
-import vaex
+from ibis.expr.types import Table
 from recordlinkage import datasets as rlds
-from vaex.dataframe import DataFrame
-
-from mismo.config import MISMO_HOME
 
 
 def _wrap_febrl(
     load_febrl: Callable[..., tuple[pd.DataFrame, pd.MultiIndex]]
-) -> tuple[DataFrame, DataFrame]:
-    pdf: pd.DataFrame
-    links_multi_index: pd.MultiIndex
-
+) -> tuple[Table, Table]:
     pdf, links_multi_index = load_febrl(return_links=True)
-    index_iloc_mapping = {idx: i for i, idx in enumerate(pdf.index)}
-    pdf = pdf.reset_index(drop=True)
-    vdf = vaex.from_pandas(pdf)
+    pdf = pdf.reset_index(drop=False)
+    con = ibis.duckdb.connect()
+    con.create_table("data", pdf)
+    t = con.table("data")
     dtypes = {
+        "rec_id": "str",
         "given_name": "str",
         "surname": "str",
         "street_number": "str",  # keep as string for leading 0s
@@ -33,28 +29,27 @@ def _wrap_febrl(
         "soc_sec_id": "int32",  # 7 digits long, never null, no leading 0s
         "date_of_birth": "str",  # contains some BS dates like 19371233
     }
-    for col, dtype in dtypes.items():
-        vdf[col] = vdf[col].astype(dtype)
+    t = t.mutate(**{col: t[col].cast(dtype) for col, dtype in dtypes.items()})
 
-    links: pd.DataFrame = links_multi_index.to_frame(
-        index=False, name=["index_left", "index_right"]
+    links_df = links_multi_index.to_frame(
+        index=False, name=["rec_id_left", "rec_id_right"]
     )
-    vlinks = vaex.from_pandas(links)
-    vlinks["index_left"] = vlinks["index_left"].map(index_iloc_mapping)
-    vlinks["index_right"] = vlinks["index_right"].map(index_iloc_mapping)
-    vlinks = vlinks.sort(["index_left", "index_right"])
-    return vdf, vlinks
+    con.create_table("links", links_df)
+    links = con.table("links")
+    # typing fixed by https://github.com/ibis-project/ibis/pull/5611
+    links = links.order_by(["rec_id_left", "rec_id_right"])  # type: ignore
+    return t, links
 
 
-def load_febrl1() -> tuple[DataFrame, DataFrame]:
+def load_febrl1() -> tuple[Table, Table]:
     return _wrap_febrl(rlds.load_febrl1)
 
 
-def load_febrl2() -> tuple[DataFrame, DataFrame]:
+def load_febrl2() -> tuple[Table, Table]:
     return _wrap_febrl(rlds.load_febrl2)
 
 
-def load_febrl3() -> tuple[DataFrame, DataFrame]:
+def load_febrl3() -> tuple[Table, Table]:
     return _wrap_febrl(rlds.load_febrl3)
 
 
@@ -62,27 +57,46 @@ def load_febrl3() -> tuple[DataFrame, DataFrame]:
 # could add that later if it's needed.
 
 
-def _load_or_download(remote: str, cache: Path) -> DataFrame:
-    """Load cached parquet file. If doesn't exist, download it from the remote URL."""
-    if not cache.exists():
-        pdf = pd.read_csv(remote)
-        vdf: DataFrame = vaex.from_pandas(pdf)
-        cache.parent.mkdir(parents=True, exist_ok=True)
-        vdf.export_parquet(cache)
-    return vaex.open(cache)
-
-
-def load_patents() -> tuple[DataFrame, DataFrame]:
+def load_patents() -> Table:
     """Load the patents dataset from
     https://github.com/dedupeio/dedupe-examples/tree/master/patent_example
+
+    Returns
+    -------
+    Table
+        A table, one row for each record, with the following columns:
+        - record_id: int64
+        - Lat: float64
+        - Lng: float64
+        - Coauthor: str
+        - Name: str
+        - Class: str
+        - real_id: int64
+        - real_name: str
     """
-    cache_dir = MISMO_HOME / "datasets/patents"
-    data_cache = cache_dir / "data.parquet"
     data_remote = "https://raw.githubusercontent.com/dedupeio/dedupe-examples/master/patent_example/patstat_input.csv"  # noqa E501
-    df = _load_or_download(data_remote, data_cache)
-    labels_cache = cache_dir / "labels.parquet"
     labels_remote = "https://raw.githubusercontent.com/dedupeio/dedupe-examples/master/patent_example/patstat_reference.csv"  # noqa E501
-    labels = _load_or_download(labels_remote, labels_cache)
+    df = ibis.read_csv(data_remote)
+    labels = ibis.read_csv(labels_remote)
+
+    # Data looks like
+    # ┏━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ # noqa E501
+    # ┃ person_id ┃ Lat     ┃ Lng      ┃ Coauthor                   ┃ Name                 ┃ Class                      ┃ # noqa E501
+    # ┡━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩ # noqa E501
+    # │ int64     │ float64 │ float64  │ string                     │ string               │ string                     │ # noqa E501
+    # ├───────────┼─────────┼──────────┼────────────────────────────┼──────────────────────┼────────────────────────────┤ # noqa E501
+    # │      2909 │    0.00 │ 0.000000 │ KONINK PHILIPS ELECTRONIC… │ AGILENT TECHNOLOGIES │ A61N**A61B                 │ # noqa E501
+    # │      3574 │    0.00 │ 0.000000 │ TSJERK  HOEKSTRA**ANDRESS… │ AKZO NOBEL           │ G01N**B01L**C11D**G02F**F… │ # noqa E501
+    # │      3575 │    0.00 │ 0.000000 │ WILLIAM JOHN ERNEST  PARR… │ AKZO NOBEL           │ C09K**F17D**B01F**C23F     │ # noqa E501
+    # │      3779 │   52.35 │ 4.916667 │ GUENTER  KOCHSMEIER**ZBIG… │ ALCATEL              │ G02B**G04G**H02G**G06F     │ # noqa E501
+    # │      3780 │   52.35 │ 4.916667 │ ZILAN  MANFRED**JOSIANE  … │ ALCATEL              │ H03G**B05D**H04L**H04B**C… │ # noqa E501
+    # │      3782 │    0.00 │ 0.000000 │ OLIVIER  AUDOUIN**MICHEL … │ ALCATEL              │ H04B**H01S**H04J           │ # noqa E501
+    # │     15041 │    0.00 │ 0.000000 │ LEE  RICKLER**SIMON  PARK… │ CANON EUROPA         │ G06F                       │ # noqa E501
+    # │     15042 │    0.00 │ 0.000000 │ QI HE  HONG**ADAM MICHAEL… │ CANON EUROPA         │ G06T**G01B                 │ # noqa E501
+    # │     15043 │    0.00 │ 0.000000 │ NILESH  PATHAK**MASAMICHI… │ CANON EUROPA         │ H04B**G06T**G06F**H04M**H… │ # noqa E501
+    # │     25387 │    0.00 │ 0.000000 │ GABRIEL MARINUS  MEESTERS… │ DSM                  │ C12N**A61K**A23L**A23J**A… │ # noqa E501
+    # │         … │       … │        … │ …                          │ …                    │ …                          │ # noqa E501
+    # └───────────┴─────────┴──────────┴────────────────────────────┴──────────────────────┴────────────────────────────┘ # noqa E501
 
     # labels looks like
     # |      |   person_id |   leuven_id | person_name                   |
@@ -93,18 +107,8 @@ def load_patents() -> tuple[DataFrame, DataFrame]:
     # |    3 |        3779 |      656303 | * ALCATEL N.V.
     # It's the same length as df, where each row of labels corresponds to the
     # same row of df.
-    # Convert labels to links
-    labels = labels[["leuven_id"]]
-    labels["index"] = vaex.vrange(0, len(labels))
-    labels["index"] = labels["index"].astype("uint64")
-    links = labels.join(
-        labels,
-        on="leuven_id",
-        lsuffix="_left",
-        rsuffix="_right",
-        allow_duplication=True,
+    df = df.relabel({"person_id": "record_id"})
+    labels = labels.relabel(
+        {"person_id": "record_id", "leuven_id": "real_id", "person_name": "real_name"}
     )
-    links = links[["index_left", "index_right"]]
-    links = links.sort(["index_left", "index_right"])
-
-    return df, links
+    return df.inner_join(labels, "record_id")  # type: ignore

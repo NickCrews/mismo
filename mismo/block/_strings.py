@@ -1,75 +1,27 @@
 import logging
-from typing import Any, Callable
 
-import pyarrow as pa
-import spacy
-from vaex.dataframe import DataFrame
-from vaex.expression import Expression
+from ibis.expr.types import ArrayColumn, StringColumn, Table
 
-from mismo.fingerprint._fingerprinter import SingleColumnFingerprinter, add_index
+from mismo.fingerprint._fingerprinter import SingleColumnFingerprinter
 
 logger = logging.getLogger(__name__)
 
-_nlp = None
+
+def norm_whitespace(texts: StringColumn) -> StringColumn:
+    return texts.strip().re_replace(r"\s+", " ")  # type: ignore
 
 
-def _load_spacy():
-    global _nlp
-    if _nlp is None:
-        _nlp = spacy.load("en_core_web_sm", exclude=["ner", "entity_linker", "textcat"])
-    return _nlp
-
-
-def norm_whitespace(texts: Expression) -> Expression:
-    return texts.str.strip().str.replace(r"\s+", " ", regex=True).astype(pa.string())
-
-
-def norm_possessives(texts: Expression) -> Expression:
+def norm_possessives(texts: StringColumn) -> StringColumn:
     """Fix "jane's house" to "janes house".
 
     TODO: Also deal with "Ross' house"
     """
-    return texts.str.replace(r"(\w)\'s(\b)", r"\1s\2", regex=True)
+    return texts.re_replace(r"(\w)\'s(\b)", r"\1s\2")  # type: ignore
 
 
-_token_fields = [
-    ("text", pa.string()),
-    ("lemma", pa.string()),
-    ("pos", pa.string()),
-]
-_token_type = pa.struct(_token_fields)
-_doc_type = pa.list_(_token_type)
-
-
-def _tokenize_chunk(s: pa.StringArray) -> pa.ListArray:
-    """Apply spacy tokenier to a pyarrow StringArray."""
-    logger.debug(f"tokenizing {len(s)} strings...")
-    strs = (str(s) for s in s)
-    nlp = _load_spacy()
-    docs = nlp.pipe(strs)
-    token_lists = ([(str(tok), tok.lemma_, tok.pos_) for tok in doc] for doc in docs)
-    result = pa.array(token_lists, type=_doc_type)
-    masked = pa.compute.if_else(s.is_null(), None, result)
-    return masked
-
-
-def tokenize(texts: Expression) -> Expression:
-    """Returns an expression where each item is a list of `token` structs.
-
-    Each token has the fields "text", "lemma" and "pos", corresponding to a spacy.Token
-    """
-    texts = norm_whitespace(texts)
-    # vaex will apply this in chunk sizes per config:
-    # https://vaex.readthedocs.io/en/latest/conf.html#chunk
-    # spacy already does multiprocessing so don't do that here
-    return texts.apply(_tokenize_chunk, vectorize=True, multiprocessing=False)
-
-
-def filter_tokens(
-    tokens: DataFrame, predicate: Callable[[Expression], Any]
-) -> DataFrame:
-    keep = predicate(tokens["token"])
-    return tokens[keep]
+def tokenize(texts: StringColumn) -> ArrayColumn:
+    """Returns an column where each element is an array of strings"""
+    return norm_whitespace(texts).split(" ")  # type: ignore
 
 
 class StringBaseFingerprinter(SingleColumnFingerprinter):
@@ -85,49 +37,27 @@ class StringBaseFingerprinter(SingleColumnFingerprinter):
         self.norm_possesive = norm_possesive
         self.norm_whitespace = norm_whitespace
 
-    def _preprocess(self, data: DataFrame) -> Expression:
-        strings = data[self.column]
+    def _preprocess(self, data: Table) -> StringColumn:
+        strings: StringColumn = data[self.column]
         if self.lower:
-            strings = strings.str.lower()
+            strings = strings.lower()
         if self.norm_possesive:
             strings = norm_possessives(strings)
         if self.norm_whitespace:
             strings = norm_whitespace(strings)
-        result = data.copy()
-        result[self.column] = strings
-        return result
+        return strings
 
-    def fingerprint(self, data: DataFrame) -> DataFrame:
+    def fingerprint(self, data: Table) -> Table:
         """Selects the column of data, preprocesses it, and passes to _func."""
         data = self._preprocess(data)
         result = self._func(data)
-        return result
+        return result.name(self.name)
 
 
 class TokenFingerprinter(StringBaseFingerprinter):
-    def _func(self, df: DataFrame) -> DataFrame:
-        result = df.copy([self.column])
-        result["tokens"] = tokenize(result[self.column])
-        result = add_index(result)
-        result = result[result["tokens"].notna()]
-        result = result.mismo.explode("tokens")
-        result["token"] = result["tokens"].struct_get("lemma")
-        result = result.drop([self.column, "tokens"])
-        return result
+    def _func(self, t: StringColumn) -> ArrayColumn:
+        return tokenize(t.nullif(""))
 
-
-class SortedAcronymFingerprinter(StringBaseFingerprinter):
-    def __init__(self, column: str, only_alpha: bool = True) -> None:
-        super().__init__(column, lower=True, norm_possesive=True)
-        self.only_alpha = only_alpha
-
-    def _func(self, strings: Expression) -> DataFrame:
-        tokens = tokenize(strings)
-        tokens = filter_tokens(tokens, lambda token: token.str.len() > 1)
-        tokens["first_char"] = tokens["token"].str.slice(0, 1)
-        tokens = tokens.drop(columns="token")
-        if self.only_alpha:
-            tokens = tokens[tokens["first_char"].str.isalpha()]
-        tokens = tokens.sort_values(by=["index", "first_char"])
-        acronyms = tokens.groupby("index", as_index=False).agg("sum")
-        return acronyms
+    @property
+    def name(self) -> str:
+        return f"tokens({self.column})"

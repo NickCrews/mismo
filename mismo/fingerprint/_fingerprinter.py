@@ -1,16 +1,19 @@
 from __future__ import annotations
 
-from typing import Callable, Iterable, Sequence, Union
+from typing import Callable, Sequence, Union
 
-import vaex
-from vaex.dataframe import DataFrame
-from vaex.expression import Expression
+import ibis
+from ibis.expr.types import ArrayColumn, Column, Table
 
 from mismo._typing import Protocol
 
 
 class PFingerprinter(Protocol):
-    def fingerprint(self, data: DataFrame) -> DataFrame:
+    def fingerprint(self, data: Table) -> ArrayColumn:
+        ...
+
+    @property
+    def name(self) -> str:
         ...
 
 
@@ -18,28 +21,11 @@ def is_fingerprinter(fp):
     return hasattr(fp, "fingerprint") and callable(fp.fingerprint)
 
 
-# One column "index", is the index of the row in the dataframe.
-# The other columns (1 or more), are any values that can be grouped on.
-FingerprintFunction = Callable[[DataFrame], DataFrame]
+FingerprintFunction = Callable[[Table], ArrayColumn]
 Columns = Union[str, Sequence[str], None]
 
 
-def check_fingerprints(fingerprints: DataFrame) -> None:
-    cols = list(fingerprints.column_names)
-    if len(cols) < 2:
-        raise ValueError("Fingerprints must have at least two columns")
-    if "index" not in cols:
-        raise ValueError("Fingerprints must have a column named 'index'")
-    if cols.count("index") > 1:
-        raise ValueError("Fingerprints must have only one column named 'index'")
-    dtype = fingerprints["index"].dtype
-    if dtype not in ("int", "uint"):
-        raise ValueError(
-            f"Fingerprints column 'index' must be of type uint or int. Got {dtype}"
-        )
-
-
-class ColumnsFingerprinter(PFingerprinter):
+class MultiColumnFingerprinter(PFingerprinter):
     columns: str | list[str] | None
 
     def __init__(self, columns: Columns = None) -> None:
@@ -53,17 +39,17 @@ class ColumnsFingerprinter(PFingerprinter):
                 raise ValueError("Columns must be strings")
             self.columns = cols
 
-    def _select_columns(self, data: DataFrame) -> DataFrame:
+    def _select_columns(self, data: Table) -> Table:
         if self.columns is None:
             return data
         else:
-            return data[self.columns]
+            return data[self.columns]  # type: ignore
 
-    def _func(self, subset: DataFrame | Expression) -> DataFrame:
+    def _func(self, subset: Table) -> ArrayColumn:
         raise NotImplementedError()
 
-    def fingerprint(self, data: DataFrame) -> DataFrame:
-        return self._func(self._select_columns(data))
+    def fingerprint(self, data: Table) -> ArrayColumn:
+        return self._func(self._select_columns(data)).name(self.name)
 
 
 class SingleColumnFingerprinter(PFingerprinter):
@@ -72,32 +58,34 @@ class SingleColumnFingerprinter(PFingerprinter):
             raise ValueError("column must be a string")
         self.column = column
 
-    def _func(self, subset: Expression) -> DataFrame:
+    def _func(self, col: Column) -> ArrayColumn:
         raise NotImplementedError()
 
-    def fingerprint(self, data: DataFrame) -> DataFrame:
+    def fingerprint(self, data: Table) -> ArrayColumn:
         series = data[self.column]
-        return self._func(series)
+        return self._func(series).name(self.name)
 
 
 class FunctionFingerprinter(PFingerprinter):
     def __init__(self, func: FingerprintFunction) -> None:
         self.func = func
 
-    def fingerprint(self, data: DataFrame) -> DataFrame:
+    @property
+    def name(self) -> str:
+        try:
+            func_name = self.func.__name__
+        except AttributeError:
+            func_name = "lambda"
+        return func_name
+
+    def fingerprint(self, data: Table) -> ArrayColumn:
         return self.func(data)
 
 
-class Equals(ColumnsFingerprinter):
-    def _func(self, subset: DataFrame | Expression) -> DataFrame:
-        return add_index(subset)
+class Equals(SingleColumnFingerprinter):
+    def _func(self, col: Column) -> ArrayColumn:
+        return ibis.array([col], type=col.type())
 
-
-def add_index(values: DataFrame, index: Iterable[int] | None = None) -> DataFrame:
-    if "index" in values.column_names:
-        raise ValueError("Cannot add index to a DataFrame with a column named 'index'")
-    result = values.copy()
-    if index is None:
-        index = vaex.vrange(0, len(result), dtype="uint64")
-    result["index"] = index
-    return result
+    @property
+    def name(self) -> str:
+        return f"equals_{self.column}"

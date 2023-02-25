@@ -1,4 +1,4 @@
-from vaex.dataframe import DataFrame
+from ibis.expr.types import Table
 
 from mismo._typing import Protocol
 
@@ -11,5 +11,5 @@ class PPartitioner(Protocol):
     of records within the graph and assigns a cluster ID to each record.
     """
 
-    def partition(self, scores: DataFrame) -> DataFrame:
+    def partition(self, scores: Table) -> Table:
         ...

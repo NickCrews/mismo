@@ -6,21 +6,19 @@ cosine similarity between two lat/longs, etc), and then use a machine learning m
 classify the pairs as matches or non-matches.
 """
 
-from vaex.dataframe import DataFrame
+from ibis.expr.types import Table
 
 from mismo._typing import Protocol
 from mismo.score import PScorer
 
 
 class PFeaturizer(Protocol):
-    def features(
-        self, datal: DataFrame, datar: DataFrame, links: DataFrame
-    ) -> DataFrame:
+    def features(self, blocked: Table) -> Table:
         ...
 
 
 class PClassifier(Protocol):
-    def predict(self, features: DataFrame) -> DataFrame:
+    def predict(self, features: Table) -> Table:
         ...
 
 
@@ -31,7 +29,7 @@ class FeatureScorer(PScorer):
         self.featurizer = featurizer
         self.classifier = classifier
 
-    def score(self, datal: DataFrame, datar: DataFrame, links: DataFrame) -> DataFrame:
-        features = self.featurizer.features(datal, datar, links)
+    def score(self, blocked: Table) -> Table:
+        features = self.featurizer.features(blocked)
         scores = self.classifier.predict(features)
         return scores
