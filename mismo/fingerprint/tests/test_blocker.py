@@ -1,7 +1,7 @@
 import ibis
+from ibis.expr.types import Table
 import pandas as pd
 import pytest
-from ibis.expr.types import Table
 
 from mismo.fingerprint import Equals, FingerprintBlocker
 

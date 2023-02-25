@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import NamedTuple
 
+from ibis.expr.types import Table
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from ibis.expr.types import Table
 
 from mismo._typing import Protocol, Self
 from mismo.block._blocker import PBlocker

@@ -1,8 +1,8 @@
 import ibis
+from ibis.expr.types import StringColumn, Table
 import pandas as pd
 import pandas._testing as tm
 import pytest
-from ibis.expr.types import StringColumn, Table
 
 from mismo.block import _strings
 

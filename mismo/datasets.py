@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import Callable
 
 import ibis
-import pandas as pd
 from ibis.expr.types import Table
+import pandas as pd
 from recordlinkage import datasets as rlds
 
 

@@ -37,24 +37,38 @@ Source = "https://github.com/unknown/mismo"
 [tool.hatch.version]
 path = "mismo/__about__.py"
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [tool.hatch.build.targets.sdist]
 [tool.hatch.build.targets.wheel]
 
 [tool.hatch.envs.default]
-python = "311"
+python = "39"
 dependencies = [
   "black[jupyter]",
-  "flake8",
   "ipykernel",
-  "isort",
   "mypy",
+  "nbqa",
   "pre-commit",
   "pytest",
   "pytest-cov",
+  "ruff",
 ]
+
 [tool.hatch.envs.default.scripts]
+lint = [
+  "black --check .",
+  "ruff .",
+  "nbqa ruff .",
+  "mypy .",
+]
+fmt = [
+  "black .",
+  "ruff --fix .",
+  "nbqa ruff --fix .",
+]
 cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=mismo --cov=tests"
-lint = "flake8 . && isort --check-only --diff . && black --check . && mypy ."
 no-cov = "cov --no-cov"
 
 [[tool.hatch.envs.test.matrix]]
@@ -74,9 +88,16 @@ exclude_lines = [
   "if TYPE_CHECKING:",
 ]
 
-[tool.isort]
-profile="black"
-multi_line_output = 3
+[tool.ruff]
+select = [
+  "E",  # pyflakes
+  "F",  # pyflakes
+  "I",  # isort
+]
+
+[tool.ruff.isort]
+# See https://github.com/charliermarsh/ruff#isort
+force-sort-within-sections = true
 
 [tool.mypy]
 # https://mypy.readthedocs.io/en/latest/config_file.html#using-a-pyproject-toml-file
