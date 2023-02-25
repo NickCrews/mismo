@@ -65,6 +65,7 @@ def block_on_one_pair(
     prints2 = fp2.fingerprint(data2)
     with_prints1 = data1.mutate(__mismo_key=prints1.unnest())
     with_prints2 = data2.mutate(__mismo_key=prints2.unnest())
-    return with_prints1.inner_join(
+    result: Table = with_prints1.inner_join(
         with_prints2, "__mismo_key", suffixes=("_l", "_r")
     ).drop("__mismo_key")
+    return result

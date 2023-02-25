@@ -1,17 +1,24 @@
 import logging
 
-from ibis.expr.types import ArrayColumn, StringColumn, Table
+from ibis.expr.types import (
+    ArrayColumn,
+    ArrayValue,
+    Column,
+    StringColumn,
+    StringValue,
+    Table,
+)
 
 from mismo.fingerprint._fingerprinter import SingleColumnFingerprinter
 
 logger = logging.getLogger(__name__)
 
 
-def norm_whitespace(texts: StringColumn) -> StringColumn:
+def norm_whitespace(texts: StringValue) -> StringValue:
     return texts.strip().re_replace(r"\s+", " ")  # type: ignore
 
 
-def norm_possessives(texts: StringColumn) -> StringColumn:
+def norm_possessives(texts: StringValue) -> StringValue:
     """Fix "jane's house" to "janes house".
 
     TODO: Also deal with "Ross' house"
@@ -19,12 +26,12 @@ def norm_possessives(texts: StringColumn) -> StringColumn:
     return texts.re_replace(r"(\w)\'s(\b)", r"\1s\2")  # type: ignore
 
 
-def tokenize(texts: StringColumn) -> ArrayColumn:
+def tokenize(texts: StringValue) -> ArrayValue:
     """Returns an column where each element is an array of strings"""
-    return norm_whitespace(texts).split(" ")  # type: ignore
+    return norm_whitespace(texts).split(" ")
 
 
-class StringBaseFingerprinter(SingleColumnFingerprinter):
+class StringColumnFingerprinter(SingleColumnFingerprinter):
     def __init__(
         self,
         column: str,
@@ -38,25 +45,29 @@ class StringBaseFingerprinter(SingleColumnFingerprinter):
         self.norm_whitespace = norm_whitespace
 
     def _preprocess(self, data: Table) -> StringColumn:
-        strings: StringColumn = data[self.column]
+        strings = data[self.column]
         if self.lower:
             strings = strings.lower()
         if self.norm_possesive:
             strings = norm_possessives(strings)
         if self.norm_whitespace:
             strings = norm_whitespace(strings)
-        return strings
+        return strings  # type: ignore
 
-    def fingerprint(self, data: Table) -> Table:
+    def fingerprint(self, data: Table) -> ArrayColumn:
         """Selects the column of data, preprocesses it, and passes to _func."""
-        data = self._preprocess(data)
-        result = self._func(data)
-        return result.name(self.name)
+        string_col = self._preprocess(data)
+        result = self._func(string_col)
+        return result.name(self.name)  # type: ignore
 
 
-class TokenFingerprinter(StringBaseFingerprinter):
-    def _func(self, t: StringColumn) -> ArrayColumn:
-        return tokenize(t.nullif(""))
+class TokenFingerprinter(StringColumnFingerprinter):
+    # TODO: probably StringColumnFingerprinter shouldn't inherit from
+    # SingleColumnFingerprinter, because _func in the parent accepts a Column
+    # but the child only accepts a StringColumn (AKA it's more restrictive).
+    # this violates Liskov's substitution principle, which mypy complains about.
+    def _func(self, t: Column) -> ArrayColumn:
+        return tokenize(t.nullif(""))  # type: ignore
 
     @property
     def name(self) -> str:

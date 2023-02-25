@@ -49,7 +49,7 @@ class MultiColumnFingerprinter(PFingerprinter):
         raise NotImplementedError()
 
     def fingerprint(self, data: Table) -> ArrayColumn:
-        return self._func(self._select_columns(data)).name(self.name)
+        return self._func(self._select_columns(data)).name(self.name)  # type: ignore
 
 
 class SingleColumnFingerprinter(PFingerprinter):
@@ -63,7 +63,7 @@ class SingleColumnFingerprinter(PFingerprinter):
 
     def fingerprint(self, data: Table) -> ArrayColumn:
         series = data[self.column]
-        return self._func(series).name(self.name)
+        return self._func(series).name(self.name)  # type: ignore
 
 
 class FunctionFingerprinter(PFingerprinter):
@@ -84,7 +84,7 @@ class FunctionFingerprinter(PFingerprinter):
 
 class Equals(SingleColumnFingerprinter):
     def _func(self, col: Column) -> ArrayColumn:
-        return ibis.array([col], type=col.type())
+        return ibis.array([col], type=col.type())  # type: ignore
 
     @property
     def name(self) -> str:
