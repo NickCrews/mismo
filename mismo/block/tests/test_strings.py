@@ -6,6 +6,7 @@ import pandas as pd
 import pandas._testing as tm
 import pytest
 
+from mismo._dataset import Dataset
 from mismo.block import _strings
 
 
@@ -21,6 +22,11 @@ def string_column(string_table: Table) -> StringColumn:
     return string_table["strings"]  # type: ignore
 
 
+@pytest.fixture
+def dataset(string_table: Table) -> Dataset:
+    return Dataset(string_table, "bogus")
+
+
 def test_norm_whitespace(string_column):
     result = _strings.norm_whitespace(string_column)
     expected = ["jane's house", "Ross' house", "a", "", None, "bees all cook"]
@@ -33,9 +39,9 @@ def test_norm_possessives(string_column):
     assert result.execute().tolist() == expected
 
 
-def test_TokenFingerprinter(string_table):
+def test_TokenFingerprinter(dataset):
     fp = _strings.TokenFingerprinter(column="strings")
-    result = fp.fingerprint(string_table)
+    result = fp.fingerprint(dataset)
     expected = [
         ["janes", "house"],
         ["ross'", "house"],

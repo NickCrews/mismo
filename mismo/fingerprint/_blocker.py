@@ -5,7 +5,7 @@ from typing import Iterable, Tuple
 import ibis
 from ibis.expr.types import Table
 
-from mismo._dataset import Dataset, DatasetPair
+from mismo._dataset import PDataset, PDatasetPair
 from mismo.block import Blocking, PBlocker
 from mismo.fingerprint._fingerprinter import (
     PFingerprinter,
@@ -24,10 +24,10 @@ class FingerprintBlocker(PBlocker):
     def fingerprinter_pairs(self) -> list[FingerprinterPair]:
         return self._fp_pairs
 
-    def block(self, dataset_pair: DatasetPair) -> Blocking:
+    def block(self, dataset_pair: PDatasetPair) -> Blocking:
         left, right = dataset_pair
         joined = join_on_fingerprint_pairs(left, right, self.fingerprinter_pairs)
-        id_pairs = joined[left.unique_id_column, right.unique_id_column]
+        id_pairs = joined[left.unique_id_column + "_l", right.unique_id_column + "_r"]
         return Blocking(dataset_pair, id_pairs)
 
 
@@ -53,7 +53,7 @@ def convert_fingerprinter_pair(fp_pair: FingerprinterPair) -> FingerprinterPair:
 
 
 def join_on_fingerprint_pair(
-    left: Dataset, right: Dataset, fpl: PFingerprinter, fpr: PFingerprinter
+    left: PDataset, right: PDataset, fpl: PFingerprinter, fpr: PFingerprinter
 ) -> Table:
     prints_left = fpl.fingerprint(left)
     prints_right = fpr.fingerprint(right)
@@ -66,7 +66,7 @@ def join_on_fingerprint_pair(
 
 
 def join_on_fingerprint_pairs(
-    left: Dataset, right: Dataset, fps: FingerprinterPairsLike
+    left: PDataset, right: PDataset, fps: FingerprinterPairsLike
 ) -> Table:
     chunks = [join_on_fingerprint_pair(left, right, fp1, fp2) for fp1, fp2 in fps]
     if len(chunks) == 0:

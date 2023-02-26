@@ -6,7 +6,7 @@ from ibis.expr.types import Table
 
 
 @runtime_checkable
-class Dataset(Protocol):
+class PDataset(Protocol):
     """Thin wrapper around an Ibis Table."""
 
     @property
@@ -30,34 +30,55 @@ class Dataset(Protocol):
         return self.table.count().execute()  # type: ignore
 
 
+class Dataset(PDataset):
+    def __init__(
+        self, table: Table, unique_id_column: str, true_label_column: str | None = None
+    ):
+        self._table = table
+        self._unique_id_column = unique_id_column
+        self._true_label_column = true_label_column
+
+    @property
+    def table(self) -> Table:
+        return self._table
+
+    @property
+    def unique_id_column(self) -> str:
+        return self._unique_id_column
+
+    @property
+    def true_label_column(self) -> str | None:
+        return self._true_label_column
+
+
 @runtime_checkable
-class DatasetPair(Protocol):
+class PDatasetPair(Protocol):
     """A pair of Datasets that we want to link."""
 
     @property
-    def left(self) -> Dataset:
+    def left(self) -> PDataset:
         """The left dataset."""
 
     @property
-    def right(self) -> Dataset:
+    def right(self) -> PDataset:
         """The right dataset."""
 
     def __iter__(self):
         return iter((self.left, self.right))
 
 
-class DedupeDatasetPair(DatasetPair):
+class DedupeDatasetPair(PDatasetPair):
     """A pair of Datasets that we want to link using Dedupe."""
 
-    def __init__(self, data: Dataset):
+    def __init__(self, data: PDataset):
         self._data = data
 
     @property
-    def left(self) -> Dataset:
+    def left(self) -> PDataset:
         return self._data
 
     @property
-    def right(self) -> Dataset:
+    def right(self) -> PDataset:
         return self._data
 
     @property
@@ -65,17 +86,17 @@ class DedupeDatasetPair(DatasetPair):
         return self._data.unique_id_column
 
 
-class LinkageDatasetPair(DatasetPair):
+class LinkageDatasetPair(PDatasetPair):
     """A pair of Datasets that we want to link using Record Linkage."""
 
-    def __init__(self, left: Dataset, right: Dataset):
+    def __init__(self, left: PDataset, right: PDataset):
         self._left = left
         self._right = right
 
     @property
-    def left(self) -> Dataset:
+    def left(self) -> PDataset:
         return self._left
 
     @property
-    def right(self) -> Dataset:
+    def right(self) -> PDataset:
         return self._right

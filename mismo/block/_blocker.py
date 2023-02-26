@@ -4,7 +4,7 @@ from typing import Protocol, runtime_checkable
 
 from ibis.expr.types import Table
 
-from mismo._dataset import Dataset, DatasetPair
+from mismo._dataset import PDataset, PDatasetPair
 
 
 @runtime_checkable
@@ -12,7 +12,7 @@ class PBlocking(Protocol):
     """Contains blocking results"""
 
     @property
-    def dataset_pair(self) -> DatasetPair:
+    def dataset_pair(self) -> PDatasetPair:
         """The DatasetPair that was blocked."""
 
     @property
@@ -27,12 +27,12 @@ class PBlocking(Protocol):
 
 
 class Blocking(PBlocking):
-    def __init__(self, dataset_pair: DatasetPair, id_pairs: Table):
+    def __init__(self, dataset_pair: PDatasetPair, id_pairs: Table):
         self._dataset_pair = dataset_pair
         self._id_pairs = id_pairs
 
     @property
-    def dataset_pair(self) -> DatasetPair:
+    def dataset_pair(self) -> PDatasetPair:
         return self._dataset_pair
 
     @property
@@ -54,11 +54,11 @@ class PBlocker(Protocol):
         A ``Blocking`` object containing the results of the blocking.
     """
 
-    def block(self, dataset_pair: DatasetPair) -> PBlocking:
+    def block(self, dataset_pair: PDatasetPair) -> PBlocking:
         ...
 
 
-def join_datasets(left: Dataset, right: Dataset, on: Table) -> Table:
+def join_datasets(left: PDataset, right: PDataset, on: Table) -> Table:
     """Join two datasets together, so that we can compare them."""
     check_id_pairs(on)
     return on.join(left.table, left.unique_id_column, suffixes=("", "_l")).join(
