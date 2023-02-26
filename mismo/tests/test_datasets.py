@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from mismo.datasets import load_febrl1
+from mismo.examples import load_febrl1
 
 
 def test_load_febrl1_smoketest():
