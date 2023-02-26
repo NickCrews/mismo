@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import NamedTuple, Protocol, Self
+from typing import NamedTuple, Protocol
 
 from ibis.expr.types import Table
 import numpy as np
@@ -11,7 +11,7 @@ from mismo.block._blocker import PBlocker
 
 
 class PBlockLearner(Protocol):
-    def fit(self: Self, data1: Table, data2: Table, y: Table) -> PBlocker:
+    def fit(self, data1: Table, data2: Table, y: Table) -> PBlocker:
         ...
 
 

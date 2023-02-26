@@ -9,6 +9,7 @@ from ibis.expr.types import (
     Table,
 )
 
+from mismo._dataset import Dataset
 from mismo.fingerprint._fingerprinter import SingleColumnFingerprinter
 
 logger = logging.getLogger(__name__)
@@ -54,9 +55,9 @@ class StringColumnFingerprinter(SingleColumnFingerprinter):
             strings = norm_whitespace(strings)
         return strings  # type: ignore
 
-    def fingerprint(self, data: Table) -> ArrayColumn:
+    def fingerprint(self, data: Dataset) -> ArrayColumn:
         """Selects the column of data, preprocesses it, and passes to _func."""
-        string_col = self._preprocess(data)
+        string_col = self._preprocess(data.table)
         result = self._func(string_col)
         return result.name(self.name)  # type: ignore
 

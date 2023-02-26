@@ -5,9 +5,11 @@ from typing import Callable, Protocol, Sequence, Union
 import ibis
 from ibis.expr.types import ArrayColumn, Column, Table
 
+from mismo._dataset import Dataset
+
 
 class PFingerprinter(Protocol):
-    def fingerprint(self, data: Table) -> ArrayColumn:
+    def fingerprint(self, data: Dataset) -> ArrayColumn:
         ...
 
     @property
@@ -19,7 +21,7 @@ def is_fingerprinter(fp):
     return hasattr(fp, "fingerprint") and callable(fp.fingerprint)
 
 
-FingerprintFunction = Callable[[Table], ArrayColumn]
+FingerprintFunction = Callable[[Dataset], ArrayColumn]
 Columns = Union[str, Sequence[str], None]
 
 
@@ -46,8 +48,9 @@ class MultiColumnFingerprinter(PFingerprinter):
     def _func(self, subset: Table) -> ArrayColumn:
         raise NotImplementedError()
 
-    def fingerprint(self, data: Table) -> ArrayColumn:
-        return self._func(self._select_columns(data)).name(self.name)  # type: ignore
+    def fingerprint(self, data: Dataset) -> ArrayColumn:
+        subset = self._select_columns(data.table)
+        return self._func(subset).name(self.name)  # type: ignore
 
 
 class SingleColumnFingerprinter(PFingerprinter):
@@ -59,9 +62,9 @@ class SingleColumnFingerprinter(PFingerprinter):
     def _func(self, col: Column) -> ArrayColumn:
         raise NotImplementedError()
 
-    def fingerprint(self, data: Table) -> ArrayColumn:
-        series = data[self.column]
-        return self._func(series).name(self.name)  # type: ignore
+    def fingerprint(self, data: Dataset) -> ArrayColumn:
+        column = data.table[self.column]
+        return self._func(column).name(self.name)  # type: ignore
 
 
 class FunctionFingerprinter(PFingerprinter):
@@ -76,7 +79,7 @@ class FunctionFingerprinter(PFingerprinter):
             func_name = "lambda"
         return func_name
 
-    def fingerprint(self, data: Table) -> ArrayColumn:
+    def fingerprint(self, data: Dataset) -> ArrayColumn:
         return self.func(data)
 
 

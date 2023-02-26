@@ -10,11 +10,12 @@ from typing import Protocol
 
 from ibis.expr.types import Table
 
+from mismo.block._blocker import PBlocking
 from mismo.score import PScorer
 
 
 class PFeaturizer(Protocol):
-    def features(self, blocked: Table) -> Table:
+    def features(self, blocking: PBlocking) -> Table:
         ...
 
 
@@ -30,7 +31,7 @@ class FeatureScorer(PScorer):
         self.featurizer = featurizer
         self.classifier = classifier
 
-    def score(self, blocked: Table) -> Table:
-        features = self.featurizer.features(blocked)
+    def score(self, blocking: PBlocking) -> Table:
+        features = self.featurizer.features(blocking)
         scores = self.classifier.predict(features)
         return scores

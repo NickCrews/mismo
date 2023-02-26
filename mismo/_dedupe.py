@@ -1,6 +1,6 @@
 from ibis.expr.types import Table
 
-from mismo.block._blocker import PBlocker
+from mismo.block._blocker import PBlocker, PBlocking
 from mismo.partition import PPartitioner
 from mismo.score import PScorer
 
@@ -16,10 +16,10 @@ class Deduper:
         self.scorer = scorer
         self.partitioner = partitioner
 
-    def block(self, data: Table) -> Table:
+    def block(self, data: Table) -> PBlocking:
         return self.blocker.block(data)
 
-    def score(self, blocking: Table) -> Table:
+    def score(self, blocking: PBlocking) -> Table:
         return self.scorer.score(blocking)
 
     def partition(self, scores: Table) -> Table:
