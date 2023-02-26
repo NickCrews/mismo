@@ -6,9 +6,10 @@ cosine similarity between two lat/longs, etc), and then use a machine learning m
 classify the pairs as matches or non-matches.
 """
 
+from typing import Protocol
+
 from ibis.expr.types import Table
 
-from mismo._typing import Protocol
 from mismo.score import PScorer
 
 

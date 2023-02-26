@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from ibis.expr.types import Table
+from typing import Protocol
 
-from mismo._typing import Protocol
+from ibis.expr.types import Table
 
 
 class PBlocker(Protocol):

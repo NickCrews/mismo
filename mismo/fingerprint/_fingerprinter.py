@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from typing import Callable, Sequence, Union
+from typing import Callable, Protocol, Sequence, Union
 
 import ibis
 from ibis.expr.types import ArrayColumn, Column, Table
-
-from mismo._typing import Protocol
 
 
 class PFingerprinter(Protocol):
