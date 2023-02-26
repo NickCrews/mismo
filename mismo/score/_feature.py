@@ -5,6 +5,7 @@ Generate a set of features between two records (eg string distance between two n
 cosine similarity between two lat/longs, etc), and then use a machine learning model to
 classify the pairs as matches or non-matches.
 """
+from __future__ import annotations
 
 from typing import Protocol
 

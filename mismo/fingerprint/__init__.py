@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from mismo.fingerprint._blocker import (
     FingerprintBlocker as FingerprintBlocker,  # noqa: F401
 )

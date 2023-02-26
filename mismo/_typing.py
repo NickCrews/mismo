@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TypeVar
 
 # Little hack because mypy doesn't support

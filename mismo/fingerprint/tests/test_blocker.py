@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ibis
 from ibis.expr.types import Table
 import pandas as pd

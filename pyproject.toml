@@ -98,6 +98,7 @@ select = [
 [tool.ruff.isort]
 # See https://github.com/charliermarsh/ruff#isort
 force-sort-within-sections = true
+required-imports = ["from __future__ import annotations"]
 
 [tool.mypy]
 # https://mypy.readthedocs.io/en/latest/config_file.html#using-a-pyproject-toml-file

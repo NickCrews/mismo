@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from mismo.datasets import load_febrl1
 
 
