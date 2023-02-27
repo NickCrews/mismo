@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
+import dataclasses
 from textwrap import dedent
 from typing import Protocol, runtime_checkable
 
@@ -18,39 +20,25 @@ class PDataset(Protocol):
     @property
     def unique_id_column(self) -> str:
         """The name of the column that uniquely identifies each record."""
-        return "record_id"
+        ...
 
     @property
     def true_label_column(self) -> str | None:
         """
         The name of the column with the true label, or None if there is no true label.
         """
-        return None
+        ...
 
     def __len__(self) -> int:
         """The number of records in the dataset."""
-        return self.table.count().execute()  # type: ignore
+        ...
 
 
-class Dataset(PDataset):
-    def __init__(
-        self, table: Table, unique_id_column: str, true_label_column: str | None = None
-    ):
-        self._table = table
-        self._unique_id_column = unique_id_column
-        self._true_label_column = true_label_column
-
-    @property
-    def table(self) -> Table:
-        return self._table
-
-    @property
-    def unique_id_column(self) -> str:
-        return self._unique_id_column
-
-    @property
-    def true_label_column(self) -> str | None:
-        return self._true_label_column
+@dataclasses.dataclass(frozen=True)
+class Dataset:
+    table: Table
+    unique_id_column: str = "record_id"
+    true_label_column: str | None = None
 
     def __repr__(self) -> str:
         return dedent(
@@ -60,6 +48,9 @@ class Dataset(PDataset):
                     {self.table.head(5)!r}
                 )"""
         )
+
+    def __len__(self) -> int:
+        return self.table.count().execute()  # type: ignore
 
 
 @runtime_checkable
@@ -76,52 +67,50 @@ class PDatasetPair(Protocol):
         """The right dataset."""
         ...
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[PDataset]:
+        """Iterate over the left and right datasets."""
+        ...
+
+
+class _PairBase(PDatasetPair, Protocol):
+    def __iter__(self) -> Iterator[PDataset]:
         return iter((self.left, self.right))
 
 
-class DedupeDatasetPair(PDatasetPair):
+@dataclasses.dataclass(frozen=True)
+class DedupeDatasetPair(_PairBase):
     """A pair of Datasets that we want to link using Dedupe."""
 
-    def __init__(self, data: PDataset):
-        self._data = data
+    dataset: PDataset
 
     @property
     def left(self) -> PDataset:
-        return self._data
+        return self.dataset
 
     @property
     def right(self) -> PDataset:
-        return self._data
+        return self.dataset
 
     @property
     def id_column(self) -> str:
-        return self._data.unique_id_column
+        return self.dataset.unique_id_column
 
     @property
     def true_label_column(self) -> str | None:
-        return self._data.true_label_column
+        return self.dataset.true_label_column
 
     def __repr__(self) -> str:
         return dedent(
             f"""
             {self.__class__.__name__}(
-                {self.left!r}
+                {self.dataset!r}
             )"""
         )
 
 
-class LinkageDatasetPair(PDatasetPair):
+@dataclasses.dataclass(frozen=True)
+class LinkageDatasetPair(_PairBase):
     """A pair of Datasets that we want to link using Record Linkage."""
 
-    def __init__(self, left: PDataset, right: PDataset):
-        self._left = left
-        self._right = right
-
-    @property
-    def left(self) -> PDataset:
-        return self._left
-
-    @property
-    def right(self) -> PDataset:
-        return self._right
+    left: PDataset
+    right: PDataset

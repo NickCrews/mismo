@@ -27,13 +27,17 @@ class PBlocking(Protocol):
     @property
     def blocked_data(self) -> Table:
         """The dataset pair joined together on the blocked_ids"""
-        return join_datasets(self.dataset_pair, self.blocked_ids)
+        ...
 
 
 @dataclasses.dataclass(frozen=True)
-class Blocking(PBlocking):
+class Blocking:
     dataset_pair: PDatasetPair
     blocked_ids: Table
+
+    @property
+    def blocked_data(self) -> Table:
+        return join_datasets(self.dataset_pair, self.blocked_ids)
 
     @cache
     def __repr__(self) -> str:
