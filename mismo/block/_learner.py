@@ -50,7 +50,7 @@ class LinkSet:
         else:
             return self.n_extra_covers / n_new_covers
 
-    def score(self, uncovered: pd.Series) -> SetScore:
+    def score(self, uncovered: npt.ArrayLike) -> SetScore:
         new_covers = np.intersect1d(self.links, uncovered)
         n_new_covers = len(new_covers)
         cost = self.cost(n_new_covers)

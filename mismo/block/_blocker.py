@@ -16,10 +16,12 @@ class PBlocking(Protocol):
     @property
     def dataset_pair(self) -> PDatasetPair:
         """The DatasetPair that was blocked."""
+        ...
 
     @property
     def blocked_ids(self) -> Table:
         """A table of (left_id, right_id) pairs"""
+        ...
 
     @property
     def blocked_data(self) -> Table:

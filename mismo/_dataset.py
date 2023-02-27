@@ -13,6 +13,7 @@ class PDataset(Protocol):
     @property
     def table(self) -> Table:
         """The underlying Ibis Table."""
+        ...
 
     @property
     def unique_id_column(self) -> str:
@@ -68,10 +69,12 @@ class PDatasetPair(Protocol):
     @property
     def left(self) -> PDataset:
         """The left dataset."""
+        ...
 
     @property
     def right(self) -> PDataset:
         """The right dataset."""
+        ...
 
     def __iter__(self):
         return iter((self.left, self.right))

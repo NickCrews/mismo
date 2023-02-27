@@ -44,15 +44,15 @@ def _wrap_febrl(
 
 
 def load_febrl1() -> tuple[Table, Table]:
-    return _wrap_febrl(rlds.load_febrl1)
+    return _wrap_febrl(rlds.load_febrl1)  # type: ignore
 
 
 def load_febrl2() -> tuple[Table, Table]:
-    return _wrap_febrl(rlds.load_febrl2)
+    return _wrap_febrl(rlds.load_febrl2)  # type: ignore
 
 
 def load_febrl3() -> tuple[Table, Table]:
-    return _wrap_febrl(rlds.load_febrl3)
+    return _wrap_febrl(rlds.load_febrl3)  # type: ignore
 
 
 # Don't bother wrapping load_febrl4 because it has a different API,
