@@ -6,12 +6,12 @@ from ibis.expr.types import Table
 
 
 class PPartitioner(Protocol):
-    """Takes a set if pairwise scores and partitions the records into groups.
+    """Takes a set if pairwise comparisons and partitions the records into groups.
 
     You can think of this as a graph algorithm, where the nodes are the records,
-    and the edges are the pairwise scores. The algorithm determines the "clusters"
+    and the edges are the comparisons. The algorithm determines the "clusters"
     of records within the graph and assigns a cluster ID to each record.
     """
 
-    def partition(self, scores: Table) -> Table:
+    def partition(self, comparisons: Table) -> Table:
         ...

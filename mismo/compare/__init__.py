@@ -1,4 +1,4 @@
-"""Scores the pairwise similarity of records between two sets to records."""
+"""Compare record pairs between two datasets."""
 from __future__ import annotations
 
 from typing import Protocol
@@ -8,9 +8,9 @@ from ibis.expr.types import Table
 from mismo.block._blocker import PBlocking
 
 
-class PScorer(Protocol):
-    def score(self, blocking: PBlocking) -> Table:
-        """Score the pairwise similarity of records between two sets of records.
+class PComparer(Protocol):
+    def compare(self, blocking: PBlocking) -> Table:
+        """Compare two datasets, adding scores and/or other features to each pair.
 
         Args:
             blocking: The blocked pairs of records.

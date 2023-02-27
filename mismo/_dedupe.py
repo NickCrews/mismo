@@ -3,32 +3,32 @@ from __future__ import annotations
 from ibis.expr.types import Table
 
 from mismo.block._blocker import PBlocker, PBlocking
+from mismo.compare import PComparer
 from mismo.partition import PPartitioner
-from mismo.score import PScorer
 
 
 class Deduper:
     def __init__(
         self,
         blocker: PBlocker,
-        scorer: PScorer,
+        comparer: PComparer,
         partitioner: PPartitioner,
     ):
         self.blocker = blocker
-        self.scorer = scorer
+        self.comparer = comparer
         self.partitioner = partitioner
 
     def block(self, data: Table) -> PBlocking:
         return self.blocker.block(data)
 
-    def score(self, blocking: PBlocking) -> Table:
-        return self.scorer.score(blocking)
+    def compare(self, blocking: PBlocking) -> Table:
+        return self.comparer.compare(blocking)
 
-    def partition(self, scores: Table) -> Table:
-        return self.partitioner.partition(scores)
+    def partition(self, comparisons: Table) -> Table:
+        return self.partitioner.partition(comparisons)
 
     def dedupe(self, data: Table) -> Table:
         blocking = self.block(data)
-        scores = self.score(blocking)
-        partitions = self.partition(scores)
+        comparisons = self.compare(blocking)
+        partitions = self.partition(comparisons)
         return partitions
