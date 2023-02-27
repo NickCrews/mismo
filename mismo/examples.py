@@ -3,16 +3,16 @@ from __future__ import annotations
 from typing import Callable
 
 import ibis
-from ibis.expr.types import Table
 import pandas as pd
 from recordlinkage import datasets as rlds
 
-from mismo._dataset import Dataset
+from mismo._dataset import Dataset, DedupeDatasetPair
+from mismo.block import Blocking
 
 
 def _wrap_febrl(
     load_febrl: Callable[..., tuple[pd.DataFrame, pd.MultiIndex]]
-) -> tuple[Table, Table]:
+) -> Blocking:
     pdf, links_multi_index = load_febrl(return_links=True)
     pdf = pdf.reset_index(drop=False)
     con = ibis.duckdb.connect()
@@ -40,18 +40,20 @@ def _wrap_febrl(
     links = con.table("links")
     # typing fixed by https://github.com/ibis-project/ibis/pull/5611
     links = links.order_by(["rec_id_left", "rec_id_right"])  # type: ignore
-    return t, links
+    ds = Dataset(t, "rec_id")
+    dsp = DedupeDatasetPair(ds)
+    return Blocking(dsp, links)
 
 
-def load_febrl1() -> tuple[Table, Table]:
+def load_febrl1() -> Blocking:
     return _wrap_febrl(rlds.load_febrl1)  # pyright: ignore
 
 
-def load_febrl2() -> tuple[Table, Table]:
+def load_febrl2() -> Blocking:
     return _wrap_febrl(rlds.load_febrl2)  # pyright: ignore
 
 
-def load_febrl3() -> tuple[Table, Table]:
+def load_febrl3() -> Blocking:
     return _wrap_febrl(rlds.load_febrl3)  # pyright: ignore
 
 
