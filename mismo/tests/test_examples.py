@@ -18,6 +18,7 @@ def test_load_febrl_smoketest(load_func, expected_count, expected_link_count):
     blocking: Blocking = load_func()
     assert len(blocking.dataset_pair.left) == expected_count
     assert blocking.blocked_ids.count().execute() == expected_link_count
+    repr(blocking)
 
 
 def test_load_patents_smoketest():
@@ -25,3 +26,4 @@ def test_load_patents_smoketest():
     assert len(dataset) == 2379
     assert dataset.unique_id_column == "record_id"
     assert dataset.true_label_column == "real_id"
+    repr(dataset)

@@ -33,12 +33,10 @@ def _wrap_febrl(
     }
     t = t.mutate(**{col: t[col].cast(dtype) for col, dtype in dtypes.items()})
 
-    links_df = links_multi_index.to_frame(
-        index=False, name=["rec_id_left", "rec_id_right"]
-    )
+    links_df = links_multi_index.to_frame(index=False, name=["rec_id_l", "rec_id_r"])
     con.create_table("links", links_df)
     links = con.table("links")
-    links = links.order_by(["rec_id_left", "rec_id_right"])
+    links = links.order_by(["rec_id_l", "rec_id_r"])
     ds = Dataset(t, "rec_id")
     dsp = DedupeDatasetPair(ds)
     return Blocking(dsp, links)
