@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from textwrap import dedent
 from typing import Protocol, runtime_checkable
 
 from ibis.expr.types import Table
@@ -50,6 +51,15 @@ class Dataset(PDataset):
     def true_label_column(self) -> str | None:
         return self._true_label_column
 
+    def __repr__(self) -> str:
+        return dedent(
+            f"""{self.__class__.__name__}(
+                    unique_id_column={self.unique_id_column},
+                    true_label_column={self.true_label_column},
+                    {self.table.head(5)!r}
+                )"""
+        )
+
 
 @runtime_checkable
 class PDatasetPair(Protocol):
@@ -84,6 +94,18 @@ class DedupeDatasetPair(PDatasetPair):
     @property
     def id_column(self) -> str:
         return self._data.unique_id_column
+
+    @property
+    def true_label_column(self) -> str | None:
+        return self._data.true_label_column
+
+    def __repr__(self) -> str:
+        return dedent(
+            f"""
+            {self.__class__.__name__}(
+                {self.left!r}
+            )"""
+        )
 
 
 class LinkageDatasetPair(PDatasetPair):

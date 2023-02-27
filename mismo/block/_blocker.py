@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from functools import cache
+from textwrap import dedent
 from typing import Protocol, runtime_checkable
 
 from ibis.expr.types import Table
 
-from mismo._dataset import PDataset, PDatasetPair
+from mismo._dataset import PDatasetPair
 
 
 @runtime_checkable
@@ -16,28 +18,36 @@ class PBlocking(Protocol):
         """The DatasetPair that was blocked."""
 
     @property
-    def id_pairs(self) -> Table:
-        """A table of (left_id, right_id) pairs that should be compared."""
+    def blocked_ids(self) -> Table:
+        """A table of (left_id, right_id) pairs"""
 
     @property
-    def data_pairs(self) -> Table:
-        """The dataset pair joined together on the id_pairs"""
-        left, right = self.dataset_pair.left, self.dataset_pair.right
-        return join_datasets(left, right, self.id_pairs)
+    def blocked_data(self) -> Table:
+        """The dataset pair joined together on the blocked_ids"""
+        return join_datasets(self.dataset_pair, self.blocked_ids)
 
 
 class Blocking(PBlocking):
-    def __init__(self, dataset_pair: PDatasetPair, id_pairs: Table):
+    def __init__(self, dataset_pair: PDatasetPair, blocked_ids: Table):
         self._dataset_pair = dataset_pair
-        self._id_pairs = id_pairs
+        self._blocked_ids = blocked_ids
 
     @property
     def dataset_pair(self) -> PDatasetPair:
         return self._dataset_pair
 
     @property
-    def id_pairs(self) -> Table:
-        return self._id_pairs
+    def blocked_ids(self) -> Table:
+        return self._blocked_ids
+
+    @cache
+    def __repr__(self) -> str:
+        return dedent(
+            f"""
+            {self.__class__.__name__}(
+                    {self.blocked_data.head(5)!r}
+            )"""
+        ).strip()
 
 
 @runtime_checkable
@@ -58,11 +68,21 @@ class PBlocker(Protocol):
         ...
 
 
-def join_datasets(left: PDataset, right: PDataset, on: Table) -> Table:
+def join_datasets(dataset_pair: PDatasetPair, on: Table) -> Table:
     """Join two datasets together, so that we can compare them."""
     check_id_pairs(on)
-    return on.join(left.table, left.unique_id_column, suffixes=("", "_l")).join(
-        right.table, right.unique_id_column, suffixes=("", "_r")
+    left, right = dataset_pair
+    left_t, right_t = left.table, right.table
+    left2 = left_t.relabel({col: col + "_l" for col in left_t.columns})
+    right2 = right_t.relabel({col: col + "_r" for col in right_t.columns})
+    return on.inner_join(  # type: ignore
+        left2,
+        left.unique_id_column + "_l",
+        suffixes=("", "_l"),
+    ).inner_join(
+        right2,
+        right.unique_id_column + "_r",
+        suffixes=("", "_r"),
     )
 
 
