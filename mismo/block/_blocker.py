@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 from functools import cache
 from textwrap import dedent
 from typing import Protocol, runtime_checkable
@@ -11,7 +12,7 @@ from mismo._dataset import PDatasetPair
 
 @runtime_checkable
 class PBlocking(Protocol):
-    """Contains blocking results"""
+    """Record pairs that have been blocked together."""
 
     @property
     def dataset_pair(self) -> PDatasetPair:
@@ -29,18 +30,10 @@ class PBlocking(Protocol):
         return join_datasets(self.dataset_pair, self.blocked_ids)
 
 
+@dataclasses.dataclass(frozen=True)
 class Blocking(PBlocking):
-    def __init__(self, dataset_pair: PDatasetPair, blocked_ids: Table):
-        self._dataset_pair = dataset_pair
-        self._blocked_ids = blocked_ids
-
-    @property
-    def dataset_pair(self) -> PDatasetPair:
-        return self._dataset_pair
-
-    @property
-    def blocked_ids(self) -> Table:
-        return self._blocked_ids
+    dataset_pair: PDatasetPair
+    blocked_ids: Table
 
     @cache
     def __repr__(self) -> str:
