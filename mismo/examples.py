@@ -7,7 +7,7 @@ from ibis.expr.types import Table
 import pandas as pd
 from recordlinkage import datasets as rlds
 
-from mismo._dataset import Dataset, DedupeDatasetPair
+from mismo._dataset import Dataset
 
 
 def _wrap_febrl(
@@ -59,7 +59,7 @@ def load_febrl3() -> tuple[Table, Table]:
 # could add that later if it's needed.
 
 
-def load_patents() -> DedupeDatasetPair:
+def load_patents() -> Dataset:
     """Load the patents dataset from
     https://github.com/dedupeio/dedupe-examples/tree/master/patent_example
 
@@ -114,5 +114,4 @@ def load_patents() -> DedupeDatasetPair:
         {"person_id": "record_id", "leuven_id": "real_id", "person_name": "real_name"}
     )
     t = t.inner_join(labels, "record_id")
-    ds = Dataset(t, unique_id_column="record_id", true_label_column="real_id")
-    return DedupeDatasetPair(ds)
+    return Dataset(t, unique_id_column="record_id", true_label_column="real_id")
