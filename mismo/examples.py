@@ -7,6 +7,8 @@ from ibis.expr.types import Table
 import pandas as pd
 from recordlinkage import datasets as rlds
 
+from mismo._dataset import Dataset, DedupeDatasetPair
+
 
 def _wrap_febrl(
     load_febrl: Callable[..., tuple[pd.DataFrame, pd.MultiIndex]]
@@ -57,7 +59,7 @@ def load_febrl3() -> tuple[Table, Table]:
 # could add that later if it's needed.
 
 
-def load_patents() -> Table:
+def load_patents() -> DedupeDatasetPair:
     """Load the patents dataset from
     https://github.com/dedupeio/dedupe-examples/tree/master/patent_example
 
@@ -76,7 +78,7 @@ def load_patents() -> Table:
     """
     data_remote = "https://raw.githubusercontent.com/dedupeio/dedupe-examples/master/patent_example/patstat_input.csv"  # noqa E501
     labels_remote = "https://raw.githubusercontent.com/dedupeio/dedupe-examples/master/patent_example/patstat_reference.csv"  # noqa E501
-    df = ibis.read_csv(data_remote)
+    t = ibis.read_csv(data_remote)
     labels = ibis.read_csv(labels_remote)
 
     # Data looks like
@@ -107,8 +109,10 @@ def load_patents() -> Table:
     # |    3 |        3779 |      656303 | * ALCATEL N.V.
     # It's the same length as df, where each row of labels corresponds to the
     # same row of df.
-    df = df.relabel({"person_id": "record_id"})
+    t = t.relabel({"person_id": "record_id"})
     labels = labels.relabel(
         {"person_id": "record_id", "leuven_id": "real_id", "person_name": "real_name"}
     )
-    return df.inner_join(labels, "record_id")  # type: ignore
+    t = t.inner_join(labels, "record_id")
+    ds = Dataset(t, unique_id_column="record_id", true_label_column="real_id")
+    return DedupeDatasetPair(ds)
