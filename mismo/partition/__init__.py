@@ -4,6 +4,8 @@ from typing import Protocol
 
 from ibis.expr.types import Table
 
+from mismo.compare import PComparisons
+
 
 class PPartitioner(Protocol):
     """Takes a set if pairwise comparisons and partitions the records into groups.
@@ -13,5 +15,5 @@ class PPartitioner(Protocol):
     of records within the graph and assigns a cluster ID to each record.
     """
 
-    def partition(self, comparisons: Table) -> Table:
+    def partition(self, comparisons: PComparisons) -> Table:
         ...

@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from ibis.expr.types import Table
 
+from mismo._dataset import Dataset, DedupeDatasetPair, PDatasetPair
 from mismo.block._blocker import PBlocker, PBlocking
-from mismo.compare import PComparer
+from mismo.compare import PComparer, PComparisons
 from mismo.partition import PPartitioner
 
 
@@ -18,17 +19,18 @@ class Deduper:
         self.comparer = comparer
         self.partitioner = partitioner
 
-    def block(self, data: Table) -> PBlocking:
-        return self.blocker.block(data)
+    def block(self, dataset_pair: PDatasetPair) -> PBlocking:
+        return self.blocker.block(dataset_pair)
 
-    def compare(self, blocking: PBlocking) -> Table:
+    def compare(self, blocking: PBlocking) -> PComparisons:
         return self.comparer.compare(blocking)
 
-    def partition(self, comparisons: Table) -> Table:
+    def partition(self, comparisons: PComparisons) -> Table:
         return self.partitioner.partition(comparisons)
 
-    def dedupe(self, data: Table) -> Table:
-        blocking = self.block(data)
+    def dedupe(self, dataset: Dataset) -> Table:
+        ddsp = DedupeDatasetPair(dataset)
+        blocking = self.block(ddsp)
         comparisons = self.compare(blocking)
         partitions = self.partition(comparisons)
         return partitions

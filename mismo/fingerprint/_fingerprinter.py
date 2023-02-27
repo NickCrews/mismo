@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import abc
 from typing import Callable, Protocol, Sequence, Union
 
 import ibis
@@ -25,7 +26,7 @@ FingerprintFunction = Callable[[PDataset], ArrayColumn]
 Columns = Union[str, Sequence[str], None]
 
 
-class MultiColumnFingerprinter(PFingerprinter):
+class MultiColumnFingerprinter(abc.ABC):
     columns: str | list[str] | None
 
     def __init__(self, columns: Columns = None) -> None:
@@ -53,7 +54,7 @@ class MultiColumnFingerprinter(PFingerprinter):
         return self._func(subset).name(self.name)  # type: ignore
 
 
-class SingleColumnFingerprinter(PFingerprinter):
+class SingleColumnFingerprinter(abc.ABC):
     def __init__(self, column: str) -> None:
         if not isinstance(column, str):
             raise ValueError("column must be a string")
