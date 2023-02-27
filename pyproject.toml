@@ -24,7 +24,7 @@ classifiers = [
 ]
 dependencies = [
   "dedupe",
-  "ibis-framework @ git+https://github.com/ibis-project/ibis@63f985521588935ab4b1e66f0015b68b7753cc73#ibis-framework[duckdb]",
+  "ibis-framework @ git+https://github.com/ibis-project/ibis@bf9a7cc390991e29cc0552197b4b5f9a4973ee1a#ibis-framework[duckdb]",
   "recordlinkage",
 ]
 dynamic = ["version"]

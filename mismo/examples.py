@@ -38,8 +38,7 @@ def _wrap_febrl(
     )
     con.create_table("links", links_df)
     links = con.table("links")
-    # typing fixed by https://github.com/ibis-project/ibis/pull/5611
-    links = links.order_by(["rec_id_left", "rec_id_right"])  # type: ignore
+    links = links.order_by(["rec_id_left", "rec_id_right"])
     ds = Dataset(t, "rec_id")
     dsp = DedupeDatasetPair(ds)
     return Blocking(dsp, links)
