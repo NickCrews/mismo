@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import Callable, Iterable, Union
+import math
+from typing import Callable, Iterable
 
 from ibis.expr.types import BooleanValue, Table
 
@@ -20,18 +21,14 @@ class FellegiSunterComparer(PComparer):
 @dataclasses.dataclass(frozen=True)
 class Comparison:
     name: str
-    levels: Iterable[Condition]
+    levels: list[ComparisonLevel]
     description: str | None = None
-
-
-PredicateFunc = Callable[[Table], BooleanValue]
-PredicateIsh = Union[PredicateFunc, BooleanValue]
 
 
 @dataclasses.dataclass(frozen=True)
 class Condition:
     name: str
-    predicate: PredicateIsh
+    predicate: Callable[[Table], BooleanValue]
     description: str | None = None
 
 
@@ -39,6 +36,17 @@ class Condition:
 class Weights:
     m: float
     u: float
+
+    @property
+    def bayes_factor(self) -> float:
+        if self.u == 0:
+            return float("inf")
+        else:
+            return self.m / self.u
+
+    @property
+    def log2_bayes_factor(self):
+        return math.log2(self.bayes_factor)
 
 
 @dataclasses.dataclass(frozen=True)
