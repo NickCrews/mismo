@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from mismo._dataset import Dataset, DedupeDatasetPair
-from mismo.fingerprint import Equals, FingerprintBlocker
+from mismo.block.fingerprint import Equals, FingerprintBlocker
 
 
 @pytest.fixture

@@ -12,7 +12,7 @@ from ibis.expr.types import (
 )
 
 from mismo._dataset import PDataset
-from mismo.fingerprint._fingerprinter import SingleColumnFingerprinter
+from mismo.block.fingerprint._fingerprinter import SingleColumnFingerprinter
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ class StringColumnFingerprinter(SingleColumnFingerprinter):
         self.norm_whitespace = norm_whitespace
 
     def _preprocess(self, data: Table) -> StringColumn:
-        strings = data[self.column]
+        strings: StringValue = data[self.column]  # type: ignore
         if self.lower:
             strings = strings.lower()
         if self.norm_possesive:

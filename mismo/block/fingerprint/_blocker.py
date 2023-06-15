@@ -7,7 +7,7 @@ from ibis.expr.types import Table
 
 from mismo._dataset import PDataset, PDatasetPair
 from mismo.block import Blocking, PBlocker
-from mismo.fingerprint._fingerprinter import (
+from mismo.block.fingerprint._fingerprinter import (
     PFingerprinter,
     is_fingerprinter,
 )

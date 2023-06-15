@@ -3,7 +3,7 @@ from __future__ import annotations
 from ibis.expr.types import Table
 
 from mismo.block._learner import PBlockLearner
-from mismo.fingerprint._blocker import (
+from mismo.block.fingerprint._blocker import (
     FingerprintBlocker,
     FingerprinterPairsLike,
     convert_fingerprinters,
