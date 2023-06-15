@@ -8,6 +8,7 @@ from typing import Protocol, runtime_checkable
 from ibis.expr.types import Table
 
 from mismo._dataset import PDatasetPair
+from mismo._util import format_table
 
 
 @runtime_checkable
@@ -41,12 +42,13 @@ class Blocking:
 
     @cache
     def __repr__(self) -> str:
-        return dedent(
+        template = dedent(
             f"""
             {self.__class__.__name__}(
-                    {self.blocked_data.head(5)!r}
+                {{table}}
             )"""
-        ).strip()
+        )
+        return format_table(template, "table", self.blocked_data)
 
 
 @runtime_checkable

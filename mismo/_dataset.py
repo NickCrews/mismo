@@ -7,6 +7,8 @@ from typing import Protocol, runtime_checkable
 
 from ibis.expr.types import Table
 
+from mismo._util import format_table
+
 
 @runtime_checkable
 class PDataset(Protocol):
@@ -41,13 +43,16 @@ class Dataset:
     true_label_column: str | None = None
 
     def __repr__(self) -> str:
-        return dedent(
-            f"""{self.__class__.__name__}(
-                    unique_id_column={self.unique_id_column},
-                    true_label_column={self.true_label_column},
-                    {self.table.head(5)!r}
-                )"""
+        template = dedent(
+            f"""\
+            {self.__class__.__name__}(
+                unique_id_column={self.unique_id_column},
+                true_label_column={self.true_label_column},
+                {{table}}
+            )
+            """
         )
+        return format_table(template, "table", self.table)
 
     def __len__(self) -> int:
         return self.table.count().execute()  # type: ignore
@@ -100,12 +105,14 @@ class DedupeDatasetPair(_PairBase):
         return self.dataset.true_label_column
 
     def __repr__(self) -> str:
-        return dedent(
-            f"""
+        template = dedent(
+            f"""\
             {self.__class__.__name__}(
-                {self.dataset!r}
-            )"""
+                {{table}}
+            )
+            """
         )
+        return format_table(template, "table", self.dataset.table)
 
 
 @dataclasses.dataclass(frozen=True)
