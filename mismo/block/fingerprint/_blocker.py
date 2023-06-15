@@ -68,10 +68,8 @@ def join_on_fingerprint_pair(
 def join_on_fingerprint_pairs(
     left: PDataset, right: PDataset, fps: FingerprinterPairsLike
 ) -> Table:
-    chunks = [join_on_fingerprint_pair(left, right, fp1, fp2) for fp1, fp2 in fps]
-    if len(chunks) == 0:
+    fps = list(fps)
+    if len(fps) == 0:
         return left.table.cross_join(right.table, suffixes=("_l", "_r")).limit(0)
-    elif len(chunks) == 1:
-        return chunks[0].distinct()
-    else:
-        return ibis.union(*chunks, distinct=True)
+    chunks = [join_on_fingerprint_pair(left, right, fp1, fp2) for fp1, fp2 in fps]
+    return ibis.union(*chunks, distinct=True)
