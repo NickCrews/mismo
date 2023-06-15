@@ -83,6 +83,21 @@ class PBlocker(Protocol):
         ...
 
 
+class CartesianBlocker:
+    """Block all possible pairs of records (i.e. the Cartesian product).)"""
+
+    def block(self, dataset_pair: PDatasetPair) -> Blocking:
+        left, right = dataset_pair
+        lid = left.unique_id_column
+        rid = right.unique_id_column
+        lid_new = lid + "_l"
+        rid_new = rid + "_r"
+        left_ids = left.table.select(lid).relabel({lid: lid_new})
+        right_ids = right.table.select(rid).relabel({rid: rid_new})
+        blocked_ids = left_ids.cross_join(right_ids)
+        return Blocking(dataset_pair, blocked_ids)
+
+
 def join_datasets(dataset_pair: PDatasetPair, on: Table) -> Table:
     """Join two datasets together, so that we can compare them."""
     check_id_pairs(on)
