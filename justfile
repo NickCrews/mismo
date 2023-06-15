@@ -6,8 +6,12 @@ default:
 
 # initialize development environment
 init:
-    pdm install
+    pdm install -d -G :all
     source .venv/bin/activate
+
+# lock dependencies
+lock:
+    pdm lock -dG :all
 
 # format code
 fmt:
