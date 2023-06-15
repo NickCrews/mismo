@@ -30,8 +30,12 @@ class PBlocking(Protocol):
         """The dataset pair joined together on the blocked_ids"""
         ...
 
+    def __len__(self) -> int:
+        """The number of blocked pairs."""
+        ...
 
-@dataclasses.dataclass(frozen=True)
+
+@dataclasses.dataclass()
 class Blocking:
     dataset_pair: PDatasetPair
     blocked_ids: Table
@@ -49,6 +53,16 @@ class Blocking:
             )"""
         )
         return format_table(template, "table", self.blocked_data)
+
+    def __len__(self) -> int:
+        try:
+            return self._len
+        except AttributeError:
+            self._len = self.blocked_ids.count().execute()
+            return self._len
+
+    def __hash__(self) -> int:
+        return hash((self.dataset_pair, self.blocked_ids))
 
 
 @runtime_checkable
