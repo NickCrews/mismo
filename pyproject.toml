@@ -1,13 +1,14 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
 
 [project]
 name = "mismo"
 description = ''
+version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.8"
-license = "LGPL-3.0-or-later"
+license = {text = "LGPL-3.0-or-later"}
 keywords = []
 authors = [
   { name = "Nick Crews", email = "nicholas.b.crews@gmail.com" },
@@ -19,60 +20,30 @@ classifiers = [
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "dedupe",
-  "ibis-framework @ git+https://github.com/ibis-project/ibis@bf9a7cc390991e29cc0552197b4b5f9a4973ee1a#ibis-framework[duckdb]",
-  "recordlinkage",
+  "ibis-framework[duckdb]>=5.1.0",
 ]
-dynamic = ["version"]
 
 [project.urls]
-Documentation = "https://github.com/unknown/mismo#readme"
-Issues = "https://github.com/unknown/mismo/issues"
-Source = "https://github.com/unknown/mismo"
+# Documentation = "https://github.com/NickCrews/mismo#readme"
+Issues = "https://github.com/NickCrews/mismo/issues"
+Source = "https://github.com/NickCrews/mismo"
 
-[tool.hatch.version]
-path = "mismo/__about__.py"
-
-[tool.hatch.metadata]
-allow-direct-references = true
-
-[tool.hatch.build.targets.sdist]
-[tool.hatch.build.targets.wheel]
-
-[tool.hatch.envs.default]
-python = "39"
-dependencies = [
-  "black[jupyter]",
-  "ipykernel",
-  "mypy",
-  "nbqa",
-  "pre-commit",
+[tool.pdm.dev-dependencies]
+lint = [
+    "black[jupyter]",
+    "ruff",
+    "mypy",
+    "nbqa",
+]
+test = [
   "pytest",
   "pytest-cov",
-  "ruff",
 ]
-
-[tool.hatch.envs.default.scripts]
-lint = [
-  "black --check .",
-  "ruff .",
-  "nbqa ruff .",
-  "mypy .",
-]
-fmt = [
-  "black .",
-  "ruff --fix .",
-  "nbqa ruff --fix .",
-]
-cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=mismo --cov=tests"
-no-cov = "cov --no-cov"
-
-[[tool.hatch.envs.test.matrix]]
-python = ["38", "39", "310", "311"]
 
 [tool.coverage.run]
 branch = true
