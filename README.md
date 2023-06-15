@@ -19,12 +19,21 @@ pip install mismo
 
 ## Goals
 
-- More performant than `dedupe` by using vectorized operations
-  (e.g. `numpy` instead of operating on individual records)
-- Works with larger-than-memory datasets (using `modin`)
-- Consistent, duck-typing-based API similar to `sklearn`
-  (eg a "Blocker" has a `block` method with a certain signature)
-- More intuitive model persistence than `dedupe`
+### Use [Ibis](https://ibis-project.org/) as the core
+This gives a few benefits that are key to record linkage:
+- Ability to use datasets that are larger than memory
+- Ability to use multiple backends (eg `duckdb` for single node,
+  or `bigquery` or `spark` for distributed)
+
+### Thoughtful, composable API
+
+Use a duck-typing approach to allow users to plug in their own components
+eg "Blocker" has a `block` method with a certain signature.
+This makes mismo a bit more complicated than `dedupe` or `splink`, but
+it will be much more flexible.
+
+### Extras
+- More ergonomic model persistence than `dedupe`. `splink` did a good job here.
 - Support determinism using `random_state` (unlike `dedupe`)
 
 ## License
