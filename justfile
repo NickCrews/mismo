@@ -24,7 +24,7 @@ lint:
     ruff .
     nbqa ruff .
     black -q . --check
-    mypy .
+    mypy mismo
 
 # run tests
 test:

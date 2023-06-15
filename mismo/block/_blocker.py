@@ -58,7 +58,7 @@ class Blocking:
         try:
             return self._len
         except AttributeError:
-            self._len = self.blocked_ids.count().execute()
+            self._len: int = self.blocked_ids.count().execute()
             return self._len
 
     def __hash__(self) -> int:

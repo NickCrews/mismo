@@ -48,7 +48,7 @@ class StringColumnFingerprinter(SingleColumnFingerprinter):
         self.norm_whitespace = norm_whitespace
 
     def _preprocess(self, data: Table) -> StringColumn:
-        strings: StringValue = data[self.column]  # type: ignore
+        strings = data[self.column]
         if self.lower:
             strings = strings.lower()
         if self.norm_possesive:

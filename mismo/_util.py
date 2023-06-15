@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from ibis.expr.types import Table
 
-def format_table(template: str, name: str, table) -> str:
+
+def format_table(template: str, name: str, table: Table) -> str:
     t = repr(table.head(5))
     nindent = 0
     search = "{" + name + "}"
