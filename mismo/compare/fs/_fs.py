@@ -16,13 +16,13 @@ class FellegiSunterComparer(PComparer):
         self.comparisons = list(comparisons)
 
     def compare(self, blocking: PBlocking) -> Comparisons:
-        return Comparisons(blocking, blocking.blocked_data)
+        raise NotImplementedError
 
 
 @dataclasses.dataclass(frozen=True)
 class Comparison:
     name: str
-    levels: list[ComparisonLevel]
+    levels: list[PComparisonLevel]
     description: str | None = None
 
     def label_pairs(self, blocked_data: Table) -> IntegerColumn:
