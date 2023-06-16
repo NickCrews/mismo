@@ -5,6 +5,7 @@ from functools import cache
 from textwrap import dedent
 from typing import Protocol, runtime_checkable
 
+import ibis
 from ibis.expr.types import Table
 
 from mismo._dataset import PDatasetPair
@@ -83,7 +84,7 @@ class PBlocker(Protocol):
         ...
 
 
-class CartesianBlocker:
+class CartesianBlocker(PBlocker):
     """Block all possible pairs of records (i.e. the Cartesian product).)"""
 
     def block(self, dataset_pair: PDatasetPair) -> Blocking:
@@ -96,6 +97,23 @@ class CartesianBlocker:
         right_ids = right.table.select(rid).relabel({rid: rid_new})
         blocked_ids = left_ids.cross_join(right_ids)
         return Blocking(dataset_pair, blocked_ids)
+
+
+class FunctionBlocker(PBlocker):
+    """Blocks based on a function of type (Table, Table) -> Boolean"""
+
+    def __init__(self, func):
+        self.func = func
+
+    def block(self, dataset_pair: PDatasetPair) -> Blocking:
+        left, right = dataset_pair
+        lid = left.unique_id_column
+        rid = right.unique_id_column
+        lt = left.table.relabel({lid: lid + "_l"})
+        rt = right.table.relabel({rid: rid + "_r"})
+        joined_full = ibis.join(lt, rt, predicates=self.func(lt, rt), how="inner")
+        ids = joined_full[lid + "_l", rid + "_r"]
+        return Blocking(dataset_pair, ids)
 
 
 def join_datasets(dataset_pair: PDatasetPair, on: Table) -> Table:
