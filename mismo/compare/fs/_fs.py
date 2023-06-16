@@ -12,8 +12,11 @@ from mismo.compare import Comparisons, PComparer
 
 
 class FellegiSunterComparer(PComparer):
-    def __init__(self, comparisons: Iterable[Comparison]):
+    def __init__(self, comparisons: Iterable[Comparison], prior: float | None = None):
         self.comparisons = list(comparisons)
+        # The probability of a match between two records drawn at random.
+        # Equivalent to probability_two_random_records_match from splink.
+        self.prior = prior
 
     def compare(self, blocking: PBlocking) -> Comparisons:
         raise NotImplementedError
