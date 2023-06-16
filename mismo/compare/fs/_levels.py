@@ -23,7 +23,7 @@ class ExactLevel(PComparisonLevel):
         if description is None:
             description = f"Exact match on `{column}`"
         self.name = name
-        self.predicate = lambda table: table[column_left] == table[column_right]
+        self.predicate = lambda table: table[column_left] == table[column_right]  # type: ignore # noqa: E501
         self.description = description
         self.weights = weights
 

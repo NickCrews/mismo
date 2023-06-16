@@ -3,7 +3,7 @@ from __future__ import annotations
 import dataclasses
 from functools import cache
 from textwrap import dedent
-from typing import Protocol, runtime_checkable
+from typing import Protocol, Self, runtime_checkable
 
 import ibis
 from ibis.expr.types import Table
@@ -35,6 +35,10 @@ class PBlocking(Protocol):
         """The number of blocked pairs."""
         ...
 
+    def replace_blocked_ids(self, new_id_pairs: Table) -> Self:
+        """Return a new Blocking with the blocked_ids replaced by new_id_pairs."""
+        ...
+
 
 @dataclasses.dataclass()
 class Blocking:
@@ -44,6 +48,9 @@ class Blocking:
     @property
     def blocked_data(self) -> Table:
         return join_datasets(self.dataset_pair, self.blocked_ids)
+
+    def replace_blocked_ids(self, new_id_pairs: Table) -> Self:
+        return dataclasses.replace(self, blocked_ids=new_id_pairs)
 
     @cache
     def __repr__(self) -> str:
@@ -81,6 +88,12 @@ class PBlocker(Protocol):
     """
 
     def block(self, dataset_pair: PDatasetPair) -> PBlocking:
+        """Block a dataset pair into a set of record pairs to compare.
+
+        Implementors are responsible for calling ``scrub_redundant_comparisons`` on
+        the ``dataset_pair`` before returning the ``Blocking`` object.
+        TODO: Should it be this object's responsibility?
+        """
         ...
 
 
@@ -96,7 +109,8 @@ class CartesianBlocker(PBlocker):
         left_ids = left.table.select(lid).relabel({lid: lid_new})
         right_ids = right.table.select(rid).relabel({rid: rid_new})
         blocked_ids = left_ids.cross_join(right_ids)
-        return Blocking(dataset_pair, blocked_ids)
+        b = Blocking(dataset_pair, blocked_ids)
+        return dataset_pair.scrub_redundant_comparisons(b)
 
 
 class FunctionBlocker(PBlocker):
@@ -113,7 +127,8 @@ class FunctionBlocker(PBlocker):
         rt = right.table.relabel({rid: rid + "_r"})
         joined_full = ibis.join(lt, rt, predicates=self.func(lt, rt), how="inner")
         ids = joined_full[lid + "_l", rid + "_r"]
-        return Blocking(dataset_pair, ids)
+        b = Blocking(dataset_pair, ids)
+        return dataset_pair.scrub_redundant_comparisons(b)
 
 
 def join_datasets(dataset_pair: PDatasetPair, on: Table) -> Table:

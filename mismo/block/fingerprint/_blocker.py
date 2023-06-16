@@ -28,7 +28,8 @@ class FingerprintBlocker(PBlocker):
         left, right = dataset_pair
         joined = join_on_fingerprint_pairs(left, right, self.fingerprinter_pairs)
         id_pairs = joined[left.record_id_column + "_l", right.record_id_column + "_r"]
-        return Blocking(dataset_pair, id_pairs)
+        b = Blocking(dataset_pair, id_pairs)
+        return dataset_pair.scrub_redundant_comparisons(b)
 
 
 def convert_fingerprinters(fps: FingerprinterPairsLike) -> list[FingerprinterPair]:
