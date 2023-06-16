@@ -1,39 +1,27 @@
 from __future__ import annotations
 
-import typing
-
-from ._base import PComparisonLevel, Weights
+from ._base import ComparisonLevel, Weights
 
 
-class ExactLevel(PComparisonLevel):
-    predicate: typing.ClassVar
+def exact(
+    column: str,
+    name: str | None = None,
+    description: str | None = None,
+    weights: Weights | None = None,
+) -> ComparisonLevel:
+    column_left = f"{column}_l"
+    column_right = f"{column}_r"
+    if name is None:
+        name = f"exact_{column}"
+    if description is None:
+        description = f"Exact match on `{column}`"
 
-    def __init__(
-        self,
-        column: str,
-        name: str | None = None,
-        description: str | None = None,
-        weights: Weights | None = None,
-    ):
-        self.column = column
-        column_left = f"{column}_l"
-        column_right = f"{column}_r"
-        if name is None:
-            name = f"exact_{column}"
-        if description is None:
-            description = f"Exact match on `{column}`"
-        self.name = name
-        self.predicate = lambda table: table[column_left] == table[column_right]  # type: ignore # noqa: E501
-        self.description = description
-        self.weights = weights
+    def equals(table):
+        return table[column_left] == table[column_right]
 
-    def set_weights(self, weights: Weights) -> ExactLevel:
-        return self.__class__(
-            column=self.column,
-            name=self.name,
-            description=self.description,
-            weights=weights,
-        )
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(column={self.column!r}, weights={self.weights!r})"  # noqa: E501
+    return ComparisonLevel(
+        name=name,
+        predicate=equals,
+        description=description,
+        weights=weights,
+    )

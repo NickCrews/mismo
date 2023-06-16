@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import math
-from typing import Callable, Iterable, Protocol, Self
+from typing import Callable, Iterable, Self
 
 import ibis
 from ibis.expr.types import (
@@ -67,7 +67,7 @@ class FellegiSunterComparer:
 @dataclasses.dataclass(frozen=True)
 class Comparison:
     name: str
-    levels: list[PComparisonLevel]
+    levels: list[ComparisonLevel]
     description: str | None = None
 
     def label_pairs(self, pairs: Table) -> IntegerColumn:
@@ -117,19 +117,8 @@ class Comparison:
         return all(level.weights is not None for level in self.levels)
 
 
-class PComparisonLevel(Protocol):
-    name: str
-    predicate: Callable[[Table], BooleanValue]
-    description: str | None = None
-    weights: Weights | None = None
-
-    def set_weights(self, weights: Weights) -> Self:
-        """Return a version of this level with the given weights."""
-        ...
-
-
 @dataclasses.dataclass(frozen=True)
-class ComparisonLevel(PComparisonLevel):
+class ComparisonLevel:
     name: str
     predicate: Callable[[Table], BooleanValue]
     description: str | None = None

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from mismo import examples
 from mismo._dataset import DedupeDatasetPair
+from mismo.compare.fs import _levels as levels_lib
 from mismo.compare.fs._base import Comparison, ComparisonLevel
-from mismo.compare.fs._levels import ExactLevel
 from mismo.compare.fs._train import train_comparison
 
 
@@ -13,10 +13,10 @@ def test_comparison_training():
     patents_dataset_pair = DedupeDatasetPair(patents)
     almost_level = ComparisonLevel(
         name="almost",
-        predicate=lambda table: table["Name_l"][:3] == table["Name_r"][:3],
+        predicate=lambda table: table["Name_l"][:3] == table["Name_r"][:3],  # type: ignore # noqa: E501
         description="First 3 letters match",
     )
-    exact_level = ExactLevel("Name")
+    exact_level = levels_lib.exact("Name")
     levels = [exact_level, almost_level]
     comparison = Comparison(name="Name", levels=levels)
     trained = train_comparison(
