@@ -24,6 +24,6 @@ def test_load_febrl_smoketest(load_func, expected_count, expected_link_count):
 def test_load_patents_smoketest():
     dataset = load_patents()
     assert len(dataset) == 2379
-    assert dataset.unique_id_column == "record_id"
-    assert dataset.true_label_column == "real_id"
+    assert dataset.record_id_column == "record_id"
+    assert dataset.true_label_column == "true_label"
     repr(dataset)

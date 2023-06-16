@@ -20,8 +20,8 @@ class PDataset(Protocol):
         ...
 
     @property
-    def unique_id_column(self) -> str:
-        """The name of the column that uniquely identifies each record."""
+    def record_id_column(self) -> str:
+        """The name of the column that holds the record ID."""
         ...
 
     @property
@@ -39,14 +39,14 @@ class PDataset(Protocol):
 @dataclasses.dataclass(frozen=True)
 class Dataset:
     table: Table
-    unique_id_column: str = "record_id"
+    record_id_column: str = "record_id"
     true_label_column: str | None = None
 
     def __repr__(self) -> str:
         template = dedent(
             f"""\
             {self.__class__.__name__}(
-                unique_id_column={self.unique_id_column},
+                record_id_column={self.record_id_column},
                 true_label_column={self.true_label_column},
                 {{table}}
             )
@@ -97,8 +97,8 @@ class DedupeDatasetPair(_PairBase):
         return self.dataset
 
     @property
-    def id_column(self) -> str:
-        return self.dataset.unique_id_column
+    def record_id_column(self) -> str:
+        return self.dataset.record_id_column
 
     @property
     def true_label_column(self) -> str | None:

@@ -89,8 +89,8 @@ class CartesianBlocker(PBlocker):
 
     def block(self, dataset_pair: PDatasetPair) -> Blocking:
         left, right = dataset_pair
-        lid = left.unique_id_column
-        rid = right.unique_id_column
+        lid = left.record_id_column
+        rid = right.record_id_column
         lid_new = lid + "_l"
         rid_new = rid + "_r"
         left_ids = left.table.select(lid).relabel({lid: lid_new})
@@ -107,8 +107,8 @@ class FunctionBlocker(PBlocker):
 
     def block(self, dataset_pair: PDatasetPair) -> Blocking:
         left, right = dataset_pair
-        lid = left.unique_id_column
-        rid = right.unique_id_column
+        lid = left.record_id_column
+        rid = right.record_id_column
         lt = left.table.relabel({lid: lid + "_l"})
         rt = right.table.relabel({rid: rid + "_r"})
         joined_full = ibis.join(lt, rt, predicates=self.func(lt, rt), how="inner")
@@ -125,11 +125,11 @@ def join_datasets(dataset_pair: PDatasetPair, on: Table) -> Table:
     right2 = right_t.relabel({col: col + "_r" for col in right_t.columns})
     return on.inner_join(  # type: ignore
         left2,
-        left.unique_id_column + "_l",
+        left.record_id_column + "_l",
         suffixes=("", "_l"),
     ).inner_join(
         right2,
-        right.unique_id_column + "_r",
+        right.record_id_column + "_r",
         suffixes=("", "_r"),
     )
 

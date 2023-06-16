@@ -32,14 +32,17 @@ def _wrap_febrl(
         "date_of_birth": "str",  # contains some BS dates like 19371233
     }
     t = t.mutate(**{col: t[col].cast(dtype) for col, dtype in dtypes.items()})
+    t = t.relabel({"rec_id": "record_id"})
     t = t.cache()
 
-    links_df = links_multi_index.to_frame(index=False, name=["rec_id_l", "rec_id_r"])
+    links_df = links_multi_index.to_frame(
+        index=False, name=["record_id_l", "record_id_r"]
+    )
     con.create_table("links", links_df)
     links = con.table("links")
-    links = links.order_by(["rec_id_l", "rec_id_r"])
+    links = links.order_by(["record_id_l", "record_id_r"])
     links = links.cache()
-    ds = Dataset(t, "rec_id")
+    ds = Dataset(t, "record_id")
     dsp = DedupeDatasetPair(ds)
     return Blocking(dsp, links)
 
@@ -112,8 +115,12 @@ def load_patents() -> Dataset:
     # same row of df.
     t = t.relabel({"person_id": "record_id"})
     labels = labels.relabel(
-        {"person_id": "record_id", "leuven_id": "real_id", "person_name": "real_name"}
+        {
+            "person_id": "record_id",
+            "leuven_id": "true_label",
+            "person_name": "real_name",
+        }
     )
     t = t.inner_join(labels, "record_id")
     t = t.cache()
-    return Dataset(t, unique_id_column="record_id", true_label_column="real_id")
+    return Dataset(t, record_id_column="record_id", true_label_column="true_label")
