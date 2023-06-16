@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from ibis.expr.types import Table
 
@@ -10,6 +10,7 @@ from mismo._dataset import PDatasetPair
 from mismo.block._blocker import PBlocking
 
 
+@runtime_checkable
 class PComparer(Protocol):
     def compare(self, blocking: PBlocking) -> PComparisons:
         """Compare two datasets, adding scores and/or other features to each pair.
@@ -23,6 +24,7 @@ class PComparer(Protocol):
         ...
 
 
+@runtime_checkable
 class PComparisons(Protocol):
     """Record pairs, with scores and/or other features added to each pair."""
 
@@ -43,6 +45,6 @@ class PComparisons(Protocol):
 
 
 @dataclasses.dataclass(frozen=True)
-class Comparisons:
+class Comparisons(PComparisons):
     blocking: PBlocking
     compared: Table

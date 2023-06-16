@@ -31,7 +31,7 @@ def _wrap_febrl(
         "soc_sec_id": "int32",  # 7 digits long, never null, no leading 0s
         "date_of_birth": "str",  # contains some BS dates like 19371233
     }
-    t = t.mutate(**{col: t[col].cast(dtype) for col, dtype in dtypes.items()})  # type: ignore # noqa: E501
+    t = t.mutate(**{col: t[col].cast(dtype) for col, dtype in dtypes.items()})
     t = t.relabel({"rec_id": "record_id"})
     t = t.cache()
 

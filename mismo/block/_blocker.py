@@ -3,12 +3,13 @@ from __future__ import annotations
 import dataclasses
 from functools import cache
 from textwrap import dedent
-from typing import Protocol, Self, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 import ibis
 from ibis.expr.types import Table
 
 from mismo._dataset import PDatasetPair
+from mismo._typing import Self
 from mismo._util import format_table
 
 

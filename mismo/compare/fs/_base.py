@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import math
-from typing import Callable, Iterable, Self
+from typing import Callable, Iterable
 
 import ibis
 from ibis.expr.types import (
@@ -14,6 +14,7 @@ from ibis.expr.types import (
 )
 
 from mismo._dataset import PDatasetPair
+from mismo._typing import Self
 from mismo.block import PBlocking
 from mismo.compare import Comparisons
 
@@ -84,7 +85,7 @@ class Comparison:
         for i, level in enumerate(self.levels):
             is_match = result.isnull() & level.predicate(pairs)
             result = is_match.ifelse(i, result)
-        return result.name(f"{self.name}_level")
+        return result.name(f"{self.name}_level")  # type: ignore
 
     def bayes_factor(self, pairs: Table) -> FloatingColumn:
         """Calculate the Bayes factor for each record pair."""

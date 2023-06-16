@@ -32,6 +32,6 @@ def sample_table(table: Table, n: int = 5, seed: int | None = None) -> Table:
     n_repeats = math.ceil(n / n_available)
     pool = np.repeat(np.arange(n_available), n_repeats)
     idx = np.random.choice(pool, size=n, replace=False)
-    idx = ibis.memtable({"__idx__": idx})
+    idx_table = ibis.memtable({"__idx__": idx})
     table = table.mutate(__idx__=ibis.row_number())
-    return table.inner_join(idx, "__idx__").drop("__idx__")
+    return table.inner_join(idx_table, "__idx__").drop("__idx__")  # type: ignore

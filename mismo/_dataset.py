@@ -125,10 +125,10 @@ class DedupeDatasetPair(_PairBase):
     def true_label_column(self) -> str | None:
         return self.dataset.true_label_column
 
-    def scrub_redundant_comparisons(self, blocking: PBlocking) -> PBlocking:
+    def scrub_redundant_comparisons(self, blocking: TPBlocking) -> TPBlocking:
         ids = blocking.blocked_ids
         left_col, right_col = ids.columns
-        filtered = ids[ids[left_col] < ids[right_col]]  # type: ignore
+        filtered = ids[ids[left_col] < ids[right_col]]
         return blocking.replace_blocked_ids(filtered)
 
     def __repr__(self) -> str:
@@ -149,6 +149,6 @@ class LinkageDatasetPair(_PairBase):
     left: PDataset
     right: PDataset
 
-    def scrub_redundant_comparisons(self, blocking: PBlocking) -> PBlocking:
+    def scrub_redundant_comparisons(self, blocking: TPBlocking) -> TPBlocking:
         # No-op for linkages, we want to keep all comparisons
         return blocking

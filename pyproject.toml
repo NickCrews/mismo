@@ -26,6 +26,7 @@ classifiers = [
 ]
 dependencies = [
   "ibis-framework[duckdb]>=5.1.0",
+  "typing-extensions ; python_version < \"3.11\"",  # needed for Self
 ]
 
 [project.urls]
@@ -73,7 +74,7 @@ required-imports = ["from __future__ import annotations"]
 
 [tool.mypy]
 # https://mypy.readthedocs.io/en/latest/config_file.html#using-a-pyproject-toml-file
-python_version = "3.10"
+python_version = "3.11"
 files = ["mismo"]
 pretty = true
 show_traceback = true

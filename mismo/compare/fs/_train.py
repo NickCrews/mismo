@@ -45,10 +45,10 @@ def level_proportions(comparison: Comparison, pairs: Table) -> list[float]:
     """
     labels = comparison.label_pairs(pairs)
     vc = labels.name("level").value_counts()
-    vc = vc.mutate(pct=vc.level_count / vc.level_count.sum())  # type: ignore
+    vc = vc.mutate(pct=vc.level_count / vc.level_count.sum())
     vc = vc.order_by("level")
     vc = vc.dropna(subset="level")
-    return vc.pct.execute().tolist()
+    return vc.pct.execute().tolist()  # type: ignore
 
 
 def train_us_using_sampling(
