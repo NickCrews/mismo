@@ -33,8 +33,10 @@ class Comparison:
 
         Go through the levels in order. If a record pair matches a level, label it
         with the level's index. If it doesn't match any level, it has the label NA.
+        This would be the ELSE case that is used in splink, but in our version
+        we don't explicitly have an ELSE ComparisonLevel.
 
-        Equivalent to the lambda values described at
+        Equivalent to the gamma values described at
         https://www.robinlinacre.com/maths_of_fellegi_sunter/"""
         result = ibis.NA
         for i, level in enumerate(self.levels):
