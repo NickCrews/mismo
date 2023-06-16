@@ -44,7 +44,11 @@ class PComparisons(Protocol):
         ...
 
 
-@dataclasses.dataclass(frozen=True)
-class Comparisons(PComparisons):
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class Comparisons:
     blocking: PBlocking
     compared: Table
+
+    @property
+    def dataset_pair(self) -> PDatasetPair:
+        return self.blocking.dataset_pair

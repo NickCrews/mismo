@@ -12,7 +12,7 @@ from typing import Protocol
 from ibis.expr.types import Table
 
 from mismo.block._blocker import PBlocking
-from mismo.compare import Comparisons, PComparer
+from mismo.compare import Comparisons, PComparer, PComparisons
 
 
 class PFeaturizer(Protocol):
@@ -32,7 +32,7 @@ class FeatureComparer(PComparer):
         self.featurizer = featurizer
         self.scorer = scorer
 
-    def compare(self, blocking: PBlocking) -> Comparisons:
+    def compare(self, blocking: PBlocking) -> PComparisons:
         features = self.featurizer.features(blocking)
         scores = self.scorer.score(features)
-        return Comparisons(blocking, scores)
+        return Comparisons(blocking=blocking, compared=scores)
