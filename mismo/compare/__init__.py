@@ -27,14 +27,14 @@ class PComparisons(Protocol):
     """Record pairs, with scores and/or other features added to each pair."""
 
     @property
-    def dataset_pair(self) -> PDatasetPair:
-        """The DatasetPair that was compared."""
-        return self.blocking.dataset_pair
-
-    @property
     def blocking(self) -> PBlocking:
         """The Blocking that was used to generate the comparisons"""
         ...
+
+    @property
+    def dataset_pair(self) -> PDatasetPair:
+        """The DatasetPair that was compared."""
+        return self.blocking.dataset_pair
 
     @property
     def compared(self) -> Table:
@@ -43,6 +43,6 @@ class PComparisons(Protocol):
 
 
 @dataclasses.dataclass(frozen=True)
-class Comparisons(PComparisons):
+class Comparisons:
     blocking: PBlocking
     compared: Table

@@ -76,6 +76,11 @@ class PDatasetPair(Protocol):
         """Iterate over the left and right datasets."""
         ...
 
+    @property
+    def n_possible_pairs(self) -> int:
+        """The number of possible pairs."""
+        return len(self.left) * len(self.right)
+
 
 class _PairBase(PDatasetPair, Protocol):
     def __iter__(self) -> Iterator[PDataset]:

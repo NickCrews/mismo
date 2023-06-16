@@ -4,7 +4,7 @@ from mismo import examples
 from mismo._dataset import DedupeDatasetPair
 from mismo.compare.fs._base import Comparison, ComparisonLevel
 from mismo.compare.fs._levels import ExactLevel
-from mismo.compare.fs._train import train
+from mismo.compare.fs._train import train_comparison
 
 
 def test_comparison_training():
@@ -19,7 +19,9 @@ def test_comparison_training():
     exact_level = ExactLevel("Name")
     levels = [exact_level, almost_level]
     comparison = Comparison(name="Name", levels=levels)
-    trained = train(comparison, patents_dataset_pair, max_pairs=10_000, seed=42)
+    trained = train_comparison(
+        comparison, patents_dataset_pair, max_pairs=10_000, seed=42
+    )
     assert trained is not None
     assert trained.name == "Name"
     assert len(trained.levels) == 2

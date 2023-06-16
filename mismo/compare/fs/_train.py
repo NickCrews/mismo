@@ -11,22 +11,22 @@ from mismo.block._blocker import CartesianBlocker, FunctionBlocker
 from ._base import Comparison, Weights
 
 
-def all_possible_pairs(
+def min_ignore_None(*args):
+    return min(*(a for a in args if a is not None))
+
+
+def possible_pairs(
     dataset_pair: PDatasetPair,
     *,
-    max_pairs: int = 1_000_000_000,
+    max_pairs: int | None = None,
     seed: int | None = None,
 ) -> Table:
     pairs = CartesianBlocker().block(dataset_pair).blocked_data
-    n_pairs = min(max_pairs, pairs.count().execute())
+    n_pairs = min_ignore_None(pairs.count().execute(), max_pairs)
     return sample_table(pairs, n_pairs, seed=seed)
 
 
-def all_true_pairs_from_labels(
-    dataset_pair: PDatasetPair,
-    *,
-    max_pairs: int = 1_000_000_000,
-) -> Table:
+def true_pairs_from_labels(dataset_pair: PDatasetPair) -> Table:
     left, right = dataset_pair
     if left.true_label_column is None or right.true_label_column is None:
         raise ValueError(
@@ -36,21 +36,16 @@ def all_true_pairs_from_labels(
     def block_condition(le: Table, r: Table) -> BooleanColumn:
         return le[left.true_label_column] == r[right.true_label_column]  # type: ignore
 
-    true_matches = FunctionBlocker(block_condition).block(dataset_pair).blocked_data
-    n_pairs = min(max_pairs, true_matches.count().execute())
-    return sample_table(true_matches, n_pairs)
+    return FunctionBlocker(block_condition).block(dataset_pair).blocked_data
 
 
-def level_proportions(
-    comparison: Comparison,
-    blocked_data: Table,
-) -> list[float]:
+def level_proportions(comparison: Comparison, pairs: Table) -> list[float]:
     """
     For each comparison level, return the proportion of pairs that fall into that level.
     """
-    labels = comparison.label_pairs(blocked_data)
+    labels = comparison.label_pairs(pairs)
     vc = labels.name("level").value_counts()
-    vc = vc.mutate(pct=vc.level_count / vc.level_count.sum())
+    vc = vc.mutate(pct=vc.level_count / vc.level_count.sum())  # type: ignore
     vc = vc.order_by("level")
     vc = vc.dropna(subset="level")
     return vc.pct.execute().tolist()
@@ -60,7 +55,7 @@ def train_us_using_sampling(
     comparison: Comparison,
     dataset_pair: PDatasetPair,
     *,
-    max_pairs: int = 1_000_000_000,
+    max_pairs: int | None = None,
     seed: int | None = None,
 ) -> list[float]:
     """Estimate the u weight using random sampling.
@@ -90,7 +85,9 @@ def train_us_using_sampling(
             is often adequate whilst testing different model specifications, before
             the final model is estimated.
     """
-    sample = all_possible_pairs(dataset_pair, max_pairs=max_pairs, seed=seed)
+    if max_pairs is None:
+        max_pairs = 1_000_000_000
+    sample = possible_pairs(dataset_pair, max_pairs=max_pairs, seed=seed)
     return level_proportions(comparison, sample)
 
 
@@ -98,7 +95,7 @@ def train_ms_from_labels(
     comparison: Comparison,
     dataset_pair: PDatasetPair,
     *,
-    max_pairs: int = 1_000_000_000,
+    max_pairs: int | None = None,
 ) -> list[float]:
     """Using the true labels in the dataset, estimate the m weight.
 
@@ -118,15 +115,19 @@ def train_ms_from_labels(
     When NULL values are encountered in the ground truth column,
     that record is simply ignored.
     """
-    sample = all_true_pairs_from_labels(dataset_pair, max_pairs=max_pairs)
+    pairs = true_pairs_from_labels(dataset_pair)
+    if max_pairs is None:
+        max_pairs = 1_000_000_000
+    n_pairs = min(pairs.count().execute(), max_pairs)
+    sample = sample_table(pairs, n_pairs)
     return level_proportions(comparison, sample)
 
 
-def train(
+def train_comparison(
     comparison: Comparison,
     dataset_pair: PDatasetPair,
     *,
-    max_pairs: int = 1_000_000_000,
+    max_pairs: int | None = None,
     seed: int | None = None,
 ) -> Comparison:
     """Train the weights of a Comparison."""
