@@ -8,7 +8,7 @@ from mismo._dataset import PDatasetPair
 from mismo._util import sample_table
 from mismo.block._blocker import CartesianBlocker, FunctionBlocker
 
-from ._fs import Comparison, Weights
+from ._base import Comparison, Weights
 
 
 def all_possible_pairs(

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 
-from ._fs import PComparisonLevel, Weights
+from ._base import PComparisonLevel, Weights
 
 
 class ExactLevel(PComparisonLevel):

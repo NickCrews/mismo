@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from mismo import examples
 from mismo._dataset import DedupeDatasetPair
-from mismo.compare.fs._fs import Comparison, ComparisonLevel
+from mismo.compare.fs._base import Comparison, ComparisonLevel
 from mismo.compare.fs._levels import ExactLevel
 from mismo.compare.fs._train import train
 
