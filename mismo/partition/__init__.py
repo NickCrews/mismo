@@ -5,7 +5,6 @@ from typing import NamedTuple, Protocol
 
 from ibis.expr.types import Table
 
-from mismo._dataset import Dataset
 from mismo.compare import PComparisons
 
 
@@ -13,13 +12,16 @@ from mismo.compare import PComparisons
 class Partitioning:
     """Holds partitioning information on a Dataset."""
 
-    dataset: Dataset
+    table: Table
     labels: Table
-    """A table of (record_id, cluster_id) pairs."""
+    """A table with the columns (record_id, label), where label is a uint64."""
 
-    def with_labels(self) -> Table:
-        """The dataset table with the cluster labels added."""
-        return self.dataset.table.inner_join(self.labels, self.dataset.record_id_column)
+    def with_labels(self, col_name: str = "label") -> Table:
+        """The dataset table with the "labels" column added."""
+        if col_name in self.table.columns:
+            raise ValueError(f"Dataset already has a column named '{col_name}'")
+        labels = self.labels.relabel({"label": col_name})
+        return self.table.inner_join(labels, "record_id")
 
 
 class PartitioningPair(NamedTuple):
@@ -39,3 +41,12 @@ class PPartitioner(Protocol):
 
     def partition(self, comparisons: PComparisons) -> PartitioningPair:
         ...
+
+
+def check_labels(t: Table) -> Table:
+    if t.columns != ["record_id", "label"]:
+        raise ValueError(f"Expected columns ['record_id', 'label'], got {t.columns}")
+    if not t.label.type().is_unsigned_integer():
+        raise ValueError(
+            f"Expected label column to be unsigned integer, got {t.label.type()}"
+        )

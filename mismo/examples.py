@@ -3,10 +3,11 @@ from __future__ import annotations
 from typing import Callable
 
 import ibis
+from ibis.expr.types import Table
 import pandas as pd
 from recordlinkage import datasets as rlds
 
-from mismo._dataset import Dataset, DedupeDatasetPair
+from mismo._dataset import DedupeDatasetPair
 from mismo.block import Blocking
 
 
@@ -42,8 +43,7 @@ def _wrap_febrl(
     links = con.table("links")
     links = links.order_by(["record_id_l", "record_id_r"])
     links = links.cache()
-    ds = Dataset(t, "record_id")
-    dsp = DedupeDatasetPair(ds)
+    dsp = DedupeDatasetPair(t)
     return Blocking(dsp, links)
 
 
@@ -63,7 +63,7 @@ def load_febrl3() -> Blocking:
 # could add that later if it's needed.
 
 
-def load_patents() -> Dataset:
+def load_patents() -> Table:
     """Load the patents dataset from
     https://github.com/dedupeio/dedupe-examples/tree/master/patent_example
 
@@ -117,10 +117,10 @@ def load_patents() -> Dataset:
     labels = labels.relabel(
         {
             "person_id": "record_id",
-            "leuven_id": "true_label",
+            "leuven_id": "label_true",
             "person_name": "real_name",
         }
     )
     t = t.inner_join(labels, "record_id")
     t = t.cache()
-    return Dataset(t, record_id_column="record_id", true_label_column="true_label")
+    return t

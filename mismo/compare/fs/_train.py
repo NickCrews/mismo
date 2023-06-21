@@ -28,13 +28,17 @@ def possible_pairs(
 
 def true_pairs_from_labels(dataset_pair: PDatasetPair) -> Table:
     left, right = dataset_pair
-    if left.true_label_column is None or right.true_label_column is None:
+    if "label_true" not in left.columns:
         raise ValueError(
-            "Both datasets must have a true_label_column to train m from labels"
+            "Left dataset must have a label_true column. Found: {left.columns}"
+        )
+    if "label_true" not in right.columns:
+        raise ValueError(
+            "Right dataset must have a label_true column. Found: {right.columns}"
         )
 
     def block_condition(le: Table, r: Table) -> BooleanColumn:
-        return le[left.true_label_column] == r[right.true_label_column]  # type: ignore
+        return le.label_true == r.label_true  # type: ignore
 
     return FunctionBlocker(block_condition).block(dataset_pair).blocked_data
 

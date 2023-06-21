@@ -28,21 +28,23 @@ class ConnectedComponentsPartitioner(PPartitioner):
         raw_edges = comparisons.compared
         if self.min_bayes_factor is not None:
             raw_edges = raw_edges[_.bayes_factor > self.min_bayes_factor]
-        lid = comparisons.dataset_pair.left.record_id_column
-        rid = comparisons.dataset_pair.right.record_id_column
-        lid2 = lid + "_l"
-        rid2 = rid + "_r"
-        raw_edges = raw_edges[lid2, rid2]
+        raw_edges = raw_edges["record_id_l", "record_id_r"]
         left_labels, right_labels = connected_components(
             raw_edges, max_iter=self.max_iter
         )
-        left_dataset = comparisons.dataset_pair.left
-        right_dataset = comparisons.dataset_pair.right
+        left_table = comparisons.dataset_pair.left
+        right_table = comparisons.dataset_pair.right
         left_partitioning = Partitioning(
-            dataset=left_dataset, labels=left_labels.relabel({lid2: lid})
+            table=left_table,
+            labels=left_labels.relabel(
+                {"record_id_l": "record_id", "component": "label"}
+            ),
         )
         right_partitioning = Partitioning(
-            dataset=right_dataset, labels=right_labels.relabel({rid2: rid})
+            table=right_table,
+            labels=right_labels.relabel(
+                {"record_id_r": "record_id", "component": "label"}
+            ),
         )
         return PartitioningPair(left_partitioning, right_partitioning)
 
@@ -65,8 +67,8 @@ def connected_components(
 
     Returns:
         Two tables, one for the left ids and one for the right ids. Each table
-        has two columns, the first is the id of the record and the second is the
-        id of the component it belongs to.
+        has two columns, the first is the id of the record and the second is
+        called "component" and is the id of the component it belongs to.
     """
     edges, left_map, right_map = _normalize_edges(edges)
     labels = _connected_components_ints(edges, max_iter=max_iter)

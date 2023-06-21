@@ -5,7 +5,6 @@ from functools import cache
 from textwrap import dedent
 from typing import Protocol, runtime_checkable
 
-import ibis
 from ibis.expr.types import Table
 
 from mismo._dataset import PDatasetPair
@@ -48,7 +47,8 @@ class Blocking:
 
     @property
     def blocked_data(self) -> Table:
-        return join_datasets(self.dataset_pair, self.blocked_ids)
+        left, right = self.dataset_pair
+        return join_tables(left, right, self.blocked_ids)
 
     def replace_blocked_ids(self, new_id_pairs: Table) -> Self:
         return dataclasses.replace(self, blocked_ids=new_id_pairs)
@@ -103,12 +103,8 @@ class CartesianBlocker(PBlocker):
 
     def block(self, dataset_pair: PDatasetPair) -> Blocking:
         left, right = dataset_pair
-        lid = left.record_id_column
-        rid = right.record_id_column
-        lid_new = lid + "_l"
-        rid_new = rid + "_r"
-        left_ids = left.table.select(lid).relabel({lid: lid_new})
-        right_ids = right.table.select(rid).relabel({rid: rid_new})
+        left_ids = left.select("record_id").relabel("{name}_l")
+        right_ids = right.select("record_id").relabel("{name}_r")
         blocked_ids = left_ids.cross_join(right_ids)
         b = Blocking(dataset_pair, blocked_ids)
         return dataset_pair.scrub_redundant_comparisons(b)
@@ -122,37 +118,24 @@ class FunctionBlocker(PBlocker):
 
     def block(self, dataset_pair: PDatasetPair) -> Blocking:
         left, right = dataset_pair
-        lid = left.record_id_column
-        rid = right.record_id_column
-        lt = left.table.relabel({lid: lid + "_l"})
-        rt = right.table.relabel({rid: rid + "_r"})
-        joined_full = ibis.join(lt, rt, predicates=self.func(lt, rt), how="inner")
-        ids = joined_full[lid + "_l", rid + "_r"]
+        # In case left and right are actually the same table, we need to take
+        # a view so the self join works correctly.
+        # https://ibis-project.org/user_guide/self_joins
+        right = right.view()
+        joined_full = left.join(
+            right, predicates=self.func(left, right), how="inner", suffixes=("_l", "_r")
+        )
+        ids = joined_full["record_id_l", "record_id_r"]
         b = Blocking(dataset_pair, ids)
         return dataset_pair.scrub_redundant_comparisons(b)
 
 
-def join_datasets(dataset_pair: PDatasetPair, on: Table) -> Table:
-    """Join two datasets together, so that we can compare them."""
-    check_id_pairs(on)
-    left, right = dataset_pair
-    left_t, right_t = left.table, right.table
-    left2 = left_t.relabel({col: col + "_l" for col in left_t.columns})
-    right2 = right_t.relabel({col: col + "_r" for col in right_t.columns})
-    return on.inner_join(  # type: ignore
-        left2,
-        left.record_id_column + "_l",
-        suffixes=("", "_l"),
-    ).inner_join(
-        right2,
-        right.record_id_column + "_r",
-        suffixes=("", "_r"),
-    )
-
-
-def check_id_pairs(id_pairs: Table) -> None:
-    """Check that the id pairs are valid."""
-    if len(id_pairs.columns) != 2:
+def join_tables(left: Table, right: Table, id_pairs: Table) -> Table:
+    """Join two tables based on a table of (left_id, right_id) pairs."""
+    if id_pairs.columns != ["record_id_l", "record_id_r"]:
         raise ValueError(
             f"Expected id_pairs to have 2 columns, but it has {id_pairs.columns}"
         )
+    left2 = left.relabel("{name}_l")
+    right2 = right.relabel("{name}_r")
+    return id_pairs.inner_join(left2, "record_id_l").inner_join(right2, "record_id_r")

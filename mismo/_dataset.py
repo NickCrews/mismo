@@ -16,75 +16,27 @@ if TYPE_CHECKING:
 
 
 @runtime_checkable
-class PDataset(Protocol):
-    """Thin wrapper around an Ibis Table."""
-
-    @property
-    def table(self) -> Table:
-        """The underlying Ibis Table."""
-        ...
-
-    @property
-    def record_id_column(self) -> str:
-        """The name of the column that holds the record ID."""
-        ...
-
-    @property
-    def true_label_column(self) -> str | None:
-        """
-        The name of the column with the true label, or None if there is no true label.
-        """
-        ...
-
-    def __len__(self) -> int:
-        """The number of records in the dataset."""
-        ...
-
-
-@dataclasses.dataclass(frozen=True)
-class Dataset:
-    table: Table
-    record_id_column: str = "record_id"
-    true_label_column: str | None = None
-
-    def __repr__(self) -> str:
-        template = dedent(
-            f"""\
-            {self.__class__.__name__}(
-                record_id_column={self.record_id_column},
-                true_label_column={self.true_label_column},
-                {{table}}
-            )
-            """
-        )
-        return format_table(template, "table", self.table)
-
-    def __len__(self) -> int:
-        return self.table.count().execute()  # type: ignore
-
-
-@runtime_checkable
 class PDatasetPair(Protocol):
-    """A pair of Datasets that we want to link."""
+    """A pair of Tables that we want to link."""
 
     @property
-    def left(self) -> PDataset:
-        """The left dataset."""
+    def left(self) -> Table:
+        """The left table."""
         ...
 
     @property
-    def right(self) -> PDataset:
-        """The right dataset."""
+    def right(self) -> Table:
+        """The right table."""
         ...
 
-    def __iter__(self) -> Iterator[PDataset]:
-        """Iterate over the left and right datasets."""
+    def __iter__(self) -> Iterator[Table]:
+        """Iterate over the left and right tables."""
         ...
 
     @property
     def n_possible_pairs(self) -> int:
         """The number of possible pairs."""
-        return len(self.left) * len(self.right)
+        ...
 
     def scrub_redundant_comparisons(self, blocking: TPBlocking) -> TPBlocking:
         """Remove redundant comparisons from the Blocking.
@@ -99,37 +51,37 @@ class PDatasetPair(Protocol):
 
 
 class _PairBase(PDatasetPair, Protocol):
-    def __iter__(self) -> Iterator[PDataset]:
+    def __iter__(self) -> Iterator[Table]:
         return iter((self.left, self.right))
 
 
 @dataclasses.dataclass(frozen=True)
 class DedupeDatasetPair(_PairBase):
-    """A pair of Datasets that we want to link using Dedupe."""
+    """A single Table to dedupe, with the interface of a DatasetPair."""
 
-    dataset: PDataset
+    table: Table
 
-    @property
-    def left(self) -> PDataset:
-        return self.dataset
-
-    @property
-    def right(self) -> PDataset:
-        return self.dataset
+    def __post_init__(self) -> None:
+        check_dataset(self.table)
 
     @property
-    def record_id_column(self) -> str:
-        return self.dataset.record_id_column
+    def left(self) -> Table:
+        return self.table
 
     @property
-    def true_label_column(self) -> str | None:
-        return self.dataset.true_label_column
+    def right(self) -> Table:
+        return self.table
 
     def scrub_redundant_comparisons(self, blocking: TPBlocking) -> TPBlocking:
         ids = blocking.blocked_ids
         left_col, right_col = ids.columns
         filtered = ids[ids[left_col] < ids[right_col]]
         return blocking.replace_blocked_ids(filtered)
+
+    @property
+    def n_possible_pairs(self) -> int:
+        n = self.table.count().execute()
+        return n * (n - 1) // 2
 
     def __repr__(self) -> str:
         template = dedent(
@@ -139,16 +91,38 @@ class DedupeDatasetPair(_PairBase):
             )
             """
         )
-        return format_table(template, "table", self.dataset.table)
+        return format_table(template, "table", self.table)
 
 
 @dataclasses.dataclass(frozen=True)
 class LinkageDatasetPair(_PairBase):
-    """A pair of Datasets that we want to link using Record Linkage."""
+    """Two different Tables to link together."""
 
-    left: PDataset
-    right: PDataset
+    left: Table
+    right: Table
+
+    def __post_init__(self) -> None:
+        check_dataset(self.left)
+        check_dataset(self.right)
 
     def scrub_redundant_comparisons(self, blocking: TPBlocking) -> TPBlocking:
         # No-op for linkages, we want to keep all comparisons
         return blocking
+
+    @property
+    def n_possible_pairs(self) -> int:
+        return (self.left.count() * self.right.count()).execute()
+
+
+def check_dataset(dataset: Table) -> None:
+    """Ensure that a table follows the mismo dataset conventions.
+
+    A dataset table MUST:
+      - have a column called "record_id" that is unique
+    """
+    if "record_id" not in dataset.columns:
+        raise ValueError(
+            f"Dataset must have a column called 'record_id', but got {dataset.columns}"
+        )
+    if (dataset.count() != dataset.distinct(on="record_id").count()).execute():
+        raise ValueError("Dataset's 'record_id' column must be unique")

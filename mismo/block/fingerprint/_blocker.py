@@ -5,7 +5,7 @@ from typing import Iterable, Tuple
 import ibis
 from ibis.expr.types import Table
 
-from mismo._dataset import PDataset, PDatasetPair
+from mismo._dataset import PDatasetPair
 from mismo.block import Blocking, PBlocker
 from mismo.block.fingerprint._fingerprinter import (
     PFingerprinter,
@@ -27,7 +27,7 @@ class FingerprintBlocker(PBlocker):
     def block(self, dataset_pair: PDatasetPair) -> Blocking:
         left, right = dataset_pair
         joined = join_on_fingerprint_pairs(left, right, self.fingerprinter_pairs)
-        id_pairs = joined[left.record_id_column + "_l", right.record_id_column + "_r"]
+        id_pairs = joined["record_id_l", "record_id_r"]
         b = Blocking(dataset_pair, id_pairs)
         return dataset_pair.scrub_redundant_comparisons(b)
 
@@ -54,12 +54,12 @@ def convert_fingerprinter_pair(fp_pair: FingerprinterPair) -> FingerprinterPair:
 
 
 def join_on_fingerprint_pair(
-    left: PDataset, right: PDataset, fpl: PFingerprinter, fpr: PFingerprinter
+    left: Table, right: Table, fpl: PFingerprinter, fpr: PFingerprinter
 ) -> Table:
     prints_left = fpl.fingerprint(left)
     prints_right = fpr.fingerprint(right)
-    with_prints_left = left.table.mutate(__mismo_key=prints_left.unnest())
-    with_prints_right = right.table.mutate(__mismo_key=prints_right.unnest())
+    with_prints_left = left.mutate(__mismo_key=prints_left.unnest())
+    with_prints_right = right.mutate(__mismo_key=prints_right.unnest())
     result: Table = with_prints_left.inner_join(
         with_prints_right, "__mismo_key", suffixes=("_l", "_r")
     ).drop("__mismo_key")
@@ -67,10 +67,10 @@ def join_on_fingerprint_pair(
 
 
 def join_on_fingerprint_pairs(
-    left: PDataset, right: PDataset, fps: FingerprinterPairsLike
+    left: Table, right: Table, fps: FingerprinterPairsLike
 ) -> Table:
     fps = list(fps)
     if len(fps) == 0:
-        return left.table.cross_join(right.table, suffixes=("_l", "_r")).limit(0)
+        return left.cross_join(right, suffixes=("_l", "_r")).limit(0)
     chunks = [join_on_fingerprint_pair(left, right, fp1, fp2) for fp1, fp2 in fps]
     return ibis.union(*chunks, distinct=True)

@@ -5,7 +5,7 @@ from ibis.expr.types import Table
 import pandas as pd
 import pytest
 
-from mismo._dataset import Dataset, DedupeDatasetPair
+from mismo._dataset import DedupeDatasetPair
 from mismo.block.fingerprint import Equals, FingerprintBlocker
 
 
@@ -17,8 +17,8 @@ def simple_table() -> Table:
         (2, "c", False),
         (3, "c", True),
     ]
-    index, strs, bools = zip(*records)
-    df = pd.DataFrame({"index": index, "strings": strs, "bools": bools})
+    record_ids, strs, bools = zip(*records)
+    df = pd.DataFrame({"record_id": record_ids, "strings": strs, "bools": bools})
     return ibis.memtable(df)
 
 
@@ -28,7 +28,6 @@ def test_basic_blocking(simple_table):
         (Equals("strings"), Equals("strings")),
     ]
     blocker = FingerprintBlocker(predicates)
-    ds = Dataset(simple_table, "index")
-    dsp = DedupeDatasetPair(ds)
+    dsp = DedupeDatasetPair(simple_table)
     blocker.block(dsp)
     # TODO: actually test the result
