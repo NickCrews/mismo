@@ -6,7 +6,7 @@ from ibis.expr.types import BooleanColumn, Table
 
 from mismo._dataset import PDatasetPair
 from mismo._util import sample_table
-from mismo.block._blocker import CartesianBlocker, FunctionBlocker
+from mismo.block import CartesianBlocker, FunctionBlocker
 
 from ._base import Comparison, Weights
 

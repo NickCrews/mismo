@@ -7,7 +7,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from mismo.block._blocker import PBlocker
+from mismo.block import PBlocker
 
 
 class PBlockLearner(Protocol):

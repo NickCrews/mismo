@@ -7,7 +7,7 @@ from typing import Protocol, runtime_checkable
 from ibis.expr.types import Table
 
 from mismo._dataset import PDatasetPair
-from mismo.block._blocker import PBlocking
+from mismo.block import PBlocking
 
 
 @runtime_checkable
