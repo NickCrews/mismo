@@ -7,6 +7,8 @@ to be compared, hopefully to a manageable level.
 """
 from __future__ import annotations
 
-from mismo.block._blocker import Blocking as Blocking  # noqa: F401
-from mismo.block._blocker import PBlocker as PBlocker  # noqa: F401
-from mismo.block._blocker import PBlocking as PBlocking  # noqa: F401
+from mismo.block._blocker import Blocking as Blocking
+from mismo.block._blocker import CartesianBlocker as CartesianBlocker
+from mismo.block._blocker import FunctionBlocker as FunctionBlocker
+from mismo.block._blocker import PBlocker as PBlocker
+from mismo.block._blocker import PBlocking as PBlocking

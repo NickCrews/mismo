@@ -12,7 +12,7 @@ from typing import Protocol
 from ibis.expr.types import Table
 
 from mismo.block._blocker import PBlocking
-from mismo.compare import Comparisons, PComparer, PComparisons
+from mismo.compare._base import Comparisons, PComparer, PComparisons
 
 
 class PFeaturizer(Protocol):

@@ -8,7 +8,7 @@ import ibis
 from ibis import _
 from ibis.expr.types import Column, IntegerColumn, Table
 
-from mismo.compare import PComparisons
+from mismo.compare._base import PComparisons
 
 from . import Partitioning, PartitioningPair, PPartitioner
 

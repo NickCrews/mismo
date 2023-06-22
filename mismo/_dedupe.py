@@ -4,8 +4,8 @@ from ibis.expr.types import Table
 
 from mismo._dataset import DedupeDatasetPair, PDatasetPair
 from mismo.block._blocker import PBlocker, PBlocking
-from mismo.compare import PComparer, PComparisons
-from mismo.partition import PPartitioner
+from mismo.compare._base import PComparer, PComparisons
+from mismo.partition._base import PPartitioner
 
 
 class Deduper:

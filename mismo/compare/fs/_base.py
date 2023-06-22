@@ -16,7 +16,7 @@ from ibis.expr.types import (
 from mismo._dataset import PDatasetPair
 from mismo._typing import Self
 from mismo.block import PBlocking
-from mismo.compare import Comparisons
+from mismo.compare._base import Comparisons
 
 from ._util import prob_to_bayes_factor
 
