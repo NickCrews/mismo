@@ -10,6 +10,16 @@ from sklearn.manifold import MDS
 
 
 def plot_cluster(nodes: Table, edges: Table) -> alt.Chart:
+    """Plot a cluster of records and the links between them.
+
+    Args:
+        nodes: A table of records with at least columns (record_id, label_true)
+            and optionally other columns.
+        edges: A table of edges with at least columns
+            (record_id_l, record_id_r, dissimilarity) and optionally other columns.
+            Dissimilarity is like distance. See
+            https://scikit-learn.org/stable/modules/generated/sklearn.manifold.MDS.html
+    """
     nodes, edges = drop_orphaned(nodes, edges)
     nodes_with_coords = _layout_nodes(nodes, edges)
     return _plot_cluster(nodes_with_coords, edges)
@@ -82,14 +92,14 @@ def _reindex_from_0(nodes, edges):
     return nodes, edges
 
 
-def _plot_cluster(nodes: Table, edges: Table) -> alt.Chart:
+def _plot_cluster(nodes_chart: Table, edges_chart: Table) -> alt.Chart:
     alt.data_transformers.disable_max_rows()
 
-    plot_nodes: pd.DataFrame = nodes.execute()
-    plot_edges: pd.DataFrame = edges.execute()
+    nodes_df: pd.DataFrame = nodes_chart.execute()
+    edges_df: pd.DataFrame = edges_chart.execute()
 
-    plot_nodes["record_id_a"] = plot_nodes["record_id"]
-    plot_nodes["record_id_b"] = plot_nodes["record_id"]
+    nodes_df["record_id_a"] = nodes_df["record_id"]
+    nodes_df["record_id_b"] = nodes_df["record_id"]
 
     edge_hovered = alt.selection_point(
         name="edge_hovered",
@@ -113,8 +123,8 @@ def _plot_cluster(nodes: Table, edges: Table) -> alt.Chart:
         name="true_label_selector", fields=["label_true"], bind="legend", empty=True
     )
 
-    lookup_node = alt.LookupData(
-        plot_nodes, key="record_id", fields=["x", "y", "label_true"]
+    nodes_lookup = alt.LookupData(
+        nodes_df, key="record_id", fields=["x", "y", "label_true"]
     )
 
     either_endpoint_label_selected = f"(datum.label_true_l == {true_label_selected.name}.label_true) || (datum.label_true_r == {true_label_selected.name}.label_true)"  # noqa: E501
@@ -131,8 +141,8 @@ def _plot_cluster(nodes: Table, edges: Table) -> alt.Chart:
         expr=f"({edge_hovered_expr}) || ({node_hovered_expr}) || ({node_clicked_expr}) || ({either_endpoint_label_selected}) ||({nothing_selected})",  # noqa: E501
     )
 
-    edges = (
-        alt.Chart(plot_edges)
+    edges_chart = (
+        alt.Chart(edges_df)
         .mark_rule(opacity=1, strokeWidth=3)
         .encode(
             x="x_l:Q",
@@ -145,42 +155,44 @@ def _plot_cluster(nodes: Table, edges: Table) -> alt.Chart:
                 alt.value("lightgray"),
             ),
             opacity=alt.condition(is_edge_highlighted, alt.value(1), alt.value(0.2)),
-            tooltip=plot_edges.columns.tolist(),
+            tooltip=edges_df.columns.tolist(),
         )
         .transform_lookup(
             lookup="record_id_l",
-            from_=lookup_node,
+            from_=nodes_lookup,
             as_=["x_l", "y_l", "label_true_l"],
         )
         .transform_lookup(
             lookup="record_id_r",
-            from_=lookup_node,
+            from_=nodes_lookup,
             as_=["x_r", "y_r", "label_true_r"],
         )
         .add_params(edge_hovered)
     )
 
-    node_tooltip_columns = set(plot_nodes.columns)
+    node_tooltip_columns = set(nodes_df.columns)
     node_tooltip_columns -= {"x", "y", "label"}
     node_tooltip_columns = list(node_tooltip_columns)
 
-    nodes = (
-        alt.Chart(plot_nodes)
+    node_highlighted = node_hovered | node_clicked
+
+    nodes_chart = (
+        alt.Chart(nodes_df)
         .mark_circle()
         .encode(
             x="x:Q",
             y="y:Q",
             color=alt.condition(
-                true_label_selected | node_hovered | node_clicked,
+                node_highlighted,
                 alt.Color("label_true:N"),
                 alt.value("lightgray"),
             ),
             tooltip=node_tooltip_columns,
         )
-        .add_params(true_label_selected)
         .add_params(node_hovered)
         .add_params(node_clicked)
+        .add_params(true_label_selected)
     )
 
-    chart = edges + nodes
+    chart = edges_chart + nodes_chart
     return chart.interactive()
