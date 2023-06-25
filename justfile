@@ -29,3 +29,7 @@ lint:
 # run tests
 test:
     pytest
+
+# publish docs
+docs-publish:
+    mkdocs gh-deploy --force

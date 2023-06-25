@@ -1,0 +1,4 @@
+site_name: mismo
+repo_url: https://github.com/NickCrews/mismo
+theme:
+  name: material

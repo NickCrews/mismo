@@ -45,6 +45,9 @@ test = [
   "pytest",
   "pytest-cov",
 ]
+docs = [
+  "mkdocs-material",
+]
 
 [tool.coverage.run]
 branch = true
