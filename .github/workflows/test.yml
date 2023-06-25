@@ -44,7 +44,7 @@ jobs:
 
       - name: Run tests
         run: just test
-  lint:
+  lint-and-docs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
@@ -64,6 +64,9 @@ jobs:
 
       - name: Init dev environment
         run: just init
+
+      - name: Publish docs
+        run: just docs-publish
 
       - name: Run linters
         run: just lint
