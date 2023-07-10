@@ -10,13 +10,13 @@ from ibis.expr.types import Column, IntegerColumn, Table
 
 from mismo.compare._base import PComparisons
 
-from . import Partitioning, PartitioningPair, PPartitioner
+from . import Labeling, LabelingPair, PClusterer
 
 logger = logging.getLogger(__name__)
 
 
-class ConnectedComponentsPartitioner(PPartitioner):
-    """Uses a connected components algorithm to partition records into groups."""
+class ConnectedComponentsClusterer(PClusterer):
+    """Uses a connected components algorithm to cluster records into groups."""
 
     def __init__(
         self, min_bayes_factor: float | None = None, max_iter: int | None = None
@@ -24,7 +24,7 @@ class ConnectedComponentsPartitioner(PPartitioner):
         self.min_bayes_factor = min_bayes_factor
         self.max_iter = max_iter
 
-    def partition(self, comparisons: PComparisons) -> PartitioningPair:
+    def cluster(self, comparisons: PComparisons) -> LabelingPair:
         raw_edges = comparisons.compared
         if self.min_bayes_factor is not None:
             raw_edges = raw_edges[_.bayes_factor > self.min_bayes_factor]
@@ -34,19 +34,19 @@ class ConnectedComponentsPartitioner(PPartitioner):
         )
         left_table = comparisons.dataset_pair.left
         right_table = comparisons.dataset_pair.right
-        left_partitioning = Partitioning(
+        left_labeling = Labeling(
             table=left_table,
             labels=left_labels.relabel(
                 {"record_id_l": "record_id", "component": "label"}
             ),
         )
-        right_partitioning = Partitioning(
+        right_labeling = Labeling(
             table=right_table,
             labels=right_labels.relabel(
                 {"record_id_r": "record_id", "component": "label"}
             ),
         )
-        return PartitioningPair(left_partitioning, right_partitioning)
+        return LabelingPair(left_labeling, right_labeling)
 
 
 def connected_components(

@@ -9,8 +9,8 @@ from mismo.compare._base import PComparisons
 
 
 @dataclass(frozen=True, kw_only=True)
-class Partitioning:
-    """Holds partitioning information on a Dataset."""
+class Labeling:
+    """Holds labeling information for a dataset."""
 
     table: Table
     labels: Table
@@ -24,22 +24,22 @@ class Partitioning:
         return self.table.inner_join(labels, "record_id")
 
 
-class PartitioningPair(NamedTuple):
-    """Holds partitioning information on a DatasetPair."""
+class LabelingPair(NamedTuple):
+    """Holds a pair of Labeling"""
 
-    left: Partitioning
-    right: Partitioning
+    left: Labeling
+    right: Labeling
 
 
-class PPartitioner(Protocol):
-    """Takes a set if pairwise comparisons and partitions the records into groups.
+class PClusterer(Protocol):
+    """Takes pairwise comparisons and clusters the records into groups.
 
     You can think of this as a graph algorithm, where the nodes are the records,
     and the edges are the comparisons. The algorithm determines the "clusters"
     of records within the graph and assigns a cluster ID to each record.
     """
 
-    def partition(self, comparisons: PComparisons) -> PartitioningPair:
+    def cluster(self, comparisons: PComparisons) -> LabelingPair:
         ...
 
 
