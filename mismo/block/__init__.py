@@ -7,8 +7,8 @@ to be compared, hopefully to a manageable level.
 """
 from __future__ import annotations
 
-from mismo.block._blocker import Blocking as Blocking
-from mismo.block._blocker import CartesianBlocker as CartesianBlocker
-from mismo.block._blocker import FunctionBlocker as FunctionBlocker
-from mismo.block._blocker import PBlocker as PBlocker
-from mismo.block._blocker import PBlocking as PBlocking
+from mismo.block._base import Blocking as Blocking
+from mismo.block._base import CartesianBlocker as CartesianBlocker
+from mismo.block._base import FunctionBlocker as FunctionBlocker
+from mismo.block._base import PBlocker as PBlocker
+from mismo.block._base import PBlocking as PBlocking

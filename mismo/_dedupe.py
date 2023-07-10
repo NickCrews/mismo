@@ -3,9 +3,9 @@ from __future__ import annotations
 from ibis.expr.types import Table
 
 from mismo._dataset import DedupeDatasetPair, PDatasetPair
-from mismo.block._blocker import PBlocker, PBlocking
-from mismo.cluster._base import PClusterer
-from mismo.compare._base import PComparer, PComparisons
+from mismo.block import PBlocker, PBlocking
+from mismo.cluster import PClusterer
+from mismo.compare import PComparer, PComparisons
 
 
 class Deduper:
