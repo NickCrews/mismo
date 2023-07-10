@@ -9,10 +9,6 @@ init:
     pdm install -d -G :all
     . .venv/bin/activate
 
-# lock dependencies
-lock:
-    pdm lock -dG :all
-
 # format code
 fmt:
     black .
@@ -33,3 +29,11 @@ test:
 # publish docs
 docs-publish:
     mkdocs gh-deploy --force
+
+# lock dependencies
+lock:
+    pdm lock -dG :all
+
+# update dependencies
+update-deps:
+    pdm update -dG :all
