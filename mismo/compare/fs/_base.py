@@ -125,7 +125,7 @@ class ComparisonLevel:
     description: str | None = None
     weights: Weights | None = None
 
-    def set_weights(self, weights: Weights) -> Self:
+    def with_weights(self, weights: Weights) -> Self:
         """Return a version of this level with the given weights."""
         return dataclasses.replace(self, weights=weights)
 

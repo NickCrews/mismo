@@ -140,7 +140,7 @@ def train_comparison(
         comparison, dataset_pair, max_pairs=max_pairs, seed=seed
     )
     new_levels = [
-        level.set_weights(Weights(m=m, u=u))
+        level.with_weights(Weights(m=m, u=u))
         for level, m, u in zip(comparison.levels, ms, us)
     ]
     return replace(comparison, levels=new_levels)
