@@ -21,7 +21,7 @@ def exact(
 
     return ComparisonLevel(
         name=name,
-        predicate=equals,
+        condition=equals,
         description=description,
         weights=weights,
     )

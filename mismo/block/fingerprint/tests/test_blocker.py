@@ -23,11 +23,11 @@ def simple_table() -> Table:
 
 
 def test_basic_blocking(simple_table):
-    predicates = [
+    conditions = [
         (Equals("bools"), Equals("bools")),
         (Equals("strings"), Equals("strings")),
     ]
-    blocker = FingerprintBlocker(predicates)
+    blocker = FingerprintBlocker(conditions)
     dsp = DedupeDatasetPair(simple_table)
     blocker.block(dsp)
     # TODO: actually test the result

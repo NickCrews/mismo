@@ -13,7 +13,7 @@ def test_comparison_training():
     patents_dataset_pair = DedupeDatasetPair(patents)
     almost_level = ComparisonLevel(
         name="almost",
-        predicate=lambda table: table["Name_l"][:3] == table["Name_r"][:3],  # type: ignore # noqa: E501
+        condition=lambda table: table["Name_l"][:3] == table["Name_r"][:3],  # type: ignore # noqa: E501
         description="First 3 letters match",
     )
     exact_level = levels_lib.exact("Name")

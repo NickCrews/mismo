@@ -83,7 +83,7 @@ class Comparison:
         https://www.robinlinacre.com/maths_of_fellegi_sunter/"""
         result = ibis.NA
         for i, level in enumerate(self.levels):
-            is_match = result.isnull() & level.predicate(pairs)
+            is_match = result.isnull() & level.condition(pairs)
             result = is_match.ifelse(i, result)
         return result.name(f"{self.name}_level")  # type: ignore
 
@@ -108,7 +108,7 @@ class Comparison:
             weights = None
         return ComparisonLevel(
             name="else",
-            predicate=lambda _: ibis.literal(True),  # type: ignore
+            condition=lambda _: ibis.literal(True),  # type: ignore
             description="Else",
             weights=weights,
         )
@@ -121,7 +121,7 @@ class Comparison:
 @dataclasses.dataclass(frozen=True)
 class ComparisonLevel:
     name: str
-    predicate: Callable[[Table], BooleanValue]
+    condition: Callable[[Table], BooleanValue]
     description: str | None = None
     weights: Weights | None = None
 
