@@ -3,6 +3,8 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/mismo.svg)](https://pypi.org/project/mismo)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/mismo.svg)](https://pypi.org/project/mismo)
 
+Flexible Python framework for SQL-powered Entity Resolution
+
 -----
 
 **Table of Contents**
@@ -18,6 +20,16 @@ pip install mismo
 ```
 
 ## Goals
+
+Mismo tries to be the sklearn of record linkage. It is made of many small
+data structures and functions, each with a well-defined API that allows them
+to be composed together and extended well.
+
+This is different from Splink and Dedupe, which intend to be all-in-one,
+opinionated solutions. Mismo is more like a library of building blocks
+so that it is easier to plug in your own components and modifications.
+However, we try to support the most common use cases so that the simple
+cases can be done in just a few lines of code.
 
 ### Use [Ibis](https://ibis-project.org/) as the core
 This gives a few benefits that are key to record linkage:
