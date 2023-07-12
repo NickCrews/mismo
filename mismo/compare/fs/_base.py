@@ -18,7 +18,7 @@ from mismo._typing import Self
 from mismo.block import PBlocking
 from mismo.compare import Comparisons
 
-from ._util import prob_to_bayes_factor
+from ._util import bayes_factor_to_prob, prob_to_bayes_factor
 
 
 class FellegiSunterComparer:
@@ -94,6 +94,11 @@ class Comparison:
         gammas = self.label_pairs(pairs)
         cases = [(i, level.weights.bayes_factor) for i, level in enumerate(self.levels)]  # type: ignore # noqa: E501
         return gammas.cases(cases, self.else_level.weights.bayes_factor)  # type: ignore
+
+    def match_probability(self, pairs: Table) -> FloatingColumn:
+        """Calculate the match probability for each record pair."""
+        bf = self.bayes_factor(pairs)
+        return bayes_factor_to_prob(bf)
 
     @property
     def else_level(self) -> ComparisonLevel:
