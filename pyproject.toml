@@ -7,7 +7,7 @@ name = "mismo"
 description = ''
 version = "0.1.0"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"  # require >3.9 so that we can use ibis>=6
 license = {text = "LGPL-3.0-or-later"}
 keywords = []
 authors = [
@@ -24,8 +24,8 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "ibis-framework[duckdb]>=5.1.0",
-  "typing-extensions ; python_version < \"3.11\"",  # needed for Self
+    "ibis-framework[duckdb]==6.0.0",
+    "typing-extensions ; python_version < \"3.11\"",  # needed for Self
 ]
 
 [project.urls]
