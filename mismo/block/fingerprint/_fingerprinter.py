@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import abc
-from typing import Callable, Protocol, Sequence, Union
+from typing import Callable, Protocol, Sequence, Union, runtime_checkable
 
 import ibis
 from ibis.expr.types import ArrayColumn, Column, Table
 
 
+@runtime_checkable
 class PFingerprinter(Protocol):
     def fingerprint(self, table: Table) -> ArrayColumn:
         ...
@@ -14,10 +15,6 @@ class PFingerprinter(Protocol):
     @property
     def name(self) -> str:
         ...
-
-
-def is_fingerprinter(fp):
-    return hasattr(fp, "fingerprint") and callable(fp.fingerprint)
 
 
 FingerprintFunction = Callable[[Table], ArrayColumn]

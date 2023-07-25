@@ -7,10 +7,7 @@ from ibis.expr.types import Table
 
 from mismo._dataset import PDatasetPair
 from mismo.block import Blocking, PBlocker
-from mismo.block.fingerprint._fingerprinter import (
-    PFingerprinter,
-    is_fingerprinter,
-)
+from mismo.block.fingerprint._fingerprinter import PFingerprinter
 
 FingerprinterPair = Tuple[PFingerprinter, PFingerprinter]
 FingerprinterPairsLike = Iterable[FingerprinterPair]
@@ -45,7 +42,9 @@ def convert_fingerprinter_pair(fp_pair: FingerprinterPair) -> FingerprinterPair:
         raise ValueError(
             f"Fingerprinters must be a sequence of length 2. Got {pair}",
         )
-    if not is_fingerprinter(pair[0]) or not is_fingerprinter(pair[1]):
+    if not isinstance(pair[0], PFingerprinter) or not isinstance(
+        pair[1], PFingerprinter
+    ):
         raise ValueError(
             f"Fingerprinters must be instances of Fingerprinter. Got {pair}",
         )
