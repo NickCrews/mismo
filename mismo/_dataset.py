@@ -3,12 +3,14 @@ from __future__ import annotations
 from collections.abc import Iterator
 import dataclasses
 from textwrap import dedent
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from ibis.expr.types import Table
 
 from mismo._util import format_table
-from mismo.block import Blocking
+
+if TYPE_CHECKING:
+    from mismo.block import Blocking
 
 
 @runtime_checkable
@@ -69,10 +71,12 @@ class DedupeDatasetPair(_PairBase):
         return self.table
 
     def scrub_redundant_comparisons(self, blocking: Blocking) -> Blocking:
+        from mismo.block import Blocking
+
         ids = blocking.blocked_ids
         left_col, right_col = ids.columns
         filtered = ids[ids[left_col] < ids[right_col]]
-        return blocking.replace_blocked_ids(filtered)
+        return Blocking(blocking.dataset_pair, blocked_ids=filtered)
 
     @property
     def n_possible_pairs(self) -> int:
