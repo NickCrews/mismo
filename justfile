@@ -36,4 +36,4 @@ deps-lock:
 
 # update dependencies
 deps-update:
-    pdm update -dG :all
+    pdm update -dG :all --update-all  --update-eager
