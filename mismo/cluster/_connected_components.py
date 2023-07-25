@@ -8,6 +8,7 @@ import ibis
 from ibis import _
 from ibis.expr.types import Column, IntegerColumn, Table
 
+from mismo import _util
 from mismo.compare._base import PComparisons
 
 from . import Labeling, LabelingPair, PClusterer
@@ -72,8 +73,14 @@ def connected_components(
     """
     edges, left_map, right_map = _normalize_edges(edges)
     labels = _connected_components_ints(edges, max_iter=max_iter)
-    left_labels = left_map.left_join(labels, "record").drop("record_x", "record_y")
-    right_labels = right_map.left_join(labels, "record").drop("record_x", "record_y")
+
+    def _join(left, right):
+        return _util.join(left, right, "record", how="left").drop(
+            "record_l", "record_r"
+        )
+
+    left_labels = _join(left_map, labels)
+    right_labels = _join(right_map, labels)
     return left_labels, right_labels
 
 
@@ -97,8 +104,8 @@ def _connected_components_ints(
 def _n_updates(labels: Table, new_labels: Table) -> int:
     """Count the number of updates between two labelings."""
     return (
-        labels.join(new_labels, "record")
-        .filter(_.component_x != _.component_y)
+        _util.join(labels, new_labels, "record")
+        .filter(_.component_l != _.component_r)
         .count()
         .execute()
     )

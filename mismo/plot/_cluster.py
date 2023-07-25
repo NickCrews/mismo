@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 from sklearn.manifold import MDS
 
+from mismo import _util
+
 
 def plot_cluster(nodes: Table, edges: Table) -> alt.Chart:
     """Plot a cluster of records and the links between them.
@@ -50,8 +52,8 @@ def _layout_nodes(nodes: Table, edges: Table) -> Table:
     coords_df = pd.DataFrame(coords_np, columns=["x", "y"])
     coords_df["id_in_cluster"] = range(len(coords_df))
     coords_table = ibis.memtable(coords_df)
-    augmented = n.left_join(coords_table, "id_in_cluster").drop(
-        "id_in_cluster_x", "id_in_cluster_y"
+    augmented = _util.join(n, coords_table, "id_in_cluster", how="left").drop(
+        "id_in_cluster_l", "id_in_cluster_r"
     )
     return augmented
 
@@ -82,13 +84,13 @@ def _edges_to_dissimilarity_matrix(nodes, edges):
     return matrix
 
 
-def _reindex_from_0(nodes, edges):
+def _reindex_from_0(nodes: Table, edges: Table):
     nodes = nodes.mutate(id_in_cluster=ibis.row_number())
     m = nodes["record_id", "id_in_cluster"]
     edges = edges.left_join(m, m.record_id == edges.record_id_l).drop("record_id")
-    edges = edges.left_join(
-        m, m.record_id == edges.record_id_r, suffixes=("_l", "_r")
-    ).drop("record_id")
+    edges = _util.join(edges, m, m.record_id == edges.record_id_r, how="left").drop(
+        "record_id"
+    )
     return nodes, edges
 
 

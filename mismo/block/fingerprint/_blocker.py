@@ -5,6 +5,7 @@ from typing import Iterable, Tuple
 import ibis
 from ibis.expr.types import Table
 
+from mismo import _util
 from mismo._dataset import PDatasetPair
 from mismo.block import Blocking, PBlocker
 from mismo.block.fingerprint._fingerprinter import PFingerprinter
@@ -59,9 +60,9 @@ def join_on_fingerprint_pair(
     prints_right = fpr.fingerprint(right)
     with_prints_left = left.mutate(__mismo_key=prints_left.unnest())
     with_prints_right = right.mutate(__mismo_key=prints_right.unnest())
-    result: Table = with_prints_left.inner_join(
-        with_prints_right, "__mismo_key", suffixes=("_l", "_r")
-    ).drop("__mismo_key")
+    result: Table = _util.join(with_prints_left, with_prints_right, "__mismo_key").drop(
+        "__mismo_key"
+    )
     return result
 
 
@@ -70,6 +71,6 @@ def join_on_fingerprint_pairs(
 ) -> Table:
     fps = list(fps)
     if len(fps) == 0:
-        return left.cross_join(right, suffixes=("_l", "_r")).limit(0)
+        return _util.join(left, right, how="cross").limit(0)
     chunks = [join_on_fingerprint_pair(left, right, fp1, fp2) for fp1, fp2 in fps]
     return ibis.union(*chunks, distinct=True)
