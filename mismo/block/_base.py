@@ -30,7 +30,7 @@ class Blocking:
         if blocked_ids is not None:
             self._blocked_ids = blocked_ids
             left, right = self.dataset_pair
-            self._blocked_data = join_tables(left, right, self.blocked_ids)
+            self._blocked_data = _join_tables(left, right, self.blocked_ids)
         else:
             self._blocked_data = blocked_data
             self._blocked_ids = blocked_data["record_id_l", "record_id_r"]
@@ -128,7 +128,7 @@ class FunctionBlocker(PBlocker):
         return dataset_pair.scrub_redundant_comparisons(b)
 
 
-def join_tables(left: Table, right: Table, id_pairs: Table) -> Table:
+def _join_tables(left: Table, right: Table, id_pairs: Table) -> Table:
     """Join two tables based on a table of (left_id, right_id) pairs."""
     if id_pairs.columns != ["record_id_l", "record_id_r"]:
         raise ValueError(
