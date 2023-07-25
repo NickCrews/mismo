@@ -34,6 +34,7 @@ def _wrap_febrl(
     }
     t = t.mutate(**{col: t[col].cast(dtype) for col, dtype in dtypes.items()})
     t = t.relabel({"rec_id": "record_id"})
+    t = t.order_by("record_id")
     t = t.cache()
 
     links_df = links_multi_index.to_frame(
@@ -122,5 +123,6 @@ def load_patents() -> Table:
         }
     )
     t = t.inner_join(labels, "record_id")
+    t = t.order_by("record_id")
     t = t.cache()
     return t
