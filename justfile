@@ -31,9 +31,9 @@ docs-publish:
     mkdocs gh-deploy --force
 
 # lock dependencies
-lock:
+deps-lock:
     pdm lock -dG :all
 
 # update dependencies
-update-deps:
+deps-update:
     pdm update -dG :all
