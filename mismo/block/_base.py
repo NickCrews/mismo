@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from functools import cache
 from textwrap import dedent
-from typing import Protocol, runtime_checkable
+from typing import Callable, Literal, Union
 
-from ibis.expr.types import Table
+from ibis.expr.types import BooleanValue, Table
 
+from mismo import _util
 from mismo._dataset import PDatasetPair
 from mismo._util import format_table
 
@@ -36,7 +37,7 @@ class Blocking:
                 )
             self._blocked_ids = blocked_ids
             left, right = self.dataset_pair
-            self._blocked_data = _join_tables(left, right, self.blocked_ids)
+            self._blocked_data = _join_on_ids(left, right, self.blocked_ids)
         else:
             self._blocked_data = blocked_data
             self._blocked_ids = blocked_data["record_id_l", "record_id_r"]
@@ -78,63 +79,42 @@ class Blocking:
         return hash((self.dataset_pair, self.blocked_ids))
 
 
-@runtime_checkable
-class PBlocker(Protocol):
-    """A ``PBlocker`` determines which pairs of records should be compared.
-
-    Either you can compare a set of records to itself, or you can compare two
-    different sets of records.
-
-    Args:
-        dataset_pair: The DatasetPair to block
-
-    Returns:
-        A ``Blocking`` object containing the results of the blocking.
-    """
-
-    def block(self, dataset_pair: PDatasetPair) -> Blocking:
-        """Block a dataset pair into a set of record pairs to compare.
-
-        Implementors are responsible for calling ``scrub_redundant_comparisons`` on
-        the ``dataset_pair`` before returning the ``Blocking`` object.
-        TODO: Should it be this object's responsibility?
-        """
-        ...
+Blocker = Union[
+    Literal[True],
+    Blocking,
+    Table,
+    BooleanValue,
+    Callable[[PDatasetPair], Blocking],
+    Callable[[PDatasetPair], Table],
+    Callable[[PDatasetPair], BooleanValue],
+]
 
 
-class CartesianBlocker(PBlocker):
-    """Block all possible pairs of records (i.e. the Cartesian product).)"""
+def block(dataset_pair: PDatasetPair, blocker: Blocker) -> Blocking:
+    raw = _block(dataset_pair, blocker)
+    return dataset_pair.scrub_redundant_comparisons(raw)
 
-    def block(self, dataset_pair: PDatasetPair) -> Blocking:
+
+def cartesian_block(dataset_pair: PDatasetPair) -> Blocking:
+    return block(dataset_pair, True)
+
+
+def _block(dataset_pair: PDatasetPair, blocker: Blocker) -> Blocking:
+    if isinstance(blocker, Blocking):
+        return blocker
+    elif isinstance(blocker, Table):
+        if set(blocker.columns) == {"record_id_l", "record_id_r"}:
+            return Blocking(dataset_pair, blocked_ids=blocker)
+        else:
+            return Blocking(dataset_pair, blocked_data=blocker)
+    elif isinstance(blocker, BooleanValue) or blocker is True:
         left, right = dataset_pair
-        left_ids = left.select("record_id").relabel("{name}_l")
-        right_ids = right.select("record_id").relabel("{name}_r")
-        blocked_ids = left_ids.cross_join(right_ids)
-        b = Blocking(dataset_pair, blocked_ids)
-        return dataset_pair.scrub_redundant_comparisons(b)
+        return Blocking(dataset_pair, blocked_data=_util.join(left, right, blocker))
+    else:
+        return _block(dataset_pair, blocker(dataset_pair))
 
 
-class FunctionBlocker(PBlocker):
-    """Blocks based on a function of type (Table, Table) -> Boolean"""
-
-    def __init__(self, func):
-        self.func = func
-
-    def block(self, dataset_pair: PDatasetPair) -> Blocking:
-        left, right = dataset_pair
-        # In case left and right are actually the same table, we need to take
-        # a view so the self join works correctly.
-        # https://ibis-project.org/user_guide/self_joins
-        right = right.view()
-        joined_full = left.join(
-            right, predicates=self.func(left, right), how="inner", suffixes=("_l", "_r")
-        )
-        ids = joined_full["record_id_l", "record_id_r"]
-        b = Blocking(dataset_pair, ids)
-        return dataset_pair.scrub_redundant_comparisons(b)
-
-
-def _join_tables(left: Table, right: Table, id_pairs: Table) -> Table:
+def _join_on_ids(left: Table, right: Table, id_pairs: Table) -> Table:
     """Join two tables based on a table of (left_id, right_id) pairs."""
     if id_pairs.columns != ["record_id_l", "record_id_r"]:
         raise ValueError(

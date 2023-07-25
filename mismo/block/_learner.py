@@ -7,11 +7,11 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from mismo.block import PBlocker
+from mismo.block import Blocker
 
 
 class PBlockLearner(Protocol):
-    def fit(self, data1: Table, data2: Table, y: Table) -> PBlocker:
+    def fit(self, data1: Table, data2: Table, y: Table) -> Blocker:
         ...
 
 

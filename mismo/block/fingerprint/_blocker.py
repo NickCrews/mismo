@@ -7,14 +7,14 @@ from ibis.expr.types import Table
 
 from mismo import _util
 from mismo._dataset import PDatasetPair
-from mismo.block import Blocking, PBlocker
+from mismo.block import Blocking, block
 from mismo.block.fingerprint._fingerprinter import PFingerprinter
 
 FingerprinterPair = Tuple[PFingerprinter, PFingerprinter]
 FingerprinterPairsLike = Iterable[FingerprinterPair]
 
 
-class FingerprintBlocker(PBlocker):
+class FingerprintBlocker:
     def __init__(self, fingerprinter_pairs: FingerprinterPairsLike) -> None:
         self._fp_pairs = convert_fingerprinters(fingerprinter_pairs)
 
@@ -26,8 +26,7 @@ class FingerprintBlocker(PBlocker):
         left, right = dataset_pair
         joined = join_on_fingerprint_pairs(left, right, self.fingerprinter_pairs)
         id_pairs = joined["record_id_l", "record_id_r"]
-        b = Blocking(dataset_pair, id_pairs)
-        return dataset_pair.scrub_redundant_comparisons(b)
+        return block(dataset_pair, id_pairs)
 
 
 def convert_fingerprinters(fps: FingerprinterPairsLike) -> list[FingerprinterPair]:

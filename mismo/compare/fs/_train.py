@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from ibis.expr.types import BooleanColumn, Table
+from ibis.expr.types import Table
 
 from mismo._dataset import PDatasetPair
 from mismo._util import sample_table
-from mismo.block import CartesianBlocker, FunctionBlocker
+from mismo.block import block, cartesian_block
 
 from ._base import Comparison, Weights
 
@@ -21,7 +21,7 @@ def possible_pairs(
     max_pairs: int | None = None,
     seed: int | None = None,
 ) -> Table:
-    pairs = CartesianBlocker().block(dataset_pair).blocked_data
+    pairs = cartesian_block(dataset_pair).blocked_data
     n_pairs = min_ignore_None(pairs.count().execute(), max_pairs)
     return sample_table(pairs, n_pairs, seed=seed)
 
@@ -37,10 +37,9 @@ def true_pairs_from_labels(dataset_pair: PDatasetPair) -> Table:
             "Right dataset must have a label_true column. Found: {right.columns}"
         )
 
-    def block_condition(le: Table, r: Table) -> BooleanColumn:
-        return le.label_true == r.label_true  # type: ignore
+    block_condition = left.label_true == right.label_true
 
-    return FunctionBlocker(block_condition).block(dataset_pair).blocked_data
+    return block(dataset_pair, block_condition).blocked_data
 
 
 def level_proportions(comparison: Comparison, pairs: Table) -> list[float]:
