@@ -44,7 +44,7 @@ def _wrap_febrl(
     links = links.order_by(["record_id_l", "record_id_r"])
     links = links.cache()
     dsp = DedupeDatasetPair(t)
-    return Blocking(dsp, links)
+    return Blocking(dsp, blocked_ids=links)
 
 
 def load_febrl1() -> Blocking:
