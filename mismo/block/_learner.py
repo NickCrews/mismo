@@ -22,6 +22,9 @@ class SetScore(NamedTuple):
     cost: float
 
 
+#  TODO: This still uses pandas and numpy, we should move to ibis if possible.
+#  Heavily inspired by Dedupe's BlockLearner
+# https://github.com/dedupeio/dedupe/blob/f72d4a161bfc66c9e1de9b39e2bd7e01bcad3c49/dedupe/training.py#L36
 class LinkSet:
     def __init__(self, links: pd.Series, n_extra_covers: int) -> None:
         self.links = links.drop_duplicates()
