@@ -28,6 +28,12 @@ class Blocking:
         if blocked_ids is not None and blocked_data is not None:
             raise ValueError("Must provide only one of blocked_ids or blocked_data")
         if blocked_ids is not None:
+            REQUIRED_ID_COLUMNS = {"record_id_l", "record_id_r"}
+            if set(blocked_ids.columns) != REQUIRED_ID_COLUMNS:
+                raise ValueError(
+                    f"Expected blocked_ids to have columns {REQUIRED_ID_COLUMNS}, "
+                    f"but it has {blocked_ids.columns}"
+                )
             self._blocked_ids = blocked_ids
             left, right = self.dataset_pair
             self._blocked_data = _join_tables(left, right, self.blocked_ids)
