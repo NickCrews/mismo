@@ -3,7 +3,7 @@ from __future__ import annotations
 from ibis.expr.types import Table
 
 from mismo._dataset import DedupeDatasetPair, PDatasetPair
-from mismo.block import PBlocker, PBlocking
+from mismo.block import Blocking, PBlocker
 from mismo.cluster import PClusterer
 from mismo.compare import PComparer, PComparisons
 
@@ -19,10 +19,10 @@ class Deduper:
         self.comparer = comparer
         self.clusterer = clusterer
 
-    def block(self, dataset_pair: PDatasetPair) -> PBlocking:
+    def block(self, dataset_pair: PDatasetPair) -> Blocking:
         return self.blocker.block(dataset_pair)
 
-    def compare(self, blocking: PBlocking) -> PComparisons:
+    def compare(self, blocking: Blocking) -> PComparisons:
         return self.comparer.compare(blocking)
 
     def cluster(self, comparisons: PComparisons) -> Table:

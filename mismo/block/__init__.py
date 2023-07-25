@@ -11,4 +11,3 @@ from mismo.block._base import Blocking as Blocking
 from mismo.block._base import CartesianBlocker as CartesianBlocker
 from mismo.block._base import FunctionBlocker as FunctionBlocker
 from mismo.block._base import PBlocker as PBlocker
-from mismo.block._base import PBlocking as PBlocking

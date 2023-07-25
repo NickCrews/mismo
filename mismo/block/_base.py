@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import dataclasses
 from functools import cache
 from textwrap import dedent
 from typing import Protocol, runtime_checkable
@@ -8,50 +7,48 @@ from typing import Protocol, runtime_checkable
 from ibis.expr.types import Table
 
 from mismo._dataset import PDatasetPair
-from mismo._typing import Self
 from mismo._util import format_table
 
 
-@runtime_checkable
-class PBlocking(Protocol):
-    """Record pairs that have been blocked together."""
+class Blocking:
+    _dataset_pair: PDatasetPair
+    _blocked_ids: Table
+    _blocked_data: Table
+
+    def __init__(
+        self,
+        dataset_pair: PDatasetPair,
+        *,  # force keyword arguments
+        blocked_ids: Table | None = None,
+        blocked_data: Table | None = None,
+    ) -> None:
+        self._dataset_pair = dataset_pair
+        if blocked_ids is None and blocked_data is None:
+            raise ValueError("Must provide either blocked_ids or blocked_data")
+        if blocked_ids is not None and blocked_data is not None:
+            raise ValueError("Must provide only one of blocked_ids or blocked_data")
+        if blocked_ids is not None:
+            self._blocked_ids = blocked_ids
+            left, right = self.dataset_pair
+            self._blocked_data = join_tables(left, right, self.blocked_ids)
+        else:
+            self._blocked_data = blocked_data
+            self._blocked_ids = blocked_data["record_id_l", "record_id_r"]
 
     @property
     def dataset_pair(self) -> PDatasetPair:
         """The DatasetPair that was blocked."""
-        ...
+        return self._dataset_pair
 
     @property
     def blocked_ids(self) -> Table:
         """A table of (left_id, right_id) pairs"""
-        ...
+        return self._blocked_ids
 
     @property
     def blocked_data(self) -> Table:
         """The dataset pair joined together on the blocked_ids"""
-        ...
-
-    def __len__(self) -> int:
-        """The number of blocked pairs."""
-        ...
-
-    def replace_blocked_ids(self, new_id_pairs: Table) -> Self:
-        """Return a new Blocking with the blocked_ids replaced by new_id_pairs."""
-        ...
-
-
-@dataclasses.dataclass()
-class Blocking:
-    dataset_pair: PDatasetPair
-    blocked_ids: Table
-
-    @property
-    def blocked_data(self) -> Table:
-        left, right = self.dataset_pair
-        return join_tables(left, right, self.blocked_ids)
-
-    def replace_blocked_ids(self, new_id_pairs: Table) -> Self:
-        return dataclasses.replace(self, blocked_ids=new_id_pairs)
+        return self._blocked_data
 
     @cache
     def __repr__(self) -> str:
@@ -64,6 +61,7 @@ class Blocking:
         return format_table(template, "table", self.blocked_data)
 
     def __len__(self) -> int:
+        """The number of blocked pairs."""
         try:
             return self._len
         except AttributeError:
@@ -88,7 +86,7 @@ class PBlocker(Protocol):
         A ``Blocking`` object containing the results of the blocking.
     """
 
-    def block(self, dataset_pair: PDatasetPair) -> PBlocking:
+    def block(self, dataset_pair: PDatasetPair) -> Blocking:
         """Block a dataset pair into a set of record pairs to compare.
 
         Implementors are responsible for calling ``scrub_redundant_comparisons`` on

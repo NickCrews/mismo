@@ -15,7 +15,7 @@ from ibis.expr.types import (
 
 from mismo._dataset import PDatasetPair
 from mismo._typing import Self
-from mismo.block import PBlocking
+from mismo.block import Blocking
 from mismo.compare import Comparisons
 
 from ._util import bayes_factor_to_prob, prob_to_bayes_factor
@@ -28,7 +28,7 @@ class FellegiSunterComparer:
         # Equivalent to probability_two_random_records_match from splink.
         self.prior = prior
 
-    def compare(self, blocking: PBlocking) -> Comparisons:
+    def compare(self, blocking: Blocking) -> Comparisons:
         if not self.is_trained:
             raise ValueError(f"{self} is not trained.")
         pairs = blocking.blocked_data

@@ -8,12 +8,12 @@ from ibis.expr.types import Table
 
 from mismo._dataset import PDatasetPair
 from mismo._typing import Self
-from mismo.block import PBlocking
+from mismo.block import Blocking
 
 
 @runtime_checkable
 class PComparer(Protocol):
-    def compare(self, blocking: PBlocking) -> PComparisons:
+    def compare(self, blocking: Blocking) -> PComparisons:
         """Compare two datasets, adding scores and/or other features to each pair.
 
         Args:
@@ -30,7 +30,7 @@ class PComparisons(Protocol):
     """Record pairs, with scores and/or other features added to each pair."""
 
     @property
-    def blocking(self) -> PBlocking:
+    def blocking(self) -> Blocking:
         """The Blocking that was used to generate the comparisons"""
         ...
 
@@ -47,7 +47,7 @@ class PComparisons(Protocol):
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class Comparisons:
-    blocking: PBlocking
+    blocking: Blocking
     compared: Table
 
     @property

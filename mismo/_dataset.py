@@ -3,16 +3,12 @@ from __future__ import annotations
 from collections.abc import Iterator
 import dataclasses
 from textwrap import dedent
-from typing import TYPE_CHECKING, Protocol, TypeVar, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from ibis.expr.types import Table
 
 from mismo._util import format_table
-
-if TYPE_CHECKING:
-    from mismo.block import PBlocking
-
-    TPBlocking = TypeVar("TPBlocking", bound=PBlocking)
+from mismo.block import Blocking
 
 
 @runtime_checkable
@@ -38,7 +34,7 @@ class PDatasetPair(Protocol):
         """The number of possible pairs."""
         ...
 
-    def scrub_redundant_comparisons(self, blocking: TPBlocking) -> TPBlocking:
+    def scrub_redundant_comparisons(self, blocking: Blocking) -> Blocking:
         """Remove redundant comparisons from the Blocking.
 
         For some DatasetPairs this is a no-op. But for some DatasetPairs, like
@@ -72,7 +68,7 @@ class DedupeDatasetPair(_PairBase):
     def right(self) -> Table:
         return self.table
 
-    def scrub_redundant_comparisons(self, blocking: TPBlocking) -> TPBlocking:
+    def scrub_redundant_comparisons(self, blocking: Blocking) -> Blocking:
         ids = blocking.blocked_ids
         left_col, right_col = ids.columns
         filtered = ids[ids[left_col] < ids[right_col]]
@@ -105,7 +101,7 @@ class LinkageDatasetPair(_PairBase):
         check_dataset(self.left)
         check_dataset(self.right)
 
-    def scrub_redundant_comparisons(self, blocking: TPBlocking) -> TPBlocking:
+    def scrub_redundant_comparisons(self, blocking: Blocking) -> Blocking:
         # No-op for linkages, we want to keep all comparisons
         return blocking
 
