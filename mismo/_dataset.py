@@ -75,8 +75,7 @@ class DedupeDatasetPair(_PairBase):
         from mismo.block import Blocking
 
         ids = blocking.blocked_ids
-        left_col, right_col = ids.columns
-        filtered = ids[ids[left_col] < ids[right_col]]
+        filtered = ids[ids.record_id_l < ids.record_id_r]
         return Blocking(blocking.dataset_pair, blocked_ids=filtered)
 
     @property
