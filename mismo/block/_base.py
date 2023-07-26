@@ -87,6 +87,9 @@ Blocker = Union[
     Callable[[PDatasetPair], Blocking],
     Callable[[PDatasetPair], Table],
     Callable[[PDatasetPair], BooleanValue],
+    Callable[[Table, Table], Blocking],
+    Callable[[Table, Table], Table],
+    Callable[[Table, Table], BooleanValue],
 ]
 
 
@@ -111,7 +114,12 @@ def _block(dataset_pair: PDatasetPair, blocker: Blocker) -> Blocking:
         left, right = dataset_pair
         return Blocking(dataset_pair, blocked_data=_util.join(left, right, blocker))
     else:
-        return _block(dataset_pair, blocker(dataset_pair))
+        try:
+            func_result = blocker(dataset_pair)
+        except TypeError:
+            left, right = dataset_pair
+            func_result = blocker(left, right)
+        return _block(dataset_pair, func_result)
 
 
 def _join_on_ids(left: Table, right: Table, id_pairs: Table) -> Table:
