@@ -119,6 +119,9 @@ def _block(dataset_pair: PDatasetPair, blocker: Blocker) -> Blocking:
             func_result = blocker(dataset_pair)
         except TypeError:
             left, right = dataset_pair
+            # In case left and right are the same table, we need to make sure we
+            # do a self-join properly per https://ibis-project.org/how_to/self_joins
+            right = right.view()
             func_result = blocker(left, right)
         return _block(dataset_pair, func_result)
 
