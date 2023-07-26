@@ -35,12 +35,13 @@ class Blocking:
                     f"Expected blocked_ids to have columns {REQUIRED_ID_COLUMNS}, "
                     f"but it has {blocked_ids.columns}"
                 )
-            self._blocked_ids = blocked_ids
+
             left, right = self.dataset_pair
-            self._blocked_data = _join_on_ids(left, right, self.blocked_ids)
+            blocked_data = _join_on_ids(left, right, blocked_ids)
         else:
-            self._blocked_data = blocked_data
-            self._blocked_ids = blocked_data["record_id_l", "record_id_r"]
+            blocked_ids = blocked_data["record_id_l", "record_id_r"]
+        self._blocked_ids = blocked_ids
+        self._blocked_data = _order_blocked_data_columns(blocked_data)
 
     @property
     def dataset_pair(self) -> PDatasetPair:
@@ -131,3 +132,9 @@ def _join_on_ids(left: Table, right: Table, id_pairs: Table) -> Table:
     left2 = left.relabel("{name}_l")
     right2 = right.relabel("{name}_r")
     return id_pairs.inner_join(left2, "record_id_l").inner_join(right2, "record_id_r")
+
+
+def _order_blocked_data_columns(t: Table) -> Table:
+    cols = set(t.columns) - {"record_id_l", "record_id_r"}
+    cols_in_order = ["record_id_l", "record_id_r", *sorted(cols)]
+    return t[cols_in_order]
