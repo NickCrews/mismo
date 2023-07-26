@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Callable
 
 import ibis
-from ibis.expr.types import Table
+from ibis import _
 import pandas as pd
 from recordlinkage import datasets as rlds
 
@@ -64,22 +64,28 @@ def load_febrl3() -> Blocking:
 # could add that later if it's needed.
 
 
-def load_patents() -> Table:
+def load_patents() -> DedupeDatasetPair:
     """Load the patents dataset from
     https://github.com/dedupeio/dedupe-examples/tree/master/patent_example
 
+    This represents a dataset of patents, and the task is to determine which
+    patents came from the same inventor.
+
     Returns
     -------
-    Table
-        A table, one row for each record, with the following columns:
+    A DedupeDatasetPair with the following table:
         - record_id: int64
-        - Lat: float64
-        - Lng: float64
-        - Coauthor: str
-        - Name: str
-        - Class: str
-        - real_id: int64
-        - real_name: str
+        - label_true: int64
+        - name_true: str
+        - name: str
+          The raw name on the patent
+        - latitude: float64
+          Geocoded from the inventor's address. 0.0 indicates no address was found
+        - longitude: float64
+        - coauthor: str
+          A list of coauthors, separated by **
+        - class_: str
+          A list of 4-digit IPC technical codes, separated by **
     """
     data_remote = "https://raw.githubusercontent.com/dedupeio/dedupe-examples/master/patent_example/patstat_input.csv"  # noqa E501
     labels_remote = "https://raw.githubusercontent.com/dedupeio/dedupe-examples/master/patent_example/patstat_reference.csv"  # noqa E501
@@ -114,15 +120,17 @@ def load_patents() -> Table:
     # |    3 |        3779 |      656303 | * ALCATEL N.V.
     # It's the same length as df, where each row of labels corresponds to the
     # same row of df.
-    t = t.relabel({"person_id": "record_id"})
-    labels = labels.relabel(
-        {
-            "person_id": "record_id",
-            "leuven_id": "label_true",
-            "person_name": "real_name",
-        }
+    t = t.inner_join(labels, "person_id")
+    t = t.select(
+        record_id=_.person_id,
+        label_true=_.leuven_id,
+        name_true=_.Name,
+        name=_.person_name,
+        latitude=_.Lat,
+        longitude=_.Lng,
+        coauthors=_.Coauthor,
+        classes=_.Class,
     )
-    t = t.inner_join(labels, "record_id")
     t = t.order_by("record_id")
     t = t.cache()
-    return t
+    return DedupeDatasetPair(t)
