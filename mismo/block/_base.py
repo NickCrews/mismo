@@ -86,8 +86,8 @@ _Blocker = Union[
     BooleanValue,
     list[BooleanValue],
     Callable[[PDatasetPair], BooleanValue],
-    Callable[[PDatasetPair], BooleanValue],
-    Callable[[Table, Table], list[BooleanValue]],
+    Callable[[PDatasetPair], list[BooleanValue]],
+    Callable[[Table, Table], BooleanValue],
     Callable[[Table, Table], list[BooleanValue]],
 ]
 
