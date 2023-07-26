@@ -2,29 +2,29 @@ from __future__ import annotations
 
 from functools import cache
 from textwrap import dedent
-from typing import Callable, Literal, Union
+from typing import Callable, Iterable, Literal, Union
 
 import ibis
 from ibis.expr.types import BooleanValue, Table
 
 from mismo import _util
-from mismo._dataset import PDatasetPair
 from mismo._util import format_table
 
 
 class Blocking:
-    _dataset_pair: PDatasetPair
+    _left: Table
+    _right: Table
     _blocked_ids: Table
     _blocked_data: Table
 
     def __init__(
         self,
-        dataset_pair: PDatasetPair,
+        left: Table,
+        right: Table,
         *,  # force keyword arguments
         blocked_ids: Table | None = None,
         blocked_data: Table | None = None,
     ) -> None:
-        self._dataset_pair = dataset_pair
         if blocked_ids is None and blocked_data is None:
             raise ValueError("Must provide either blocked_ids or blocked_data")
         if blocked_ids is not None and blocked_data is not None:
@@ -37,17 +37,23 @@ class Blocking:
                     f"but it has {blocked_ids.columns}"
                 )
 
-            left, right = self.dataset_pair
             blocked_data = _join_on_ids(left, right, blocked_ids)
         else:
             blocked_ids = blocked_data["record_id_l", "record_id_r"]
+        self._left = left
+        self._right = right
         self._blocked_ids = blocked_ids
         self._blocked_data = _order_blocked_data_columns(blocked_data)
 
     @property
-    def dataset_pair(self) -> PDatasetPair:
-        """The DatasetPair that was blocked."""
-        return self._dataset_pair
+    def left(self) -> Table:
+        """The left Table"""
+        return self._left
+
+    @property
+    def right(self) -> Table:
+        """The right Table"""
+        return self._right
 
     @property
     def blocked_ids(self) -> Table:
@@ -78,56 +84,53 @@ class Blocking:
             return self._len
 
     def __hash__(self) -> int:
-        return hash((self.dataset_pair, self.blocked_ids))
+        return hash((self.left, self.right, self.blocked_ids))
 
 
-_Blocker = Union[
-    Literal[True],
-    BooleanValue,
-    list[BooleanValue],
-    Callable[[PDatasetPair], BooleanValue],
-    Callable[[PDatasetPair], list[BooleanValue]],
-    Callable[[Table, Table], BooleanValue],
-    Callable[[Table, Table], list[BooleanValue]],
+_JOIN_CONDITON = Union[BooleanValue, Literal[True]]
+BlockingRule = Union[
+    _JOIN_CONDITON,
+    Callable[[Table, Table], _JOIN_CONDITON],
+    Callable[[Table, Table], Table],
 ]
 
-Blocker = Union[_Blocker, list[_Blocker]]
+
+def block(
+    left: Table,
+    right: Table,
+    rules: Iterable[BlockingRule],
+    skip_rules: Iterable[BlockingRule],
+) -> Blocking:
+    r = ibis.util.promote_list(rules)
+    sr = ibis.util.promote_list(skip_rules)
+    raw = _block(left, right, r, sr)
+    return raw
 
 
-def block(dataset_pair: PDatasetPair, blocker: Blocker) -> Blocking:
-    raw = _block(dataset_pair, blocker)
-    return dataset_pair.scrub_redundant_comparisons(raw)
+def cartesian_block(left: Table, right: Table) -> Blocking:
+    return block(left, right, True, [])
 
 
-def cartesian_block(dataset_pair: PDatasetPair) -> Blocking:
-    return block(dataset_pair, True)
-
-
-def _block(dataset_pair: PDatasetPair, blocker: Blocker) -> Blocking:
+def _block(left: Table, right: Table, blocker: BlockingRule) -> Blocking:
     if isinstance(blocker, list):
-        left, right = dataset_pair
         ids_chunks = [
             _util.join(left, right, rule)["record_id_l", "record_id_r"]
             for rule in blocker
         ]
         return Blocking(
-            dataset_pair,
+            left,
             blocked_ids=ibis.union(*ids_chunks, distinct=True),
         )
     elif isinstance(blocker, BooleanValue) or blocker is True:
-        return _block(dataset_pair, [blocker])
+        return _block(left, [blocker])
     else:
-        try:
-            func_result = blocker(dataset_pair)
-        except TypeError:
-            left, right = dataset_pair
-            func_result = blocker(left, right)
-        return _block(dataset_pair, func_result)
+        func_result = blocker(left, right)
+        return _block(left, func_result)
 
 
 def _join_on_ids(left: Table, right: Table, id_pairs: Table) -> Table:
-    """Join two tables based on a table of (left_id, right_id) pairs."""
-    if id_pairs.columns != ["record_id_l", "record_id_r"]:
+    """Join two tables based on a table of (record_id_l, record_id_r) pairs."""
+    if set(id_pairs.columns) != {"record_id_l", "record_id_r"}:
         raise ValueError(
             f"Expected id_pairs to have 2 columns, but it has {id_pairs.columns}"
         )

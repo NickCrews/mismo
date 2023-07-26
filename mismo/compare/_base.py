@@ -6,7 +6,6 @@ from typing import Protocol, runtime_checkable
 
 from ibis.expr.types import Table
 
-from mismo._dataset import PDatasetPair
 from mismo._typing import Self
 from mismo.block import Blocking
 
@@ -35,9 +34,14 @@ class PComparisons(Protocol):
         ...
 
     @property
-    def dataset_pair(self) -> PDatasetPair:
-        """The DatasetPair that was compared."""
-        return self.blocking.dataset_pair
+    def left(self) -> Table:
+        """The left source Table"""
+        ...
+
+    @property
+    def right(self) -> Table:
+        """The right source Table"""
+        ...
 
     @property
     def compared(self) -> Table:
@@ -51,8 +55,12 @@ class Comparisons:
     compared: Table
 
     @property
-    def dataset_pair(self) -> PDatasetPair:
-        return self.blocking.dataset_pair
+    def left(self) -> Table:
+        return self.blocking.left
+
+    @property
+    def right(self) -> Table:
+        return self.blocking.right
 
     def cache(self) -> Self:
         return dataclasses.replace(self, compared=self.compared.cache())

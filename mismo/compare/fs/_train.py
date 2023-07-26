@@ -4,7 +4,6 @@ from dataclasses import replace
 
 from ibis.expr.types import Table
 
-from mismo._dataset import PDatasetPair
 from mismo._util import sample_table
 from mismo.block import block, cartesian_block
 
@@ -16,18 +15,19 @@ def min_ignore_None(*args):
 
 
 def possible_pairs(
-    dataset_pair: PDatasetPair,
+    left: Table,
+    right: Table,
     *,
     max_pairs: int | None = None,
     seed: int | None = None,
 ) -> Table:
-    pairs = cartesian_block(dataset_pair).blocked_data
+    pairs = cartesian_block(left, right).blocked_data
     n_pairs = min_ignore_None(pairs.count().execute(), max_pairs)
     return sample_table(pairs, n_pairs, seed=seed)
 
 
-def true_pairs_from_labels(dataset_pair: PDatasetPair) -> Table:
-    left, right = dataset_pair
+def true_pairs_from_labels(left: Table, right: Table) -> Table:
+    left, right = left
     if "label_true" not in left.columns:
         raise ValueError(
             "Left dataset must have a label_true column. Found: {left.columns}"
@@ -37,9 +37,9 @@ def true_pairs_from_labels(dataset_pair: PDatasetPair) -> Table:
             "Right dataset must have a label_true column. Found: {right.columns}"
         )
 
-    block_condition = left.label_true == right.label_true
+    rule = left.label_true == right.label_true
 
-    return block(dataset_pair, block_condition).blocked_data
+    return block(left, right, [rule], []).blocked_data
 
 
 def level_proportions(comparison: Comparison, pairs: Table) -> list[float]:
@@ -56,7 +56,8 @@ def level_proportions(comparison: Comparison, pairs: Table) -> list[float]:
 
 def train_us_using_sampling(
     comparison: Comparison,
-    dataset_pair: PDatasetPair,
+    left: Table,
+    right: Table,
     *,
     max_pairs: int | None = None,
     seed: int | None = None,
@@ -90,13 +91,14 @@ def train_us_using_sampling(
     """
     if max_pairs is None:
         max_pairs = 1_000_000_000
-    sample = possible_pairs(dataset_pair, max_pairs=max_pairs, seed=seed)
+    sample = possible_pairs(left, right, max_pairs=max_pairs, seed=seed)
     return level_proportions(comparison, sample)
 
 
 def train_ms_from_labels(
     comparison: Comparison,
-    dataset_pair: PDatasetPair,
+    left: Table,
+    right: Table,
     *,
     max_pairs: int | None = None,
 ) -> list[float]:
@@ -118,7 +120,7 @@ def train_ms_from_labels(
     When NULL values are encountered in the ground truth column,
     that record is simply ignored.
     """
-    pairs = true_pairs_from_labels(dataset_pair)
+    pairs = true_pairs_from_labels(left, right)
     if max_pairs is None:
         max_pairs = 1_000_000_000
     n_pairs = min(pairs.count().execute(), max_pairs)
@@ -128,15 +130,16 @@ def train_ms_from_labels(
 
 def train_comparison(
     comparison: Comparison,
-    dataset_pair: PDatasetPair,
+    left: Table,
+    right: Table,
     *,
     max_pairs: int | None = None,
     seed: int | None = None,
 ) -> Comparison:
     """Train the weights of a Comparison."""
-    ms = train_ms_from_labels(comparison, dataset_pair, max_pairs=max_pairs)
+    ms = train_ms_from_labels(comparison, left, right, max_pairs=max_pairs)
     us = train_us_using_sampling(
-        comparison, dataset_pair, max_pairs=max_pairs, seed=seed
+        comparison, left, right, max_pairs=max_pairs, seed=seed
     )
     new_levels = [
         level.with_weights(Weights(m=m, u=u))

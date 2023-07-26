@@ -4,10 +4,10 @@ from typing import Callable
 
 import ibis
 from ibis import _
+from ibis.expr.types import Table
 import pandas as pd
 from recordlinkage import datasets as rlds
 
-from mismo._dataset import DedupeDatasetPair
 from mismo.block import Blocking
 
 
@@ -44,8 +44,7 @@ def _wrap_febrl(
     links = con.table("links")
     links = links.order_by(["record_id_l", "record_id_r"])
     links = links.cache()
-    dsp = DedupeDatasetPair(t)
-    return Blocking(dsp, blocked_ids=links)
+    return Blocking(t, t.view(), blocked_ids=links)
 
 
 def load_febrl1() -> Blocking:
@@ -64,7 +63,7 @@ def load_febrl3() -> Blocking:
 # could add that later if it's needed.
 
 
-def load_patents() -> DedupeDatasetPair:
+def load_patents() -> Table:
     """Load the patents dataset from
     https://github.com/dedupeio/dedupe-examples/tree/master/patent_example
 
@@ -73,17 +72,20 @@ def load_patents() -> DedupeDatasetPair:
 
     Returns
     -------
-    A DedupeDatasetPair with the following table:
+    An Ibis Table with the following schema:
         - record_id: int64
+          A unique ID for each row in the table.
         - label_true: int64
+          The manually labeled, true ID of the inventor.
         - name_true: str
+          The manually labeled, true name of the inventor.
         - name: str
-          The raw name on the patent
+          The raw name on the patent.
         - latitude: float64
           Geocoded from the inventor's address. 0.0 indicates no address was found
         - longitude: float64
         - coauthor: str
-          A list of coauthors, separated by **
+          A list of coauthors on the patent, separated by **
         - class_: str
           A list of 4-digit IPC technical codes, separated by **
     """
@@ -133,4 +135,4 @@ def load_patents() -> DedupeDatasetPair:
     )
     t = t.order_by("record_id")
     t = t.cache()
-    return DedupeDatasetPair(t)
+    return t

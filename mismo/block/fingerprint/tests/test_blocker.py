@@ -5,7 +5,6 @@ from ibis.expr.types import Table
 import pandas as pd
 import pytest
 
-from mismo._dataset import DedupeDatasetPair
 from mismo.block.fingerprint import Equals, FingerprintBlocker
 
 
@@ -28,6 +27,5 @@ def test_basic_blocking(simple_table):
         (Equals("strings"), Equals("strings")),
     ]
     blocker = FingerprintBlocker(conditions)
-    dsp = DedupeDatasetPair(simple_table)
-    blocker.block(dsp)
+    blocker.block(simple_table, simple_table.view())
     # TODO: actually test the result

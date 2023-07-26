@@ -6,7 +6,6 @@ import ibis
 from ibis.expr.types import Table
 
 from mismo import _util
-from mismo._dataset import PDatasetPair
 from mismo.block import Blocking, block
 from mismo.block.fingerprint._fingerprinter import PFingerprinter
 
@@ -22,11 +21,10 @@ class FingerprintBlocker:
     def fingerprinter_pairs(self) -> list[FingerprinterPair]:
         return self._fp_pairs
 
-    def block(self, dataset_pair: PDatasetPair) -> Blocking:
-        left, right = dataset_pair
+    def block(self, left: Table, right: Table) -> Blocking:
         joined = join_on_fingerprint_pairs(left, right, self.fingerprinter_pairs)
         id_pairs = joined["record_id_l", "record_id_r"]
-        return block(dataset_pair, id_pairs)
+        return block(left, right, id_pairs, [])
 
 
 def convert_fingerprinters(fps: FingerprinterPairsLike) -> list[FingerprinterPair]:

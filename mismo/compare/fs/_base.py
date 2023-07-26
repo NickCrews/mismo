@@ -13,7 +13,6 @@ from ibis.expr.types import (
     Table,
 )
 
-from mismo._dataset import PDatasetPair
 from mismo._typing import Self
 from mismo.block import Blocking
 from mismo.compare import Comparisons
@@ -37,7 +36,8 @@ class FellegiSunterComparer:
 
     def trained(
         self,
-        dataset_pair: PDatasetPair,
+        left: Table,
+        right: Table,
         max_pairs: int | None = None,
         seed: int | None = None,
     ) -> Self:
@@ -47,7 +47,7 @@ class FellegiSunterComparer:
         from ._train import train_comparison
 
         trained = [
-            train_comparison(c, dataset_pair, max_pairs=max_pairs, seed=seed)
+            train_comparison(c, left, right, max_pairs=max_pairs, seed=seed)
             for c in self.comparisons
         ]
         return self.__class__(trained, prior=self.prior)

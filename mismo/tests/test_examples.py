@@ -16,7 +16,7 @@ from mismo.examples import load_febrl1, load_febrl2, load_febrl3, load_patents
 )
 def test_load_febrl_smoketest(load_func, expected_count, expected_link_count):
     blocking: Blocking = load_func()
-    assert blocking.dataset_pair.left.count().execute() == expected_count
+    assert blocking.left.count().execute() == expected_count
     assert blocking.blocked_ids.count().execute() == expected_link_count
     repr(blocking)
 

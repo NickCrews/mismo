@@ -3,7 +3,6 @@ from __future__ import annotations
 import pytest
 
 from mismo import examples
-from mismo._dataset import DedupeDatasetPair
 from mismo.compare.fs import _levels as levels_lib
 from mismo.compare.fs._base import Comparison, ComparisonLevel
 from mismo.compare.fs._train import train_comparison
@@ -15,7 +14,7 @@ from mismo.compare.fs._train import train_comparison
 def test_comparison_training():
     """Test that training a Comparison works."""
     patents = examples.load_patents()
-    patents_dataset_pair = DedupeDatasetPair(patents)
+    left, right = patents, patents.view()
     almost_level = ComparisonLevel(
         name="almost",
         condition=lambda table: table["Name_l"][:3] == table["Name_r"][:3],  # type: ignore # noqa: E501
@@ -24,9 +23,7 @@ def test_comparison_training():
     exact_level = levels_lib.exact("Name")
     levels = [exact_level, almost_level]
     comparison = Comparison(name="Name", levels=levels)
-    trained = train_comparison(
-        comparison, patents_dataset_pair, max_pairs=10_000, seed=42
-    )
+    trained = train_comparison(comparison, left, right, max_pairs=10_000, seed=42)
     assert trained is not None
     assert trained.name == "Name"
     assert len(trained.levels) == 2

@@ -7,7 +7,7 @@ to be compared, hopefully to a manageable level.
 """
 from __future__ import annotations
 
-from mismo.block._base import Blocker as Blocker
 from mismo.block._base import Blocking as Blocking
+from mismo.block._base import BlockingRule as BlockingRule
 from mismo.block._base import block as block
 from mismo.block._base import cartesian_block as cartesian_block
