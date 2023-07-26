@@ -4,6 +4,7 @@ from functools import cache
 from textwrap import dedent
 from typing import Callable, Literal, Union
 
+import ibis
 from ibis.expr.types import BooleanValue, Table
 
 from mismo import _util
@@ -80,18 +81,17 @@ class Blocking:
         return hash((self.dataset_pair, self.blocked_ids))
 
 
-Blocker = Union[
+_Blocker = Union[
     Literal[True],
-    Blocking,
-    Table,
     BooleanValue,
-    Callable[[PDatasetPair], Blocking],
-    Callable[[PDatasetPair], Table],
+    list[BooleanValue],
     Callable[[PDatasetPair], BooleanValue],
-    Callable[[Table, Table], Blocking],
-    Callable[[Table, Table], Table],
-    Callable[[Table, Table], BooleanValue],
+    Callable[[PDatasetPair], BooleanValue],
+    Callable[[Table, Table], list[BooleanValue]],
+    Callable[[Table, Table], list[BooleanValue]],
 ]
+
+Blocker = Union[_Blocker, list[_Blocker]]
 
 
 def block(dataset_pair: PDatasetPair, blocker: Blocker) -> Blocking:
@@ -104,16 +104,18 @@ def cartesian_block(dataset_pair: PDatasetPair) -> Blocking:
 
 
 def _block(dataset_pair: PDatasetPair, blocker: Blocker) -> Blocking:
-    if isinstance(blocker, Blocking):
-        return blocker
-    elif isinstance(blocker, Table):
-        if set(blocker.columns) == {"record_id_l", "record_id_r"}:
-            return Blocking(dataset_pair, blocked_ids=blocker)
-        else:
-            return Blocking(dataset_pair, blocked_data=blocker)
-    elif isinstance(blocker, BooleanValue) or blocker is True:
+    if isinstance(blocker, list):
         left, right = dataset_pair
-        return Blocking(dataset_pair, blocked_data=_util.join(left, right, blocker))
+        ids_chunks = [
+            _util.join(left, right, rule)["record_id_l", "record_id_r"]
+            for rule in blocker
+        ]
+        return Blocking(
+            dataset_pair,
+            blocked_ids=ibis.union(*ids_chunks, distinct=True),
+        )
+    elif isinstance(blocker, BooleanValue) or blocker is True:
+        return _block(dataset_pair, [blocker])
     else:
         try:
             func_result = blocker(dataset_pair)
