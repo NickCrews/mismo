@@ -53,14 +53,15 @@ class _PairBase(PDatasetPair, Protocol):
         return iter((self.left, self.right))
 
 
-@dataclasses.dataclass(frozen=True)
 class DedupeDatasetPair(_PairBase):
     """A single Table to dedupe, with the interface of a DatasetPair."""
 
-    table: Table
-
-    def __post_init__(self) -> None:
-        check_dataset(self.table)
+    def __init__(self, table: Table) -> None:
+        check_dataset(table)
+        self.table = table
+        # Make the two tables distinct so that we do a self-join properly per
+        # https://ibis-project.org/how_to/self_joins
+        self._right = self.table.view()
 
     @property
     def left(self) -> Table:
@@ -68,7 +69,7 @@ class DedupeDatasetPair(_PairBase):
 
     @property
     def right(self) -> Table:
-        return self.table
+        return self._right
 
     def scrub_redundant_comparisons(self, blocking: Blocking) -> Blocking:
         from mismo.block import Blocking
