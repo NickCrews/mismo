@@ -1,6 +1,10 @@
-# Glossary of the Fellegi-Sunter Model
+# Fellegi-Sunter Model
 
-## Bayes Factor
+This is the model used by Splink, and I am trying to copy that over to Mismo.
+
+## Glossary
+
+### Bayes Factor
 
 Bayes factors can be explained in words. For example, a Bayes Factor of 20 for a
 given column means that an overall match is now 20 times more probable.
@@ -16,7 +20,7 @@ in the context of a prior. A Bayes Factor is an adjustment - it tells us
 something is more or less likely. But we need a starting value -
 otherwise there's nothing to apply the adjustment to.
 
-## Match Weight
+### Match Weight
 
 The logarithm of Bayes Factors. This is useful because it allows
 match weights to be added together rather than being multiplied (as Bayes Factors are).
@@ -27,14 +31,14 @@ we would get a Bayes Factor of `8 * (1/2) = 4`. The corresponding match weights
 (using a log base of 2) would be 3 and -1, and the combined match weight would be
 `3 + (-1) = 2`, which corresponds to a Bayes Factor of 4, as expected.
 
-## Prior
+### Prior
 
 A prior is a starting value for a Bayes Factor or match weight. Generally,
 we start with the probability that two random records from our two datasets
 are a match. From there, we can adjust the probability up or down based on
 the values of the columns.
 
-## M probabilities
+### M probabilities
 
 Amongst record comparisons which are true matches,
 what proportion have a match on first name, and what proportion mismatch on first name?
@@ -42,7 +46,7 @@ what proportion have a match on first name, and what proportion mismatch on firs
 This is a measure of how often mispellings, nicknames
 or aliases occur in the first name field.
 
-## U probabilities
+### U probabilities
 
 Amongst record comparisons which are true non-matches,
 what proportion have a match on first name, and what proportion mismatch on first name?
