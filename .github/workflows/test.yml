@@ -39,8 +39,10 @@ jobs:
         with:
           just-version: "1.14" # optional semver specification, otherwise latest
 
-      - name: Init dev environment
-        run: just init
+      - name: Install dev environment and activate venv
+        run: |
+          just install
+          . .venv/bin/activate
 
       - name: Run tests
         run: just test
@@ -62,8 +64,10 @@ jobs:
         with:
           just-version: "1.14" # optional semver specification, otherwise latest
 
-      - name: Init dev environment
-        run: just init
+      - name: Install dev environment and activate venv
+        run: |
+          just install
+          . .venv/bin/activate
 
       - name: Publish docs
         run: just docs-publish

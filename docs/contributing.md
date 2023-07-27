@@ -15,8 +15,10 @@ for the relevant recipe.
 
 Once `PDM` (and optionally `just`) are installed, run `just init`. This will
 create a virtual environment in `.venv/`, install all the locked dependencies
-in `pdm.lock`, and activate the venv. You can exit the venv with `deactivate`,
-as usual.
+in `pdm.lock`.
+
+To enter the venv, use `. .venv/bin/activate`.
+You can exit the venv with `deactivate`, as usual.
 
 When you are in the venv, you can run common tasks such as
 - `just test`

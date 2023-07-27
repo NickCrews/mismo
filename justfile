@@ -4,10 +4,9 @@
 default:
     just --list
 
-# initialize development environment
-init:
+# initialize development environment (but don't activate it)
+install:
     pdm install -d -G :all
-    . .venv/bin/activate
 
 # format code
 fmt:
