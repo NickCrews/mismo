@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from mismo import examples
+from mismo import datasets
 from mismo.compare import Comparison, ComparisonLevel, exact_level
 from mismo.compare.fs import FSComparison, train_comparison
 
@@ -12,7 +12,7 @@ from mismo.compare.fs import FSComparison, train_comparison
 @pytest.mark.xfail(reason="Something broke the weights")
 def test_comparison_training():
     """Test that training a Comparison works."""
-    patents = examples.load_patents()
+    patents = datasets.load_patents()
     left, right = patents, patents.view()
     almost_level = ComparisonLevel(
         name="almost",

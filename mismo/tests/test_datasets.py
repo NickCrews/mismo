@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from mismo.block import Blocking
-from mismo.examples import load_febrl1, load_febrl2, load_febrl3, load_patents
+from mismo.datasets import load_febrl1, load_febrl2, load_febrl3, load_patents
 
 
 @pytest.mark.parametrize(

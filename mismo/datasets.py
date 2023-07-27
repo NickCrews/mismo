@@ -10,6 +10,13 @@ from recordlinkage import datasets as rlds
 
 from mismo.block import Blocking
 
+__all__ = [
+    "load_febrl1",
+    "load_febrl2",
+    "load_febrl3",
+    "load_patents",
+]
+
 
 def _wrap_febrl(
     load_febrl: Callable[..., tuple[pd.DataFrame, pd.MultiIndex]]
@@ -64,15 +71,18 @@ def load_febrl3() -> Blocking:
 
 
 def load_patents() -> Table:
-    """Load the patents dataset from
-    https://github.com/dedupeio/dedupe-examples/tree/master/patent_example
+    """Load the PATSTAT dataset
 
     This represents a dataset of patents, and the task is to determine which
     patents came from the same inventor.
 
+    This comes from
+    [the Dedupe Patent Example](https://github.com/dedupeio/dedupe-examples/tree/master/patent_example).
+
     Returns
     -------
-    An Ibis Table with the following schema:
+    Table
+        An Ibis Table with the following schema:
         - record_id: int64
           A unique ID for each row in the table.
         - label_true: int64
