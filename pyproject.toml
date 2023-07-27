@@ -7,12 +7,10 @@ name = "mismo"
 description = ''
 version = "0.1.0"
 readme = "README.md"
-requires-python = ">=3.9"  # require >3.9 so that we can use ibis>=6
-license = {text = "LGPL-3.0-or-later"}
+requires-python = ">=3.9" # require >3.9 so that we can use ibis>=6
+license = { text = "LGPL-3.0-or-later" }
 keywords = []
-authors = [
-  { name = "Nick Crews", email = "nicholas.b.crews@gmail.com" },
-]
+authors = [{ name = "Nick Crews", email = "nicholas.b.crews@gmail.com" }]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
@@ -24,8 +22,8 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-    "ibis-framework[duckdb]==6.0.0",
-    "typing-extensions ; python_version < \"3.11\"",  # needed for Self
+  "ibis-framework[duckdb]==6.0.0",
+  "typing-extensions ; python_version < \"3.11\"", # needed for Self
 ]
 
 [project.urls]
@@ -34,39 +32,23 @@ Issues = "https://github.com/NickCrews/mismo/issues"
 Source = "https://github.com/NickCrews/mismo"
 
 [tool.pdm.dev-dependencies]
-lint = [
-    "black[jupyter]",
-    "ruff",
-    "mypy",
-    "nbqa",
-]
-test = [
-  "pytest",
-  "pytest-cov",
-]
-docs = [
-  "mkdocs-material",
-]
+lint = ["black[jupyter]", "ruff", "mypy", "nbqa"]
+test = ["pytest", "pytest-cov"]
+docs = ["mkdocs-material"]
 
 [tool.coverage.run]
 branch = true
 parallel = true
-omit = [
-  "mismo/__about__.py",
-]
+omit = ["mismo/__about__.py"]
 
 [tool.coverage.report]
-exclude_lines = [
-  "no cov",
-  "if __name__ == .__main__.:",
-  "if TYPE_CHECKING:",
-]
+exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
 
 [tool.ruff]
 select = [
-  "E",  # pyflakes
-  "F",  # pyflakes
-  "I",  # isort
+  "E", # pyflakes
+  "F", # pyflakes
+  "I", # isort
 ]
 
 [tool.ruff.isort]
