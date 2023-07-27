@@ -1,3 +1,10 @@
+---
+hide:
+  - toc
+  - navigation
+  - footer
+---
+
 # Mismo
 
 Mismo is a python framework for
