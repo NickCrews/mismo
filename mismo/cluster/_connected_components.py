@@ -10,43 +10,7 @@ from ibis.expr.types import Column, IntegerColumn, Table
 
 from mismo import _util
 
-from . import Labeling, LabelingPair
-
 logger = logging.getLogger(__name__)
-
-
-class ConnectedComponentsClusterer:
-    """Uses a connected components algorithm to cluster records into groups."""
-
-    def __init__(
-        self, min_bayes_factor: float | None = None, max_iter: int | None = None
-    ):
-        self.min_bayes_factor = min_bayes_factor
-        self.max_iter = max_iter
-
-    def cluster(
-        self,
-        pairs: Table,
-        left: Table,
-        right: Table,
-    ) -> LabelingPair:
-        if self.min_bayes_factor is not None:
-            pairs = pairs[_.bayes_factor > self.min_bayes_factor]
-        pairs = pairs["record_id_l", "record_id_r"]
-        left_labels, right_labels = connected_components(pairs, max_iter=self.max_iter)
-        left_labeling = Labeling(
-            table=left,
-            labels=left_labels.relabel(
-                {"record_id_l": "record_id", "component": "label"}
-            ),
-        )
-        right_labeling = Labeling(
-            table=right,
-            labels=right_labels.relabel(
-                {"record_id_r": "record_id", "component": "label"}
-            ),
-        )
-        return LabelingPair(left_labeling, right_labeling)
 
 
 def connected_components(
@@ -61,14 +25,17 @@ def connected_components(
     I think more performant algorithms exist, but they are more complicated.
     See https://arxiv.org/pdf/1802.09478.pdf
 
-    Args:
-        edges: A table of (left_id, right_id) pairs. This must have two columns,
-        they can be named anything. The datatypes can be anything.
+    Parameters
+    ----------
+    edges:
+        A table with the columns (record_id_l, record_id_r).
+        The datatypes can be anything.
 
-    Returns:
-        Two tables, one for the left ids and one for the right ids. Each table
-        has two columns, the first is the id of the record and the second is
-        called "component" and is the id of the component it belongs to.
+    Returns
+    -------
+        Two tables, one for the left records and one for the right records.
+        The left table has columns (record_id_l, component), and
+        the right table has columns (record_id_r, component).
     """
     edges, left_map, right_map = _normalize_edges(edges)
     labels = _connected_components_ints(edges, max_iter=max_iter)
@@ -145,14 +112,28 @@ def _get_component_update_map(component_equivalences: Table) -> Table:
 
 
 def _normalize_edges(raw_edges: Table) -> tuple[Table, Table, Table]:
-    """Translate the edges to use uint64s, and create maps back to the original ids."""
-    if len(raw_edges.columns) != 2:
+    """
+    Translate edges to uint64s, merge namespaces, and create maps back to the original
+
+    By "merge namespaces" I mean the record ids
+    in the left table and the record ids in the right table are not necessarily
+    distinct from each other. They could each have an id of 5, but refer to
+    different records. Keeping track of these two different universes of record
+    ids is complex, so we just merge them into one universe of record ids,
+    by labeling the left records 0-L, and then the right records starting
+    from there, eg  L+1-L+R.
+    """
+    if "record_id_l" not in raw_edges.columns or "record_id_r" not in raw_edges.columns:
         raise ValueError(
-            f"edges must have exactly two columns, got {raw_edges.columns}"
+            "edges must contain the columns `record_id_l` and `record_id_r`, "
+            f"but it contains {raw_edges.columns}"
         )
-    cl, cr = raw_edges.columns
-    left_map = raw_edges.select(cl, record=_group_id(raw_edges, cl)).distinct()
-    right_map = raw_edges.select(cr, record=_group_id(raw_edges, cr)).distinct()
+    left_map = raw_edges.select(
+        "record_id_l", record=_group_id(raw_edges, "record_id_l")
+    ).distinct()
+    right_map = raw_edges.select(
+        "record_id_r", record=_group_id(raw_edges, "record_id_r")
+    ).distinct()
     max_left = left_map.count().execute()
     right_map = right_map.mutate(
         record=(right_map["record"] + max_left + 1).cast("uint64")
@@ -160,7 +141,7 @@ def _normalize_edges(raw_edges: Table) -> tuple[Table, Table, Table]:
 
     lm2 = left_map.relabel({"record": "record_l"})
     rm2 = right_map.relabel({"record": "record_r"})
-    edges = raw_edges.left_join(lm2, cl).left_join(rm2, cr)
+    edges = raw_edges.left_join(lm2, "record_id_l").left_join(rm2, "record_id_r")
     edges = edges["record_l", "record_r"]
     return edges, left_map, right_map
 
