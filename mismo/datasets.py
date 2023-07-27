@@ -6,7 +6,6 @@ import ibis
 from ibis import _
 from ibis.expr.types import Table
 import pandas as pd
-from recordlinkage import datasets as rlds
 
 from mismo.block import Blocking
 
@@ -55,14 +54,20 @@ def _wrap_febrl(
 
 
 def load_febrl1() -> Blocking:
+    from recordlinkage import datasets as rlds
+
     return _wrap_febrl(rlds.load_febrl1)  # pyright: ignore
 
 
 def load_febrl2() -> Blocking:
+    from recordlinkage import datasets as rlds
+
     return _wrap_febrl(rlds.load_febrl2)  # pyright: ignore
 
 
 def load_febrl3() -> Blocking:
+    from recordlinkage import datasets as rlds
+
     return _wrap_febrl(rlds.load_febrl3)  # pyright: ignore
 
 
