@@ -39,13 +39,11 @@ jobs:
         with:
           just-version: "1.14" # optional semver specification, otherwise latest
 
-      - name: Install dev environment and activate venv
-        run: |
-          just install
-          . .venv/bin/activate
+      - name: Install dev environment
+        run: just install
 
       - name: Run tests
-        run: just test
+        run: pdm run just test
   lint-and-docs:
     name: Lint
     runs-on: ubuntu-latest
@@ -64,13 +62,11 @@ jobs:
         with:
           just-version: "1.14" # optional semver specification, otherwise latest
 
-      - name: Install dev environment and activate venv
-        run: |
-          just install
-          . .venv/bin/activate
+      - name: Install dev environment
+        run: just install
 
       - name: Publish docs
-        run: just docs-publish
+        run: pdm run just docs-publish
 
       - name: Run linters
-        run: just lint
+        run: pdm run just lint
