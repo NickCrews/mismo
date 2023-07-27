@@ -103,12 +103,10 @@ def _connected_components_ints(
 
 def _n_updates(labels: Table, new_labels: Table) -> int:
     """Count the number of updates between two labelings."""
-    return (
-        _util.join(labels, new_labels, "record")
-        .filter(_.component_l != _.component_r)
-        .count()
-        .execute()
+    condition = (labels.record == new_labels.record) & (
+        labels.component != new_labels.component
     )
+    return _util.join(labels, new_labels, condition).count().execute()
 
 
 def _updated_labels(labels: Table, edges: Table) -> Table:
