@@ -27,15 +27,16 @@ def connected_components(
 
     Parameters
     ----------
-    edges:
+    edges :
         A table with the columns (record_id_l, record_id_r).
         The datatypes can be anything.
 
     Returns
     -------
-        Two tables, one for the left records and one for the right records.
-        The left table has columns (record_id_l, component), and
-        the right table has columns (record_id_r, component).
+    left_labels : Table
+        Labeling for left records. Has columns (record_id_l, component).
+    right_labels : Table
+        Labeling for right records. Has columns (record_id_r, component).
     """
     edges, left_map, right_map = _normalize_edges(edges)
     labels = _connected_components_ints(edges, max_iter=max_iter)

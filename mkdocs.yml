@@ -31,9 +31,11 @@ plugins:
         python:
           import:
             - https://docs.python.org/3/objects.inv
-          show_category_heading: true
-          show_root_full_path: false
-          show_root_heading: true
-          show_root_toc_entry: true
-          show_source: false
+          options:
+            docstring_style: numpy
+            show_category_heading: true
+            show_root_full_path: false
+            show_root_heading: true
+            show_root_toc_entry: true
+            show_source: false
   - search

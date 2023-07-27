@@ -19,15 +19,16 @@ def block_on_arrays(
 
     Parameters
     ----------
-    left_array_column
+    left_array_column :
         The name of the column in the left table that contains the array.
-    right_array_column
+    right_array_column :
         The name of the column in the right table that contains the array.
 
     Returns
     -------
-    A blocking function that takes the left and right tables as inputs and returns
-    a table with the columns `record_id_l` and `record_id_r`.
+    blocking_function:
+        A blocking function that takes the left and right tables as inputs and returns
+        a table with the columns `record_id_l` and `record_id_r`.
 
     """
 

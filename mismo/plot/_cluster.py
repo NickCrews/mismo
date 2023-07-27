@@ -14,13 +14,21 @@ from mismo import _util
 def plot_cluster(nodes: Table, edges: Table) -> alt.Chart:
     """Plot a cluster of records and the links between them.
 
-    Args:
-        nodes: A table of records with at least columns (record_id, label_true)
-            and optionally other columns.
-        edges: A table of edges with at least columns
-            (record_id_l, record_id_r, dissimilarity) and optionally other columns.
-            Dissimilarity is like distance. See
-            https://scikit-learn.org/stable/modules/generated/sklearn.manifold.MDS.html
+    Parameters
+    ----------
+    nodes :
+        A table of records with at least columns (record_id, label_true)
+        and optionally other columns.
+    edges :
+        A table of edges with at least columns
+        (record_id_l, record_id_r, dissimilarity) and optionally other columns.
+        Dissimilarity is like distance. See
+        https://scikit-learn.org/stable/modules/generated/sklearn.manifold.MDS.html
+
+    Returns
+    -------
+    chart :
+        An Altair chart that can be displayed in a notebook or saved to a file.
     """
     nodes, edges = drop_orphaned(nodes, edges)
     nodes_with_coords = _layout_nodes(nodes, edges)

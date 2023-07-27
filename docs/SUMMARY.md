@@ -11,4 +11,5 @@
     * [Clustering](reference/cluster.md)
     * [Evaluation](reference/evaluate.md)
     * [Plotting](reference/plot.md)
+    * [Datasets](reference/datasets.md)
 * [Contribute](contributing.md)
