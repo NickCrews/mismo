@@ -1,4 +1,39 @@
-site_name: mismo
-repo_url: https://github.com/NickCrews/mismo
+site_name: Mismo
+site_url: https://ibis-project.org
+repo_url: https://nickcrews.github.io/mismo/
 theme:
   name: material
+  features:
+    - content.code.annotate
+    - content.code.copy
+    - content.tabs.link
+    - header.autohide
+    - navigation.indexes
+    - navigation.instant
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+plugins:
+  - git-revision-date-localized
+  - literate-nav
+  - mkdocs-jupyter:
+      execute: true
+      ignore:
+        - "*.py"
+      include_source: true
+      allow_errors: false
+  - mkdocstrings:
+      enable_inventory: true
+      handlers:
+        python:
+          import:
+            - https://docs.python.org/3/objects.inv
+          show_category_heading: true
+          show_root_full_path: false
+          show_root_heading: true
+          show_root_toc_entry: true
+          show_source: false
+  - search

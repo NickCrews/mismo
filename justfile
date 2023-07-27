@@ -26,6 +26,14 @@ lint:
 test:
     pytest
 
+# build docs to the site/ directory
+docs-build:
+    PYDEVD_DISABLE_FILE_VALIDATION=1 mkdocs build
+
+# serve docs for live editing
+docs-serve:
+    PYDEVD_DISABLE_FILE_VALIDATION=1 mkdocs serve
+
 # publish docs
 docs-publish:
     mkdocs gh-deploy --force
