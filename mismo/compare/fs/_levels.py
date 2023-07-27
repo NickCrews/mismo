@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from ._base import ComparisonLevel, Weights
+from mismo.compare._comparison import ComparisonLevel
 
 
 def exact(
     column: str,
     name: str | None = None,
     description: str | None = None,
-    weights: Weights | None = None,
 ) -> ComparisonLevel:
     column_left = f"{column}_l"
     column_right = f"{column}_r"
@@ -23,5 +22,4 @@ def exact(
         name=name,
         condition=equals,
         description=description,
-        weights=weights,
     )

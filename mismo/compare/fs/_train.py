@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import replace
-
 from ibis.expr.types import Table
 
 from mismo._util import sample_table
 from mismo.block import Blocking
+from mismo.compare._comparison import Comparison
 
-from ._base import Comparison, Weights
+from ._base import FSComparison, Weights
 
 
 def min_ignore_None(*args):
@@ -128,20 +127,16 @@ def train_ms_from_labels(
 
 
 def train_comparison(
-    comparison: Comparison,
+    fscomparison: FSComparison,
     left: Table,
     right: Table,
     *,
     max_pairs: int | None = None,
     seed: int | None = None,
-) -> Comparison:
-    """Train the weights of a Comparison."""
-    ms = train_ms_from_labels(comparison, left, right, max_pairs=max_pairs)
-    us = train_us_using_sampling(
-        comparison, left, right, max_pairs=max_pairs, seed=seed
-    )
-    new_levels = [
-        level.with_weights(Weights(m=m, u=u))
-        for level, m, u in zip(comparison.levels, ms, us)
-    ]
-    return replace(comparison, levels=new_levels)
+) -> FSComparison:
+    """Train the weights of a FSComparison."""
+    comp = fscomparison.comparison
+    ms = train_ms_from_labels(comp, left, right, max_pairs=max_pairs)
+    us = train_us_using_sampling(comp, left, right, max_pairs=max_pairs, seed=seed)
+    weights = [Weights(m=m, u=u) for m, u in zip(ms, us)]
+    return FSComparison(comparison=comp, weights=weights)

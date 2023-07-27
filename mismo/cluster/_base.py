@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import NamedTuple, Protocol
+from typing import NamedTuple
 
 from ibis.expr.types import Table
-
-from mismo.compare._base import PComparisons
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -29,18 +27,6 @@ class LabelingPair(NamedTuple):
 
     left: Labeling
     right: Labeling
-
-
-class PClusterer(Protocol):
-    """Takes pairwise comparisons and clusters the records into groups.
-
-    You can think of this as a graph algorithm, where the nodes are the records,
-    and the edges are the comparisons. The algorithm determines the "clusters"
-    of records within the graph and assigns a cluster ID to each record.
-    """
-
-    def cluster(self, comparisons: PComparisons) -> LabelingPair:
-        ...
 
 
 def check_labels(t: Table) -> Table:

@@ -9,14 +9,13 @@ from ibis import _
 from ibis.expr.types import Column, IntegerColumn, Table
 
 from mismo import _util
-from mismo.compare._base import PComparisons
 
-from . import Labeling, LabelingPair, PClusterer
+from . import Labeling, LabelingPair
 
 logger = logging.getLogger(__name__)
 
 
-class ConnectedComponentsClusterer(PClusterer):
+class ConnectedComponentsClusterer:
     """Uses a connected components algorithm to cluster records into groups."""
 
     def __init__(
@@ -25,24 +24,24 @@ class ConnectedComponentsClusterer(PClusterer):
         self.min_bayes_factor = min_bayes_factor
         self.max_iter = max_iter
 
-    def cluster(self, comparisons: PComparisons) -> LabelingPair:
-        raw_edges = comparisons.compared
+    def cluster(
+        self,
+        pairs: Table,
+        left: Table,
+        right: Table,
+    ) -> LabelingPair:
         if self.min_bayes_factor is not None:
-            raw_edges = raw_edges[_.bayes_factor > self.min_bayes_factor]
-        raw_edges = raw_edges["record_id_l", "record_id_r"]
-        left_labels, right_labels = connected_components(
-            raw_edges, max_iter=self.max_iter
-        )
-        left_table = comparisons.dataset_pair.left
-        right_table = comparisons.dataset_pair.right
+            pairs = pairs[_.bayes_factor > self.min_bayes_factor]
+        pairs = pairs["record_id_l", "record_id_r"]
+        left_labels, right_labels = connected_components(pairs, max_iter=self.max_iter)
         left_labeling = Labeling(
-            table=left_table,
+            table=left,
             labels=left_labels.relabel(
                 {"record_id_l": "record_id", "component": "label"}
             ),
         )
         right_labeling = Labeling(
-            table=right_table,
+            table=right,
             labels=right_labels.relabel(
                 {"record_id_r": "record_id", "component": "label"}
             ),
