@@ -88,7 +88,28 @@ def load_patents() -> Table:
           A list of coauthors on the patent, separated by **
         - class_: str
           A list of 4-digit IPC technical codes, separated by **
-    """
+
+    Examples
+    --------
+    >>> load_patents()
+    ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ record_id ┃ label_true ┃ name_true            ┃ name                         ┃ latitude ┃ longitude ┃ coauthors                                                                        ┃ classes                                                          ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ int64     │ int64      │ string               │ string                       │ float64  │ float64   │ string                                                                           │ string                                                           │
+    ├───────────┼────────────┼──────────────────────┼──────────────────────────────┼──────────┼───────────┼──────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────┤
+    │      2909 │     402600 │ AGILENT TECHNOLOGIES │ * AGILENT TECHNOLOGIES, INC. │     0.00 │  0.000000 │ KONINK PHILIPS ELECTRONICS N V**DAVID E  SNYDER**THOMAS D  LYSTER                │ A61N**A61B                                                       │
+    │      3574 │     569309 │ AKZO NOBEL           │ * AKZO NOBEL N.V.            │     0.00 │  0.000000 │ TSJERK  HOEKSTRA**ANDRESS K  JOHNSON**TERESA MARIE  CHERON**ALBERTO  SLIKTA**JA… │ G01N**B01L**C11D**G02F**F16L                                     │
+    │      3575 │     569309 │ AKZO NOBEL           │ * AKZO NOBEL NV              │     0.00 │  0.000000 │ WILLIAM JOHN ERNEST  PARR**HANS  OSKARSSON**MARTIN  HELLSTEN**KORNELIS  OVERKEM… │ C09K**F17D**B01F**C23F                                           │
+    │      3779 │     656303 │ ALCATEL              │ * ALCATEL N.V.               │    52.35 │  4.916667 │ GUENTER  KOCHSMEIER**ZBIGNIEW  WIEGOLASKI**EVAN JOHN  STANBURY**PETER GRANT  JE… │ G02B**G04G**H02G**G06F                                           │
+    │      3780 │     656303 │ ALCATEL              │ * ALCATEL N.V.               │    52.35 │  4.916667 │ ZILAN  MANFRED**JOSIANE  RAMOS**DUANE LYNN  MORTENSEN**CHRISTIAN  LE SERGENT     │ H03G**B05D**H04L**H04B**C03B**C03C**G02B**H01B                   │
+    │      3782 │     656303 │ ALCATEL              │ * ALCATEL N.V.               │     0.00 │  0.000000 │ OLIVIER  AUDOUIN**MICHEL  SOTOM**JEAN MICHEL  GABRIAGUES                         │ H04B**H01S**H04J                                                 │
+    │     15041 │    4333661 │ CANON EUROPA         │ * CANON EUROPA N.V           │     0.00 │  0.000000 │ LEE  RICKLER**SIMON  PARKER**CANON RES CENT EURO **RAKEFET  SAGMAN**TIMOTHY FRA… │ G06F                                                             │
+    │     15042 │    4333661 │ CANON EUROPA         │ * CANON EUROPA N.V.          │     0.00 │  0.000000 │ QI HE  HONG**ADAM MICHAEL  BAUMBERG**ALEXANDER RALPH  LYONS                      │ G06T**G01B                                                       │
+    │     15043 │    4333661 │ CANON EUROPA         │ * CANON EUROPA NV            │     0.00 │  0.000000 │ NILESH  PATHAK**MASAMICHI  MASUDA** CANON TECHNOLOGY EURO **PATRICK WILLIAM  MO… │ H04B**G06T**G06F**H04M**H04N**H04Q**G03B**B41J**G01B**G06Q       │
+    │     25387 │    7650783 │ DSM                  │ * DSM N.V.                   │     0.00 │  0.000000 │ GABRIEL MARINUS  MEESTERS**RUDOLF CAROLUS  BARENDSE**ARIE KARST  KIES**ALEXANDE… │ C12N**A61K**A23L**A23J**A23K**A01H**B01J**C12R**C07D**A61P**B01D │
+    │         … │          … │ …                    │ …                            │        … │         … │ …                                                                                │ …                                                                │
+    └───────────┴────────────┴──────────────────────┴──────────────────────────────┴──────────┴───────────┴──────────────────────────────────────────────────────────────────────────────────┴──────────────────────────────────────────────────────────────────┘
+    """  # noqa E501
     data_remote = "https://raw.githubusercontent.com/dedupeio/dedupe-examples/master/patent_example/patstat_input.csv"  # noqa E501
     labels_remote = "https://raw.githubusercontent.com/dedupeio/dedupe-examples/master/patent_example/patstat_reference.csv"  # noqa E501
     t = ibis.read_csv(data_remote)
