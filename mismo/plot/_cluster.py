@@ -61,7 +61,7 @@ def _layout_nodes(nodes: Table, edges: Table) -> Table:
     coords_df["id_in_cluster"] = range(len(coords_df))
     coords_table = ibis.memtable(coords_df)
     augmented = _util.join(n, coords_table, "id_in_cluster", how="left").drop(
-        "id_in_cluster_l", "id_in_cluster_r"
+        "id_in_cluster", "id_in_cluster_right"
     )
     return augmented
 
@@ -95,10 +95,10 @@ def _edges_to_dissimilarity_matrix(nodes, edges):
 def _reindex_from_0(nodes: Table, edges: Table):
     nodes = nodes.mutate(id_in_cluster=ibis.row_number())
     m = nodes["record_id", "id_in_cluster"]
-    edges = edges.left_join(m, m.record_id == edges.record_id_l).drop("record_id")
-    edges = _util.join(edges, m, m.record_id == edges.record_id_r, how="left").drop(
-        "record_id"
-    )
+    ml = m.relabel("{name}_l")
+    mr = m.relabel("{name}_r")
+    edges = _util.join(edges, ml, "record_id_l", how="left").drop("record_id_l_right")
+    edges = _util.join(edges, mr, "record_id_r", how="left").drop("record_id_r_right")
     return nodes, edges
 
 
