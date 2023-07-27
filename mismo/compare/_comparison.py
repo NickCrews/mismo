@@ -9,6 +9,8 @@ from ibis.expr.types import BooleanValue, IntegerColumn, Table
 
 @dataclasses.dataclass(frozen=True)
 class ComparisonLevel:
+    """A Level within a Comparison."""
+
     name: str
     condition: Callable[[Table], BooleanValue]
     description: str | None = None
@@ -16,6 +18,11 @@ class ComparisonLevel:
 
 @dataclasses.dataclass(frozen=True)
 class Comparison:
+    """A measurement of how similar two records are.
+
+    A Comparison is made up of multiple ComparisonLevels.
+    """
+
     name: str
     levels: list[ComparisonLevel]
     description: str | None = None

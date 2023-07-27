@@ -4,7 +4,7 @@ import ibis
 import pandas as pd
 import pytest
 
-from mismo.cluster._connected_components import connected_components
+from mismo.cluster import connected_components
 
 
 @pytest.mark.parametrize(

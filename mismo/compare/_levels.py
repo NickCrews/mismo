@@ -3,11 +3,18 @@ from __future__ import annotations
 from mismo.compare._comparison import ComparisonLevel
 
 
-def exact(
+def exact_level(
     column: str,
     name: str | None = None,
     description: str | None = None,
 ) -> ComparisonLevel:
+    """Create a ComparisonLevel that checks for exact matches on a column.
+
+    Args:
+        column: The column to check for exact matches. This will get turned into
+                the boolean expression `{column}_l = {column}_r`.
+
+    """
     column_left = f"{column}_l"
     column_right = f"{column}_r"
     if name is None:

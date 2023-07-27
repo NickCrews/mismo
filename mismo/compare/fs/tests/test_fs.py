@@ -3,10 +3,8 @@ from __future__ import annotations
 import pytest
 
 from mismo import examples
-from mismo.compare._comparison import Comparison, ComparisonLevel
-from mismo.compare.fs import _levels as levels_lib
-from mismo.compare.fs._base import FSComparison
-from mismo.compare.fs._train import train_comparison
+from mismo.compare import Comparison, ComparisonLevel, exact_level
+from mismo.compare.fs import FSComparison, train_comparison
 
 
 # TODO: Maybe the sampling isn't deterministic, and that's why the weights are
@@ -21,8 +19,8 @@ def test_comparison_training():
         condition=lambda table: table["Name_l"][:3] == table["Name_r"][:3],  # type: ignore # noqa: E501
         description="First 3 letters match",
     )
-    exact_level = levels_lib.exact("Name")
-    levels = [exact_level, almost_level]
+    exact = exact_level("Name")
+    levels = [exact, almost_level]
     comparison = Comparison(name="Name", levels=levels)
     fscomparison = FSComparison(comparison)
     trained = train_comparison(fscomparison, left, right, max_pairs=10_000, seed=42)
