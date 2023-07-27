@@ -43,12 +43,11 @@ def join(
     predicates=tuple(),
     how="inner",
     *,
-    lname: str = "{name}_l",
-    rname: str = "{name}_r",
+    lname: str = "",
+    rname: str = "{name}_right",
 ) -> Table:
     """Similar to ibis's join, with a few differences
 
-    - different default lname and rname than Ibis
     - does a cross join when predicates is True or how is "cross"
     - converts the lname and rname suffixes to the appropriate kwargs for ibis<6.0.0
     """

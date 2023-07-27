@@ -30,7 +30,7 @@ class FellegiSunterComparer:
     def compare(self, blocking: Blocking) -> Comparisons:
         if not self.is_trained:
             raise ValueError(f"{self} is not trained.")
-        pairs = blocking.blocked_data
+        pairs = blocking.blocked
         bf = self._bayes_factor(pairs)
         return Comparisons(blocking=blocking, compared=pairs.mutate(bayes_factor=bf))
 

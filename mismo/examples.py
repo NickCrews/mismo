@@ -44,7 +44,7 @@ def _wrap_febrl(
     links = con.table("links")
     links = links.order_by(["record_id_l", "record_id_r"])
     links = links.cache()
-    return Blocking(t, t.view(), blocked_ids=links)
+    return Blocking(t, t.view(), links)
 
 
 def load_febrl1() -> Blocking:

@@ -75,9 +75,9 @@ def connected_components(
     labels = _connected_components_ints(edges, max_iter=max_iter)
 
     def _join(left, right):
-        return _util.join(left, right, "record", how="left").drop(
-            "record_l", "record_r"
-        )
+        return _util.join(
+            left, right, "record", how="left", lname="{name}_l", rname="{name}_r"
+        ).drop("record_l", "record_r")
 
     left_labels = _join(left_map, labels)
     right_labels = _join(right_map, labels)

@@ -22,7 +22,7 @@ class DedupeTask:
         - we don't want to compare A to A (because that is obviously a match)
         - we only want to compare one of A to B and B to A (because that is redundant)
         """
-        return left.record_id_l >= right.record_id_r
+        return left.record_id >= right.record_id
 
 
 @dataclasses.dataclass(frozen=True)

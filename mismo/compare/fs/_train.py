@@ -5,7 +5,7 @@ from dataclasses import replace
 from ibis.expr.types import Table
 
 from mismo._util import sample_table
-from mismo.block import block, cartesian_block
+from mismo.block import Blocking
 
 from ._base import Comparison, Weights
 
@@ -21,13 +21,12 @@ def possible_pairs(
     max_pairs: int | None = None,
     seed: int | None = None,
 ) -> Table:
-    pairs = cartesian_block(left, right).blocked_data
+    pairs = Blocking(left, right, True).blocked
     n_pairs = min_ignore_None(pairs.count().execute(), max_pairs)
     return sample_table(pairs, n_pairs, seed=seed)
 
 
 def true_pairs_from_labels(left: Table, right: Table) -> Table:
-    left, right = left
     if "label_true" not in left.columns:
         raise ValueError(
             "Left dataset must have a label_true column. Found: {left.columns}"
@@ -39,7 +38,7 @@ def true_pairs_from_labels(left: Table, right: Table) -> Table:
 
     rule = left.label_true == right.label_true
 
-    return block(left, right, [rule], []).blocked_data
+    return Blocking(left, right, rule).blocked
 
 
 def level_proportions(comparison: Comparison, pairs: Table) -> list[float]:
