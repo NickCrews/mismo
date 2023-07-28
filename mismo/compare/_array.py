@@ -4,22 +4,22 @@ import ibis
 from ibis.expr.types import ArrayValue, IntegerValue
 
 
-def array_overlap_n(a: ArrayValue, b: ArrayValue) -> IntegerValue:
+def intersection_n(a: ArrayValue, b: ArrayValue) -> IntegerValue:
     """The number of elements shared by two arrays."""
-    length_separate = a.length() + b.length()
-    length_shared = a.union(b).unique().length()
-    return length_separate - length_shared
+    length_total = a.length() + b.length()
+    length_union = a.union(b).length()
+    return length_total - length_union
 
 
-def array_overlap_norm(a: ArrayValue, b: ArrayValue) -> IntegerValue:
-    """
-    The number of elements shared by two arrays, normalized to be between 0 and 1
-
-    This is simply `array_overlap_n(a, b) / ibis.least(a.length(), b.length())`"""
-    return array_overlap_n(a, b) / ibis.least(a.length(), b.length())
+def jaccard(a: ArrayValue, b: ArrayValue) -> IntegerValue:
+    """The Jaccard similarity between two arrays."""
+    length_total = a.length() + b.length()
+    length_union = a.union(b).length()
+    length_intersection = length_total - length_union
+    return length_intersection / length_union
 
 
 a = ibis.array([1, 2, 3, 4])
 b = ibis.array([3, 4, 5, 6, 7, 8])
-assert array_overlap_n(a, b).execute() == 2
-assert array_overlap_norm(a, b).execute() == 1 / 2
+assert intersection_n(a, b).execute() == 2
+assert jaccard(a, b).execute() == 1 / 4
