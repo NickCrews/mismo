@@ -31,6 +31,7 @@ plugins:
         python:
           import:
             - https://docs.python.org/3/objects.inv
+            - https://ibis-project.org/objects.inv
           options:
             docstring_style: numpy
             show_category_heading: true
