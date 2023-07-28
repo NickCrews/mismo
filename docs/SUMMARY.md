@@ -1,6 +1,6 @@
 * [Home](index.md)
 * Concepts
-    * [Alternatives](concepts/alternatives.md)
+    * [Goals and Alternatives](concepts/goals_and_alternatives.md)
     * [Fellegi Sunter Model](concepts/fellegi-sunter.md)
 * Examples
     * [Patent Deduplication](examples/patent_deduplication.ipynb)
