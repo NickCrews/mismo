@@ -33,13 +33,14 @@ Source = "https://github.com/NickCrews/mismo"
 
 [tool.pdm.dev-dependencies]
 lint = ["black[jupyter]", "ruff", "mypy", "nbqa"]
-test = ["pytest", "pytest-cov"]
+test = ["pytest", "pytest-cov", "recordlinkage"]
 docs = [
   "mkdocs-git-revision-date-localized-plugin",
   "mkdocs-jupyter",
   "mkdocs-literate-nav",
   "mkdocs-material",
   "mkdocstrings[python]",
+  "recordlinkage",
 ]
 
 [tool.coverage.run]

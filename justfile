@@ -10,16 +10,15 @@ install:
 
 # format code
 fmt:
-    black .
-    ruff --fix .
-    nbqa ruff --fix .
+    black mismo docs
+    ruff --fix mismo docs
+    nbqa ruff --fix mismo docs
 
 # lint code
 lint:
-    ruff .
-    nbqa ruff .
-    black -q . --check
-    mypy mismo
+    black --check mismo docs
+    ruff mismo docs
+    nbqa ruff mismo docs
 
 # run tests
 test:

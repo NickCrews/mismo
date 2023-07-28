@@ -6,7 +6,7 @@ groups = ["default", "docs", "lint", "test"]
 cross_platform = true
 static_urls = false
 lock_version = "4.3"
-content_hash = "sha256:80df517abbffe9af930c8ed8e6620d3fd3e50ac0923e6b07d1bc0f4b65b53c13"
+content_hash = "sha256:70b13dbb2f2431b133d3e25b34623a83e6c82ba8ea825094c112758cfd269e98"
 
 [[package]]
 name = "appnope"
@@ -957,6 +957,71 @@ files = [
 ]
 
 [[package]]
+name = "jellyfish"
+version = "1.0.0"
+requires_python = ">=3.7"
+summary = "Approximate and phonetic matching of strings."
+files = [
+    {file = "jellyfish-1.0.0-cp310-cp310-macosx_10_7_x86_64.whl", hash = "sha256:26f8fbcc112e6f61c03446860e649b2341acfdda80d1fd53dd67887a409b6785"},
+    {file = "jellyfish-1.0.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:f9b48db1fba511726e95f19de29a1345c2a0762d880f9723ab0a0de847fcfcfc"},
+    {file = "jellyfish-1.0.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:23b68747fda53fb27b4948caa6a32754ce7d3c5d22e9b3aeae25cae138830cd7"},
+    {file = "jellyfish-1.0.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:822f0e7d98e8a1bbf2ec2735d9ab5a9f74cd33248953f5fac692d93230256a4f"},
+    {file = "jellyfish-1.0.0-cp310-cp310-musllinux_1_1_i686.whl", hash = "sha256:1f902e2d4298f951a3185fea13b0f4dd44ed8ce9902ae3c1ea8d30e5e5194ebd"},
+    {file = "jellyfish-1.0.0-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:826860f21a1dfe92856f7b9a1df03005ef5a6cc96a34a5e33e723ba45fb53548"},
+    {file = "jellyfish-1.0.0-cp310-none-win32.whl", hash = "sha256:54cb4e11378e48ca481e9713a8a71a7e7ead9a035927b854f102d01c84c6b2e6"},
+    {file = "jellyfish-1.0.0-cp310-none-win_amd64.whl", hash = "sha256:201ef2a4274971ce056c8dff48700c88c00bc61b55af0b1f12d2bac34c7522f4"},
+    {file = "jellyfish-1.0.0-cp311-cp311-macosx_10_7_x86_64.whl", hash = "sha256:a2a678cdc805e6e19bc150921d162ca4a87b6ab29d9dcb5edff8973fcde60706"},
+    {file = "jellyfish-1.0.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:b01306cbe0196469be9a6b9f0c9b0d6de672c56f2955b52850f8fa9a08d22d71"},
+    {file = "jellyfish-1.0.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9e56bccafdb3e3710f85d25c052e8f20ef92f4bab2d79358df90dfaf8561a728"},
+    {file = "jellyfish-1.0.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:9caae1ab4bb1878277330f88cb414685fec21fe90bc44f55fb651b8227908ffb"},
+    {file = "jellyfish-1.0.0-cp311-cp311-musllinux_1_1_i686.whl", hash = "sha256:5d87d1c8c5500b862ac885ae85c5bed9e0d5a8aadfc9ff600a41dffd9dd86f39"},
+    {file = "jellyfish-1.0.0-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:f6e85c00dece851f6daff9f093bec589fb74e5964077bbc5bd14bd1574c3c00c"},
+    {file = "jellyfish-1.0.0-cp311-none-win32.whl", hash = "sha256:44a7275d6d03835cb9a55269da453eba1e2ad9b9ece783d29b51ec5152b3ac42"},
+    {file = "jellyfish-1.0.0-cp311-none-win_amd64.whl", hash = "sha256:8855645f4ae85e1b3a4279623c53c1ad1d9c2b40db904e0d1102233d8cbc7617"},
+    {file = "jellyfish-1.0.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d48c9fc29ae401250386a1d0b45596288b8e958a8944cb4b2e9515debd14fa7c"},
+    {file = "jellyfish-1.0.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:28af35fdd0b37af0240560e6a061aa25fcedc7b4600dd718acd4f4b41825b7f2"},
+    {file = "jellyfish-1.0.0-cp37-cp37m-macosx_10_7_x86_64.whl", hash = "sha256:e593eb939cd99765a6e2e04c69909c0825badfd3f9a78e9129047f91e3fd00ce"},
+    {file = "jellyfish-1.0.0-cp37-cp37m-macosx_11_0_arm64.whl", hash = "sha256:b6f0b5c8681e99b61b47964fdf280073f1b41003cd36cd05964e07931fd04607"},
+    {file = "jellyfish-1.0.0-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f875ba01de9bc81181733301f4589462c087e6b28734ff5f2306e2a4c54515d3"},
+    {file = "jellyfish-1.0.0-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d7ddf60f4dcf0d45ef125ca4ddf41551ceb7f7acd6a60896d04b814902749e86"},
+    {file = "jellyfish-1.0.0-cp37-cp37m-musllinux_1_1_i686.whl", hash = "sha256:48c1a4a1de3b2d9a51e15ede7fc1b719cd736235d9a3e7a1a8d24daae5d73e4d"},
+    {file = "jellyfish-1.0.0-cp37-cp37m-musllinux_1_1_x86_64.whl", hash = "sha256:a657869f0a73195517405cc9cbd97dd6c01a0ce0a64f99a1e6983f0dbe14ed34"},
+    {file = "jellyfish-1.0.0-cp37-none-win32.whl", hash = "sha256:6c97bc0c24d745667c411ca6204cb4fbbb4280679b85747c5214544387a9caa6"},
+    {file = "jellyfish-1.0.0-cp37-none-win_amd64.whl", hash = "sha256:775f624a1cfdc2bc5e78f15c13dc37e21aee106128e68428906a39c3db8fb2b4"},
+    {file = "jellyfish-1.0.0-cp38-cp38-macosx_10_7_x86_64.whl", hash = "sha256:00047f10081bb16682893817b767a52844926dec516a89dcdfb7f958d3e91cf6"},
+    {file = "jellyfish-1.0.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:536953db6900bc0f192bb2bede11e6b46c011dfcd0c6bec52768fe6e8861e3be"},
+    {file = "jellyfish-1.0.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:80ae9f7d7f3bfffd45171590642bba5a80d917db84129d99fa2d9fbfb3ff1b4e"},
+    {file = "jellyfish-1.0.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3d8b47d4e5876e7f2baed994e772b6cd88d8e7db4216daca6a7a9bc3764a36c0"},
+    {file = "jellyfish-1.0.0-cp38-cp38-musllinux_1_1_i686.whl", hash = "sha256:0f90504a64e393d7f6409a88d2f7c84cf13e5e58a96365b09d9d6712d95545cd"},
+    {file = "jellyfish-1.0.0-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:b0da4c4c3e9a170d6b410ce404ab6021150914ec603bd50359b311738c45a8e0"},
+    {file = "jellyfish-1.0.0-cp38-none-win32.whl", hash = "sha256:bb7e6ba7fde138aeb74da92da515674884a7405df847d187c81a7bb722747a3d"},
+    {file = "jellyfish-1.0.0-cp38-none-win_amd64.whl", hash = "sha256:ee1b55bd898a5e777da1f0b9809f43a0443a8dcb9bf86a85a76fe24aee91bb7e"},
+    {file = "jellyfish-1.0.0-cp39-cp39-macosx_10_7_x86_64.whl", hash = "sha256:383c4a5e961d87c349f7e60824b2c777d4437c73afbd369688dee26f59ef1c13"},
+    {file = "jellyfish-1.0.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:088845e6e3c1ade37783d88b8f6936ee1f6750e50bfb9c6d372ff26cd39083d2"},
+    {file = "jellyfish-1.0.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:cff17fb418699405eb72599d28f11d4b76d54941f56395353bc83a379e6082cf"},
+    {file = "jellyfish-1.0.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fee1e31df9a1406533766cab4d5027bef05d863c03202bef8558144997a020a4"},
+    {file = "jellyfish-1.0.0-cp39-cp39-musllinux_1_1_i686.whl", hash = "sha256:fecec758a5a0ce956d6f9aa55c0d8568fe14a8ff589baba2162d3b5d2856ff9e"},
+    {file = "jellyfish-1.0.0-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:2edbd782e93a3f5d36d1c835ca3a5a98c14faa0d349888827f87ce57d33a3808"},
+    {file = "jellyfish-1.0.0-cp39-none-win32.whl", hash = "sha256:36ea675a448f155aa57cc2d54a7f188c509771068db883df359e9fe4f0024b7b"},
+    {file = "jellyfish-1.0.0-cp39-none-win_amd64.whl", hash = "sha256:9da47c62e32a2ea0b16199e952ddb9ff15cbcce17fc5385d78c6a599ba2b9134"},
+    {file = "jellyfish-1.0.0-pp37-pypy37_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9d1f7c72bfb2df2b48f0bde483fc4b57e55d6cfb604d03472cebb060269df0b9"},
+    {file = "jellyfish-1.0.0-pp37-pypy37_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0562c102a2994c0ced8fe684340d82cfd8f4247ee32b9e46a53221b027c4ef51"},
+    {file = "jellyfish-1.0.0-pp38-pypy38_pp73-macosx_10_7_x86_64.whl", hash = "sha256:e09cde1c54a904c9d8eb30cd82a1722d076c89b1e91ab452b4b552e0185eb655"},
+    {file = "jellyfish-1.0.0-pp38-pypy38_pp73-macosx_11_0_arm64.whl", hash = "sha256:c044bc2338a9040f5996a8583596bb10850dfe03156c93b797605407f26510f8"},
+    {file = "jellyfish-1.0.0-pp38-pypy38_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1c531cdfdfd40734c296c6c2d0dc346d9bd6e276decea76ac3409fe7adca133d"},
+    {file = "jellyfish-1.0.0-pp38-pypy38_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a73abd3da659eb227afc10d1c5801c72368cf2553219424afe317f376bec0256"},
+    {file = "jellyfish-1.0.0-pp38-pypy38_pp73-musllinux_1_1_i686.whl", hash = "sha256:89440574d5256f97d7b4e05547f4354c698f7f79b15b5233a95c67c14bfb7cb8"},
+    {file = "jellyfish-1.0.0-pp38-pypy38_pp73-musllinux_1_1_x86_64.whl", hash = "sha256:0235508b78920ce1b8c1c433c87b807e6b576442e1c53d7fea72451ff3c02d2f"},
+    {file = "jellyfish-1.0.0-pp39-pypy39_pp73-macosx_10_7_x86_64.whl", hash = "sha256:be3da1f33dd1c844a7ef05ec7b5880b1e17fea6563ccfae50bf0e02cbdce4265"},
+    {file = "jellyfish-1.0.0-pp39-pypy39_pp73-macosx_11_0_arm64.whl", hash = "sha256:d29c41fb5108af0b48ae8c603af9798011e25f809b45e647f9a268deb7ead533"},
+    {file = "jellyfish-1.0.0-pp39-pypy39_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b4d9058441bb52c783179d2a636739c0b4ab007f3c064f8095fd451d1f814d2b"},
+    {file = "jellyfish-1.0.0-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:98f9320118a3be1c3d9312fbf9e943672f524c5aa1abeda8334d835bd9ad6d2e"},
+    {file = "jellyfish-1.0.0-pp39-pypy39_pp73-musllinux_1_1_i686.whl", hash = "sha256:aa6b05cfaeb22643db0c7b38d97b9b854504d2fad3358761fb99b5ef84e0384d"},
+    {file = "jellyfish-1.0.0-pp39-pypy39_pp73-musllinux_1_1_x86_64.whl", hash = "sha256:969359187749fa7b2cefdc8bdc18b48525fd676fc1632c453bd7ca1e41810066"},
+    {file = "jellyfish-1.0.0.tar.gz", hash = "sha256:881aae3671999bb07ce50c27696f29ca7e842f3e123acc0db6525c9999881bd4"},
+]
+
+[[package]]
 name = "jinja2"
 version = "3.1.2"
 requires_python = ">=3.7"
@@ -967,6 +1032,16 @@ dependencies = [
 files = [
     {file = "Jinja2-3.1.2-py3-none-any.whl", hash = "sha256:6088930bfe239f0e6710546ab9c19c9ef35e29792895fed6e6e31a023a182a61"},
     {file = "Jinja2-3.1.2.tar.gz", hash = "sha256:31351a702a408a9e7595a8fc6150fc3f43bb6bf7e319770cbc0db9df9437e852"},
+]
+
+[[package]]
+name = "joblib"
+version = "1.3.1"
+requires_python = ">=3.7"
+summary = "Lightweight pipelining with Python functions"
+files = [
+    {file = "joblib-1.3.1-py3-none-any.whl", hash = "sha256:89cf0529520e01b3de7ac7b74a8102c90d16d54c64b5dd98cafcd14307fdf915"},
+    {file = "joblib-1.3.1.tar.gz", hash = "sha256:1f937906df65329ba98013dc9692fe22a4c5e4a648112de500508b18a21b41e3"},
 ]
 
 [[package]]
@@ -2063,6 +2138,24 @@ files = [
 ]
 
 [[package]]
+name = "recordlinkage"
+version = "0.16"
+requires_python = ">=3.8"
+summary = "A record linkage toolkit for linking and deduplication"
+dependencies = [
+    "jellyfish>=1",
+    "joblib",
+    "numpy>=1.13",
+    "pandas<3,>=1",
+    "scikit-learn>=1",
+    "scipy>=1",
+]
+files = [
+    {file = "recordlinkage-0.16-py3-none-any.whl", hash = "sha256:7ca404ab30435ea4b0ae2eda411f8dcc3c48186e152d3ca91fb525e8f6c0fd63"},
+    {file = "recordlinkage-0.16.tar.gz", hash = "sha256:ecda0c10dff138b1706815de332b1285f670ae7e8cce92596213501d589e6aa4"},
+]
+
+[[package]]
 name = "referencing"
 version = "0.30.0"
 requires_python = ">=3.8"
@@ -2333,6 +2426,73 @@ files = [
 ]
 
 [[package]]
+name = "scikit-learn"
+version = "1.3.0"
+requires_python = ">=3.8"
+summary = "A set of python modules for machine learning and data mining"
+dependencies = [
+    "joblib>=1.1.1",
+    "numpy>=1.17.3",
+    "scipy>=1.5.0",
+    "threadpoolctl>=2.0.0",
+]
+files = [
+    {file = "scikit-learn-1.3.0.tar.gz", hash = "sha256:8be549886f5eda46436b6e555b0e4873b4f10aa21c07df45c4bc1735afbccd7a"},
+    {file = "scikit_learn-1.3.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:981287869e576d42c682cf7ca96af0c6ac544ed9316328fd0d9292795c742cf5"},
+    {file = "scikit_learn-1.3.0-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:436aaaae2c916ad16631142488e4c82f4296af2404f480e031d866863425d2a2"},
+    {file = "scikit_learn-1.3.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c7e28d8fa47a0b30ae1bd7a079519dd852764e31708a7804da6cb6f8b36e3630"},
+    {file = "scikit_learn-1.3.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ae80c08834a473d08a204d966982a62e11c976228d306a2648c575e3ead12111"},
+    {file = "scikit_learn-1.3.0-cp310-cp310-win_amd64.whl", hash = "sha256:552fd1b6ee22900cf1780d7386a554bb96949e9a359999177cf30211e6b20df6"},
+    {file = "scikit_learn-1.3.0-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:79970a6d759eb00a62266a31e2637d07d2d28446fca8079cf9afa7c07b0427f8"},
+    {file = "scikit_learn-1.3.0-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:850a00b559e636b23901aabbe79b73dc604b4e4248ba9e2d6e72f95063765603"},
+    {file = "scikit_learn-1.3.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ee04835fb016e8062ee9fe9074aef9b82e430504e420bff51e3e5fffe72750ca"},
+    {file = "scikit_learn-1.3.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:9d953531f5d9f00c90c34fa3b7d7cfb43ecff4c605dac9e4255a20b114a27369"},
+    {file = "scikit_learn-1.3.0-cp311-cp311-win_amd64.whl", hash = "sha256:151ac2bf65ccf363664a689b8beafc9e6aae36263db114b4ca06fbbbf827444a"},
+    {file = "scikit_learn-1.3.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:6a885a9edc9c0a341cab27ec4f8a6c58b35f3d449c9d2503a6fd23e06bbd4f6a"},
+    {file = "scikit_learn-1.3.0-cp38-cp38-macosx_12_0_arm64.whl", hash = "sha256:9877af9c6d1b15486e18a94101b742e9d0d2f343d35a634e337411ddb57783f3"},
+    {file = "scikit_learn-1.3.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c470f53cea065ff3d588050955c492793bb50c19a92923490d18fcb637f6383a"},
+    {file = "scikit_learn-1.3.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fd6e2d7389542eae01077a1ee0318c4fec20c66c957f45c7aac0c6eb0fe3c612"},
+    {file = "scikit_learn-1.3.0-cp38-cp38-win_amd64.whl", hash = "sha256:3a11936adbc379a6061ea32fa03338d4ca7248d86dd507c81e13af428a5bc1db"},
+    {file = "scikit_learn-1.3.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:998d38fcec96584deee1e79cd127469b3ad6fefd1ea6c2dfc54e8db367eb396b"},
+    {file = "scikit_learn-1.3.0-cp39-cp39-macosx_12_0_arm64.whl", hash = "sha256:ded35e810438a527e17623ac6deae3b360134345b7c598175ab7741720d7ffa7"},
+    {file = "scikit_learn-1.3.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:0e8102d5036e28d08ab47166b48c8d5e5810704daecf3a476a4282d562be9a28"},
+    {file = "scikit_learn-1.3.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7617164951c422747e7c32be4afa15d75ad8044f42e7d70d3e2e0429a50e6718"},
+    {file = "scikit_learn-1.3.0-cp39-cp39-win_amd64.whl", hash = "sha256:1d54fb9e6038284548072df22fd34777e434153f7ffac72c8596f2d6987110dd"},
+]
+
+[[package]]
+name = "scipy"
+version = "1.9.3"
+requires_python = ">=3.8"
+summary = "Fundamental algorithms for scientific computing in Python"
+dependencies = [
+    "numpy<1.26.0,>=1.18.5",
+]
+files = [
+    {file = "scipy-1.9.3-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:1884b66a54887e21addf9c16fb588720a8309a57b2e258ae1c7986d4444d3bc0"},
+    {file = "scipy-1.9.3-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:83b89e9586c62e787f5012e8475fbb12185bafb996a03257e9675cd73d3736dd"},
+    {file = "scipy-1.9.3-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1a72d885fa44247f92743fc20732ae55564ff2a519e8302fb7e18717c5355a8b"},
+    {file = "scipy-1.9.3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d01e1dd7b15bd2449c8bfc6b7cc67d630700ed655654f0dfcf121600bad205c9"},
+    {file = "scipy-1.9.3-cp310-cp310-win_amd64.whl", hash = "sha256:68239b6aa6f9c593da8be1509a05cb7f9efe98b80f43a5861cd24c7557e98523"},
+    {file = "scipy-1.9.3-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:b41bc822679ad1c9a5f023bc93f6d0543129ca0f37c1ce294dd9d386f0a21096"},
+    {file = "scipy-1.9.3-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:90453d2b93ea82a9f434e4e1cba043e779ff67b92f7a0e85d05d286a3625df3c"},
+    {file = "scipy-1.9.3-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:83c06e62a390a9167da60bedd4575a14c1f58ca9dfde59830fc42e5197283dab"},
+    {file = "scipy-1.9.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:abaf921531b5aeaafced90157db505e10345e45038c39e5d9b6c7922d68085cb"},
+    {file = "scipy-1.9.3-cp311-cp311-win_amd64.whl", hash = "sha256:06d2e1b4c491dc7d8eacea139a1b0b295f74e1a1a0f704c375028f8320d16e31"},
+    {file = "scipy-1.9.3-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:5a04cd7d0d3eff6ea4719371cbc44df31411862b9646db617c99718ff68d4840"},
+    {file = "scipy-1.9.3-cp38-cp38-macosx_12_0_arm64.whl", hash = "sha256:545c83ffb518094d8c9d83cce216c0c32f8c04aaf28b92cc8283eda0685162d5"},
+    {file = "scipy-1.9.3-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:0d54222d7a3ba6022fdf5773931b5d7c56efe41ede7f7128c7b1637700409108"},
+    {file = "scipy-1.9.3-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:cff3a5295234037e39500d35316a4c5794739433528310e117b8a9a0c76d20fc"},
+    {file = "scipy-1.9.3-cp38-cp38-win_amd64.whl", hash = "sha256:2318bef588acc7a574f5bfdff9c172d0b1bf2c8143d9582e05f878e580a3781e"},
+    {file = "scipy-1.9.3-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:d644a64e174c16cb4b2e41dfea6af722053e83d066da7343f333a54dae9bc31c"},
+    {file = "scipy-1.9.3-cp39-cp39-macosx_12_0_arm64.whl", hash = "sha256:da8245491d73ed0a994ed9c2e380fd058ce2fa8a18da204681f2fe1f57f98f95"},
+    {file = "scipy-1.9.3-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4db5b30849606a95dcf519763dd3ab6fe9bd91df49eba517359e450a7d80ce2e"},
+    {file = "scipy-1.9.3-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c68db6b290cbd4049012990d7fe71a2abd9ffbe82c0056ebe0f01df8be5436b0"},
+    {file = "scipy-1.9.3-cp39-cp39-win_amd64.whl", hash = "sha256:5b88e6d91ad9d59478fafe92a7c757d00c59e3bdc3331be8ada76a4f8d683f58"},
+    {file = "scipy-1.9.3.tar.gz", hash = "sha256:fbc5c05c85c1a02be77b1ff591087c83bc44579c6d2bd9fb798bb64ea5e1a027"},
+]
+
+[[package]]
 name = "six"
 version = "1.16.0"
 requires_python = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
@@ -2448,6 +2608,16 @@ dependencies = [
 files = [
     {file = "stack_data-0.6.2-py3-none-any.whl", hash = "sha256:cbb2a53eb64e5785878201a97ed7c7b94883f48b87bfb0bbe8b623c74679e4a8"},
     {file = "stack_data-0.6.2.tar.gz", hash = "sha256:32d2dd0376772d01b6cb9fc996f3c8b57a357089dec328ed4b6553d037eaf815"},
+]
+
+[[package]]
+name = "threadpoolctl"
+version = "3.2.0"
+requires_python = ">=3.8"
+summary = "threadpoolctl"
+files = [
+    {file = "threadpoolctl-3.2.0-py3-none-any.whl", hash = "sha256:2b7818516e423bdaebb97c723f86a7c6b0a83d3f3b0970328d66f4d9104dc032"},
+    {file = "threadpoolctl-3.2.0.tar.gz", hash = "sha256:c96a0ba3bdddeaca37dc4cc7344aafad41cdb8c313f74fdfe387a867bba93355"},
 ]
 
 [[package]]
