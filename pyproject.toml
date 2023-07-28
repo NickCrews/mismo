@@ -32,7 +32,7 @@ Issues = "https://github.com/NickCrews/mismo/issues"
 Source = "https://github.com/NickCrews/mismo"
 
 [tool.pdm.dev-dependencies]
-lint = ["black[jupyter]", "ruff", "mypy", "nbqa"]
+lint = ["black[jupyter]", "ruff", "mypy", "nbqa", "pre-commit"]
 test = ["pytest", "pytest-cov", "recordlinkage"]
 docs = [
   "mkdocs-git-revision-date-localized-plugin",
