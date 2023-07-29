@@ -1,6 +1,6 @@
 site_name: Mismo
 site_url: https://nickcrews.github.io/mismo/
-repo_url: https://www.github.com/nickcrews/mismo/
+repo_url: https://github.com/nickcrews/mismo/
 theme:
   name: material
   features:
