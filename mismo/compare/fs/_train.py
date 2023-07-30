@@ -6,7 +6,7 @@ from mismo._util import sample_table
 from mismo.block import Blocking
 from mismo.compare._comparison import Comparison
 
-from ._base import FSComparison, Weights
+from ._base import ComparisonWeights, LevelWeights
 
 
 def min_ignore_None(*args):
@@ -127,16 +127,18 @@ def train_ms_from_labels(
 
 
 def train_comparison(
-    fscomparison: FSComparison,
+    comparison: Comparison,
     left: Table,
     right: Table,
     *,
     max_pairs: int | None = None,
     seed: int | None = None,
-) -> FSComparison:
+) -> ComparisonWeights:
     """Train the weights of a FSComparison."""
-    comp = fscomparison.comparison
-    ms = train_ms_from_labels(comp, left, right, max_pairs=max_pairs)
-    us = train_us_using_sampling(comp, left, right, max_pairs=max_pairs, seed=seed)
-    weights = [Weights(m=m, u=u) for m, u in zip(ms, us)]
-    return FSComparison(comparison=comp, weights=weights)
+    ms = train_ms_from_labels(comparison, left, right, max_pairs=max_pairs)
+    us = train_us_using_sampling(
+        comparison, left, right, max_pairs=max_pairs, seed=seed
+    )
+    level_names = [lev.name for lev in comparison.levels]
+    lw = [LevelWeights(name=name, m=m, u=u) for name, m, u in zip(level_names, ms, us)]
+    return ComparisonWeights(name=comparison.name, level_weights=lw)

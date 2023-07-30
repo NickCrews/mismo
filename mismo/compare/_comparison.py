@@ -15,6 +15,12 @@ class ComparisonLevel:
     condition: Callable[[Table], BooleanValue]
     description: str | None = None
 
+    def __repr__(self) -> str:
+        if self.description is None:
+            return f"ComparisonLevel(name={self.name})"
+        else:
+            return f"ComparisonLevel(name={self.name}, description={self.description})"
+
 
 @dataclasses.dataclass(frozen=True)
 class Comparison:
@@ -45,3 +51,9 @@ class Comparison:
             lab = i if label == "index" else level.name
             labels = is_match.ifelse(lab, labels)
         return labels.name(self.name)
+
+    def __repr__(self) -> str:
+        if self.description is None:
+            return f"Comparison(name={self.name}, levels={self.levels})"
+        else:
+            return f"Comparison(name={self.name}, description={self.description}, levels={self.levels})"  # noqa: E501

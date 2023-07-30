@@ -1,5 +1,11 @@
+"""Compare module.
+
+This module contains functions and classes for comparing pairs of records.
+"""
+
 from __future__ import annotations
 
+from . import fs as fs
 from ._array import intersection_n as intersection_n
 from ._array import jaccard as jaccard
 from ._comparison import Comparison as Comparison
@@ -12,4 +18,5 @@ __all__ = [
     "intersection_n",
     "jaccard",
     "exact_level",
+    "fs",
 ]
