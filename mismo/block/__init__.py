@@ -10,9 +10,11 @@ from __future__ import annotations
 from mismo.block._array import block_on_arrays as block_on_arrays
 from mismo.block._base import Blocking as Blocking
 from mismo.block._base import BlockingRule as BlockingRule
+from mismo.block._base import join as join
 
 __all__ = [
     "Blocking",
     "BlockingRule",
     "block_on_arrays",
+    "join",
 ]

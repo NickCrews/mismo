@@ -14,6 +14,32 @@ from mismo import _util
 from mismo._util import format_table
 
 
+def join(left: Table, right: Table, condition) -> Table:
+    """Join two tables, afterwards adding a _l or _r suffix to all columns
+
+    Parameters
+    ----------
+    left : Table
+        The left table
+    right : Table
+        The right table
+    condition:
+        Anything that Ibis accepts as a join condition. This should be specified
+        without the _l and _r suffixes, eg `left.name == right.name`, not
+        `left.name_l == right.name_r`, because the suffixes will be added
+        AFTER the join.
+    """
+    lc = set(left.columns)
+    rc = set(right.columns)
+    just_left = lc - rc
+    just_right = rc - lc
+    raw = _util.join(left, right, condition, lname="{name}_l", rname="{name}_r")
+    left_renaming = {c: c + "_l" for c in just_left}
+    right_renaming = {c: c + "_r" for c in just_right}
+    renaming = {**left_renaming, **right_renaming}
+    return raw.relabel(renaming)
+
+
 class Blocking:
     _left: Table
     _right: Table
@@ -159,7 +185,7 @@ class ConditionRule(BlockingRule):
 
     @property
     def blocked(self) -> Table:
-        return _join_blocking(self.left, self.right, self.condition)
+        return join(self.left, self.right, self.condition)
 
     def __or__(self, other: BlockingRule) -> BlockingRule:
         if isinstance(other, ConditionRule):
@@ -286,19 +312,6 @@ def _join_on_ids(left: Table, right: Table, id_pairs: Table) -> Table:
         .drop("record_id")
     )
     return result
-
-
-def _join_blocking(left: Table, right: Table, predicates=tuple()) -> Table:
-    """Join two tables, making every column end in _l or _r"""
-    lc = set(left.columns)
-    rc = set(right.columns)
-    just_left = lc - rc
-    just_right = rc - lc
-    raw = _util.join(left, right, predicates, lname="{name}_l", rname="{name}_r")
-    left_renaming = {c: c + "_l" for c in just_left}
-    right_renaming = {c: c + "_r" for c in just_right}
-    renaming = {**left_renaming, **right_renaming}
-    return raw.relabel(renaming)
 
 
 def _order_blocked_data_columns(t: Table) -> Table:

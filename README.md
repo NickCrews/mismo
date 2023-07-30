@@ -32,7 +32,7 @@ record linkage packages.
 ## Features
 - Supports very large datasets that are larger than memory, executed on
   powerful SQL engines.
-- Use the clean, strong-typed, pythonic, and Dataframe-like API of Ibis.
+- Use the clean, strong-typed, pythonic, and Dataframe API of Ibis.
 - Small, modular functions and data structures that are easy to plug together
   and extend. Ibis supports UDFs and vectorized UDFs, so you can easily
   extend Mismo with your own custom functions.
