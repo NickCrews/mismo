@@ -7,7 +7,7 @@ from ibis import _
 from ibis.expr.types import Table
 import pandas as pd
 
-from mismo.block import Blocking
+from mismo.block import IdsBlocking
 
 __all__ = [
     "load_febrl1",
@@ -19,7 +19,7 @@ __all__ = [
 
 def _wrap_febrl(
     load_febrl: Callable[..., tuple[pd.DataFrame, pd.MultiIndex]]
-) -> Blocking:
+) -> IdsBlocking:
     pdf, links_multi_index = load_febrl(return_links=True)
     pdf = pdf.reset_index(drop=False)
     con = ibis.duckdb.connect()
@@ -50,22 +50,22 @@ def _wrap_febrl(
     links = con.table("links")
     links = links.order_by(["record_id_l", "record_id_r"])
     links = links.cache()
-    return Blocking(t, t.view(), links)
+    return IdsBlocking(t, t.view(), links)
 
 
-def load_febrl1() -> Blocking:
+def load_febrl1() -> IdsBlocking:
     from recordlinkage import datasets as rlds
 
     return _wrap_febrl(rlds.load_febrl1)  # pyright: ignore
 
 
-def load_febrl2() -> Blocking:
+def load_febrl2() -> IdsBlocking:
     from recordlinkage import datasets as rlds
 
     return _wrap_febrl(rlds.load_febrl2)  # pyright: ignore
 
 
-def load_febrl3() -> Blocking:
+def load_febrl3() -> IdsBlocking:
     from recordlinkage import datasets as rlds
 
     return _wrap_febrl(rlds.load_febrl3)  # pyright: ignore

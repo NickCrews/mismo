@@ -8,13 +8,19 @@ to be compared, hopefully to a manageable level.
 from __future__ import annotations
 
 from mismo.block._array import block_on_arrays as block_on_arrays
-from mismo.block._base import Blocking as Blocking
-from mismo.block._base import BlockingRule as BlockingRule
-from mismo.block._base import join as join
+from mismo.block._blocking import BlockedBlocking as BlockedBlocking
+from mismo.block._blocking import Blocking as Blocking
+from mismo.block._blocking import IdsBlocking as IdsBlocking
+from mismo.block._blocking import block as block
+
+# from mismo.block._base import blocking as blocking
+from mismo.block._util import join as join
 
 __all__ = [
-    "Blocking",
-    "BlockingRule",
     "block_on_arrays",
+    "BlockedBlocking",
+    "IdsBlocking",
+    "Blocking",
     "join",
+    "block",
 ]

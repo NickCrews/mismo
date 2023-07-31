@@ -14,13 +14,19 @@ from ._util import bayes_factor_to_prob, prob_to_bayes_factor
 
 
 class LevelWeights:
-    def __init__(self, name: str, *, m: float, u: float):
+    def __init__(self, name: str, *, m: float | None, u: float | None):
         self.name = name
         self.m = m
         self.u = u
 
     @property
+    def is_trained(self) -> bool:
+        return self.m is not None and self.u is not None
+
+    @property
     def bayes_factor(self) -> float:
+        if not self.is_trained:
+            raise ValueError("Weights have not been set for this comparison level.")
         if self.u == 0:
             return float("inf")
         else:
@@ -38,11 +44,20 @@ class LevelWeights:
 class ComparisonWeights:
     name: str
     """Matches the name of the Comparison that these weights are for."""
-    level_weights: list[LevelWeights] | None
+    level_weights: list[LevelWeights]
+
+    @classmethod
+    def from_comparison(cls, comparison: Comparison) -> ComparisonWeights:
+        return cls(
+            name=comparison.name,
+            level_weights=[
+                LevelWeights(name=lev.name, m=None, u=None) for lev in comparison.levels
+            ],
+        )
 
     @property
     def is_trained(self) -> bool:
-        return self.level_weights is not None
+        return all(w.is_trained for w in self.level_weights)
 
     def bayes_factor(self, labels: IntegerColumn) -> FloatingColumn:
         """Calculate the Bayes factor for each record pair."""
@@ -85,6 +100,13 @@ class Weights:
         self.comparison_weights = {cw.name: cw for cw in comparison_weights}
         self.prior = prior
 
+    @classmethod
+    def from_comparisons(
+        cls, comparisons: Iterable[Comparison], prior: float | None = None
+    ) -> Weights:
+        comparison_weights = [ComparisonWeights.from_comparison(c) for c in comparisons]
+        return cls(comparison_weights=comparison_weights, prior=prior)
+
     def __getitem__(self, name: str) -> ComparisonWeights:
         return self.comparison_weights[name]
 
@@ -101,13 +123,15 @@ class FellegiSunterComparer:
         self, comparisons: Iterable[Comparison], weights: Weights | None = None
     ):
         self.comparisons: list[Comparison] = ibis.util.promote_list(comparisons)
+        if weights is None:
+            weights = Weights.from_comparisons(comparisons)
         self.weights = weights
 
     def compare(self, blocked: Table) -> Table:
         if not self.is_trained:
             raise ValueError(f"{self} is not trained.")
 
-        total_bf = prob_to_bayes_factor(self.weights)
+        total_bf = prob_to_bayes_factor(self.weights.prior)
         m = {}
         for comparison in self.comparisons:
             comparison_weights = self.weights[comparison.name]
@@ -137,8 +161,15 @@ class FellegiSunterComparer:
             train_comparison(fsc, left, right, max_pairs=max_pairs, seed=seed)
             for fsc in self.comparisons
         ]
-        return self.__class__(trained, prior=self.weights)
+        weights = Weights(
+            comparison_weights=trained,
+            prior=self.weights.prior if self.weights else None,
+        )
+        return self.__class__(comparisons=self.comparisons, weights=weights)
 
     @property
     def is_trained(self) -> bool:
-        return self.weights is not None and self.weights.is_trained
+        return self.weights.is_trained
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.comparisons!r}, {self.weights!r})"

@@ -4,7 +4,7 @@ from typing import Callable
 
 from ibis.expr.types import Table
 
-from mismo.block._base import join
+from mismo.block import _util
 
 
 def block_on_arrays(
@@ -37,7 +37,7 @@ def block_on_arrays(
         prints_right = right[right_array_column]
         with_prints_left = left.mutate(__mismo_key=prints_left.unnest())
         with_prints_right = right.mutate(__mismo_key=prints_right.unnest())
-        result: Table = join(with_prints_left, with_prints_right, "__mismo_key")[
+        result: Table = _util.join(with_prints_left, with_prints_right, "__mismo_key")[
             "record_id_l", "record_id_r"
         ]
         return result
