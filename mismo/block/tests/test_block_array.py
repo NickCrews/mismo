@@ -5,8 +5,7 @@ from ibis.expr.types import Table
 import pandas as pd
 import pytest
 
-from mismo import DedupeTask
-from mismo.block import Blocking, block_on_arrays
+from mismo.block import block, block_on_arrays
 
 
 @pytest.fixture
@@ -26,14 +25,20 @@ def simple_table() -> Table:
 
 def test_block_on_arrays(simple_table: Table):
     rule = block_on_arrays("strings", "strings")
-    blocking = Blocking(
-        simple_table, simple_table.view(), rule, DedupeTask.redundant_comparisons
-    )
+    blocking = block(simple_table, simple_table.view(), rule)
     expected_id_pairs = {
+        (0, 0),
+        (1, 1),
+        (2, 2),
+        (3, 3),
         (0, 3),
+        (3, 0),
         (0, 1),
+        (1, 0),
         (1, 3),
+        (3, 1),
         (2, 3),
+        (3, 2),
     }
     df = blocking.ids.to_pandas()
     actual_id_pairs = set(df.itertuples(index=False, name=None))
