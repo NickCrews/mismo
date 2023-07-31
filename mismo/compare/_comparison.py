@@ -50,6 +50,8 @@ class Comparison:
             is_match = labels.isnull() & level.condition(pairs)
             lab = i if label == "index" else level.name
             labels = is_match.ifelse(lab, labels)
+        if label == "name":
+            labels = labels.fillna("else")
         return labels.name(self.name)
 
     def __repr__(self) -> str:
