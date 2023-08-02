@@ -37,6 +37,14 @@ record linkage packages.
   and extend. Ibis supports UDFs and vectorized UDFs, so you can easily
   extend Mismo with your own custom functions.
 
+## Examples
+
+See the [example notebook](https://nickcrews.github.io/mismo/examples/patent_deduplication)
+
+## Documentation
+
+See the [documentation](https://nickcrews.github.io/mismo)
+
 ## License
 
 `mismo` is distributed under the terms of the

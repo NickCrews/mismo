@@ -102,7 +102,7 @@ def load_patents() -> Table:
         - coauthor: str
           A list of coauthors on the patent, separated by **
         - class_: str
-          A list of 4-digit IPC technical codes, separated by **
+          A list of 4-character IPC technical codes, separated by **
 
     Examples
     --------

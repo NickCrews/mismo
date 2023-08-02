@@ -19,8 +19,4 @@ records from tables that don't have a unique identifier.
 
 ## Example
 
-```python
-import ibis
-import mismo
-
-```
+See the [example notebook](examples/patent_deduplication.ipynb).
