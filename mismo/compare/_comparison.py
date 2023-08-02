@@ -109,10 +109,11 @@ class Comparison:
         return labels.name(self.name)
 
     def __repr__(self) -> str:
+        levels_str = ", ".join(repr(level) for level in self.levels)
         if self.description is None:
-            return f"Comparison(name={self.name}, levels={self.levels})"
+            return f"Comparison(name={self.name}, levels=[{levels_str}])"
         else:
-            return f"Comparison(name={self.name}, description={self.description}, levels={self.levels})"  # noqa: E501
+            return f"Comparison(name={self.name}, description={self.description}, levels=[{levels_str}])"  # noqa: E501
 
     @staticmethod
     def _build_lookup(
@@ -156,6 +157,9 @@ class Comparisons:
             name = _rename(name_formatter, comparison.name)
             m[name] = labels
         return blocked.mutate(**m)
+
+    def __iter__(self) -> Iterable[Comparison]:
+        return iter(self._lookup.values())
 
     def __getitem__(self, name: str) -> Comparison:
         return self._lookup[name]
