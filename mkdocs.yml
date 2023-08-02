@@ -40,3 +40,7 @@ plugins:
             show_root_toc_entry: true
             show_source: false
   - search
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences

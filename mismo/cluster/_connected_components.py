@@ -2,20 +2,19 @@ from __future__ import annotations
 
 from itertools import count
 import logging
-from typing import Iterable
+from typing import Callable
 
 import ibis
 from ibis import _
-from ibis.expr.types import Column, IntegerColumn, Table
+from ibis.expr.types import Table
 
 from mismo import _util
+from mismo._factorizer import Factorizer
 
 logger = logging.getLogger(__name__)
 
 
-def connected_components(
-    edges: Table, max_iter: int | None = None
-) -> tuple[Table, Table]:
+def connected_components(edges: Table, max_iter: int | None = None) -> Table:
     """Compute the connected components of a graph.
 
     This is based on the algorithm described at
@@ -29,26 +28,55 @@ def connected_components(
     ----------
     edges :
         A table with the columns (record_id_l, record_id_r).
-        The datatypes can be anything.
+        The datatypes can be anything, but they must be the same.
+    max_iter : int, optional
+        The maximum number of iterations to run. If None, run until convergence.
 
     Returns
     -------
-    left_labels : Table
-        Labeling for left records. Has columns (record_id_l, component).
-    right_labels : Table
-        Labeling for right records. Has columns (record_id_r, component).
+    labels : Table
+        Labeling for left records. Has columns (record_id, component: uint64).
+
+    !!! note
+
+        The record_ids are assumed to refer to the same universe of records:
+        If record_id 5 appears in both the left column and the right column,
+        then they are assumed to refer to the same record. If you have a left
+        dataset and right dataset and they both have a record with id 5, then
+        you should first make the ids unique across the two datasets.
+
+    Examples
+    --------
+    >>> from mismo.cluster import connected_components
+    >>> edges_list = [
+    ...     ("a", "x"),
+    ...     ("b", "x"),
+    ...     ("b", "y"),
+    ...     ("c", "y"),
+    ...     ("c", "z"),
+    ...     ("g", "h"),
+    ... ]
+    >>> edges_df = pd.DataFrame(edges_list, columns=["record_id_l", "record_id_r"])
+    >>> edges = ibis.memtable(edges_df)
+    >>> connected_components(edges)
+    ┏━━━━━━━━━━━┳━━━━━━━━━━━┓
+    ┃ record_id ┃ component ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━━━━┩
+    │ string    │ uint64    │
+    ├───────────┼───────────┤
+    │ x         │         0 │
+    │ y         │         0 │
+    │ z         │         0 │
+    │ h         │         3 │
+    │ a         │         0 │
+    │ b         │         0 │
+    │ c         │         0 │
+    │ g         │         3 │
+    └───────────┴───────────┘
     """
-    edges, left_map, right_map = _normalize_edges(edges)
-    labels = _connected_components_ints(edges, max_iter=max_iter)
-
-    def _join(left, right):
-        return _util.join(
-            left, right, "record", how="left", lname="{name}_l", rname="{name}_r"
-        ).drop("record_l", "record_r")
-
-    left_labels = _join(left_map, labels)
-    right_labels = _join(right_map, labels)
-    return left_labels, right_labels
+    int_edges, restore = _intify_edges(edges)
+    int_labels = _connected_components_ints(int_edges, max_iter=max_iter)
+    return restore(int_labels)
 
 
 def _connected_components_ints(
@@ -70,31 +98,33 @@ def _connected_components_ints(
 
 def _n_updates(labels: Table, new_labels: Table) -> int:
     """Count the number of updates between two labelings."""
-    condition = (labels.record == new_labels.record) & (
+    condition = (labels.record_id == new_labels.record_id) & (
         labels.component != new_labels.component
     )
     return _util.join(labels, new_labels, condition).count().execute()
 
 
-def _updated_labels(labels: Table, edges: Table) -> Table:
-    component_equivalences = _get_component_equivalences(edges, labels)
+def _updated_labels(node_labels: Table, edges: Table) -> Table:
+    component_equivalences = _get_component_equivalences(edges, node_labels)
     component_mapping = _get_component_update_map(component_equivalences)
-    return labels.relabel({"component": "component_old"}).left_join(
+    return node_labels.relabel({"component": "component_old"}).left_join(
         component_mapping, "component_old"
-    )["record", "component"]
+    )["record_id", "component"]
 
 
-def _get_component_equivalences(edges: Table, labels: Table) -> Table:
+def _get_component_equivalences(edges: Table, node_labels: Table) -> Table:
     """Get a table of which components are equivalent to each other."""
     same_components = (
-        edges.join(labels, edges["record_l"] == labels["record"])
+        edges.join(node_labels, edges.record_id_l == node_labels.record_id)
         .relabel({"component": "component_l"})
-        .drop("record", "record_l")
+        .drop("record_id", "record_id_l")
     )
     same_components = (
-        same_components.join(labels, same_components["record_r"] == labels["record"])
+        same_components.join(
+            node_labels, same_components.record_id_r == node_labels.record_id
+        )
         .relabel({"component": "component_r"})
-        .drop("record", "record_r")
+        .drop("record_id", "record_id_r")
     )
     return same_components["component_l", "component_r"].distinct()
 
@@ -112,53 +142,30 @@ def _get_component_update_map(component_equivalences: Table) -> Table:
     return together["component_old", "component"]
 
 
-def _normalize_edges(raw_edges: Table) -> tuple[Table, Table, Table]:
-    """
-    Translate edges to uint64s, merge namespaces, and create maps back to the original
-
-    By "merge namespaces" I mean the record ids
-    in the left table and the record ids in the right table are not necessarily
-    distinct from each other. They could each have an id of 5, but refer to
-    different records. Keeping track of these two different universes of record
-    ids is complex, so we just merge them into one universe of record ids,
-    by labeling the left records 0-L, and then the right records starting
-    from there, eg  L+1-L+R.
-    """
+def _intify_edges(raw_edges: Table) -> tuple[Table, Callable[[Table], Table]]:
+    """Translate edges to uint64s and create restoring function"""
     if "record_id_l" not in raw_edges.columns or "record_id_r" not in raw_edges.columns:
         raise ValueError(
             "edges must contain the columns `record_id_l` and `record_id_r`, "
             f"but it contains {raw_edges.columns}"
         )
-    left_map = raw_edges.select(
-        "record_id_l", record=_group_id(raw_edges, "record_id_l")
-    ).distinct()
-    right_map = raw_edges.select(
-        "record_id_r", record=_group_id(raw_edges, "record_id_r")
-    ).distinct()
-    max_left = left_map.count().execute()
-    right_map = right_map.mutate(
-        record=(right_map["record"] + max_left + 1).cast("uint64")
-    )
 
-    lm2 = left_map.relabel({"record": "record_l"})
-    rm2 = right_map.relabel({"record": "record_r"})
-    edges = raw_edges.left_join(lm2, "record_id_l").left_join(rm2, "record_id_r")
-    edges = edges["record_l", "record_r"]
-    return edges, left_map, right_map
+    swapped = raw_edges.relabel(
+        {"record_id_l": "record_id_r", "record_id_r": "record_id_l"}
+    )
+    all_node_ids = raw_edges.union(swapped).select("record_id_l")
+
+    f = Factorizer(all_node_ids, "record_id_l")
+    edges = f.encode(raw_edges, "record_id_l")
+    edges = f.encode(edges, "record_id_r")
+
+    def restore(int_labels: Table) -> Table:
+        return f.decode(int_labels, "record_id")
+
+    return edges, restore
 
 
 def _get_initial_labels(edges: Table) -> Table:
-    labels_left = edges.select(record=_["record_l"], component=_["record_l"])
-    labels_right = edges.select(record=_["record_r"], component=_["record_r"])
+    labels_left = edges.select(record_id=_.record_id_l, component=_.record_id_l)
+    labels_right = edges.select(record_id=_.record_id_r, component=_.record_id_r)
     return ibis.union(labels_left, labels_right, distinct=True)
-
-
-def _group_id(t: Table, keys: str | Column | Iterable[str | Column]) -> IntegerColumn:
-    """Number each group from 0 to the "number of groups - 1".
-
-    This is equivalent to pandas.DataFrame.groupby(keys).ngroup().
-    """
-    # We need an arbitrary column to use for dense_rank
-    # https://github.com/ibis-project/ibis/issues/5408
-    col: Column = t[t.columns[0]]
-    return col.dense_rank().over(ibis.window(order_by=keys)).cast("uint64")
