@@ -5,10 +5,10 @@ import math
 from typing import Iterable
 
 import ibis
-from ibis.expr.types import FloatingColumn, IntegerColumn, Table
+from ibis.expr.types import FloatingValue, IntegerValue, StringValue, Table
 
 from mismo._typing import Self
-from mismo.compare._comparison import Comparison
+from mismo.compare._comparison import Comparison, Comparisons
 
 from ._util import bayes_factor_to_prob, prob_to_bayes_factor
 
@@ -59,17 +59,19 @@ class ComparisonWeights:
     def is_trained(self) -> bool:
         return all(w.is_trained for w in self.level_weights)
 
-    def bayes_factor(self, labels: IntegerColumn) -> FloatingColumn:
+    def bayes_factor(self, labels: IntegerValue | StringValue) -> FloatingValue:
         """Calculate the Bayes factor for each record pair."""
         if not self.is_trained:
             raise ValueError("Weights have not been set for all comparison levels.")
-        cases = [(i, w.bayes_factor) for i, w in enumerate(self.level_weights)]  # type: ignore # noqa: E501
+        if isinstance(labels, StringValue):
+            cases = [(lw.name, lw.bayes_factor) for lw in self.level_weights]
+        else:
+            cases = [(i, lw.bayes_factor) for i, lw in enumerate(self.level_weights)]  # type: ignore # noqa: E501
         return labels.cases(cases, self.else_weights.bayes_factor)  # type: ignore
 
-    def match_probability(self, pairs_or_labels: IntegerColumn) -> FloatingColumn:
+    def match_probability(self, labels: IntegerValue | StringValue) -> FloatingValue:
         """Calculate the match probability for each record pair."""
-        bf = self.bayes_factor(pairs_or_labels)
-        return bayes_factor_to_prob(bf)
+        return bayes_factor_to_prob(self.bayes_factor(labels))
 
     @property
     def else_weights(self) -> LevelWeights:
@@ -120,9 +122,11 @@ class Weights:
 
 class FellegiSunterComparer:
     def __init__(
-        self, comparisons: Iterable[Comparison], weights: Weights | None = None
+        self,
+        comparisons: Comparisons | Iterable[Comparison],
+        weights: Weights | None = None,
     ):
-        self.comparisons: list[Comparison] = ibis.util.promote_list(comparisons)
+        self.comparisons = Comparisons(comparisons)
         if weights is None:
             weights = Weights.from_comparisons(comparisons)
         self.weights = weights
@@ -135,9 +139,9 @@ class FellegiSunterComparer:
         m = {}
         for comparison in self.comparisons:
             comparison_weights = self.weights[comparison.name]
-            labels = comparison.label_pairs(blocked, label="index")
+            labels = comparison.label_pairs(blocked, how="index")
             bf = comparison_weights.bayes_factor(labels)
-            m[f"{comparison.name}_cmp"] = comparison.label_pairs(blocked, label="name")
+            m[f"{comparison.name}_cmp"] = comparison.label_pairs(blocked, how="name")
             m[f"{comparison.name}_bf"] = bf
             total_bf *= bf
         if self.weights == 1.0:
