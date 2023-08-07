@@ -6,7 +6,7 @@ from typing import Callable
 
 import ibis
 from ibis import _
-from ibis.expr.types import Table
+from ibis.expr.types import Table, Value
 
 from mismo import _util
 from mismo._factorizer import Factorizer
@@ -14,7 +14,12 @@ from mismo._factorizer import Factorizer
 logger = logging.getLogger(__name__)
 
 
-def connected_components(edges: Table, max_iter: int | None = None) -> Table:
+def connected_components(
+    edges: Table,
+    *,
+    nodes: Table | Value | None = None,
+    max_iter: int | None = None,
+) -> Table:
     """Compute the connected components of a graph.
 
     This is based on the algorithm described at
@@ -29,6 +34,12 @@ def connected_components(edges: Table, max_iter: int | None = None) -> Table:
     edges :
         A table with the columns (record_id_l, record_id_r).
         The datatypes can be anything, but they must be the same.
+    nodes : Table | Value, optional
+        A table with the column record_id, or the record_id column itself.
+        If provided, the output will include labels for all nodes in this table,
+        even if they are not in the edges.
+        If not provided, the output will only include labels for nodes that
+        appear in the edges.
     max_iter : int, optional
         The maximum number of iterations to run. If None, run until convergence.
 
@@ -76,7 +87,10 @@ def connected_components(edges: Table, max_iter: int | None = None) -> Table:
     """
     int_edges, restore = _intify_edges(edges)
     int_labels = _connected_components_ints(int_edges, max_iter=max_iter)
-    return restore(int_labels)
+    result = restore(int_labels)
+    if nodes is not None:
+        result = _add_labels_for_missing_nodes(result, nodes)
+    return result
 
 
 def _connected_components_ints(
@@ -169,3 +183,23 @@ def _get_initial_labels(edges: Table) -> Table:
     labels_left = edges.select(record_id=_.record_id_l, component=_.record_id_l)
     labels_right = edges.select(record_id=_.record_id_r, component=_.record_id_r)
     return ibis.union(labels_left, labels_right, distinct=True)
+
+
+def _add_labels_for_missing_nodes(labels: Table, nodes: Table | Value) -> Table:
+    """
+    Add labels for nodes not in the original edgelist (and thus not in the labels)
+    """
+    additional_labels = _get_additional_labels(labels, nodes)
+    return labels.union(additional_labels)
+
+
+def _get_additional_labels(labels: Table, nodes: Table | Value) -> Table:
+    if not isinstance(nodes, Table):
+        nodes = nodes.name("record_id").as_table()
+    nodes = nodes.select("record_id")
+    is_missing_label = nodes.record_id.notin(labels.record_id)
+    max_existing_label = labels.component.max().execute()
+    additional_labels = nodes[is_missing_label].select(
+        "record_id", component=ibis.row_number() + (1 + max_existing_label)
+    )
+    return additional_labels
