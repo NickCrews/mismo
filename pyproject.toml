@@ -42,6 +42,7 @@ docs = [
   "mkdocstrings[python]",
   "recordlinkage",
   "sklearn",
+  "altair",
 ]
 
 [tool.coverage.run]
