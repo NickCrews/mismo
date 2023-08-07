@@ -98,6 +98,9 @@ class Comparison:
             If 'name', any ELSE results will be labelled as 'else'.
 
         Returns
+        -------
+        labels : IntegerColumn | StringColumn
+            The labels for each record pair.
         """
         labels = ibis.NA
         for i, level in enumerate(self.levels):
