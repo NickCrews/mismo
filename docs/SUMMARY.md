@@ -9,7 +9,7 @@
     * [Blocking](reference/block.md)
     * [Comparing](reference/compare.md)
     * [Clustering](reference/cluster.md)
-    * [Evaluation](reference/evaluate.md)
+    * [Metrics](reference/metrics.md)
     * [Plotting](reference/plot.md)
     * [Datasets](reference/datasets.md)
 * [Contribute](contributing.md)
