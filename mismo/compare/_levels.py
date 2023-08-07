@@ -10,10 +10,13 @@ def exact_level(
 ) -> ComparisonLevel:
     """Create a ComparisonLevel that checks for exact matches on a column.
 
-    Args:
-        column: The column to check for exact matches. This will get turned into
-                the boolean expression `{column}_l = {column}_r`.
-
+    Parameters
+    ----------
+    column : str
+        The column to check for exact matches. This will get turned into
+        the boolean expression `{column}_l = {column}_r`.
+    name : str, optional
+        The name of the generated level.
     """
     column_left = f"{column}_l"
     column_right = f"{column}_r"

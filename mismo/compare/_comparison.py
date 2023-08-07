@@ -9,7 +9,31 @@ from ibis.expr.types import BooleanValue, IntegerColumn, StringColumn, Table
 
 @dataclasses.dataclass(frozen=True)
 class ComparisonLevel:
-    """A Level within a Comparison."""
+    """A Level within a Comparison.
+
+    A ComparisonLevel is a named condition that determines whether a record pair
+    matches that level. Within a Comparison, the ComparisonLevels are
+    evaluated in order. If a record pair matches a level, it is labeled with
+    that level and the remaining levels are not evaluated.
+
+    Parameters
+    ----------
+    name : str
+        The name of the level. Should be short and unique within a Comparison.
+    condition : Callable[[Table], BooleanValue]
+        A condition that determines whether a record pair matches this level.
+    description : str, optional
+        A description of the level. Intended for humans in charts and documentation.
+
+    Attributes
+    ----------
+    name : str
+        The name of the level. Should be short and unique within a Comparison.
+    condition : Callable[[Table], BooleanValue]
+        A condition that determines whether a record pair matches this level.
+    description : str | None
+        A description of the level. Intended for humans in charts and documentation.
+    """
 
     name: str
     condition: Callable[[Table], BooleanValue]

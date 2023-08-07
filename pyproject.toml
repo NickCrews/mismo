@@ -41,6 +41,7 @@ docs = [
   "mkdocs-material",
   "mkdocstrings[python]",
   "recordlinkage",
+  "sklearn",
 ]
 
 [tool.coverage.run]

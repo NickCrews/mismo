@@ -24,6 +24,11 @@ def distance_km(
         The latitude of the second point.
     lon2 : FloatingValue
         The longitude of the second point.
+
+    Returns
+    -------
+    distance : FloatingValue
+        The distance between the two points, in kilometers.
     """
 
     def radians(degrees):
