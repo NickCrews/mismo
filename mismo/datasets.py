@@ -7,7 +7,7 @@ from ibis import _
 from ibis.expr.types import Table
 import pandas as pd
 
-from mismo.block import IdsBlocking
+from mismo.block._blocking import IdsBlocking
 
 __all__ = [
     "load_febrl1",
