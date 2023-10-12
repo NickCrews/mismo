@@ -5,10 +5,11 @@ comparisons on them.
 
 ## Comparison Objects
 
-A `Comparisons` is an unordered collection of `Comparison` objects.
-Each `Comparison` represents a dimension to compare against, such as
+A [Comparisons](#mismo.compare.Comparisons) is an unordered dict-like collection of
+[Comparison](#mismo.compare.Comparison)s.
+Each [Comparison](#mismo.compare.Comparison) represents a dimension to compare against, such as
 *name*, *location*, *price*, *date*, etc.
-Each one contains many `ComparisonLevel`s, each of which is a level of aggreement,
+Each one contains many [ComparisonLevel](#mismo.compare.Comparison)s, each of which is a level of aggreement,
 such as *exact*, *misspelling*, *within_1_km*, etc.
 
 ::: mismo.compare.Comparisons
@@ -17,16 +18,20 @@ such as *exact*, *misspelling*, *within_1_km*, etc.
 
 ## Comparison Functions
 
-These utility functions help you create `ComparisonLevel` objects.
+These utility functions help you create [ComparisonLevel](#mismo.compare.ComparisonLevel)
 
 ::: mismo.compare.exact_level
 ::: mismo.compare.intersection_n
 ::: mismo.compare.jaccard
 ::: mismo.compare.distance_km
-::: mismo.compare.fs
 
 
 ## Felleni-Sunter Model
+
+The Felleni-Sunter model is a popular model for record linkage.
+It uses bayesian statistics and basic machine learning to assign
+weights to different ComparisonLevels, and then combine them
+together to get a final score for a record pair.
 
 ::: mismo.compare.fs.FellegiSunterComparer
 ::: mismo.compare.fs.Weights

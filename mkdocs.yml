@@ -20,7 +20,7 @@ plugins:
   - git-revision-date-localized
   - literate-nav
   - mkdocs-jupyter:
-      execute: true
+      execute: false
       ignore:
         - "*.py"
       include_source: true

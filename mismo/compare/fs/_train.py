@@ -3,7 +3,7 @@ from __future__ import annotations
 from ibis.expr.types import Table
 
 from mismo._util import sample_table
-from mismo.block import block
+from mismo.block import BlockingRule
 from mismo.compare._comparison import Comparison
 
 from ._base import ComparisonWeights, LevelWeights
@@ -20,7 +20,7 @@ def possible_pairs(
     max_pairs: int | None = None,
     seed: int | None = None,
 ) -> Table:
-    pairs = block(left, right, True).blocked
+    pairs = BlockingRule("all", True).block(left, right)
     n_pairs = min_ignore_None(pairs.count().execute(), max_pairs)
     return sample_table(pairs, n_pairs, seed=seed)
 
@@ -35,9 +35,10 @@ def true_pairs_from_labels(left: Table, right: Table) -> Table:
             "Right dataset must have a label_true column. Found: {right.columns}"
         )
 
-    rule = left.label_true == right.label_true
-
-    return block(left, right, rule).blocked
+    rule = BlockingRule(
+        "labels_match", lambda left, right: left.label_true == right.label_true
+    )
+    return rule.block(left, right)
 
 
 def level_proportions(comparison: Comparison, pairs: Table) -> list[float]:

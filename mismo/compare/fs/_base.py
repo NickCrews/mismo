@@ -123,7 +123,12 @@ class ComparisonWeights:
 
 
 class Weights:
-    """Weights for the Fellegi-Sunter model."""
+    """Weights for the Fellegi-Sunter model.
+
+    Can either be trained or untrained. Comprised of
+    - a `prior` probability, which is the probability of a match between two
+      records drawn at random.
+    - a set of `ComparisonWeights`, one for each Comparison."""
 
     comparison_weights: dict[str, ComparisonWeights]
     """The weights for each Comparison."""
@@ -148,6 +153,7 @@ class Weights:
         return cls(comparison_weights=comparison_weights, prior=prior)
 
     def __getitem__(self, name: str) -> ComparisonWeights:
+        """Get a ComparisonWeights by name."""
         return self.comparison_weights[name]
 
     @property
@@ -160,19 +166,23 @@ class Weights:
 
 
 class FellegiSunterComparer:
-    """Compares two tables using the Fellegi-Sunter model."""
+    """Compares two tables using the Fellegi-Sunter model.
+
+    Contains a set of Comparisons. If trained, also contains a corresponding set
+    of Weights. Otherwise, the weights are None.
+    """
 
     comparisons: Comparisons
     """The Comparisons to use."""
     weights: Weights
-    """The weights for each Comparison. None means untrained."""
+    """The `prior` and set of `ComparisonWeights`, one for each `Comparison`."""
 
     def __init__(
         self,
         comparisons: Comparisons | Iterable[Comparison],
         weights: Weights | None = None,
     ):
-        self.comparisons = Comparisons(comparisons)
+        self.comparisons = Comparisons(*comparisons)
         if weights is None:
             weights = Weights.from_comparisons(comparisons)
         self.weights = weights

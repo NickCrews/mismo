@@ -9,11 +9,11 @@ from ibis.expr.types import BooleanValue, IntegerColumn, StringColumn, Table
 
 @dataclasses.dataclass(frozen=True)
 class ComparisonLevel:
-    """A Level within a Comparison, such as *exact*, *phonetic*, or *within_1_day*.
+    """A Level within a [Comparison](#mismo.block.Comparison), such as *exact*, *phonetic*, or *within_1_day*.
 
     A ComparisonLevel is a named condition that determines whether a record pair
     matches that level.
-    """
+    """  # noqa: E501
 
     name: str
     """The name of the level. Should be short and unique within a Comparison.
@@ -50,15 +50,15 @@ class ComparisonLevel:
 
 
 class Comparison:
-    """A measurement record similarity based on one dimension, such as *name* or *date*.
+    """
+    A measure of record pair similarity based on one dimension, e.g. *name* or *date*.
 
-    A Comparison is made up of multiple ComparisonLevels.
-    We don't explicitly store an `ELSE` ComparisonLevel.
-    If a record pair doesn't match any of the levels, it is considered
-    to be an `ELSE` implicitly.
-
-    This acts like an ordered, dict-like collection of ComparisonLevels.
+    This acts like an ordered, dict-like collection of
+    [ComparisonLevels](#mismo.block.ComparisonLevels).
     You can access the levels by index or by name, or iterate over them.
+    We don't explicitly store an `ELSE` ComparisonLevel.
+    If a record pair doesn't match any of the level conditions, it is considered
+    to be an `ELSE` implicitly.
     """
 
     def __init__(
@@ -175,9 +175,9 @@ class Comparison:
 
 
 class Comparisons:
-    """An unordered, dict-like collection of `Comparison`s."""
+    """An unordered, dict-like collection of [Comparison](#mismo.block.Comparison)s."""
 
-    def __init__(self, comparisons: Iterable[Comparison] | Comparisons):
+    def __init__(self, *comparisons: Comparison):
         """Create a set of Comparisons.
 
         Parameters
@@ -185,8 +185,6 @@ class Comparisons:
         comparisons : Iterable[Comparison] | Comparisons
             The comparisons to include in the set.
         """
-        if isinstance(comparisons, Comparisons):
-            comparisons = list(comparisons)
         self._lookup: dict[str, Comparison] = {}
         for c in comparisons:
             if c.name in self._lookup:
