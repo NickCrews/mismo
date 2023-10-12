@@ -1,18 +1,10 @@
 from __future__ import annotations
 
-from typing import NamedTuple, Protocol
+from typing import NamedTuple
 
-from ibis.expr.types import Table
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-
-from mismo.block import Blocking
-
-
-class PBlockLearner(Protocol):
-    def fit(self, data1: Table, data2: Table, y: Table) -> Blocking:
-        ...
 
 
 class SetScore(NamedTuple):
@@ -22,8 +14,8 @@ class SetScore(NamedTuple):
     cost: float
 
 
-#  TODO: This still uses pandas and numpy, we should move to ibis if possible.
-#  Heavily inspired by Dedupe's BlockLearner
+# TODO: This still uses pandas and numpy, we should move to ibis if possible.
+# Heavily inspired by Dedupe's BlockLearner
 # https://github.com/dedupeio/dedupe/blob/f72d4a161bfc66c9e1de9b39e2bd7e01bcad3c49/dedupe/training.py#L36
 class LinkSet:
     def __init__(self, links: pd.Series, n_extra_covers: int) -> None:
