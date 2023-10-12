@@ -100,7 +100,7 @@ def _connected_components_ints(
     labels = _get_initial_labels(edges).cache()
     for i in count(1):
         new_labels = _updated_labels(labels, edges).cache()
-        assert (labels.count() == new_labels.count()).execute()
+        assert labels.count().execute() == new_labels.count().execute()
         n_updates = _n_updates(labels, new_labels)
         if n_updates == 0:
             return labels
