@@ -50,14 +50,24 @@ def join(
 ) -> Table:
     """Similar to ibis's join, with a few differences
 
-    - does a cross join when predicates is True or how is "cross"
-    - converts the lname and rname suffixes to the appropriate kwargs for ibis<6.0.0
+    - Does a cross join when predicates is True or how is "cross"
+    - Converts the lname and rname suffixes to the appropriate kwargs for ibis<6.0.0
+    - Allows for using lambda (left, right) -> bool as the predicates
     """
     rename_kwargs = _join_suffix_kwargs(lname=lname, rname=rname)
     if how == "cross" or predicates is True:
         return left.cross_join(right, **rename_kwargs)
     else:
-        return left.join(right, predicates=predicates, how=how, **rename_kwargs)
+        preds = _to_ibis_join_predicates(left, right, predicates)
+        return left.join(right, predicates=preds, how=how, **rename_kwargs)
+
+
+def _to_ibis_join_predicates(left, right, raw_predicates) -> tuple:
+    """We accept lambda (left, right) -> bool in addition to ibis predicates"""
+    if callable(raw_predicates):
+        return raw_predicates(left, right)
+    else:
+        return raw_predicates
 
 
 def _join_suffix_kwargs(lname: str, rname: str) -> dict:
