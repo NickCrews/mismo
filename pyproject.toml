@@ -41,7 +41,7 @@ docs = [
   "mkdocs-material",
   "mkdocstrings[python]",
   "recordlinkage",
-  "sklearn",
+  "scikit-learn",
   "altair",
 ]
 
