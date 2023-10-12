@@ -20,6 +20,8 @@ def join(left: Table, right: Table, condition) -> Table:
         `left.name_l == right.name_r`, because the suffixes will be added
         AFTER the join.
     """
+    if left is right:
+        right = right.view()
     lc = set(left.columns)
     rc = set(right.columns)
     just_left = lc - rc
