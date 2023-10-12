@@ -31,9 +31,13 @@ plugins:
         python:
           import:
             - https://docs.python.org/3/objects.inv
-            - https://ibis-project.org/objects.inv
+            # Ibis doesn't export this anymore after switching to quartodoc
+            # https://github.com/machow/quartodoc/issues/293
+            # - https://ibis-project.org/objects.inv
           options:
             docstring_style: numpy
+            docstring_section_style: spacy
+            heading_level: 3
             show_category_heading: true
             show_root_full_path: true
             show_root_heading: true
