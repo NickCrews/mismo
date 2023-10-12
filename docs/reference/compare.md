@@ -5,11 +5,21 @@ comparisons on them.
 
 ## Comparison Objects
 
+A `Comparisons` is an unordered collection of `Comparison` objects.
+Each `Comparison` represents a dimension to compare against, such as
+*name*, *location*, *price*, *date*, etc.
+Each one contains many `ComparisonLevel`s, each of which is a level of aggreement,
+such as *exact*, *misspelling*, *within_1_km*, etc.
+
+::: mismo.compare.Comparisons
 ::: mismo.compare.Comparison
 ::: mismo.compare.ComparisonLevel
-::: mismo.compare.exact_level
 
-## Comparing Functions
+## Comparison Functions
+
+These utility functions help you create `ComparisonLevel` objects.
+
+::: mismo.compare.exact_level
 ::: mismo.compare.intersection_n
 ::: mismo.compare.jaccard
 ::: mismo.compare.distance_km

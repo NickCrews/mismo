@@ -9,35 +9,38 @@ from ibis.expr.types import BooleanValue, IntegerColumn, StringColumn, Table
 
 @dataclasses.dataclass(frozen=True)
 class ComparisonLevel:
-    """A Level within a Comparison.
+    """A Level within a Comparison, such as *exact*, *phonetic*, or *within_1_day*.
 
     A ComparisonLevel is a named condition that determines whether a record pair
-    matches that level. Within a Comparison, the ComparisonLevels are
-    evaluated in order. If a record pair matches a level, it is labeled with
-    that level and the remaining levels are not evaluated.
-
-    Parameters
-    ----------
-    name : str
-        The name of the level. Should be short and unique within a Comparison.
-    condition : Callable[[Table], BooleanValue]
-        A condition that determines whether a record pair matches this level.
-    description : str, optional
-        A description of the level. Intended for humans in charts and documentation.
-
-    Attributes
-    ----------
-    name : str
-        The name of the level. Should be short and unique within a Comparison.
-    condition : Callable[[Table], BooleanValue]
-        A condition that determines whether a record pair matches this level.
-    description : str | None
-        A description of the level. Intended for humans in charts and documentation.
+    matches that level.
     """
 
     name: str
+    """The name of the level. Should be short and unique within a Comparison.
+
+    Examples:
+
+    - "exact"
+    - "misspelling"
+    - "phonetic"
+    - "within_1_day"
+    - "within_1_km"
+    - "within_10_percent"
+    """
     condition: Callable[[Table], BooleanValue]
+    """
+    A condition that determines whether a record pair matches this level.
+
+    Examples:
+
+    - `lambda t: t.name_l == t.name_r`
+    - `lambda t: (t.cost_l - t.cost_r).abs() / t.cost_l < 0.1`
+    """
     description: str | None = None
+    """A description of the level. Intended for humans in charts and documentation.
+
+    Not needed for functionality.
+    """
 
     def __repr__(self) -> str:
         if self.description is None:
@@ -47,12 +50,12 @@ class ComparisonLevel:
 
 
 class Comparison:
-    """A measurement of how similar two records are.
+    """A measurement record similarity based on one dimension, such as *name* or *date*.
 
     A Comparison is made up of multiple ComparisonLevels.
-    We don't explicitly store an ELSE ComparisonLevel.
+    We don't explicitly store an `ELSE` ComparisonLevel.
     If a record pair doesn't match any of the levels, it is considered
-    to be an ELSE implicitly.
+    to be an `ELSE` implicitly.
 
     This acts like an ordered, dict-like collection of ComparisonLevels.
     You can access the levels by index or by name, or iterate over them.
@@ -64,6 +67,18 @@ class Comparison:
         levels: Iterable[ComparisonLevel],
         description: str | None = None,
     ):
+        """Create a Comparison.
+
+        Parameters
+        ----------
+        name : str
+            The name of the comparison. Must be unique within a set of Comparisons.
+        levels : Iterable[ComparisonLevel]
+            The levels of the comparison. Does not include the implicit `ELSE` level.
+        description : str, optional
+            A description of the comparison. Intended for humans and documentation.
+            Not needed for functionality.
+        """
         self._name = name
         self._levels = tuple(levels)
         self._description = description
@@ -71,17 +86,24 @@ class Comparison:
 
     @property
     def name(self) -> str:
-        """The name of the comparison."""
+        """The name of the comparison. Must be unique within a set of Comparisons.
+
+        An example might be "name", "date", "address", "latlon", "price".
+        """
         return self._name
 
     @property
     def levels(self) -> tuple[ComparisonLevel, ...]:
-        """The levels of the comparison. Does not include the implicit ELSE level."""
+        """The levels of the comparison. Does not include the implicit `ELSE` level.
+
+        One level might be for exact matches, another for matches that misspellings,
+        and another for phonetic matches.
+        """
         return self._levels
 
     @property
     def description(self) -> str | None:
-        """A description of the comparison."""
+        """A description of the comparison. This is optional and intended for humans."""
         return self._description
 
     def __getitem__(self, name_or_index: str | int) -> ComparisonLevel:
@@ -104,11 +126,8 @@ class Comparison:
         """Label each record pair with the level that it matches.
 
         Go through the levels in order. If a record pair matches a level, label it.
-        This would be the ELSE case that is used in splink, but in our version
-        we don't explicitly have an ELSE ComparisonLevel.
 
-        Analogous to the gamma values described at
-        https://www.robinlinacre.com/maths_of_fellegi_sunter/
+        If none of the levels match a pair, it labeled as an ELSE.
 
         Parameters
         ----------
@@ -159,6 +178,13 @@ class Comparisons:
     """An unordered, dict-like collection of `Comparison`s."""
 
     def __init__(self, comparisons: Iterable[Comparison] | Comparisons):
+        """Create a set of Comparisons.
+
+        Parameters
+        ----------
+        comparisons : Iterable[Comparison] | Comparisons
+            The comparisons to include in the set.
+        """
         if isinstance(comparisons, Comparisons):
             comparisons = list(comparisons)
         self._lookup: dict[str, Comparison] = {}
@@ -178,6 +204,25 @@ class Comparisons:
         name_formatter: str | Callable[[str], str] = "",
         how: Literal["index", "name"] = "index",
     ) -> Table:
+        """Label each record pair for each Comparison.
+
+        Adds columns to the blocked table, one for each Comparison.
+        The columns are named after the Comparison, and contain the label for each
+        record pair.
+
+        Parameters
+        ----------
+        blocked : Table
+            A table of blocked record pairs.
+        name_formatter : str | Callable[[str], str], default ''
+            Determines how to name each column based on the Comparison's name.
+        how : {'index', 'name'}, default 'index'
+            Whether to label the pairs with the index (uint8)
+            or the name (string) of the level.
+
+            If 'index', any ELSE results will be labelled as NULL.
+            If 'name', any ELSE results will be labelled as 'else'.
+        """
         m = {}
         for comparison in self:
             labels = comparison.label_pairs(blocked, how=how)
@@ -186,12 +231,15 @@ class Comparisons:
         return blocked.mutate(**m)
 
     def __iter__(self) -> Iterable[Comparison]:
+        """Iterate over the comparisons."""
         return iter(self._lookup.values())
 
     def __getitem__(self, name: str) -> Comparison:
+        """Get a comparison by name."""
         return self._lookup[name]
 
     def __len__(self) -> int:
+        """The number of comparisons."""
         return len(self._lookup)
 
     def __repr__(self) -> str:
