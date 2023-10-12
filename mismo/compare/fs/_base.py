@@ -14,17 +14,50 @@ from ._util import bayes_factor_to_prob, prob_to_bayes_factor
 
 
 class LevelWeights:
+    """Weights for a single level of a Comparison.
+
+    This describes for example "If zipcodes match perfectly, then
+    this increases the probability of a match by 10x as compared to if we
+    hadn't looked at zipcode".
+    """
+
+    name: str
+    """The name of the level, e.g. "Exact Match"."""
+    m: float | None
+    """Among true-matches, what proportion of them have this level?
+
+    1 means this level is a good indication of a match, 0 means it's a good
+    indication of a non-match.
+    """
+    u: float | None
+    """Among non-matches, what proportion of them have this level?
+
+    1 means this level is a good indication of a non-match, 0 means it's a good
+    indication of a match.
+    """
+
     def __init__(self, name: str, *, m: float | None, u: float | None):
+        """Create a new LevelWeights object."""
         self.name = name
         self.m = m
         self.u = u
 
     @property
     def is_trained(self) -> bool:
+        """If m and u have been set."""
         return self.m is not None and self.u is not None
 
     @property
     def bayes_factor(self) -> float:
+        """How much more likely is a match than a non-match at this level?
+
+        This is derived from m and u.
+
+        Similar to the concept of odds.
+        - values below 1 is evidence against a match
+        - values above 1 is evidence for a match
+        - 1 means this level does not provide any evidence for or against a match
+        """
         if not self.is_trained:
             raise ValueError("Weights have not been set for this comparison level.")
         if self.u == 0:
@@ -34,6 +67,7 @@ class LevelWeights:
 
     @property
     def log2_bayes_factor(self):
+        """log2 of the bayes factor."""
         return math.log2(self.bayes_factor)
 
     def __repr__(self) -> str:
@@ -43,11 +77,13 @@ class LevelWeights:
 @dataclasses.dataclass(frozen=True)
 class ComparisonWeights:
     name: str
-    """Matches the name of the Comparison that these weights are for."""
+    """The name of the Comparison that these weights are for, eg "name" or "address"."""
     level_weights: list[LevelWeights]
+    """The weights for each level of the Comparison."""
 
     @classmethod
     def from_comparison(cls, comparison: Comparison) -> ComparisonWeights:
+        """Create untrained weights from a Comparison."""
         return cls(
             name=comparison.name,
             level_weights=[
@@ -57,6 +93,7 @@ class ComparisonWeights:
 
     @property
     def is_trained(self) -> bool:
+        """If all level weights have been set."""
         return all(w.is_trained for w in self.level_weights)
 
     def bayes_factor(self, labels: IntegerValue | StringValue) -> FloatingValue:
@@ -86,19 +123,20 @@ class ComparisonWeights:
 
 
 class Weights:
-    """
-    Weights for the Fellegi-Sunter model.
+    """Weights for the Fellegi-Sunter model."""
 
-    Attributes
-    ----------
-    prior : float
-        The probability of a match between two records drawn at random.
-        Equivalent to probability_two_random_records_match from splink.
-    """
+    comparison_weights: dict[str, ComparisonWeights]
+    """The weights for each Comparison."""
+
+    prior: float | None
+    """The probability of a match between two records drawn at random.
+
+    Equivalent to probability_two_random_records_match from splink."""
 
     def __init__(
         self, *, comparison_weights: Iterable[ComparisonWeights], prior: float | None
     ):
+        """Create a new Weights object."""
         self.comparison_weights = {cw.name: cw for cw in comparison_weights}
         self.prior = prior
 
@@ -114,6 +152,7 @@ class Weights:
 
     @property
     def is_trained(self) -> bool:
+        """If all weights have been set."""
         return (
             all(cw.is_trained for cw in self.comparison_weights.values())
             and self.prior is not None
@@ -121,6 +160,13 @@ class Weights:
 
 
 class FellegiSunterComparer:
+    """Compares two tables using the Fellegi-Sunter model."""
+
+    comparisons: Comparisons
+    """The Comparisons to use."""
+    weights: Weights
+    """The weights for each Comparison. None means untrained."""
+
     def __init__(
         self,
         comparisons: Comparisons | Iterable[Comparison],
@@ -132,6 +178,25 @@ class FellegiSunterComparer:
         self.weights = weights
 
     def compare(self, blocked: Table) -> Table:
+        """Compare record pairs, adding columns for each Comparison.
+
+        For each Comparison, we add two columns:
+        - {comparison.name}_cmp: the level of the comparison for each record pair.
+          For example the column might be called "name_cmp" and have values like
+          "exact_match", "phonetic_match", "no_match".
+        - {comparison.name}_bf: the Bayes factor for each record pair.
+          This is a number that describes how this comparison affects the likelihood
+          of a match. For example, a Bayes factor of 10 means that this comparison
+          increased the likelihood of a match by 10x as compared to if we hadn't
+          looked at this comparison.
+          For example, the column might be called "name_bf" and have values like
+          10, 0.1, 1.
+
+        In addition to these per-Comparison columns, we also add a column called "bf"
+        which is the overall Bayes Factor for each record pair. We calculate this by
+        starting with the prior probability of a match, and then multiplying by each
+        Comparison's Bayes factor.
+        """
         if not self.is_trained:
             raise ValueError(f"{self} is not trained.")
 
@@ -173,6 +238,7 @@ class FellegiSunterComparer:
 
     @property
     def is_trained(self) -> bool:
+        """If all weights have been set."""
         return self.weights.is_trained
 
     def __repr__(self) -> str:
