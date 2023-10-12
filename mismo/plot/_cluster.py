@@ -95,8 +95,8 @@ def _edges_to_dissimilarity_matrix(nodes, edges):
 def _reindex_from_0(nodes: Table, edges: Table):
     nodes = nodes.mutate(id_in_cluster=ibis.row_number())
     m = nodes["record_id", "id_in_cluster"]
-    ml = m.relabel("{name}_l")
-    mr = m.relabel("{name}_r")
+    ml = m.rename("{name}_l")
+    mr = m.rename("{name}_r")
     edges = _util.join(edges, ml, "record_id_l", how="left").drop("record_id_l_right")
     edges = _util.join(edges, mr, "record_id_r", how="left").drop("record_id_r_right")
     return nodes, edges

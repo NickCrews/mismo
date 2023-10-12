@@ -315,18 +315,18 @@ def _join_on_ids(left: Table, right: Table, id_pairs: Table) -> Table:
         )
     left_cols = set(left.columns) - {"record_id"}
     right_cols = set(right.columns) - {"record_id"}
-    lm = {c: c + "_l" for c in left_cols}
-    rm = {c: c + "_r" for c in right_cols}
+    lm = {c + "_l": c for c in left_cols}
+    rm = {c + "_r": c for c in right_cols}
 
     result = id_pairs
     result = (
         result.inner_join(left, result.record_id_l == left.record_id)
-        .relabel(lm)
+        .rename(lm)
         .drop("record_id")
     )
     result = (
         result.inner_join(right, result.record_id_r == right.record_id)
-        .relabel(rm)
+        .rename(rm)
         .drop("record_id")
     )
     return order_blocked_data_columns(result)

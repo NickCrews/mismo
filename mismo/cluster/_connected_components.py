@@ -121,7 +121,7 @@ def _n_updates(labels: Table, new_labels: Table) -> int:
 def _updated_labels(node_labels: Table, edges: Table) -> Table:
     component_equivalences = _get_component_equivalences(edges, node_labels)
     component_mapping = _get_component_update_map(component_equivalences)
-    return node_labels.relabel({"component": "component_old"}).left_join(
+    return node_labels.rename(component_old="component").left_join(
         component_mapping, "component_old"
     )["record_id", "component"]
 
@@ -130,14 +130,14 @@ def _get_component_equivalences(edges: Table, node_labels: Table) -> Table:
     """Get a table of which components are equivalent to each other."""
     same_components = (
         edges.join(node_labels, edges.record_id_l == node_labels.record_id)
-        .relabel({"component": "component_l"})
+        .rename(component_l="component")
         .drop("record_id", "record_id_l")
     )
     same_components = (
         same_components.join(
             node_labels, same_components.record_id_r == node_labels.record_id
         )
-        .relabel({"component": "component_r"})
+        .rename(component_r="component")
         .drop("record_id", "record_id_r")
     )
     return same_components["component_l", "component_r"].distinct()
@@ -149,8 +149,8 @@ def _get_component_update_map(component_equivalences: Table) -> Table:
         component_equivalences.component_l, component_equivalences.component_r
     )
     m = component_equivalences.mutate(component=representative)
-    ml = m.relabel({"component_l": "component_old"})["component_old", "component"]
-    mr = m.relabel({"component_r": "component_old"})["component_old", "component"]
+    ml = m.select("component", component_old="component_l")
+    mr = m.select("component", component_old="component_r")
     together = ibis.union(ml, mr, distinct=True)
     together = together.group_by(_.component_old).agg(component=_.component.min())
     return together["component_old", "component"]
@@ -164,9 +164,7 @@ def _intify_edges(raw_edges: Table) -> tuple[Table, Callable[[Table], Table]]:
             f"but it contains {raw_edges.columns}"
         )
 
-    swapped = raw_edges.relabel(
-        {"record_id_l": "record_id_r", "record_id_r": "record_id_l"}
-    )
+    swapped = raw_edges.rename(record_id_r="record_id_l", record_id_l="record_id_r")
     all_node_ids = raw_edges.union(swapped).select("record_id_l")
 
     f = Factorizer(all_node_ids, "record_id_l")

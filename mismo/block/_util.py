@@ -25,10 +25,10 @@ def join(left: Table, right: Table, condition) -> Table:
     just_left = lc - rc
     just_right = rc - lc
     raw = _util.join(left, right, condition, lname="{name}_l", rname="{name}_r")
-    left_renaming = {c: c + "_l" for c in just_left}
-    right_renaming = {c: c + "_r" for c in just_right}
+    left_renaming = {c + "_l": c for c in just_left}
+    right_renaming = {c + "_r": c for c in just_right}
     renaming = {**left_renaming, **right_renaming}
-    result = raw.relabel(renaming)
+    result = raw.rename(renaming)
     return order_blocked_data_columns(result)
 
 

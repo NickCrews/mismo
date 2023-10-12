@@ -39,7 +39,7 @@ def _wrap_febrl(
         "date_of_birth": "str",  # contains some BS dates like 19371233
     }
     t = t.mutate(**{col: t[col].cast(dtype) for col, dtype in dtypes.items()})
-    t = t.relabel({"rec_id": "record_id"})
+    t = t.rename(record_id="record_id")
     t = t.order_by("record_id")
     t = t.cache()
 
