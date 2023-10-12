@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import pytest
 
-from mismo.block import Blocking
 from mismo.datasets import load_febrl1, load_febrl2, load_febrl3, load_patents
 
 
@@ -15,10 +14,10 @@ from mismo.datasets import load_febrl1, load_febrl2, load_febrl3, load_patents
     ],
 )
 def test_load_febrl_smoketest(load_func, expected_count, expected_link_count):
-    blocking: Blocking = load_func()
-    assert blocking.left.count().execute() == expected_count
-    assert blocking.ids.count().execute() == expected_link_count
-    repr(blocking)
+    data, links = load_func()
+    assert data.count().execute() == expected_count
+    assert links.count().execute() == expected_link_count
+    repr(data)
 
 
 def test_load_patents_smoketest():

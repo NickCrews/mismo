@@ -1,13 +1,8 @@
 from __future__ import annotations
 
-from typing import Callable
-
 import ibis
 from ibis import _
 from ibis.expr.types import Table
-import pandas as pd
-
-from mismo.block._blocking import IdsBlocking
 
 __all__ = [
     "load_febrl1",
@@ -17,10 +12,11 @@ __all__ = [
 ]
 
 
-def _wrap_febrl(
-    load_febrl: Callable[..., tuple[pd.DataFrame, pd.MultiIndex]]
-) -> IdsBlocking:
-    pdf, links_multi_index = load_febrl(return_links=True)
+def _wrap_febrl(loader_name: str) -> tuple[Table, Table]:
+    from recordlinkage import datasets as rlds
+
+    loader = getattr(rlds, loader_name)
+    pdf, links_multi_index = loader(return_links=True)
     pdf = pdf.reset_index(drop=False)
     con = ibis.duckdb.connect()
     con.create_table("data", pdf)
@@ -39,7 +35,7 @@ def _wrap_febrl(
         "date_of_birth": "str",  # contains some BS dates like 19371233
     }
     t = t.mutate(**{col: t[col].cast(dtype) for col, dtype in dtypes.items()})
-    t = t.rename(record_id="record_id")
+    t = t.rename(record_id="rec_id")
     t = t.order_by("record_id")
     t = t.cache()
 
@@ -50,25 +46,19 @@ def _wrap_febrl(
     links = con.table("links")
     links = links.order_by(["record_id_l", "record_id_r"])
     links = links.cache()
-    return IdsBlocking(t, t.view(), links)
+    return (t, links)
 
 
-def load_febrl1() -> IdsBlocking:
-    from recordlinkage import datasets as rlds
-
-    return _wrap_febrl(rlds.load_febrl1)  # pyright: ignore
+def load_febrl1() -> tuple[Table, Table]:
+    return _wrap_febrl("load_febrl1")
 
 
-def load_febrl2() -> IdsBlocking:
-    from recordlinkage import datasets as rlds
-
-    return _wrap_febrl(rlds.load_febrl2)  # pyright: ignore
+def load_febrl2() -> tuple[Table, Table]:
+    return _wrap_febrl("load_febrl2")
 
 
-def load_febrl3() -> IdsBlocking:
-    from recordlinkage import datasets as rlds
-
-    return _wrap_febrl(rlds.load_febrl3)  # pyright: ignore
+def load_febrl3() -> tuple[Table, Table]:
+    return _wrap_febrl("load_febrl3")
 
 
 # Don't bother wrapping load_febrl4 because it has a different API,
