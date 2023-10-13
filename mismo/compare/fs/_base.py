@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import dataclasses
-import math
 from typing import Iterable
 
-import ibis
 from ibis.expr.types import FloatingValue, IntegerValue, StringValue, Table
 
 from mismo._typing import Self
 from mismo.compare._comparison import Comparison, Comparisons
 
-from ._util import bayes_factor_to_prob, prob_to_bayes_factor
+from ._util import odds_to_prob, prob_to_odds
 
 
 class LevelWeights:
@@ -48,12 +46,12 @@ class LevelWeights:
         return self.m is not None and self.u is not None
 
     @property
-    def bayes_factor(self) -> float:
+    def odds(self) -> float:
         """How much more likely is a match than a non-match at this level?
 
-        This is derived from m and u.
+        This is derived from m and u. This is the same thing as "Bayes Factor"
+        in splink.
 
-        Similar to the concept of odds.
         - values below 1 is evidence against a match
         - values above 1 is evidence for a match
         - 1 means this level does not provide any evidence for or against a match
@@ -64,11 +62,6 @@ class LevelWeights:
             return float("inf")
         else:
             return self.m / self.u
-
-    @property
-    def log2_bayes_factor(self):
-        """log2 of the bayes factor."""
-        return math.log2(self.bayes_factor)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name}, m={self.m}, u={self.u})"
@@ -96,19 +89,19 @@ class ComparisonWeights:
         """If all level weights have been set."""
         return all(w.is_trained for w in self.level_weights)
 
-    def bayes_factor(self, labels: IntegerValue | StringValue) -> FloatingValue:
-        """Calculate the Bayes factor for each record pair."""
+    def odds(self, labels: IntegerValue | StringValue) -> FloatingValue:
+        """Calculate the odds for each record pair."""
         if not self.is_trained:
             raise ValueError("Weights have not been set for all comparison levels.")
         if isinstance(labels, StringValue):
-            cases = [(lw.name, lw.bayes_factor) for lw in self.level_weights]
+            cases = [(lw.name, lw.odds) for lw in self.level_weights]
         else:
-            cases = [(i, lw.bayes_factor) for i, lw in enumerate(self.level_weights)]  # type: ignore # noqa: E501
-        return labels.cases(cases, self.else_weights.bayes_factor)  # type: ignore
+            cases = [(i, lw.odds) for i, lw in enumerate(self.level_weights)]  # type: ignore # noqa: E501
+        return labels.cases(cases, self.else_weights.odds)  # type: ignore
 
     def match_probability(self, labels: IntegerValue | StringValue) -> FloatingValue:
         """Calculate the match probability for each record pair."""
-        return bayes_factor_to_prob(self.bayes_factor(labels))
+        return odds_to_prob(self.odds(labels))
 
     @property
     def else_weights(self) -> LevelWeights:
@@ -194,34 +187,32 @@ class FellegiSunterComparer:
         - {comparison.name}_cmp: the level of the comparison for each record pair.
           For example the column might be called "name_cmp" and have values like
           "exact_match", "phonetic_match", "no_match".
-        - {comparison.name}_bf: the Bayes factor for each record pair.
+        - {comparison.name}_odds: the odds for each record pair.
           This is a number that describes how this comparison affects the likelihood
-          of a match. For example, a Bayes factor of 10 means that this comparison
+          of a match. For example, an odds of 10 means that this comparison
           increased the likelihood of a match by 10x as compared to if we hadn't
           looked at this comparison.
           For example, the column might be called "name_bf" and have values like
           10, 0.1, 1.
 
-        In addition to these per-Comparison columns, we also add a column called "bf"
-        which is the overall Bayes Factor for each record pair. We calculate this by
-        starting with the prior probability of a match, and then multiplying by each
-        Comparison's Bayes factor.
+        In addition to these per-Comparison columns, we also add a column called "odds"
+        which is the overall odds for each record pair. We calculate this by
+        starting with the prior probability of a match, converting that to odds,
+         and then multiplying by each Comparison's odds.
         """
         if not self.is_trained:
             raise ValueError(f"{self} is not trained.")
 
-        total_bf = prob_to_bayes_factor(self.weights.prior)
+        total_odds = prob_to_odds(self.weights.prior)
         m = {}
         for comparison in self.comparisons:
             comparison_weights = self.weights[comparison.name]
-            labels = comparison.label_pairs(blocked, how="index")
-            bf = comparison_weights.bayes_factor(labels)
-            m[f"{comparison.name}_cmp"] = comparison.label_pairs(blocked, how="name")
-            m[f"{comparison.name}_bf"] = bf
-            total_bf *= bf
-        if self.weights == 1.0:
-            total_bf = ibis.literal(float("inf"))
-        m["bf"] = total_bf
+            labels = comparison.label_pairs(blocked, how="name")
+            odds = comparison_weights.odds(labels)
+            m[f"{comparison.name}_cmp"] = labels
+            m[f"{comparison.name}_odds"] = odds
+            total_odds *= odds
+        m["odds"] = total_odds
         return blocked.mutate(**m)
 
     def trained(

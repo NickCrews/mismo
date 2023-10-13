@@ -7,16 +7,16 @@ from ibis.expr.types import FloatingValue
 
 
 @overload
-def prob_to_bayes_factor(prob: float) -> float:
+def prob_to_odds(prob: float) -> float:
     ...
 
 
 @overload
-def prob_to_bayes_factor(prob: FloatingValue) -> FloatingValue:
+def prob_to_odds(prob: FloatingValue) -> FloatingValue:
     ...
 
 
-def prob_to_bayes_factor(prob):
+def prob_to_odds(prob):
     normal = prob / (1 - prob)
     if isinstance(prob, FloatingValue):
         return ibis.ifelse(prob != 1, normal, ibis.literal(float("inf")))
@@ -25,22 +25,18 @@ def prob_to_bayes_factor(prob):
 
 
 @overload
-def bayes_factor_to_prob(bf: float) -> float:
+def odds_to_prob(odds: float) -> float:
     ...
 
 
 @overload
-def bayes_factor_to_prob(bf: FloatingValue) -> FloatingValue:
+def odds_to_prob(odds: FloatingValue) -> FloatingValue:
     ...
 
 
-def bayes_factor_to_prob(bf):
-    normal = bf / (1 + bf)
-    if isinstance(bf, FloatingValue):
-        return ibis.ifelse(bf.isinf(), 1.0, normal)
+def odds_to_prob(odds):
+    normal = odds / (1 + odds)
+    if isinstance(odds, FloatingValue):
+        return ibis.ifelse(odds.isinf(), 1.0, normal)
     else:
-        return 1 if bf == float("inf") else normal
-
-
-def match_weight_to_bayes_factor(weight):
-    return 2**weight
+        return 1 if odds == float("inf") else normal
