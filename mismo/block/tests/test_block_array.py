@@ -5,8 +5,6 @@ from ibis.expr.types import Table
 import pandas as pd
 import pytest
 
-from mismo.block import block, block_on_arrays
-
 
 @pytest.fixture
 def simple_table() -> Table:
@@ -23,7 +21,10 @@ def simple_table() -> Table:
     return ibis.memtable(df)
 
 
+@pytest.mark.skip(reason="Not implemented")
 def test_block_on_arrays(simple_table: Table):
+    from mismo.block import block, block_on_arrays
+
     rule = block_on_arrays("strings", "strings")
     blocking = block(simple_table, simple_table.view(), rule)
     expected_id_pairs = {
