@@ -83,6 +83,7 @@ def histograms(vals: ColumnExpr, limit: int | None = None) -> alt.Chart:
         .transform_filter(scrubber)
     )
     together = overview & zoomin
+    together = together.resolve_scale(color="independent")
     together = together.properties(
         title=alt.Title(
             f"Counts of column '{col}'",
