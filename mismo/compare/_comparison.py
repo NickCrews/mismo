@@ -82,7 +82,7 @@ class Comparison:
         self._name = name
         self._levels = tuple(levels)
         self._description = description
-        self._lookup: self._build_lookup(self._levels)
+        self._lookup = self._build_lookup(self._levels)
 
     @property
     def name(self) -> str:
@@ -109,6 +109,10 @@ class Comparison:
     def __getitem__(self, name_or_index: str | int) -> ComparisonLevel:
         """Get a level by name or index."""
         return self._lookup[name_or_index]
+
+    def __iter__(self) -> Iterable[ComparisonLevel]:
+        """Iterate over the levels."""
+        return iter(self.levels)
 
     def __len__(self) -> int:
         """The number of levels. Does not include the implicit ELSE level."""
