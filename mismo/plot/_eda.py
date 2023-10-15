@@ -11,7 +11,7 @@ def _make_counts(vals: ColumnExpr) -> Table:
     counts = vals.value_counts().rename(n="value_count")
     sort_keys = [_.n.desc(), _.value.asc()]
     counts = counts.order_by(sort_keys)
-    counts = counts.mutate(rank=ibis.row_number())
+    counts = counts.mutate(rank=ibis.row_number(), pct=_.n / _.n.sum())
     return counts
 
 
@@ -77,6 +77,7 @@ def histograms(vals: ColumnExpr, limit: int | None = None) -> alt.Chart:
             tooltip=[
                 alt.Tooltip("label", title=col),
                 alt.Tooltip("n", format="~s", title="Count"),
+                alt.Tooltip("pct", format="%", title="Percent"),
             ],
             color=alt.Color("value:N", legend=None),
         )
