@@ -2,3 +2,5 @@
 .pdm-python
 dist
 site
+
+*.pyc
