@@ -71,12 +71,12 @@ def histograms(vals: ColumnExpr, limit: int | None = None) -> alt.Chart:
             ),
             y=alt.Y(
                 "n:Q",
-                title="Number of Appearances",
+                title="Count",
                 axis=alt.Axis(format="~s"),
             ),
             tooltip=[
                 alt.Tooltip("label", title=col),
-                alt.Tooltip("n", format="~s", title="Number of Records"),
+                alt.Tooltip("n", format="~s", title="Count"),
             ],
             color=alt.Color("value:N", legend=None),
         )
