@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import overload
 
 import ibis
+import math
 from ibis.expr.types import FloatingValue
 
 
@@ -40,3 +41,20 @@ def odds_to_prob(odds):
         return ibis.ifelse(odds.isinf(), 1.0, normal)
     else:
         return 1 if odds == float("inf") else normal
+
+
+@overload
+def odds_to_log_odds(odds: float) -> float:
+    ...
+
+
+@overload
+def odds_to_log_odds(odds: FloatingValue) -> FloatingValue:
+    ...
+
+
+def odds_to_log_odds(odds):
+    if isinstance(odds, FloatingValue):
+        return odds.log10()
+    else:
+        return math.log10(odds)

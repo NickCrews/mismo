@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import dataclasses
 from typing import Iterable
+import altair as alt
 
 from ibis.expr.types import FloatingValue, IntegerValue, StringValue, Table
 
 from mismo.compare._comparison import Comparison
 
-from ._util import odds_to_prob
+from ._util import odds_to_prob, odds_to_log_odds
 
 
 class LevelWeights:
@@ -62,6 +63,11 @@ class LevelWeights:
         else:
             return self.m / self.u
 
+    @property
+    def log_odds(self) -> float:
+        """The log base 10 of the odds."""
+        return odds_to_log_odds(self.odds)
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name}, m={self.m}, u={self.u})"
 
@@ -101,6 +107,10 @@ class ComparisonWeights:
     def match_probability(self, labels: IntegerValue | StringValue) -> FloatingValue:
         """Calculate the match probability for each record pair."""
         return odds_to_prob(self.odds(labels))
+
+    def log_odds(self, labels: IntegerValue | StringValue) -> FloatingValue:
+        """Calculate the log odds for each record pair."""
+        return odds_to_log_odds(self.odds(labels))
 
     @property
     def else_weights(self) -> LevelWeights:
@@ -167,6 +177,12 @@ class Weights:
             total_odds *= odds
         m["odds"] = total_odds
         return compared.mutate(**m)
+
+    def plot(self) -> alt.Chart:
+        """Plot the weights for this level."""
+        from ._plot import plot_weights
+
+        return plot_weights(self)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}{tuple(self)}"
