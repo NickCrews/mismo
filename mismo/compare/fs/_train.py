@@ -4,9 +4,9 @@ from ibis.expr.types import Table
 
 from mismo._util import sample_table
 from mismo.block import BlockingRule
-from mismo.compare._comparison import Comparison
+from mismo.compare._comparison import Comparison, Comparisons
 
-from ._base import ComparisonWeights, LevelWeights
+from ._base import ComparisonWeights, LevelWeights, Weights
 
 
 def min_ignore_None(*args):
@@ -135,7 +135,7 @@ def train_comparison(
     max_pairs: int | None = None,
     seed: int | None = None,
 ) -> ComparisonWeights:
-    """Train the weights of a FSComparison."""
+    """Estimate the weights for a single Comparison using labeled data."""
     ms = train_ms_from_labels(comparison, left, right, max_pairs=max_pairs)
     us = train_us_using_sampling(
         comparison, left, right, max_pairs=max_pairs, seed=seed
@@ -143,3 +143,20 @@ def train_comparison(
     level_names = [lev.name for lev in comparison.levels]
     lw = [LevelWeights(name=name, m=m, u=u) for name, m, u in zip(level_names, ms, us)]
     return ComparisonWeights(name=comparison.name, level_weights=lw)
+
+
+def train_comparisons(
+    comparisons: Comparisons,
+    left: Table,
+    right: Table,
+    *,
+    max_pairs: int | None = None,
+    seed: int | None = None,
+) -> Weights:
+    """Estimate all Weights for a set of Comparisons using labeled data."""
+    return Weights(
+        [
+            train_comparison(c, left, right, max_pairs=max_pairs, seed=seed)
+            for c in comparisons
+        ]
+    )

@@ -118,129 +118,56 @@ class ComparisonWeights:
 class Weights:
     """Weights for the Fellegi-Sunter model.
 
-    Can either be trained or untrained. Comprised of
-    - a `prior` probability, which is the probability of a match between two
-      records drawn at random.
-    - a set of `ComparisonWeights`, one for each Comparison."""
+    An unordered, dict-like collection of `ComparisonWeights`, one for each Comparison
+    of the same name.
+    """
 
-    comparison_weights: dict[str, ComparisonWeights]
-    """The weights for each Comparison."""
-
-    prior: float | None
-    """The probability of a match between two records drawn at random.
-
-    Equivalent to probability_two_random_records_match from splink."""
-
-    def __init__(
-        self, *, comparison_weights: Iterable[ComparisonWeights], prior: float | None
-    ):
+    def __init__(self, comparison_weights: Iterable[ComparisonWeights]):
         """Create a new Weights object."""
-        self.comparison_weights = {cw.name: cw for cw in comparison_weights}
-        self.prior = prior
-
-    @classmethod
-    def from_comparisons(
-        cls, comparisons: Iterable[Comparison], prior: float | None = None
-    ) -> Weights:
-        comparison_weights = [ComparisonWeights.from_comparison(c) for c in comparisons]
-        return cls(comparison_weights=comparison_weights, prior=prior)
+        self._lookup = {cw.name: cw for cw in comparison_weights}
 
     def __getitem__(self, name: str) -> ComparisonWeights:
-        """Get a ComparisonWeights by name."""
-        return self.comparison_weights[name]
+        """Get a `ComparisonWeights` by name."""
+        return self._lookup[name]
+
+    def __iter__(self) -> Iterable[ComparisonWeights]:
+        """Iterate over the contained `ComparisonWeights`."""
+        return iter(self._lookup.values())
 
     @property
     def is_trained(self) -> bool:
         """If all weights have been set."""
-        return (
-            all(cw.is_trained for cw in self.comparison_weights.values())
-            and self.prior is not None
-        )
+        return all(cw.is_trained for cw in self)
 
+    def score(self, compared: Table) -> Table:
+        """Score each already-compared record pair.
 
-class FellegiSunterComparer:
-    """Compares two tables using the Fellegi-Sunter model.
-
-    Contains a set of Comparisons. If trained, also contains a corresponding set
-    of Weights. Otherwise, the weights are None.
-    """
-
-    comparisons: Comparisons
-    """The Comparisons to use."""
-    weights: Weights
-    """The `prior` and set of `ComparisonWeights`, one for each `Comparison`."""
-
-    def __init__(
-        self,
-        comparisons: Comparisons | Iterable[Comparison],
-        weights: Weights | None = None,
-    ):
-        self.comparisons = Comparisons(*comparisons)
-        if weights is None:
-            weights = Weights.from_comparisons(comparisons)
-        self.weights = weights
-
-    def compare(self, blocked: Table) -> Table:
-        """Compare record pairs, adding columns for each Comparison.
-
-        For each Comparison, we add two columns:
-        - {comparison.name}_cmp: the level of the comparison for each record pair.
-          For example the column might be called "name_cmp" and have values like
-          "exact_match", "phonetic_match", "no_match".
-        - {comparison.name}_odds: the odds for each record pair.
-          This is a number that describes how this comparison affects the likelihood
-          of a match. For example, an odds of 10 means that this comparison
-          increased the likelihood of a match by 10x as compared to if we hadn't
-          looked at this comparison.
-          For example, the column might be called "name_bf" and have values like
-          10, 0.1, 1.
+        For each Comparison, we add a column, `{comparison.name}_odds`.
+        This is a number that describes how this comparison affects the likelihood
+        of a match. For example, an odds of 10 means that this comparison
+        increased the likelihood of a match by 10x as compared to if we hadn't
+        looked at this comparison.
+        For example, the column might be called "name_odds" and have values like
+        10, 0.1, 1.
 
         In addition to these per-Comparison columns, we also add a column called "odds"
         which is the overall odds for each record pair. We calculate this by
-        starting with the prior probability of a match, converting that to odds,
-         and then multiplying by each Comparison's odds.
+        starting with the odds of 1 and then multiplying by each Comparison's odds
+        to get the overall odds.
         """
         if not self.is_trained:
             raise ValueError(f"{self} is not trained.")
 
-        total_odds = prob_to_odds(self.weights.prior)
+        total_odds = 1
         m = {}
-        for comparison in self.comparisons:
-            comparison_weights = self.weights[comparison.name]
-            labels = comparison.label_pairs(blocked, how="name")
+        for comparison_weights in self:
+            name = comparison_weights.name
+            labels = compared[name]
             odds = comparison_weights.odds(labels)
-            m[f"{comparison.name}_cmp"] = labels
-            m[f"{comparison.name}_odds"] = odds
+            m[f"{name}_odds"] = odds
             total_odds *= odds
         m["odds"] = total_odds
-        return blocked.mutate(**m)
-
-    def trained(
-        self,
-        left: Table,
-        right: Table,
-        max_pairs: int | None = None,
-        seed: int | None = None,
-    ) -> Self:
-        """
-        Return a new version of this comparer that is trained on the given dataset pair.
-        """
-        from ._train import train_comparison
-
-        trained = [
-            train_comparison(fsc, left, right, max_pairs=max_pairs, seed=seed)
-            for fsc in self.comparisons
-        ]
-        weights = Weights(
-            comparison_weights=trained,
-            prior=self.weights.prior if self.weights else None,
-        )
-        return self.__class__(comparisons=self.comparisons, weights=weights)
-
-    @property
-    def is_trained(self) -> bool:
-        """If all weights have been set."""
-        return self.weights.is_trained
+        return compared.mutate(**m)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.comparisons!r}, {self.weights!r})"
+        return f"{self.__class__.__name__}{tuple(self)}"
