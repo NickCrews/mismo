@@ -5,10 +5,9 @@ from typing import Iterable
 
 from ibis.expr.types import FloatingValue, IntegerValue, StringValue, Table
 
-from mismo._typing import Self
-from mismo.compare._comparison import Comparison, Comparisons
+from mismo.compare._comparison import Comparison
 
-from ._util import odds_to_prob, prob_to_odds
+from ._util import odds_to_prob
 
 
 class LevelWeights:

@@ -6,7 +6,7 @@ from mismo._util import sample_table
 from mismo.block import BlockingRule
 from mismo.compare._comparison import Comparison, Comparisons
 
-from ._base import ComparisonWeights, LevelWeights, Weights
+from ._weights import ComparisonWeights, LevelWeights, Weights
 
 
 def min_ignore_None(*args):
