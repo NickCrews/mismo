@@ -57,4 +57,7 @@ def odds_to_log_odds(odds):
     if isinstance(odds, FloatingValue):
         return odds.log10()
     else:
-        return math.log10(odds)
+        if odds == 0:
+            return float("-inf")
+        else:
+            return math.log10(odds)
