@@ -5,8 +5,6 @@ from typing import Iterable, Iterator
 import altair as alt
 from ibis.expr.types import FloatingValue, IntegerValue, StringValue, Table
 
-from mismo.compare._comparison import Comparison
-
 from ._util import odds_to_log_odds, odds_to_prob
 
 
@@ -18,31 +16,34 @@ class LevelWeights:
     hadn't looked at zipcode".
     """
 
-    name: str
-    """The name of the level, e.g. "Exact Match"."""
-    m: float | None
-    """Among true-matches, what proportion of them have this level?
-
-    1 means this level is a good indication of a match, 0 means it's a good
-    indication of a non-match.
-    """
-    u: float | None
-    """Among non-matches, what proportion of them have this level?
-
-    1 means this level is a good indication of a non-match, 0 means it's a good
-    indication of a match.
-    """
-
-    def __init__(self, name: str, *, m: float | None, u: float | None):
+    def __init__(self, name: str, *, m: float, u: float):
         """Create a new LevelWeights object."""
-        self.name = name
-        self.m = m
-        self.u = u
+        self._name = name
+        self._m = m
+        self._u = u
 
     @property
-    def is_trained(self) -> bool:
-        """If m and u have been set."""
-        return self.m is not None and self.u is not None
+    def name(self) -> str:
+        """The name of the level, e.g. "Exact Match"."""
+        return self._name
+
+    @property
+    def m(self) -> float | None:
+        """Among true-matches, what proportion of them have this level?
+
+        1 means this level is a good indication of a match, 0 means it's a good
+        indication of a non-match.
+        """
+        return self._m
+
+    @property
+    def u(self) -> float:
+        """Among non-matches, what proportion of them have this level?
+
+        1 means this level is a good indication of a non-match, 0 means it's a good
+        indication of a match.
+        """
+        return self._u
 
     @property
     def odds(self) -> float:
@@ -55,8 +56,6 @@ class LevelWeights:
         - values above 1 is evidence for a match
         - 1 means this level does not provide any evidence for or against a match
         """
-        if not self.is_trained:
-            raise ValueError("Weights have not been set for this comparison level.")
         if self.u == 0:
             return float("inf")
         else:
@@ -109,25 +108,8 @@ class ComparisonWeights:
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name}, level_weights={self._level_weights})"
 
-    @classmethod
-    def from_comparison(cls, comparison: Comparison) -> ComparisonWeights:
-        """Create untrained weights from a Comparison."""
-        return cls(
-            name=comparison.name,
-            level_weights=[
-                LevelWeights(name=lev.name, m=None, u=None) for lev in comparison.levels
-            ],
-        )
-
-    @property
-    def is_trained(self) -> bool:
-        """If all level weights have been set."""
-        return all(w.is_trained for w in self)
-
     def odds(self, labels: IntegerValue | StringValue) -> FloatingValue:
         """Calculate the odds for each record pair."""
-        if not self.is_trained:
-            raise ValueError("Weights have not been set for all comparison levels.")
         if isinstance(labels, StringValue):
             cases = [(lw.name, lw.odds) for lw in self]
         else:
@@ -145,8 +127,6 @@ class ComparisonWeights:
     @property
     def else_weights(self) -> LevelWeights:
         """A level that matches all record pairs that don't match any other level."""
-        if not self.is_trained:
-            raise ValueError("Weights have not been set for all comparison levels.")
         ms = [w.m for w in self]  # type: ignore
         us = [w.u for w in self]  # type: ignore
         else_m = 1 - sum(ms)
@@ -179,11 +159,6 @@ class Weights:
         """Iterate over the contained `ComparisonWeights`."""
         return iter(self._lookup.values())
 
-    @property
-    def is_trained(self) -> bool:
-        """If all weights have been set."""
-        return all(cw.is_trained for cw in self)
-
     def score(self, compared: Table) -> Table:
         """Score each already-compared record pair.
 
@@ -200,9 +175,6 @@ class Weights:
         starting with the odds of 1 and then multiplying by each Comparison's odds
         to get the overall odds.
         """
-        if not self.is_trained:
-            raise ValueError(f"{self} is not trained.")
-
         total_odds = 1
         m = {}
         for comparison_weights in self:
