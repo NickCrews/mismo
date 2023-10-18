@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Iterable, Literal, Union
+from typing import Callable, Iterator, Literal, Union
 
 import ibis
 from ibis.expr.types import BooleanValue, Table
@@ -70,7 +70,7 @@ class BlockingRules:
         """Get a rule by name."""
         return self._lookup[name]
 
-    def __iter__(self) -> Iterable[BlockingRule]:
+    def __iter__(self) -> Iterator[BlockingRule]:
         """Iterate over the rules."""
         return iter(self._lookup.values())
 

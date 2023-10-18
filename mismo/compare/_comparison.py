@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import Callable, Iterable, Literal, overload
+from typing import Callable, Iterable, Literal, overload, Iterator
 
 import ibis
 from ibis.expr.types import BooleanValue, IntegerColumn, StringColumn, Table
@@ -110,7 +110,7 @@ class Comparison:
         """Get a level by name or index."""
         return self._lookup[name_or_index]
 
-    def __iter__(self) -> Iterable[ComparisonLevel]:
+    def __iter__(self) -> Iterator[ComparisonLevel]:
         """Iterate over the levels."""
         return iter(self.levels)
 
@@ -232,7 +232,7 @@ class Comparisons:
             m[name] = labels
         return blocked.mutate(**m)
 
-    def __iter__(self) -> Iterable[Comparison]:
+    def __iter__(self) -> Iterator[Comparison]:
         """Iterate over the comparisons."""
         return iter(self._lookup.values())
 
