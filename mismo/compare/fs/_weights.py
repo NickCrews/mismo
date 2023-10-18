@@ -28,7 +28,7 @@ class LevelWeights:
         return self._name
 
     @property
-    def m(self) -> float | None:
+    def m(self) -> float:
         """Among true-matches, what proportion of them have this level?
 
         1 means this level is a good indication of a match, 0 means it's a good

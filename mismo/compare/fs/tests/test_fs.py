@@ -11,11 +11,11 @@ def test_comparison_training():
     left, right = patents, patents.view()
     almost_level = ComparisonLevel(
         name="almost",
-        condition=lambda table: table["name_l"][:3] == table["name_r"][:3],  # type: ignore # noqa: E501
+        condition=lambda table: table["name_l"][:3] == table["name_r"][:3],
         description="First 3 letters match",
     )
-    exact = exact_level("name")
-    levels = [exact, almost_level]
+    ex_level = exact_level("name")
+    levels = [ex_level, almost_level]
     comparison = Comparison(name="name", levels=levels)
     weights = train_comparison(comparison, left, right, max_pairs=10_000, seed=42)
     assert weights.name == "name"
@@ -23,14 +23,12 @@ def test_comparison_training():
 
     exact, almost = weights
 
-    assert exact is not None
     assert exact.name == "exact_name"
     assert exact.m > 0.03
     assert exact.m < 0.06
     assert exact.u > 0
     assert exact.u < 0.01
 
-    assert almost is not None
     assert almost.name == "almost"
     assert almost.m > 0.2
     assert almost.m < 0.5
