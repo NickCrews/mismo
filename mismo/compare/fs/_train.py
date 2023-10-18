@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from ibis.expr.types import Table, IntegerColumn, StringColumn
 from ibis import _
+from ibis.expr.types import IntegerColumn, StringColumn, Table
 
 from mismo._util import sample_table
 from mismo.block import BlockingRule

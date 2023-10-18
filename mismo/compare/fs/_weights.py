@@ -97,7 +97,9 @@ class ComparisonWeights:
 
     @property
     def name(self) -> str:
-        """The name of the Comparison that these weights are for, eg "name" or "address"."""
+        """
+        The name of the Comparison that these weights are for, eg "name" or "address".
+        """
         return self._name
 
     def __getitem__(self, name_or_index: str | int | slice) -> LevelWeights:
@@ -115,7 +117,10 @@ class ComparisonWeights:
         return len(self._level_weights)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(name={self.name}, level_weights={self._level_weights})"
+        return f"""{self.__class__.__name__}(
+        name={self.name},
+        level_weights={self._level_weights}
+    )"""
 
     def odds(self, labels: IntegerValue | StringValue) -> FloatingValue:
         """Calculate the odds for each record pair."""

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import Callable, Iterable, Literal, overload, Iterator
+from typing import Callable, Iterable, Iterator, Literal, overload
 
 import ibis
 from ibis.expr.types import BooleanValue, IntegerColumn, StringColumn, Table
