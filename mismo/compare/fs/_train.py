@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ibis.expr.types import Table
+from ibis.expr.types import Table, IntegerColumn, StringColumn
 from ibis import _
 
 from mismo._util import sample_table
@@ -42,16 +42,20 @@ def true_pairs_from_labels(left: Table, right: Table) -> Table:
     return rule.block(left, right)
 
 
-def level_proportions(comparison: Comparison, pairs: Table) -> list[float]:
+def level_proportions(
+    comparison: Comparison, labels: IntegerColumn | StringColumn
+) -> list[float]:
     """
-    For each comparison level, return the proportion of pairs that fall into that level.
+    Return the proportion of labels that fall into each Comparison level.
     """
-    labels = comparison.label_pairs(pairs)
     vc = labels.name("level").value_counts()
     vc = vc.select("level", pct=_.level_count / _.level_count.sum())
     vc = vc.dropna(subset="level")
     vc_dict = vc.to_pandas().set_index("level")["pct"].to_dict()
-    n_levels = len(comparison.levels)
+    if isinstance(labels, StringColumn):
+        name_to_i = {lev.name: i for i, lev in enumerate(comparison)}
+        vc_dict = {name_to_i[name]: v for name, v in vc_dict.items()}
+    n_levels = len(comparison)
     defaults = {i: 0 for i in range(n_levels)}
     combined = {**defaults, **vc_dict}
     return [combined[i] for i in range(n_levels)]
@@ -95,7 +99,8 @@ def train_us_using_sampling(
     if max_pairs is None:
         max_pairs = 1_000_000_000
     sample = possible_pairs(left, right, max_pairs=max_pairs, seed=seed)
-    return level_proportions(comparison, sample)
+    labels = comparison.label_pairs(sample)
+    return level_proportions(comparison, labels)
 
 
 def train_ms_from_labels(
@@ -128,7 +133,8 @@ def train_ms_from_labels(
         max_pairs = 1_000_000_000
     n_pairs = min(pairs.count().execute(), max_pairs)
     sample = sample_table(pairs, n_pairs)
-    return level_proportions(comparison, sample)
+    labels = comparison.label_pairs(sample)
+    return level_proportions(comparison, labels)
 
 
 def train_comparison(
