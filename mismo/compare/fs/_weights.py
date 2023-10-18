@@ -70,11 +70,23 @@ class LevelWeights:
         return f"{self.__class__.__name__}(name={self.name}, m={self.m}, u={self.u})"
 
 
+def _else_weights(other_level_weights: Iterable[LevelWeights]) -> LevelWeights:
+    """A level that matches all record pairs that don't match any other level."""
+    other_level_weights = list(other_level_weights)
+    if any(w.name == "else" for w in other_level_weights):
+        raise ValueError("Cannot have a level named 'else'")
+    ms = [w.m for w in other_level_weights]
+    us = [w.u for w in other_level_weights]
+    else_m = 1 - sum(ms)
+    else_u = 1 - sum(us)
+    return LevelWeights(name="else", m=else_m, u=else_u)
+
+
 class ComparisonWeights:
     def __init__(self, name: str, level_weights: Iterable[LevelWeights]):
         """Create a new ComparisonWeights object."""
         self._name = name
-        self._level_weights = tuple(level_weights)
+        self._level_weights = tuple(level_weights) + (_else_weights(level_weights),)
         lookup = {}
         for i, lw in enumerate(self._level_weights):
             if lw.name in lookup:
@@ -88,21 +100,18 @@ class ComparisonWeights:
         """The name of the Comparison that these weights are for, eg "name" or "address"."""
         return self._name
 
-    @property
-    def level_weights(self) -> list[LevelWeights]:
-        """The weights for each level of the Comparison."""
-        return list(self._lookup.values())
-
-    def __getitem__(self, name_or_index: str | int) -> LevelWeights:
+    def __getitem__(self, name_or_index: str | int | slice) -> LevelWeights:
         """Get a LevelWeights by name or index."""
+        if isinstance(name_or_index, (int, slice)):
+            return self._level_weights[name_or_index]
         return self._lookup[name_or_index]
 
     def __iter__(self) -> Iterator[LevelWeights]:
-        """Iterate over the LevelWeights."""
+        """Iterate over the LevelWeights, including the implicit ELSE level."""
         return iter(self._level_weights)
 
     def __len__(self) -> int:
-        """The number of LevelWeights. Does not include the implicit ELSE level."""
+        """The number of LevelWeights, including the implicit ELSE level."""
         return len(self._level_weights)
 
     def __repr__(self) -> str:
@@ -114,7 +123,7 @@ class ComparisonWeights:
             cases = [(lw.name, lw.odds) for lw in self]
         else:
             cases = [(i, lw.odds) for i, lw in enumerate(self)]  # type: ignore # noqa: E501
-        return labels.cases(cases, self.else_weights.odds)  # type: ignore
+        return labels.cases(cases)
 
     def match_probability(self, labels: IntegerValue | StringValue) -> FloatingValue:
         """Calculate the match probability for each record pair."""
@@ -124,15 +133,7 @@ class ComparisonWeights:
         """Calculate the log odds for each record pair."""
         return odds_to_log_odds(self.odds(labels))
 
-    @property
-    def else_weights(self) -> LevelWeights:
-        """A level that matches all record pairs that don't match any other level."""
-        ms = [w.m for w in self]  # type: ignore
-        us = [w.u for w in self]  # type: ignore
-        else_m = 1 - sum(ms)
-        else_u = 1 - sum(us)
-        return LevelWeights(name="else", m=else_m, u=else_u)
-
+    @staticmethod
     def plot(self) -> alt.Chart:
         """Plot the weights for this comparison."""
         from ._plot import plot_weights
@@ -177,17 +178,22 @@ class Weights:
         """
         total_odds = 1
         m = {}
+        naming = {}
         for comparison_weights in self:
             name = comparison_weights.name
             labels = compared[name]
             odds = comparison_weights.odds(labels)
             m[f"{name}_odds"] = odds
+            naming[f"{name}_odds"] = name
             total_odds *= odds
         m["odds"] = total_odds
         result = compared.mutate(**m)
-        for cw in self:
-            result = result.relocate(f"{cw.name}_odds", after=cw.name)
-        result = result.relocate("odds", after="record_id_r")
+        # Don't do any of this relocation in terms of record_id, etc
+        # because the passed in table doesn't need ot have these.
+        # It only needs to have the labels for each comparison.
+        for odds_name, name in naming.items():
+            result = result.relocate(odds_name, after=name)
+        result = result.relocate("odds", before=list(naming.values())[0])
         return result
 
     def plot(self) -> alt.Chart:

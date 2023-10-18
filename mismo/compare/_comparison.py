@@ -49,6 +49,13 @@ class ComparisonLevel:
             return f"ComparisonLevel(name={self.name}, description={self.description})"
 
 
+_ELSE_LEVEL = ComparisonLevel(
+    name="else",
+    condition=lambda _: True,
+    description="None of the previous levels match.",
+)
+
+
 class Comparison:
     """
     A measure of record pair similarity based on one dimension, e.g. *name* or *date*.
@@ -74,13 +81,13 @@ class Comparison:
         name : str
             The name of the comparison. Must be unique within a set of Comparisons.
         levels : Iterable[ComparisonLevel]
-            The levels of the comparison. Does not include the implicit `ELSE` level.
+            The levels of the comparison. Do not include the implicit `ELSE` level.
         description : str, optional
             A description of the comparison. Intended for humans and documentation.
             Not needed for functionality.
         """
         self._name = name
-        self._levels = tuple(levels)
+        self._levels = tuple(levels) + (_ELSE_LEVEL,)
         self._description = description
         self._lookup = self._build_lookup(self._levels)
 
@@ -93,30 +100,23 @@ class Comparison:
         return self._name
 
     @property
-    def levels(self) -> tuple[ComparisonLevel, ...]:
-        """The levels of the comparison. Does not include the implicit `ELSE` level.
-
-        One level might be for exact matches, another for matches that misspellings,
-        and another for phonetic matches.
-        """
-        return self._levels
-
-    @property
     def description(self) -> str | None:
         """A description of the comparison. This is optional and intended for humans."""
         return self._description
 
-    def __getitem__(self, name_or_index: str | int) -> ComparisonLevel:
+    def __getitem__(self, name_or_index: str | int | slice) -> ComparisonLevel:
         """Get a level by name or index."""
+        if isinstance(name_or_index, (int, slice)):
+            return self._levels[name_or_index]
         return self._lookup[name_or_index]
 
     def __iter__(self) -> Iterator[ComparisonLevel]:
-        """Iterate over the levels."""
-        return iter(self.levels)
+        """Iterate over the levels, including the implicit ELSE level."""
+        return iter(self._levels)
 
     def __len__(self) -> int:
-        """The number of levels. Does not include the implicit ELSE level."""
-        return len(self.levels)
+        """The number of levels, including the implicit ELSE level."""
+        return len(self._levels)
 
     @overload
     def label_pairs(
@@ -152,7 +152,7 @@ class Comparison:
             The labels for each record pair.
         """
         labels = ibis.NA
-        for i, level in enumerate(self.levels):
+        for i, level in enumerate(self):
             is_match = labels.isnull() & level.condition(pairs)
             label = ibis.literal(i, type="uint8") if how == "index" else level.name
             labels = is_match.ifelse(label, labels)
@@ -161,7 +161,7 @@ class Comparison:
         return labels.name(self.name)
 
     def __repr__(self) -> str:
-        levels_str = ", ".join(repr(level) for level in self.levels)
+        levels_str = ", ".join(repr(level) for level in self)
         if self.description is None:
             return f"Comparison(name={self.name}, levels=[{levels_str}])"
         else:
