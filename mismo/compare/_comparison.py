@@ -205,7 +205,6 @@ class Comparisons:
         self,
         blocked: Table,
         *,
-        name_formatter: str | Callable[[str], str] = "",
         how: Literal["index", "name"] = "index",
     ) -> Table:
         """Label each record pair for each Comparison.
@@ -218,8 +217,6 @@ class Comparisons:
         ----------
         blocked : Table
             A table of blocked record pairs.
-        name_formatter : str | Callable[[str], str], default ''
-            Determines how to name each column based on the Comparison's name.
         how : {'index', 'name'}, default 'index'
             Whether to label the pairs with the index (uint8)
             or the name (string) of the level.
@@ -230,8 +227,7 @@ class Comparisons:
         m = {}
         for comparison in self:
             labels = comparison.label_pairs(blocked, how=how)
-            name = _rename(name_formatter, comparison.name)
-            m[name] = labels
+            m[comparison.name] = labels
         result = blocked.mutate(**m)
         result = result.relocate(*m.keys(), after="record_id_r")
         return result
