@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ibis.expr.types import Table
+from ibis import _
 
 from mismo._util import sample_table
 from mismo.block import BlockingRule
@@ -47,10 +48,13 @@ def level_proportions(comparison: Comparison, pairs: Table) -> list[float]:
     """
     labels = comparison.label_pairs(pairs)
     vc = labels.name("level").value_counts()
-    vc = vc.mutate(pct=vc.level_count / vc.level_count.sum())
-    vc = vc.order_by("level")
+    vc = vc.select("level", pct=_.level_count / _.level_count.sum())
     vc = vc.dropna(subset="level")
-    return vc.pct.execute().tolist()  # type: ignore
+    vc_dict = vc.to_pandas().set_index("level")["pct"].to_dict()
+    n_levels = len(comparison.levels)
+    defaults = {i: 0 for i in range(n_levels)}
+    combined = {**defaults, **vc_dict}
+    return [combined[i] for i in range(n_levels)]
 
 
 def train_us_using_sampling(
@@ -141,7 +145,10 @@ def train_comparison(
         comparison, left, right, max_pairs=max_pairs, seed=seed
     )
     level_names = [lev.name for lev in comparison.levels]
-    lw = [LevelWeights(name=name, m=m, u=u) for name, m, u in zip(level_names, ms, us)]
+    lw = [
+        LevelWeights(name=name, m=m, u=u)
+        for name, m, u in zip(level_names, ms, us, strict=True)
+    ]
     return ComparisonWeights(name=comparison.name, level_weights=lw)
 
 
