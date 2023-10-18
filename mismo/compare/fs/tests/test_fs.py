@@ -19,9 +19,9 @@ def test_comparison_training():
     comparison = Comparison(name="name", levels=levels)
     weights = train_comparison(comparison, left, right, max_pairs=10_000, seed=42)
     assert weights.name == "name"
-    assert len(weights.level_weights) == 2
+    assert len(weights) == 2
 
-    exact, almost = weights.level_weights
+    exact, almost = weights
 
     assert exact is not None
     assert exact.name == "exact_name"

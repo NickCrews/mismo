@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import dataclasses
-from typing import Iterable
+from typing import Iterable, Iterator
 
 import altair as alt
 from ibis.expr.types import FloatingValue, IntegerValue, StringValue, Table
@@ -72,12 +71,43 @@ class LevelWeights:
         return f"{self.__class__.__name__}(name={self.name}, m={self.m}, u={self.u})"
 
 
-@dataclasses.dataclass(frozen=True)
 class ComparisonWeights:
-    name: str
-    """The name of the Comparison that these weights are for, eg "name" or "address"."""
-    level_weights: list[LevelWeights]
-    """The weights for each level of the Comparison."""
+    def __init__(self, name: str, level_weights: Iterable[LevelWeights]):
+        """Create a new ComparisonWeights object."""
+        self._name = name
+        self._level_weights = tuple(level_weights)
+        lookup = {}
+        for i, lw in enumerate(self._level_weights):
+            if lw.name in lookup:
+                raise ValueError(f"Duplicate level name: {lw.name}")
+            lookup[lw.name] = lw
+            lookup[i] = lw
+        self._lookup = lookup
+
+    @property
+    def name(self) -> str:
+        """The name of the Comparison that these weights are for, eg "name" or "address"."""
+        return self._name
+
+    @property
+    def level_weights(self) -> list[LevelWeights]:
+        """The weights for each level of the Comparison."""
+        return list(self._lookup.values())
+
+    def __getitem__(self, name_or_index: str | int) -> LevelWeights:
+        """Get a LevelWeights by name or index."""
+        return self._lookup[name_or_index]
+
+    def __iter__(self) -> Iterator[LevelWeights]:
+        """Iterate over the LevelWeights."""
+        return iter(self._level_weights)
+
+    def __len__(self) -> int:
+        """The number of LevelWeights. Does not include the implicit ELSE level."""
+        return len(self._level_weights)
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(name={self.name}, level_weights={self._level_weights})"
 
     @classmethod
     def from_comparison(cls, comparison: Comparison) -> ComparisonWeights:
@@ -92,16 +122,16 @@ class ComparisonWeights:
     @property
     def is_trained(self) -> bool:
         """If all level weights have been set."""
-        return all(w.is_trained for w in self.level_weights)
+        return all(w.is_trained for w in self)
 
     def odds(self, labels: IntegerValue | StringValue) -> FloatingValue:
         """Calculate the odds for each record pair."""
         if not self.is_trained:
             raise ValueError("Weights have not been set for all comparison levels.")
         if isinstance(labels, StringValue):
-            cases = [(lw.name, lw.odds) for lw in self.level_weights]
+            cases = [(lw.name, lw.odds) for lw in self]
         else:
-            cases = [(i, lw.odds) for i, lw in enumerate(self.level_weights)]  # type: ignore # noqa: E501
+            cases = [(i, lw.odds) for i, lw in enumerate(self)]  # type: ignore # noqa: E501
         return labels.cases(cases, self.else_weights.odds)  # type: ignore
 
     def match_probability(self, labels: IntegerValue | StringValue) -> FloatingValue:
@@ -117,8 +147,8 @@ class ComparisonWeights:
         """A level that matches all record pairs that don't match any other level."""
         if not self.is_trained:
             raise ValueError("Weights have not been set for all comparison levels.")
-        ms = [w.m for w in self.level_weights]  # type: ignore
-        us = [w.u for w in self.level_weights]  # type: ignore
+        ms = [w.m for w in self]  # type: ignore
+        us = [w.u for w in self]  # type: ignore
         else_m = 1 - sum(ms)
         else_u = 1 - sum(us)
         return LevelWeights(name="else", m=else_m, u=else_u)
@@ -145,7 +175,7 @@ class Weights:
         """Get a `ComparisonWeights` by name."""
         return self._lookup[name]
 
-    def __iter__(self) -> Iterable[ComparisonWeights]:
+    def __iter__(self) -> Iterator[ComparisonWeights]:
         """Iterate over the contained `ComparisonWeights`."""
         return iter(self._lookup.values())
 
