@@ -64,7 +64,9 @@ class BlockingRules:
         sub_joined = [
             rule.block(left, right).mutate(blocking_rule=rule.name) for rule in self
         ]
-        return ibis.union(*sub_joined, distinct=True)
+        result = ibis.union(*sub_joined, distinct=True)
+        result = result.relocate("blocking_rule", after="record_id_r")
+        return result
 
     def __getitem__(self, name: str) -> BlockingRule:
         """Get a rule by name."""

@@ -230,7 +230,9 @@ class Comparisons:
             labels = comparison.label_pairs(blocked, how=how)
             name = _rename(name_formatter, comparison.name)
             m[name] = labels
-        return blocked.mutate(**m)
+        result = blocked.mutate(**m)
+        result = result.relocate(*m.keys(), after="record_id_r")
+        return result
 
     def __iter__(self) -> Iterator[Comparison]:
         """Iterate over the comparisons."""

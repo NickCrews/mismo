@@ -184,7 +184,11 @@ class Weights:
             m[f"{name}_odds"] = odds
             total_odds *= odds
         m["odds"] = total_odds
-        return compared.mutate(**m)
+        result = compared.mutate(**m)
+        for cw in self:
+            result = result.relocate(f"{cw.name}_odds", after=cw.name)
+        result = result.relocate("odds", after="record_id_r")
+        return result
 
     def plot(self) -> alt.Chart:
         """Plot the weights for all of the Comparisons."""
