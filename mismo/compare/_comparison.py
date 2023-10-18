@@ -119,11 +119,13 @@ class Comparison:
         return len(self.levels)
 
     @overload
-    def label_pairs(self, pairs: Table, how: Literal["index"]) -> IntegerColumn:
+    def label_pairs(
+        self, pairs: Table, how: Literal["index"] = "index"
+    ) -> IntegerColumn:
         ...
 
     @overload
-    def label_pairs(self, pairs: Table, how: Literal["name"]) -> StringColumn:
+    def label_pairs(self, pairs: Table, how: Literal["name"] = "index") -> StringColumn:
         ...
 
     def label_pairs(self, pairs, how="index"):
