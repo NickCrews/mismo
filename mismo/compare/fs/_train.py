@@ -150,12 +150,7 @@ def train_comparison(
     us = train_us_using_sampling(
         comparison, left, right, max_pairs=max_pairs, seed=seed
     )
-    level_names = [lev.name for lev in comparison.levels]
-    lw = [
-        LevelWeights(name=name, m=m, u=u)
-        for name, m, u in zip(level_names, ms, us, strict=True)
-    ]
-    return ComparisonWeights(name=comparison.name, level_weights=lw)
+    return make_weights(comparison, ms, us)
 
 
 def train_comparisons(
@@ -173,3 +168,12 @@ def train_comparisons(
             for c in comparisons
         ]
     )
+
+
+def make_weights(comparison: Comparison, ms: list[float], us: list[float]):
+    level_weights = [
+        LevelWeights(level.name, m=m, u=u)
+        for m, u, level in zip(ms, us, comparison, strict=True)
+    ]
+    level_weights = [lw for lw in level_weights if lw.name != "else"]
+    return ComparisonWeights(comparison.name, level_weights)

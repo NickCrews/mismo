@@ -97,9 +97,8 @@ def _plot_comparison_weights(cw: ComparisonWeights) -> alt.Chart:
 
 
 def _comp_weights_to_table(comparison_weights: ComparisonWeights) -> pd.DataFrame:
-    level_weights = list(comparison_weights) + [comparison_weights.else_weights]
     records = []
-    for i, lw in enumerate(level_weights):
+    for i, lw in enumerate(comparison_weights):
         records.append(
             {
                 # "comparison": comparison_weights.name,
