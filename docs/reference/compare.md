@@ -33,8 +33,8 @@ It uses bayesian statistics and basic machine learning to assign
 weights to different ComparisonLevels, and then combine them
 together to get a final score for a record pair.
 
-::: mismo.compare.fs.FellegiSunterComparer
 ::: mismo.compare.fs.Weights
 ::: mismo.compare.fs.ComparisonWeights
 ::: mismo.compare.fs.LevelWeights
 ::: mismo.compare.fs.train_comparison
+::: mismo.compare.fs.plot_weights

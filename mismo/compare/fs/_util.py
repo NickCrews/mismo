@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import math
 from typing import overload
 
 import ibis
-import math
 from ibis.expr.types import FloatingValue
 
 

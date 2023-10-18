@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from ._plot import plot_weights as plot_weights
 from ._train import train_comparison as train_comparison
 from ._train import train_comparisons as train_comparisons
 from ._weights import ComparisonWeights as ComparisonWeights

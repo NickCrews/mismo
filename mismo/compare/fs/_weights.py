@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import dataclasses
 from typing import Iterable
-import altair as alt
 
+import altair as alt
 from ibis.expr.types import FloatingValue, IntegerValue, StringValue, Table
 
 from mismo.compare._comparison import Comparison
 
-from ._util import odds_to_prob, odds_to_log_odds
+from ._util import odds_to_log_odds, odds_to_prob
 
 
 class LevelWeights:
@@ -123,6 +123,12 @@ class ComparisonWeights:
         else_u = 1 - sum(us)
         return LevelWeights(name="else", m=else_m, u=else_u)
 
+    def plot(self) -> alt.Chart:
+        """Plot the weights for this comparison."""
+        from ._plot import plot_weights
+
+        return plot_weights(self)
+
 
 class Weights:
     """Weights for the Fellegi-Sunter model.
@@ -179,7 +185,7 @@ class Weights:
         return compared.mutate(**m)
 
     def plot(self) -> alt.Chart:
-        """Plot the weights for this level."""
+        """Plot the weights for all of the Comparisons."""
         from ._plot import plot_weights
 
         return plot_weights(self)
