@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import Callable, Iterator, Literal, Union
 
 import ibis
-from ibis import selectors as s
 from ibis import _
+from ibis import selectors as s
 from ibis.expr.types import BooleanValue, Table
 
 from mismo.block import _util
