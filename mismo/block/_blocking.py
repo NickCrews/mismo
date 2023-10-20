@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import Callable, Iterator, Literal, Union
 
 import ibis
+from ibis import selectors as s
+from ibis import _
 from ibis.expr.types import BooleanValue, Table
 
 from mismo.block import _util
@@ -55,17 +57,55 @@ class BlockingRules:
                 raise ValueError(f"Duplicate Rule name: {rule.name}")
             self._lookup[rule.name] = rule
 
-    def block(self, left: Table, right: Table) -> Table:
+    def block(
+        self,
+        left: Table,
+        right: Table,
+        *,
+        labels: bool = False,
+    ) -> Table:
         """Block two tables together using all the rules.
 
-        The resulting blocked table with have a new column called `blocking_rule`
-        which indicates which rule caused each record pair.
+        Parameters
+        ----------
+        left
+            The left table to block
+        right
+            The right table to block
+        labels
+            If False, the resulting table will only contain the columns of left and
+            right. If True, a column of type `array<string>` will be added to the
+            resulting table indicating which
+            rules caused each record pair to be blocked.
+
+            False is faster, because if a pair matches multiple rules we don't
+            have to care about this. True is slower, because we need to test
+            every rule, but this is useful for investigating the impact of each
+            rule.
+
+        Returns
+        -------
+        Table
+            A table with all the columns of left (with a suffix of `_l`) and right
+            (with a suffix of `_r`). Possibly with the labels column if `add_labels`
+            is True.
         """
-        sub_joined = [
-            rule.block(left, right).mutate(blocking_rule=rule.name) for rule in self
-        ]
-        result = ibis.union(*sub_joined, distinct=True)
-        result = result.relocate("blocking_rule", after="record_id_r")
+
+        def blk(rule: BlockingRule) -> Table:
+            sub = rule.block(left, right)
+            if labels:
+                sub = sub.mutate(blocking_rule=rule.name)
+            return sub
+
+        sub_joined = [blk(rule) for rule in self]
+        if labels:
+            result = ibis.union(*sub_joined, distinct=False)
+            result = result.group_by(~s.c("blocking_rule")).agg(
+                blocking_rules=_.blocking_rule.collect()
+            )
+            result = result.relocate("blocking_rules", after="record_id_r")
+        else:
+            result = ibis.union(*sub_joined, distinct=True)
         return result
 
     def __getitem__(self, name: str) -> BlockingRule:
