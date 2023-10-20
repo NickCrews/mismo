@@ -1,0 +1,200 @@
+from __future__ import annotations
+
+from typing import Any, Iterable
+
+import altair as alt
+import pandas as pd
+
+
+def upset_plot(data: Any) -> alt.Chart:
+    """Generate an Altair-based UpSet plot.
+
+    Parameters
+    ----------
+    data
+        The data to plot. A Pandas DataFrame or anything that supports the
+        __dataframe__ protocol, with each row representing a single
+        intersection between sets.
+        There should be columns:
+
+        - A column containing the size of the intersection called "intersection_size"
+        - A column for each set, with a boolean value indicating whether
+          the intersection is in that set.
+        - There should be no other columns.
+
+    Returns
+    -------
+    Chart
+        An Altair chart.
+    """
+    df = _to_df(data)
+    longer = _pivot_longer(df)
+    sets = (
+        longer[longer.is_intersect]
+        .groupby("set")["intersection_size"]
+        .sum()
+        .sort_values(ascending=False)
+        .index.tolist()
+    )
+    base = alt.Chart(longer)
+    intersection_x = alt.X(
+        "intersection_id:O",
+        axis=None,
+        sort=alt.EncodingSortField("intersection_size"),
+    )
+    set_y = alt.Y(
+        "set:O",
+        sort=sets,
+        axis=alt.Axis(title=""),
+    )
+    p_matrix = _matrix_plot(base, sets, intersection_x, set_y)
+    p_intersection = _intersection_plot(base, sets, intersection_x)
+    p_sets = _set_plot(base, set_y)
+    return alt.vconcat(
+        p_intersection,
+        alt.hconcat(
+            p_matrix,
+            p_sets,
+            spacing=0,
+        ),
+        spacing=0,
+    )
+
+
+def _to_df(data) -> pd.DataFrame:
+    if isinstance(data, pd.DataFrame):
+        return data
+    try:
+        interchange_object = data.__dataframe__()
+    except AttributeError:
+        pass
+    else:
+        return pd.api.interchange.from_dataframe(interchange_object)
+    return pd.DataFrame(data)
+
+
+def _pivot_longer(df: pd.DataFrame) -> pd.DataFrame:
+    """Resulting DF has one row for each cell in the matrix.
+
+        intersection_id  intersection_size  intersection_degree                set  is_intersect  set_order
+    0                 0                 45                    2       Name First 3          True          0
+    1                 1             111258                    2       Name First 3          True          0
+    2                 2                 38                    3       Name First 3          True          0
+    3                 3               1225                    3       Name First 3          True          0
+    4                 4                  2                    2       Name First 3         False          0
+    5                 5                906                    3       Name First 3          True          0
+    6                 6                  6                    1       Name First 3         False          0
+    7                 7               2470                    2       Name First 3          True          0
+    8                 8               6340                    1       Name First 3         False          0
+    9                 9                646                    2       Name First 3         False          0
+    10               10                  2                    3       Name First 3         False          0
+    11               11               1495                    4       Name First 3          True          0
+    12               12             204224                    1       Name First 3         False          0
+    13               13             303104                    1       Name First 3          True          0
+    14                0                 45                    2  Coordinates Close         False          1
+    15                1             111258                    2  Coordinates Close          True          1
+    16                2                 38                    3  Coordinates Close          True          1
+    17                3               1225                    3  Coordinates Close          True          1
+    18                4                  2                    2  Coordinates Close         False          1
+    19                5                906                    3  Coordinates Close         False          1
+    20                6                  6                    1  Coordinates Close         False          1
+    21                7               2470                    2  Coordinates Close         False          1
+    22                8               6340                    1  Coordinates Close         False          1
+    23                9                646                    2  Coordinates Close          True          1
+    24               10                  2                    3  Coordinates Close          True          1
+    25               11               1495                    4  Coordinates Close          True          1
+    26               12             204224                    1  Coordinates Close          True          1
+    27               13             303104                    1  Coordinates Close         False          1
+    28                0                 45                    2    Coauthors Exact          True          2
+    29                1             111258                    2    Coauthors Exact         False          2
+    30                2                 38                    3    Coauthors Exact          True          2
+    31                3               1225                    3    Coauthors Exact         False          2
+    32                4                  2                    2    Coauthors Exact          True          2
+    33                5                906                    3    Coauthors Exact          True          2
+    34                6                  6                    1    Coauthors Exact          True          2
+    35                7               2470                    2    Coauthors Exact         False          2
+    36                8               6340                    1    Coauthors Exact         False          2
+    37                9                646                    2    Coauthors Exact         False          2
+    38               10                  2                    3    Coauthors Exact          True          2
+    39               11               1495                    4    Coauthors Exact          True          2
+    40               12             204224                    1    Coauthors Exact         False          2
+    41               13             303104                    1    Coauthors Exact         False          2
+    42                0                 45                    2      Classes Exact         False          3
+    43                1             111258                    2      Classes Exact         False          3
+    44                2                 38                    3      Classes Exact         False          3
+    45                3               1225                    3      Classes Exact          True          3
+    46                4                  2                    2      Classes Exact          True          3
+    47                5                906                    3      Classes Exact          True          3
+    48                6                  6                    1      Classes Exact         False          3
+    49                7               2470                    2      Classes Exact          True          3
+    50                8               6340                    1      Classes Exact          True          3
+    51                9                646                    2      Classes Exact          True          3
+    52               10                  2                    3      Classes Exact          True          3
+    53               11               1495                    4      Classes Exact          True          3
+    54               12             204224                    1      Classes Exact         False          3
+    55               13             303104                    1      Classes Exact         False          3
+    """  # noqa: E501
+    sets = [c for c in df.columns if c != "intersection_size"]
+    df["intersection_id"] = range(len(df))
+    df["intersection_degree"] = df[sets].sum(axis=1)
+    longer = pd.melt(
+        df, id_vars=["intersection_id", "intersection_size", "intersection_degree"]
+    )
+    longer = longer.rename(columns={"variable": "set", "value": "is_intersect"})
+    set_mapping = {s: i for i, s in enumerate(sets)}
+    longer["set_order"] = longer["set"].map(set_mapping)
+    return longer
+
+
+def _matrix_plot(base: alt.Chart, sets: Iterable[str], x, y) -> alt.Chart:
+    sets = list(sets)
+    matrix_circle_bg = base.mark_circle(size=100, color="lightgray", opacity=1).encode(
+        x=x, y=y
+    )
+    matrix_circle = matrix_circle_bg.mark_circle(
+        size=150, color="black", opacity=1
+    ).transform_filter(alt.datum.is_intersect)
+    matrix_connections = matrix_circle.mark_bar(size=4, color="black").encode(
+        y=alt.Y(
+            "set:O",
+            aggregate={"argmin": "set_order"},
+            scale=alt.Scale(domain=sets),
+        ),
+        y2=alt.Y2("set:O", aggregate={"argmax": "set_order"}),
+    )
+    layered = alt.layer(
+        matrix_circle_bg,
+        matrix_connections,
+        matrix_circle,
+    )
+    return layered
+
+
+def _intersection_plot(base: alt.Chart, sets: Iterable[str], x) -> alt.Chart:
+    sets = list(sets)
+    intersection_base = base.transform_filter(alt.datum.set == sets[0]).encode(
+        x=x,
+        y=alt.Y("intersection_size:Q", title="Intersection Size"),
+    )
+    bars = intersection_base.mark_bar(color="black")
+    text = intersection_base.mark_text(
+        dx=5,
+        angle=270,
+        align="left",
+    ).encode(text=alt.Text("intersection_size:Q", format=","))
+    layered = bars + text
+    return layered
+
+
+def _set_plot(base: alt.Chart, y) -> alt.Chart:
+    set_base = base.transform_filter(alt.datum.is_intersect).encode(
+        x=alt.X("sum(intersection_size):Q", title="Set Size"),
+        y=y.axis(None),
+    )
+    set_bars = set_base.mark_bar().encode(color=alt.Color("set:N", legend=None))
+    set_text = set_base.mark_text(dx=5, align="left").encode(
+        text=alt.Text("sum(intersection_size):Q", format=",")
+    )
+    layered = set_bars + set_text
+    layered = layered.properties(width=150)
+    return layered

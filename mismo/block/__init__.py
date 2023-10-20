@@ -10,4 +10,5 @@ from __future__ import annotations
 from mismo.block._array import block_on_arrays as block_on_arrays
 from mismo.block._blocking import BlockingRule as BlockingRule
 from mismo.block._blocking import BlockingRules as BlockingRules
+from mismo.block._upset_block import upset_plot as upset_plot
 from mismo.block._util import join as join
