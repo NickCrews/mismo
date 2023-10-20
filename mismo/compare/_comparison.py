@@ -4,6 +4,7 @@ import dataclasses
 from typing import Callable, Iterable, Iterator, Literal, overload
 
 import ibis
+from ibis.expr.deferred import Deferred
 from ibis.expr.types import BooleanValue, IntegerColumn, StringColumn, Table
 
 
@@ -27,20 +28,38 @@ class ComparisonLevel:
     - "within_1_km"
     - "within_10_percent"
     """
-    condition: Callable[[Table], BooleanValue]
+    condition: bool | Deferred | Callable[[Table], BooleanValue]
     """
     A condition that determines whether a record pair matches this level.
 
     Examples:
 
-    - `lambda t: t.name_l == t.name_r`
+    - `_.name_l == _.name_r`
     - `lambda t: (t.cost_l - t.cost_r).abs() / t.cost_l < 0.1`
+    - `True`
     """
     description: str | None = None
     """A description of the level. Intended for humans in charts and documentation.
 
     Not needed for functionality.
     """
+
+    def is_match(self, pairs: Table) -> BooleanValue:
+        """Determine whether a record pair matches this level.
+
+        Uses `self.condition` to determine whether a record pair matches this level.
+
+        Parameters
+        ----------
+        pairs : Table
+            A table of record pairs.
+        """
+        if isinstance(self.condition, bool):
+            return ibis.literal(self.condition)
+        elif isinstance(self.condition, Deferred):
+            return self.condition.resolve(pairs)
+        else:
+            return self.condition(pairs)
 
     def __repr__(self) -> str:
         if self.description is None:
@@ -153,7 +172,7 @@ class Comparison:
         """
         labels = ibis.NA
         for i, level in enumerate(self):
-            is_match = labels.isnull() & level.condition(pairs)
+            is_match = labels.isnull() & level.is_match(pairs)
             label = ibis.literal(i, type="uint8") if how == "index" else level.name
             labels = is_match.ifelse(label, labels)
         if how == "name":
