@@ -1,23 +1,58 @@
 from __future__ import annotations
 
-from typing import Callable, Iterator, Literal, Union
+from typing import Callable, Iterable, Iterator, Literal, Union
 
 import ibis
 from ibis import _
 from ibis import selectors as s
-from ibis.expr.types import BooleanValue, Table
+from ibis.expr.deferred import Deferred
+from ibis.expr.types import BooleanValue, Column, Table
 
 from mismo.block import _util
 
-_ConditionAtom = Union[BooleanValue, Literal[True]]
-_Condition = Union[_ConditionAtom, Callable[[Table, Table], _ConditionAtom]]
+# Something that can be used to reference a column in a table
+_ColumnReferenceLike = Union[
+    str,
+    Deferred,
+    Callable[[Table], Column],
+]
+# Something that can be used as a condition in a join between two tables
+_ConditionAtom = Union[
+    BooleanValue,
+    Literal[True],
+    tuple[_ColumnReferenceLike, _ColumnReferenceLike],
+]
+_ConditionOrConditions = Union[
+    _ConditionAtom,
+    Iterable[_ConditionAtom],
+]
+_Condition = Union[
+    _ConditionOrConditions,
+    Callable[[Table, Table], _ConditionOrConditions],
+]
 
 
 class BlockingRule:
     """A rule for blocking two tables together."""
 
     def __init__(self, name: str, condition: _Condition) -> None:
-        """Create a new blocking rule."""
+        """Create a new blocking rule.
+
+        Parameters
+        ----------
+        name
+            The name of the rule. Must be unique within a `BlockingRules`.
+        condition
+            The condition that determines if two records should be blocked together.
+            This can be any of the following:
+
+            - anything that ibis accepts as a join predicate
+            - a literal True, which will cause a cross join
+            - tuple[str, str]
+            - tuple[Column, Column]
+            - tuple[Deferred, Deferred]
+            - A callable that takes two tables and returns any of the above
+        """
         if not isinstance(name, str):
             raise TypeError(f"name must be a string, not {type(name)}")
         self._name = name

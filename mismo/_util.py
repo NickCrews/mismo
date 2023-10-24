@@ -52,20 +52,29 @@ def join(
 
     - Does a cross join when predicates is True or how is "cross"
     - Converts the lname and rname suffixes to the appropriate kwargs for ibis<6.0.0
-    - Allows for using lambda (left, right) -> bool as the predicates
+    - Allows for a wider set of join predicates:
+      - anything that ibis accepts as a join predicate
+      - tuple[str, str]
+      - tuple[Column, Column]
+      - tuple[Deferred, Deferred]
+      - lambda (left, right) -> any of the above
     """
     rename_kwargs = _join_suffix_kwargs(lname=lname, rname=rname)
-    if how == "cross" or predicates is True:
-        return left.cross_join(right, **rename_kwargs)
-    else:
-        preds = _to_ibis_join_predicates(left, right, predicates)
-        return left.join(right, predicates=preds, how=how, **rename_kwargs)
+    preds = _to_ibis_join_predicates(left, right, predicates)
+    return left.join(right, predicates=preds, how=how, **rename_kwargs)
 
 
 def _to_ibis_join_predicates(left, right, raw_predicates) -> tuple:
-    """We accept lambda (left, right) -> bool in addition to ibis predicates"""
+    if isinstance(raw_predicates, tuple):
+        if len(raw_predicates) != 2:
+            raise ValueError(
+                f"predicates must be a tuple of length 2, got {raw_predicates}"
+            )
+        # Ibis has us covered with one adjustment
+        # https://github.com/ibis-project/ibis/pull/7424
+        return [raw_predicates]
     if callable(raw_predicates):
-        return raw_predicates(left, right)
+        return _to_ibis_join_predicates(left, right, raw_predicates(left, right))
     else:
         return raw_predicates
 
