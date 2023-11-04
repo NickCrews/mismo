@@ -132,10 +132,9 @@ def _id_to_level_index(
     id: StringValue, comparisons: Iterable[Comparison]
 ) -> IntegerValue:
     cases = []
-    for c in comparisons:
-        level_names = [level.name for level in c] + ["else"]
-        for i, level_name in enumerate(level_names):
-            cases.append((c.name + ":" + level_name, i))
+    for comparison in comparisons:
+        for i, level in enumerate(comparison):
+            cases.append((comparison.name + ":" + level.name, i))
     return id.cases(cases)
 
 
@@ -148,7 +147,7 @@ def _make_color_map(comparisons: Comparisons) -> tuple[list, list]:
     range = []
     hues = _frange(0, 1, len(comparisons))
     for comp, hue in zip(comparisons, hues):
-        level_names = [level.name for level in comp] + ["else"]
+        level_names = [level.name for level in comp]
         shades = _frange(0.2, 0.9, len(level_names))
         for level, shade in zip(level_names, shades):
             r, g, b = colorsys.hsv_to_rgb(hue, 1, shade)
