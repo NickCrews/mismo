@@ -1,19 +1,28 @@
 from __future__ import annotations
 
 import colorsys
-from typing import Iterable
+from itertools import product
 
 import altair as alt
 import ibis
 from ibis import _
-from ibis import selectors as s
-from ibis.expr.types import IntegerValue, StringValue, Table
+from ibis.expr.types import Table
+import pandas as pd
 
-from mismo.compare import Comparison, Comparisons
+from mismo.compare import Comparison, ComparisonLevel, Comparisons
+from mismo.compare.fs import Weights
+from mismo.compare.fs._util import odds_to_log_odds
+from mismo.plot._common import LOG_ODDS_COLOR_SCALE
 
 
-def comparisons_histogram(compared: Table, comparisons: Comparisons) -> alt.Chart:
-    """Plot a histogram of comparison vectors.
+def plot_compared(
+    compared: Table,
+    comparisons: Comparisons,
+    weights: Weights | None = None,
+    *,
+    width: int = 500,
+) -> alt.Chart:
+    """Plot a histogram of compared record pairs.
 
     Used to see which comparison levels are common, which are rare, and which
     Comparisons are related to each other. For example, exact matches should
@@ -28,32 +37,73 @@ def comparisons_histogram(compared: Table, comparisons: Comparisons) -> alt.Char
     cols = [comp.name for comp in comparisons]
 
     vector_counts = compared.group_by(cols).agg(n_pairs=_.count())
-    vector_counts = vector_counts.mutate(pct_pairs=_.n_pairs / _.n_pairs.sum())
-    vector_counts = vector_counts.order_by(_.n_pairs.desc())
-    vector_counts = vector_counts.mutate(vector_id=ibis.row_number())
-    vector_counts = vector_counts.cache()
-
-    longer = vector_counts.pivot_longer(
-        s.any_of(cols), names_to="comparison", values_to="level"
+    vector_counts = vector_counts.mutate(
+        pct_pairs=_.n_pairs / _.n_pairs.sum(),
+        vector_id=ibis.literal(":").join([vector_counts[c] for c in cols]),
     )
-    longer = longer.mutate(id=_.comparison + ":" + _.level)
-    longer = longer.mutate(level_idx=_id_to_level_index(longer.id, comparisons))
-    longer = longer.cache()
+    if weights is not None:
+        vector_counts = weights.score(vector_counts)
+        vector_counts = vector_counts.mutate(odds=_.odds.clip(upper=10**10))
+        vector_counts = vector_counts.mutate(log_odds=odds_to_log_odds(_.odds))
+        hist_color = alt.Color(
+            "log_odds",
+            title="Odds",
+            scale=LOG_ODDS_COLOR_SCALE,
+            legend=alt.Legend(labelExpr=10**alt.datum.value),
+        )
+        hist_extra_tooltips = [alt.Tooltip("odds", title="Odds", format=",")]
+    else:
+        hist_color = None
+        hist_extra_tooltips = []
+    vector_counts = vector_counts.to_pandas()
 
-    width = 500
     scrubber_filter = alt.selection_interval(encodings=["x"])
     vector_fader = alt.selection_point(fields=["vector_id"], on="mouseover")
-
-    opacity_vector = alt.condition(vector_fader, alt.value(1), alt.value(0.9))
-    color_domain, color_range = _make_color_map(comparisons)
-
+    opacity_vector = alt.condition(vector_fader, alt.value(1), alt.value(0.8))
+    level_color = alt.Color(
+        "level_uid",
+        title="Comparison:Level",
+        scale=_make_level_color_scale(comparisons),
+        legend=None,
+    )
+    x = alt.X(
+        "vector_id:N",
+        axis=None,
+        sort=alt.EncodingSortField("n_pairs", order="descending"),
+    )
+    scrubber_chart = (
+        alt.Chart(
+            vector_counts,
+            height=50,
+            width=width,
+            title=alt.Title(
+                text="<drag to select>",
+                dy=20,
+                anchor="middle",
+                fontSize=12,
+                color="gray",
+            ),
+        )
+        .mark_rect()
+        .encode(
+            x=x,
+            y=alt.Y(
+                "n_pairs:Q",
+                title="Number of Pairs",
+                scale=alt.Scale(type="log"),
+                axis=None,
+            ),
+            opacity=opacity_vector,
+            **{"color": hist_color.legend(None)} if hist_color is not None else {},
+        )
+        .add_params(scrubber_filter)
+        .add_params(vector_fader)
+    )
     hist = (
         alt.Chart(vector_counts, width=width)
-        .mark_rect(
-            stroke=None,
-        )
+        .mark_rect(stroke=None)
         .encode(
-            x=alt.X("vector_id:N", axis=None),
+            x=x,
             y=alt.Y(
                 "n_pairs:Q",
                 title="Number of Pairs",
@@ -63,64 +113,36 @@ def comparisons_histogram(compared: Table, comparisons: Comparisons) -> alt.Char
             tooltip=[
                 alt.Tooltip("n_pairs", title="Number of Pairs", format=","),
                 alt.Tooltip("pct_pairs", title="Percent of Pairs", format="%"),
+                *hist_extra_tooltips,
                 *cols,
             ],
+            **{"color": hist_color} if hist_color is not None else {},
         )
         .transform_filter(scrubber_filter)
         .add_params(vector_fader)
     )
     vector_chart = (
-        alt.Chart(longer, height=80, width=width)
+        alt.Chart(_vector_grid_data(comparisons, vector_counts), height=80, width=width)
         .mark_rect()
         .encode(
-            x=alt.X("vector_id:N", axis=None),
+            x=x,
             y=alt.Y(
                 "comparison",
                 title="Comparison",
+                sort=cols,
             ),
-            color=alt.Color(
-                "id",
-                title="Comparison:Level",
-                scale=alt.Scale(domain=color_domain, range=color_range),
-            ),
+            color=level_color,
             opacity=opacity_vector,
             tooltip=["level"],
         )
         .transform_filter(scrubber_filter)
         .add_params(vector_fader)
     )
-    scrubber_chart = (
-        alt.Chart(
-            vector_counts,
-            height=50,
-            width=width,
-            title=alt.Title(
-                text="<Drag to select>",
-                dy=20,
-                anchor="middle",
-                fontSize=12,
-                color="gray",
-            ),
-        )
-        .mark_rect()
-        .encode(
-            x=alt.X("vector_id:N", axis=None),
-            y=alt.Y(
-                "n_pairs:Q",
-                title="Number of Pairs",
-                scale=alt.Scale(type="log"),
-                axis=None,
-            ),
-            opacity=opacity_vector,
-        )
-        .add_params(scrubber_filter)
-        .add_params(vector_fader)
-    )
-    together = alt.vconcat(hist, vector_chart, scrubber_chart)
+    together = alt.vconcat(scrubber_chart, hist, vector_chart, spacing=0)
     together = together.properties(
         title=alt.Title(
             text="Distribution of Comparison Levels",
-            subtitle=f"Total Pairs: {vector_counts.n_pairs.sum().execute():,}",
+            subtitle=f"Total Pairs: {vector_counts.n_pairs.sum():,}",
             anchor="middle",
             fontSize=14,
         )
@@ -128,36 +150,54 @@ def comparisons_histogram(compared: Table, comparisons: Comparisons) -> alt.Char
     return together
 
 
-def _id_to_level_index(
-    id: StringValue, comparisons: Iterable[Comparison]
-) -> IntegerValue:
-    cases = []
-    for comparison in comparisons:
-        for i, level in enumerate(comparison):
-            cases.append((comparison.name + ":" + level.name, i))
-    return id.cases(cases)
-
-
 def _frange(start, stop, n):
     return [start + i * (stop - start) / n for i in range(n)]
 
 
-def _make_color_map(comparisons: Comparisons) -> tuple[list, list]:
+def _vector_grid_data(
+    comparisons: Comparisons, vector_data: pd.DataFrame
+) -> pd.DataFrame:
+    records = []
+    for levels in product(*comparisons):
+        vector_id = ":".join(level.name for level in levels)
+        for comp, level in zip(comparisons, levels):
+            level_info = {c.name: None for c in comparisons}
+            level_info[comp.name] = level.name
+            records.append(
+                {
+                    "vector_id": vector_id,
+                    "level_uid": _level_uid(comp, level),
+                    "comparison": comp.name,
+                    "level": level.name,
+                    **level_info,
+                }
+            )
+    result = pd.DataFrame(records)
+    # only include vectors that are in the vector_data
+    # and add in per-vector info such as n_pairs
+    result = vector_data.merge(result, on="vector_id", how="left")
+    return result
+
+
+def _make_level_color_scale(comparisons: Comparisons) -> alt.Scale:
     domain = []
     range = []
     hues = _frange(0, 1, len(comparisons))
     for comp, hue in zip(comparisons, hues):
-        level_names = [level.name for level in comp]
-        shades = _frange(0.2, 0.9, len(level_names))
-        for level, shade in zip(level_names, shades):
+        shades = _frange(0.2, 0.9, len(comp))
+        for level, shade in zip(comp, shades):
             r, g, b = colorsys.hsv_to_rgb(hue, 1, shade)
             r = int(r * 255)
             g = int(g * 255)
             b = int(b * 255)
             hex_color = f"#{r:02x}{g:02x}{b:02x}"
-            domain.append(comp.name + ":" + level)
+            domain.append(_level_uid(comp, level))
             range.append(hex_color)
-    return domain, range
+    return alt.Scale(domain=domain, range=range)
+
+
+def _level_uid(comparison: Comparison, level: ComparisonLevel) -> str:
+    return comparison.name + ":" + level.name
 
 
 # TODO: make this work as a filter for the above histogram

@@ -5,6 +5,8 @@ from typing import Iterable
 import altair as alt
 import pandas as pd
 
+from mismo.plot._common import LOG_ODDS_COLOR_SCALE
+
 from ._weights import ComparisonWeights
 
 
@@ -80,10 +82,7 @@ def _plot_comparison_weights(cw: ComparisonWeights) -> alt.Chart:
         alt.Color(
             "log_odds",
             title="Log Odds",
-            scale=alt.Scale(
-                range=["red", "grey", "green"],
-                domainMid=0,
-            ),
+            scale=LOG_ODDS_COLOR_SCALE,
             legend=None,
         ),
         False,
