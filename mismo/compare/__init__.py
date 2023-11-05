@@ -11,5 +11,4 @@ from ._comparison import Comparison as Comparison
 from ._comparison import ComparisonLevel as ComparisonLevel
 from ._comparison import Comparisons as Comparisons
 from ._geospatial import distance_km as distance_km
-from ._levels import exact_level as exact_level
 from ._plot import plot_compared as plot_compared

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from ibis import _
+
 from mismo import datasets
-from mismo.compare import Comparison, ComparisonLevel, exact_level
+from mismo.compare import Comparison, ComparisonLevel
 from mismo.compare.fs import train_comparison
 
 
@@ -14,7 +16,7 @@ def test_comparison_training():
         condition=lambda table: table["name_l"][:3] == table["name_r"][:3],
         description="First 3 letters match",
     )
-    ex_level = exact_level("name")
+    ex_level = ComparisonLevel("exact", _.name_l == _.name_r)
     levels = [ex_level, almost_level]
     comparison = Comparison(name="name", levels=levels)
     weights = train_comparison(comparison, left, right, max_pairs=10_000, seed=42)
@@ -23,7 +25,7 @@ def test_comparison_training():
 
     exact, almost, else_ = weights
 
-    assert exact.name == "exact_name"
+    assert exact.name == "exact"
     assert exact.m > 0.03
     assert exact.m < 0.06
     assert exact.u > 0
