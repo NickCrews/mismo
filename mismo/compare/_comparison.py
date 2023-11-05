@@ -248,7 +248,8 @@ class Comparisons:
             labels = comparison.label_pairs(blocked, how=how)
             m[comparison.name] = labels
         result = blocked.mutate(**m)
-        result = result.relocate(*m.keys(), after="record_id_r")
+        if "record_id_r" in result.columns:
+            result = result.relocate(*m.keys(), after="record_id_r")
         return result
 
     def __iter__(self) -> Iterator[Comparison]:
@@ -266,12 +267,3 @@ class Comparisons:
     def __repr__(self) -> str:
         comps = ", ".join(repr(comp) for comp in self)
         return f"Comparisons({comps})"
-
-
-def _rename(format: str | Callable[[str], str], s: str) -> str:
-    if isinstance(format, str):
-        if format == "":
-            return s
-        return format.format(name=s)
-    else:
-        return format(s)
