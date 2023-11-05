@@ -32,7 +32,7 @@ Issues = "https://github.com/NickCrews/mismo/issues"
 Source = "https://github.com/NickCrews/mismo"
 
 [tool.pdm.dev-dependencies]
-lint = ["black[jupyter]", "ruff", "mypy", "nbqa", "pre-commit"]
+lint = ["ruff", "mypy", "pre-commit"]
 test = ["pytest", "pytest-cov", "recordlinkage"]
 docs = [
   "mkdocs-git-revision-date-localized-plugin",
@@ -54,6 +54,7 @@ omit = ["mismo/__about__.py"]
 exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
 
 [tool.ruff]
+extend-include = ["*.ipynb"]
 select = [
   "E", # pyflakes
   "F", # pyflakes

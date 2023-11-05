@@ -10,15 +10,13 @@ install:
 
 # format code
 fmt:
-    black mismo docs
     ruff --fix mismo docs
-    nbqa ruff --fix mismo docs
+    ruff format mismo docs
 
 # lint code
 lint:
-    black --check mismo docs
     ruff mismo docs
-    nbqa ruff mismo docs
+    ruff format --check mismo docs
 
 # run tests
 test:
