@@ -70,7 +70,7 @@ class ComparisonLevel:
 
 _ELSE_LEVEL = ComparisonLevel(
     name="else",
-    condition=lambda _: True,
+    condition=True,
     description="None of the previous levels match.",
 )
 
