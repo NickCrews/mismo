@@ -173,9 +173,9 @@ def train_comparisons(
 
 
 def make_weights(comparison: Comparison, ms: list[float], us: list[float]):
+    assert len(ms) == len(us) == len(comparison)
     level_weights = [
-        LevelWeights(level.name, m=m, u=u)
-        for m, u, level in zip(ms, us, comparison, strict=True)
+        LevelWeights(level.name, m=m, u=u) for m, u, level in zip(ms, us, comparison)
     ]
     level_weights = [lw for lw in level_weights if lw.name != "else"]
     return ComparisonWeights(comparison.name, level_weights)
