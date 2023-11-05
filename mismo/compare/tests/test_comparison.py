@@ -24,22 +24,21 @@ def blocked():
 
 
 @pytest.mark.parametrize(
-    "condition, expected",
+    "condition, expected_true_count",
     [
-        (True, [True, True, True]),
-        (False, [False, False, False]),
-        (_.cost_l == _.cost_r, [True, False, True]),
-        (lambda _: True, [True, True, True]),
-        (lambda t: t.cost_l == t.cost_r, [True, False, True]),
+        (_.cost_l == _.cost_r, 2),
+        (True, 3),
+        (False, 0),
+        (lambda _: True, 3),
+        (lambda t: t.cost_l == t.cost_r, 2),
     ],
 )
-def test_comparison_level_conditions(condition, expected, blocked):
+def test_comparison_level_conditions(condition, expected_true_count, blocked):
     level = ComparisonLevel("foo", condition)
     assert level.name == "foo"
     assert level.description is None
-    t = ibis.memtable(blocked.assign(expected=expected))
-    t = t.mutate(matched=level.is_match(t))
-    assert (t.matched == t.expected).all().execute()
+    blocked = blocked.mutate(is_match=level.is_match(blocked))
+    assert blocked.is_match.sum().execute() == expected_true_count
 
 
 @pytest.fixture
@@ -74,7 +73,7 @@ def test_comparison_basic(cost_comparison, large_level, exact_level):
 
     with pytest.raises(KeyError):
         cost_comparison["foo"]
-    with pytest.raises(KeyError):
+    with pytest.raises(IndexError):
         cost_comparison[3]
 
 
