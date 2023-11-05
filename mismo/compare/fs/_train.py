@@ -14,13 +14,14 @@ def min_ignore_None(*args):
     return min(*(a for a in args if a is not None))
 
 
-def possible_pairs(
+def all_possible_pairs(
     left: Table,
     right: Table,
     *,
     max_pairs: int | None = None,
     seed: int | None = None,
 ) -> Table:
+    """Blocks together all possible pairs of records."""
     pairs = BlockingRule("all", True).block(left, right)
     n_pairs = min_ignore_None(pairs.count().execute(), max_pairs)
     return sample_table(pairs, n_pairs, seed=seed)
@@ -98,7 +99,7 @@ def train_us_using_sampling(
     """
     if max_pairs is None:
         max_pairs = 1_000_000_000
-    sample = possible_pairs(left, right, max_pairs=max_pairs, seed=seed)
+    sample = all_possible_pairs(left, right, max_pairs=max_pairs, seed=seed)
     labels = comparison.label_pairs(sample)
     return level_proportions(comparison, labels)
 
@@ -109,6 +110,7 @@ def train_ms_from_labels(
     right: Table,
     *,
     max_pairs: int | None = None,
+    seed: int | None = None,
 ) -> list[float]:
     """Using the true labels in the dataset, estimate the m weight.
 
@@ -132,7 +134,7 @@ def train_ms_from_labels(
     if max_pairs is None:
         max_pairs = 1_000_000_000
     n_pairs = min(pairs.count().execute(), max_pairs)
-    sample = sample_table(pairs, n_pairs)
+    sample = sample_table(pairs, n_pairs, seed=seed)
     labels = comparison.label_pairs(sample)
     return level_proportions(comparison, labels)
 
@@ -146,7 +148,7 @@ def train_comparison(
     seed: int | None = None,
 ) -> ComparisonWeights:
     """Estimate the weights for a single Comparison using labeled data."""
-    ms = train_ms_from_labels(comparison, left, right, max_pairs=max_pairs)
+    ms = train_ms_from_labels(comparison, left, right, max_pairs=max_pairs, seed=seed)
     us = train_us_using_sampling(
         comparison, left, right, max_pairs=max_pairs, seed=seed
     )
