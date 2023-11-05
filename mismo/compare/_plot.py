@@ -69,7 +69,9 @@ def plot_compared(
     x = alt.X(
         "vector_id:N",
         axis=None,
-        sort=alt.EncodingSortField("n_pairs", order="descending"),
+        sort=alt.EncodingSortField(
+            "n_pairs" if weights is None else "odds", order="descending"
+        ),
     )
     scrubber_chart = (
         alt.Chart(
