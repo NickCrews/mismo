@@ -36,7 +36,6 @@ def blocked():
 def test_comparison_level_conditions(condition, expected_true_count, blocked):
     level = ComparisonLevel("foo", condition)
     assert level.name == "foo"
-    assert level.description is None
     blocked = blocked.mutate(is_match=level.is_match(blocked))
     assert blocked.is_match.sum().execute() == expected_true_count
 

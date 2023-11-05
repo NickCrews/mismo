@@ -38,11 +38,6 @@ class ComparisonLevel:
     - `lambda t: (t.cost_l - t.cost_r).abs() / t.cost_l < 0.1`
     - `True`
     """
-    description: str | None = None
-    """A description of the level. Intended for humans in charts and documentation.
-
-    Not needed for functionality.
-    """
 
     def is_match(self, pairs: Table) -> BooleanValue:
         """Determine whether a record pair matches this level.
@@ -62,16 +57,12 @@ class ComparisonLevel:
             return self.condition(pairs)
 
     def __repr__(self) -> str:
-        if self.description is None:
-            return f"ComparisonLevel(name={self.name})"
-        else:
-            return f"ComparisonLevel(name={self.name}, description={self.description})"
+        return f"ComparisonLevel(name={self.name})"
 
 
 _ELSE_LEVEL = ComparisonLevel(
     name="else",
     condition=True,
-    description="None of the previous levels match.",
 )
 
 
@@ -91,7 +82,6 @@ class Comparison:
         self,
         name: str,
         levels: Iterable[ComparisonLevel],
-        description: str | None = None,
     ):
         """Create a Comparison.
 
@@ -101,13 +91,9 @@ class Comparison:
             The name of the comparison. Must be unique within a set of Comparisons.
         levels : Iterable[ComparisonLevel]
             The levels of the comparison. Do not include the implicit `ELSE` level.
-        description : str, optional
-            A description of the comparison. Intended for humans and documentation.
-            Not needed for functionality.
         """
         self._name = name
         self._levels = tuple(levels) + (_ELSE_LEVEL,)
-        self._description = description
         self._lookup = self._build_lookup(self._levels)
 
     @property
@@ -117,11 +103,6 @@ class Comparison:
         An example might be "name", "date", "address", "latlon", "price".
         """
         return self._name
-
-    @property
-    def description(self) -> str | None:
-        """A description of the comparison. This is optional and intended for humans."""
-        return self._description
 
     def __getitem__(self, name_or_index: str | int | slice) -> ComparisonLevel:
         """Get a level by name or index."""
@@ -181,10 +162,7 @@ class Comparison:
 
     def __repr__(self) -> str:
         levels_str = ", ".join(repr(level) for level in self)
-        if self.description is None:
-            return f"Comparison(name={self.name}, levels=[{levels_str}])"
-        else:
-            return f"Comparison(name={self.name}, description={self.description}, levels=[{levels_str}])"  # noqa: E501
+        return f"Comparison(name={self.name}, levels=[{levels_str}])"
 
     @staticmethod
     def _build_lookup(

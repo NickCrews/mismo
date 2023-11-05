@@ -14,7 +14,6 @@ def test_comparison_training():
     almost_level = ComparisonLevel(
         name="almost",
         condition=lambda table: table["name_l"][:3] == table["name_r"][:3],
-        description="First 3 letters match",
     )
     ex_level = ComparisonLevel("exact", _.name_l == _.name_r)
     levels = [ex_level, almost_level]
