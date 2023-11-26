@@ -3,12 +3,24 @@
 - Small, composable components that are easy to understand and extend.
 - Use standard data structures like Ibis tables whenever possible.
 - Use pure functions and immutable data structures whenever possible.
+- Have some built-in algorithms such as a splink-inspired Fellegi-Sunter
+  model so you can get going out of the box, but also leave the door open
+  for others to plug in their own blocking, comparing, and clustering
+  algorithms. If we desgin the interfaces between all these stages carefully,
+  then they should all inter-operate and individual components can be swapped
+  out for better/custom implementations. Ideally this could position mismo
+  as the de-facto experimental platform, similar to how huggingface and pytorch
+  are the standard platforms for machine learning.
+  platform for researchers. 
 - Use duck typing/Protocols to allow users to plug in their own components.
 - Wrap the core logic in helper classes to make it easy to get started, but
   have these be shortcuts instead of dead ends.
 - Reproducible results using `random_state` similar to sklearn. No peer of Mismo
   seems to do this.
 - Ergonomic model persistence.
+- Python-first approach. Instead of configuring using JSON, the majority of
+  the implementation logic should be in python. This prevents dead ends and makes
+  things much more extendable.
 
 ## Alternatives to Mismo
 
@@ -70,3 +82,10 @@ I didn't like how RLTK was so object oriented. It seems like you have to create
 an object to perform most tasks. These objects are also mutable, which makes
 it hard to keep track of their state. Whenever possible, I tried to use
 pure functions and immutable data structuress.
+
+### [DBLink](https://github.com/cleanzr/dblink)
+
+Bayesian, unsupervised record linkage on structured data using Apache Spark.
+
+Maybe a bit more academic and not production ready. Development has ceased.
+Has some interesting algorithms and ideas on how to do things.
