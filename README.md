@@ -5,6 +5,10 @@
 
 The SQL/Ibis powered sklearn of record linkage.
 
+Still in alpha stage. Breaking changes will happen frequently
+and with no warning. Once things are more stabilized I
+will come up with a stabilibty policy.
+
 -----
 
 ## Installation
