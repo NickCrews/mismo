@@ -1,15 +1,19 @@
 from __future__ import annotations
 
-from typing import Iterable, Iterator
+from json import dumps, loads
+import math
+from pathlib import Path
+from typing import Iterable, Iterator, overload
 
 import altair as alt
+import ibis
 from ibis.expr.types import FloatingValue, IntegerValue, StringValue, Table
 
 from ._util import odds_to_log_odds, odds_to_prob
 
 
 class LevelWeights:
-    """Weights for a single level of a Comparison.
+    """Weights for a single ComparisonLevel.
 
     This describes for example "If zipcodes match perfectly, then
     this increases the probability of a match by 10x as compared to if we
@@ -69,6 +73,15 @@ class LevelWeights:
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name}, m={self.m}, u={self.u})"
 
+    def __eq__(self, other):
+        if not isinstance(other, LevelWeights):
+            return False
+        return (
+            self.name == other.name
+            and math.isclose(self.m, other.m)
+            and math.isclose(self.u, other.u)
+        )
+
 
 def _else_weights(other_level_weights: Iterable[LevelWeights]) -> LevelWeights:
     """A level that matches all record pairs that don't match any other level."""
@@ -83,6 +96,12 @@ def _else_weights(other_level_weights: Iterable[LevelWeights]) -> LevelWeights:
 
 
 class ComparisonWeights:
+    """
+    The weights for a single Comparison.
+
+    An ordered, dict-like collection of LevelWeights, one for each level.
+    """
+
     def __init__(self, name: str, level_weights: Iterable[LevelWeights]):
         """Create a new ComparisonWeights object."""
         self._name = name
@@ -91,8 +110,13 @@ class ComparisonWeights:
         for i, lw in enumerate(self._level_weights):
             if lw.name in lookup:
                 raise ValueError(f"Duplicate level name: {lw.name}")
+            # 0 -> -len + 0
+            # 1 -> -len + 1
+            # 2 -> -len + 2
+            negative_i = -len(self._level_weights) + i
             lookup[lw.name] = lw
             lookup[i] = lw
+            lookup[negative_i] = lw
         self._lookup = lookup
 
     @property
@@ -102,11 +126,28 @@ class ComparisonWeights:
         """
         return self._name
 
-    def __getitem__(self, name_or_index: str | int | slice) -> LevelWeights:
+    @overload
+    def __getitem__(self, name_or_index: str | int) -> LevelWeights:
+        ...
+
+    @overload
+    def __getitem__(self, name_or_index: slice) -> tuple[LevelWeights, ...]:
+        ...
+
+    def __getitem__(
+        self, name_or_index: str | int | slice
+    ) -> LevelWeights | tuple[LevelWeights, ...]:
         """Get a LevelWeights by name or index."""
-        if isinstance(name_or_index, (int, slice)):
+        if isinstance(name_or_index, slice):
             return self._level_weights[name_or_index]
-        return self._lookup[name_or_index]
+        try:
+            return self._lookup[name_or_index]
+        except KeyError:
+            raise KeyError(f"Unknown level name or index: {name_or_index}")
+
+    def __contains__(self, name_or_index: str | int) -> bool:
+        """Check if a LevelWeights is present by name or index."""
+        return name_or_index in self._lookup
 
     def __iter__(self) -> Iterator[LevelWeights]:
         """Iterate over the LevelWeights, including the implicit ELSE level."""
@@ -122,19 +163,73 @@ class ComparisonWeights:
         level_weights={self._level_weights}
     )"""
 
-    def odds(self, labels: IntegerValue | StringValue) -> FloatingValue:
-        """Calculate the odds for each record pair."""
+    def __eq__(self, other):
+        if not isinstance(other, ComparisonWeights):
+            return False
+        return self.name == other.name and self._level_weights == other._level_weights
+
+    @overload
+    def odds(self, labels: str | int) -> float:
+        ...
+
+    @overload
+    def odds(self, labels: StringValue | IntegerValue) -> FloatingValue:
+        ...
+
+    def odds(
+        self, labels: str | int | StringValue | IntegerValue
+    ) -> float | FloatingValue:
+        """Calculate the odds for each record pair.
+
+        If `labels` is a string or integer, then we calculate the odds for that
+        level. For example, if `labels` is "close", then we calculate the odds
+        for the "close" level. If `labels` is 0, then we calculate the odds for
+        the first level. If `labels` is -1, then we calculate the odds for the
+        last level (the ELSE level).
+
+        If `labels` is a StringValue or IntegerValue, then we do the same thing,
+        except that we return an ibis FloatingValue instead of a python float.
+        """
+        if isinstance(labels, (int, str)):
+            # Check that this is a valid label
+            self[labels]
+            return self._odds(ibis.literal(labels)).execute()
+        else:
+            # No check is possible when using ibis :(
+            return self._odds(labels)
+
+    def _odds(self, labels: IntegerValue | StringValue) -> FloatingValue:
         if isinstance(labels, StringValue):
             cases = [(lw.name, lw.odds) for lw in self]
         else:
             cases = [(i, lw.odds) for i, lw in enumerate(self)]  # type: ignore # noqa: E501
         return labels.cases(cases)
 
-    def match_probability(self, labels: IntegerValue | StringValue) -> FloatingValue:
+    @overload
+    def match_probability(self, labels: str | int) -> float:
+        ...
+
+    @overload
+    def match_probability(self, labels: StringValue | IntegerValue) -> FloatingValue:
+        ...
+
+    def match_probability(
+        self, labels: str | int | StringValue | IntegerValue
+    ) -> float | FloatingValue:
         """Calculate the match probability for each record pair."""
         return odds_to_prob(self.odds(labels))
 
-    def log_odds(self, labels: IntegerValue | StringValue) -> FloatingValue:
+    @overload
+    def log_odds(self, labels: str | int) -> float:
+        ...
+
+    @overload
+    def log_odds(self, labels: StringValue | IntegerValue) -> FloatingValue:
+        ...
+
+    def log_odds(
+        self, labels: str | int | StringValue | IntegerValue
+    ) -> float | FloatingValue:
         """Calculate the log odds for each record pair."""
         return odds_to_log_odds(self.odds(labels))
 
@@ -209,3 +304,40 @@ class Weights:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}{tuple(self)}"
+
+    def __eq__(self, other):
+        if not isinstance(other, Weights):
+            return False
+        a = sorted(self, key=lambda cw: cw.name)
+        b = sorted(other, key=lambda cw: cw.name)
+        return a == b
+
+    def to_json(self, path: str | Path | None = None) -> dict:
+        """Return a JSON-serializable representation of the weights.
+
+        If `path` is given, write the dict to the file at that path in addition
+        to returning it.
+        """
+        d = {
+            cw.name: {lw.name: {"m": lw.m, "u": lw.u} for lw in cw if lw.name != "else"}
+            for cw in self
+        }
+        if path is not None:
+            Path(path).write_text(dumps(d))
+        return d
+
+    @classmethod
+    def from_json(cls, json: dict | str | Path) -> Weights:
+        """Create a Weights object from a JSON-serializable representation."""
+        if not isinstance(json, dict):
+            json = loads(Path(json).read_text())
+        return cls(
+            ComparisonWeights(
+                name=comparison_name,
+                level_weights=[
+                    LevelWeights(name=level_name, m=level["m"], u=level["u"])
+                    for level_name, level in comparison.items()
+                ],
+            )
+            for comparison_name, comparison in json.items()
+        )
