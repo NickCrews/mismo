@@ -22,7 +22,7 @@ def prob_to_odds(prob: _IbisIsh) -> _IbisIsh:
 
 def prob_to_odds(prob):
     normal = prob / (1 - prob)
-    if isinstance(prob, _IbisIsh):
+    if isinstance(prob, (Deferred, NumericValue)):
         return ibis.ifelse(prob != 1, normal, ibis.literal(float("inf")))
     else:
         return normal if prob != 1 else float("inf")
@@ -40,7 +40,7 @@ def odds_to_prob(odds: _IbisIsh) -> _IbisIsh:
 
 def odds_to_prob(odds):
     normal = odds / (1 + odds)
-    if isinstance(odds, _IbisIsh):
+    if isinstance(odds, (Deferred, NumericValue)):
         return ibis.ifelse(odds.isinf(), 1.0, normal)
     else:
         return 1 if odds == float("inf") else normal
@@ -57,7 +57,7 @@ def odds_to_log_odds(odds: _IbisIsh) -> _IbisIsh:
 
 
 def odds_to_log_odds(odds):
-    if isinstance(odds, _IbisIsh):
+    if isinstance(odds, (Deferred, NumericValue)):
         return odds.log10()
     else:
         if odds == 0:
