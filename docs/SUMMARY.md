@@ -9,6 +9,7 @@
     * [Cleaning](reference/clean.md)
     * [Blocking](reference/block.md)
     * [Comparing](reference/compare.md)
+    * [Fellegi-Sunter](reference/fs.md)
     * [Clustering](reference/cluster.md)
     * [Metrics](reference/metrics.md)
     * [Plotting](reference/plot.md)

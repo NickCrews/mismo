@@ -4,7 +4,7 @@ import ibis
 import numpy as np
 import pytest
 
-from mismo.compare.fs import ComparisonWeights, LevelWeights, Weights
+from mismo.fs import ComparisonWeights, LevelWeights, Weights
 
 
 def test_level_weights_basic():

@@ -23,16 +23,3 @@ These utility functions help you create [ComparisonLevel](#mismo.compare.Compari
 ::: mismo.compare.jaccard
 ::: mismo.compare.distance_km
 
-
-## Felleni-Sunter Model
-
-The Felleni-Sunter model is a popular model for record linkage.
-It uses bayesian statistics and basic machine learning to assign
-weights to different ComparisonLevels, and then combine them
-together to get a final score for a record pair.
-
-::: mismo.compare.fs.Weights
-::: mismo.compare.fs.ComparisonWeights
-::: mismo.compare.fs.LevelWeights
-::: mismo.compare.fs.train_comparison
-::: mismo.compare.fs.plot_weights

@@ -4,7 +4,7 @@ from ibis import _
 
 from mismo import datasets
 from mismo.compare import Comparison, ComparisonLevel
-from mismo.compare.fs import train_comparison
+from mismo.fs import train_comparison
 
 
 def test_comparison_training():

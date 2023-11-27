@@ -4,8 +4,9 @@ from ibis import _
 from ibis.expr.types import IntegerColumn, StringColumn, Table
 
 from mismo.compare._comparison import Comparison, Comparisons
-from mismo.compare.fs import _train
-from mismo.compare.fs._weights import ComparisonWeights, Weights
+
+from . import _train
+from ._weights import ComparisonWeights, Weights
 
 
 def train_using_em(
