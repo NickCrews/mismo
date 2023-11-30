@@ -7,14 +7,18 @@ The SQL/Ibis powered sklearn of record linkage.
 
 Still in alpha stage. Breaking changes will happen frequently
 and with no warning. Once things are more stabilized I
-will come up with a stabilibty policy.
+will come up with a stabilibty policy. Some core features such
+as unsupervised learning using EM are not implemented yet.
 
 -----
 
 ## Installation
 
+I have claimed `mismo` on PyPI, but I won't update it often
+until this is more stable. Until then, install from source:
+
 ```console
-pip install mismo
+pip install git+https://github.com/NickCrews/mismo@<SOME-SHA>
 ```
 
 ## Goals
@@ -34,12 +38,14 @@ for a more detailed discussion of the goals of Mismo and how it compares to othe
 record linkage packages.
 
 ## Features
-- Supports very large datasets that are larger than memory, executed on
-  powerful SQL engines.
+- Supports larger-than-memory datasets, executed on powerful SQL engines.
+  Use DuckDB for prototyping and for jobs up to maybe ~10M records,
+  or Spark or other distributed backends for larger tasks, without
+  needing to change you code!
 - Use the clean, strong-typed, pythonic, and Dataframe API of Ibis.
 - Small, modular functions and data structures that are easy to plug together
-  and extend. Ibis supports UDFs and vectorized UDFs, so you can easily
-  extend Mismo with your own custom functions.
+  and extend.
+- UDFs and vectorized UDFs via Ibis.
 
 ## Examples
 
