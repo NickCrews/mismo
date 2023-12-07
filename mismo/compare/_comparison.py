@@ -4,7 +4,7 @@ import dataclasses
 from typing import Callable, Iterable, Iterator, Literal, overload
 
 import ibis
-from ibis.expr.deferred import Deferred
+from ibis.common.deferred import Deferred
 from ibis.expr.types import BooleanValue, IntegerColumn, StringColumn, Table
 
 

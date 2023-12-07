@@ -22,7 +22,7 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "ibis-framework[duckdb]>=7.0.0",
+  "ibis-framework[duckdb]>=7.1.0",
   "typing-extensions ; python_version < \"3.11\"", # needed for Self
 ]
 

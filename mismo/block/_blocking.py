@@ -5,7 +5,7 @@ from typing import Callable, Iterable, Iterator, Literal, Union
 import ibis
 from ibis import _
 from ibis import selectors as s
-from ibis.expr.deferred import Deferred
+from ibis.common.deferred import Deferred
 from ibis.expr.types import BooleanValue, Column, Table
 
 from mismo.block import _util
