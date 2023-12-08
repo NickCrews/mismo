@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-import math
-import random
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Literal
 
 import ibis
 from ibis import _
 from ibis.expr.types import Column, IntegerColumn, Table
-import numpy as np
 
 
 def format_table(template: str, name: str, table: Table) -> str:
@@ -25,18 +22,44 @@ def format_table(template: str, name: str, table: Table) -> str:
     return template.format(table=t)
 
 
-# TODO: This would be great if it were actually part of Ibis.
-# This shouldn't ever be so big it runs us out of memory, but still.
-def sample_table(table: Table, n: int = 5, seed: int | None = None) -> Table:
-    if seed is not None:
-        random.seed(seed)
+def sample_table(
+    table: Table,
+    n_approx: int,
+    *,
+    method: Literal["row", "block"] | None = None,
+    seed: int | None = None,
+) -> Table:
+    """Sample a table to approximately n rows.
+
+    Due to the way ibis does sampling, this is not guaranteed to be exactly n rows.
+    This is a thin wrapper around
+    [ibis's sample method](https://ibis-project.org/reference/expression-tables#ibis.expr.types.relations.Table.sample)
+    , which is a wrapper
+    around the SAMPLE functionality in SQL. It is important to understand the
+    behaviors and limitations of `seed`, the different sampling methods,
+    and how they relate to `n_approx`.
+
+    Parameters
+    ----------
+    table
+        The table to sample
+    n_approx
+        The approximate number of rows to sample
+    method
+        The sampling method to use. If None, use "row" for small tables and "block" for
+        large tables.
+
+        See Ibis's documentation for more details:
+
+    seed
+        The random seed to use for sampling. If None, use a random seed.
+    """
+    if method is None:
+        method = "row" if n_approx <= 2048 * 8 else "block"
+    table = table.cache()
     n_available = table.count().execute()
-    n_repeats = math.ceil(n / n_available)
-    pool = np.repeat(np.arange(n_available), n_repeats)
-    idx = np.random.choice(pool, size=n, replace=False)
-    idx_table = ibis.memtable({"__idx__": idx})
-    table = table.mutate(__idx__=ibis.row_number())
-    return table.inner_join(idx_table, "__idx__").drop("__idx__")  # type: ignore
+    fraction = n_approx / n_available
+    return table.sample(fraction, method=method, seed=seed)
 
 
 def join(
