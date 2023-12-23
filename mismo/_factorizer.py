@@ -133,7 +133,7 @@ class Factorizer:
 
     @cached_property
     def _augmented(self) -> Table:
-        return self.t.mutate(_util.group_id(self.t, self.column).name(self._int_column))
+        return self.t.mutate(_util.group_id(self.column).name(self._int_column))
 
     @cached_property
     def _mapping(self) -> Table:
