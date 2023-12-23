@@ -123,3 +123,36 @@ def test_comparisons_label(comparisons: Comparisons, blocked):
     assert set(t.columns) == set(blocked.columns) | {"cost", "tag"}
     assert (t.cost == t.cost_index).all().execute()
     assert (t.tag == t.tag_index).all().execute()
+
+
+@pytest.mark.xfail(reason="ibis bug? Need to check")
+def test_setwise_comparison(table_factory):
+    d = {
+        "names_l": [["a", "b"], ["c", "d"], [], None],
+        "names_r": [["b", "x"], ["y", "z"], ["m"], []],
+        "expected": [True, False, False, False],
+    }
+    t = table_factory(d)
+    c = Comparison(
+        "names",
+        [
+            ComparisonLevel(
+                "any_equal",
+                # could do the same with ibis's Array.intersect,
+                # but I want to check this works with a custom function
+                _array_any(
+                    _.names_l.map(
+                        lambda left: _array_any(
+                            _.names_r.map(lambda right: left == right)
+                        )
+                    )
+                ),
+            ),
+        ],
+    )
+    t = t.mutate(result=c.label_pairs(t))
+    assert (t.result == t.expected).all().execute()
+
+
+def _array_any(x):
+    return x.filter(lambda x: x).length() > 0
