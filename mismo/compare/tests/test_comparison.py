@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-import ibis
 from ibis import _
+from ibis.expr.types import Table
 import pytest
 
 from mismo.compare import Comparison, ComparisonLevel, Comparisons
 
 
 @pytest.fixture()
-def blocked():
-    return ibis.memtable(
+def blocked(table_factory) -> Table:
+    return table_factory(
         {
             "cost_l": [1, 1, 99],
             "cost_r": [1, 2, 99],
@@ -83,7 +83,7 @@ def test_comparison_basic(cost_comparison, large_level, exact_level):
         ("index", "cost_index"),
     ],
 )
-def test_comparison_label(blocked, cost_comparison, how, expected_col):
+def test_comparison_label(blocked: Table, cost_comparison, how, expected_col):
     t = blocked.mutate(label=cost_comparison.label_pairs(blocked, how=how))
     assert (t.label == t[expected_col]).all().execute()
 

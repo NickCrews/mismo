@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-import ibis
 from ibis.expr.types import Table
-import pandas as pd
 import pytest
 
 
 @pytest.fixture
-def simple_table() -> Table:
+def simple_table(table_factory) -> Table:
     records = [
         (0, ["a", "b"], False),
         (1, ["b"], True),
@@ -17,8 +15,7 @@ def simple_table() -> Table:
         (100, None, True),
     ]
     record_ids, strs, bools = zip(*records)
-    df = pd.DataFrame({"record_id": record_ids, "strings": strs, "bools": bools})
-    return ibis.memtable(df)
+    return table_factory({"record_id": record_ids, "strings": strs, "bools": bools})
 
 
 @pytest.mark.skip(reason="Not implemented")

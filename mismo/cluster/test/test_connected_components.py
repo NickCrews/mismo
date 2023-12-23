@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import ibis
 import pandas as pd
 import pytest
 
@@ -78,11 +77,11 @@ from mismo.cluster import connected_components
         ),
     ],
 )
-def test_connected_components(edges, edges_dtype, expected_components):
+def test_connected_components(table_factory, edges, edges_dtype, expected_components):
     edges_df = pd.DataFrame(
         edges, columns=["record_id_l", "record_id_r"], dtype=edges_dtype
     )
-    edges_table = ibis.memtable(edges_df)
+    edges_table = table_factory(edges_df)
     labels = connected_components(edges_table)
     labels = labels.execute()
     component_ids = set(labels.component)

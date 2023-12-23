@@ -5,8 +5,8 @@ import ibis
 from mismo import _util
 
 
-def test_intify_column():
-    inp = ibis.memtable(
+def test_intify_column(table_factory):
+    inp = table_factory(
         {
             "vals": ["b", "b", "a", "c", None],
             "ints_expected": [1, 1, 0, 2, 3],
@@ -14,14 +14,14 @@ def test_intify_column():
     )
     inp = inp.mutate(original=inp.vals)
     inted, restore = _util.intify_column(inp, "vals")
-    assert inted.vals.type() == ibis.literal(4, type="uint64").type()
+    assert inted.vals.type() == ibis.dtype("uint64")
     assert (inted.vals == inted.ints_expected).all().execute()
     restored = restore(inted)
     assert (restored.vals == restored.original).all().execute()
 
 
-def test_sample_table_big_pop_small_sample():
-    t = ibis.memtable({"v": range(25_000)})
+def test_sample_table_big_pop_small_sample(table_factory):
+    t = table_factory({"v": range(25_000)})
     rowwise_expected = {19799, 24015, 24536}
     rowwise = set(_util.sample_table(t, 5, method="row", seed=42).v.execute())
     blockwise = set(_util.sample_table(t, 5, method="block", seed=42).v.execute())
@@ -34,8 +34,8 @@ def test_sample_table_big_pop_small_sample():
     assert blockwise == set()
 
 
-def test_sample_table_big_pop_big_sample():
-    t = ibis.memtable({"v": range(25_000)})
+def test_sample_table_big_pop_big_sample(table_factory):
+    t = table_factory({"v": range(25_000)})
     s1 = set(_util.sample_table(t, 10_000, method="row", seed=42).v.execute())
     s2 = set(_util.sample_table(t, 10_000, method="row", seed=42).v.execute())
     assert len(s1) > 9_000

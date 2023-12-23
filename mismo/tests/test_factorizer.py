@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import ibis
 import pytest
 
 from mismo._factorizer import Factorizer
@@ -48,7 +47,7 @@ from mismo._factorizer import Factorizer
         ),
     ],
 )
-def test_factorizer(values, values_type):
+def test_factorizer(table_factory, values, values_type):
     data = {
         "values": [val for val, _code in values],
         "expected_codes": [code for _val, code in values],
@@ -57,7 +56,7 @@ def test_factorizer(values, values_type):
         "values": values_type,
         "expected_codes": "int64",
     }
-    t = ibis.memtable(data).cast(schema)
+    t = table_factory(data).cast(schema)
     f = Factorizer(t, "values")
 
     e = f.encode()

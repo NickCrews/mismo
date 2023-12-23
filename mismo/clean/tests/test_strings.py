@@ -1,23 +1,23 @@
 from __future__ import annotations
 
-import ibis
-from ibis.expr.types import StringColumn, Table
-import pandas as pd
+from ibis.expr.types import StringColumn
 import pytest
 
 from mismo.clean import strings
 
 
 @pytest.fixture
-def string_table() -> Table:
-    data = ["jane's   house", "Ross' house  ", "a", "", None, "bees\tall cook"]
-    df = pd.DataFrame({"strings": data})
-    return ibis.memtable(df)
-
-
-@pytest.fixture
-def string_column(string_table: Table) -> StringColumn:
-    return string_table["strings"]  # type: ignore
+def string_column(column_factory) -> StringColumn:
+    return column_factory(
+        [
+            "jane's   house",
+            "Ross' house  ",
+            "a",
+            "",
+            None,
+            "bees\tall cook",
+        ]
+    )
 
 
 def test_norm_whitespace(string_column):
