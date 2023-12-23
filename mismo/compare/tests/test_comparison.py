@@ -26,6 +26,7 @@ def blocked(table_factory) -> Table:
 @pytest.mark.parametrize(
     "condition, expected_true_count",
     [
+        (_.cost_r == 1, 1),
         (_.cost_l == _.cost_r, 2),
         (True, 3),
         (False, 0),
