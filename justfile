@@ -34,10 +34,6 @@ docs-serve:
 docs-publish:
     mkdocs gh-deploy --force
 
-# lock dependencies
-deps-lock:
-    pdm lock -dG :all
-
 # update dependencies
 deps-update:
-    pdm update -dG :all --update-all  --update-eager
+    pdm update -dG :all --update-all
