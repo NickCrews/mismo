@@ -4,39 +4,54 @@ This is the model used by Splink, and I am trying to copy that over to Mismo.
 
 ## Glossary
 
-### Bayes Factor
+### Odds
 
-Bayes factors can be explained in words. For example, a Bayes Factor of 20 for a
-given column means that an overall match is now 20 times more probable.
-A Bayes Factor of 1/10 for a given column means an overall
-match is 10 times less probable.
+Odds of 4 mean that an event is four times more likely to happen than *not* happen.
+I other words, it happens four out of five times.
+Odds of 1/4 or .25 is the opposite: it is 4 times more likely to *not* happen than happen.
+Odds of 1 means that happening and not happening are equally likely.
 
-In this sense, a Bayes Factor is are similar to the concept of odds.
-Odds of 4 mean that an event happens four out of five times,
-or in some sense it is four times more likely for the event to happen than not happen.
+Odds can be combined via multiplication, assuming the events are independent.
+For example, if you draw two records at random, say the odds of the first name
+matching are 1/10_000, and the gender matching is 1/2. Therefore, the combined
+odds that the first name matches *AND* the gender matches is
+`1/10_000 * 1/2 = 1/20_000`.
 
-However, Bayes Factors differ from odds in that they are only meaningful
-in the context of a prior. A Bayes Factor is an adjustment - it tells us
-something is more or less likely. But we need a starting value -
-otherwise there's nothing to apply the adjustment to.
+In Splink and other contexts, they use the term "Bayes Factor" to mean the same thing
+as "odds". I use "odds" because it is shorter, and I think more intuitive to
+people who don't know bayesian statistics. It's not that complicated and "odds"
+is precise enough.
 
-### Match Weight
+### Log Odds
 
-The logarithm of Bayes Factors. This is useful because it allows
-match weights to be added together rather than being multiplied (as Bayes Factors are).
+The logarithm (base 10) of `Odds`. This is useful because it allows
+match weights to be added together rather than being multiplied (as Odds are).
 This is useful so we can visualize comparisons between records using a waterfall chart.
 
-For example, with the bayes factors 8 and 1/2, if we combined these two,
-we would get a Bayes Factor of `8 * (1/2) = 4`. The corresponding match weights
-(using a log base of 2) would be 3 and -1, and the combined match weight would be
-`3 + (-1) = 2`, which corresponds to a Bayes Factor of 4, as expected.
+For example, with the odds of 100 and 1/10, if we combined these two,
+we would get a total odds of `100 * (1/10) = 1/10`.
+If we instead combined them using log odds:
+The individual log odds would be 2 and -1, and the combined match weight would be
+`2 + (-1) = 1`, which corresponds to a `Log Odds` of 1, as expected.
 
-### Prior
+Here is a table to help you get a sense between these two:
 
-A prior is a starting value for a Bayes Factor or match weight. Generally,
-we start with the probability that two random records from our two datasets
-are a match. From there, we can adjust the probability up or down based on
-the values of the columns.
+| Odds | Log Odds |
+|------|----------|
+| 0    | -inf     |
+| ...  | ...      |
+| .01  | -2       |
+| .1   | -1       |
+| 1    | 0        |
+| 10   | 1        |
+| 100  | 2        |
+| ...  | ...      |
+| inf  | inf      |
+
+
+In Splink and other contexts, they use the term "Match Weight" to mean "Log Odds".
+They also use log base 2, but I chose to use log base 10 because I think it
+is easier to convert back and forth.
 
 ### M probabilities
 
