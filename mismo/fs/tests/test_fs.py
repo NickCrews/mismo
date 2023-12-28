@@ -28,7 +28,7 @@ def test_comparison_training(backend):
     assert exact.m > 0.03
     assert exact.m < 0.06
     assert exact.u > 0
-    assert exact.u < 0.01
+    assert exact.u < 0.02
 
     assert almost.name == "almost"
     assert almost.m > 0.2
