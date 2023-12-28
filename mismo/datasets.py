@@ -24,10 +24,7 @@ def _wrap_febrl(loader_name: str) -> tuple[Table, Table]:
     loader = getattr(rlds, loader_name)
     pdf, links_multi_index = loader(return_links=True)
     pdf = pdf.reset_index(drop=False)
-    con = ibis.duckdb.connect()
-    con.create_table("data", pdf)
-    t = con.table("data")
-    dtypes = {
+    schema = {
         "rec_id": "str",
         "given_name": "str",
         "surname": "str",
@@ -40,7 +37,8 @@ def _wrap_febrl(loader_name: str) -> tuple[Table, Table]:
         "soc_sec_id": "int32",  # 7 digits long, never null, no leading 0s
         "date_of_birth": "str",  # contains some BS dates like 19371233
     }
-    t = t.mutate(**{col: t[col].cast(dtype) for col, dtype in dtypes.items()})
+    t = ibis.memtable(pdf)
+    t = t.cast(schema)
     t = t.rename(record_id="rec_id")
     t = t.order_by("record_id")
     t = t.cache()
@@ -48,8 +46,7 @@ def _wrap_febrl(loader_name: str) -> tuple[Table, Table]:
     links_df = links_multi_index.to_frame(
         index=False, name=["record_id_l", "record_id_r"]
     )
-    con.create_table("links", links_df)
-    links = con.table("links")
+    links = ibis.memtable(links_df)
     links = links.order_by(["record_id_l", "record_id_r"])
     links = links.cache()
     return (t, links)
@@ -71,7 +68,7 @@ def load_febrl3() -> tuple[Table, Table]:
 # could add that later if it's needed.
 
 
-def load_patents() -> Table:
+def load_patents(backend: ibis.BaseBackend | None = None) -> Table:
     """Load the PATSTAT dataset
 
     This represents a dataset of patents, and the task is to determine which
@@ -122,4 +119,7 @@ def load_patents() -> Table:
     └───────────┴────────────┴──────────────────────┴──────────────────────────────┴──────────┴───────────┴────────────────────────────────┴────────────────────────────────┘
     """  # noqa E501
     path = _DATASETS_DIR / "patstat/patents.csv"
-    return ibis.read_csv(path)
+    if backend is not None:
+        return backend.read_csv(path)
+    else:
+        return ibis.read_csv(path)
