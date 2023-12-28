@@ -7,9 +7,9 @@ from mismo.compare import Comparison, ComparisonLevel
 from mismo.fs import train_comparison
 
 
-def test_comparison_training():
+def test_comparison_training(backend):
     """Test that finding the weights for a Comparison works."""
-    patents = datasets.load_patents()
+    patents = datasets.load_patents(backend)
     left, right = patents, patents.view()
     almost_level = ComparisonLevel(
         name="almost",
@@ -18,7 +18,7 @@ def test_comparison_training():
     ex_level = ComparisonLevel("exact", _.name_l == _.name_r)
     levels = [ex_level, almost_level]
     comparison = Comparison(name="name", levels=levels)
-    weights = train_comparison(comparison, left, right, max_pairs=10_000, seed=42)
+    weights = train_comparison(comparison, left, right, max_pairs=1_000, seed=42)
     assert weights.name == "name"
     assert len(weights) == 3  # 2 levels + 1 ELSE
 
