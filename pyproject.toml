@@ -22,7 +22,10 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
+  "altair",
   "ibis-framework[duckdb]>=7.2.0",
+  "recordlinkage",
+  "scikit-learn",
   "typing-extensions ; python_version < \"3.11\"", # needed for Self
 ]
 
@@ -33,16 +36,13 @@ Source = "https://github.com/NickCrews/mismo"
 
 [tool.pdm.dev-dependencies]
 lint = ["ruff", "mypy", "pre-commit"]
-test = ["pytest", "pytest-cov", "recordlinkage"]
+test = ["pytest", "pytest-cov"]
 docs = [
   "mkdocs-git-revision-date-localized-plugin",
   "mkdocs-jupyter",
   "mkdocs-literate-nav",
   "mkdocs-material",
   "mkdocstrings[python]",
-  "recordlinkage",
-  "scikit-learn",
-  "altair",
 ]
 
 [tool.coverage.run]
