@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from typing import Callable, Iterable, Literal
 
 import ibis
@@ -170,3 +171,20 @@ def intify_column(t: Table, column: str) -> tuple[Table, Callable[[Table], Table
         ).drop(column + "_int", int_col_name)
 
     return augmented, restore
+
+
+@contextmanager
+def optional_import():
+    """
+    Raises a more helpful ImportError when an optional dep is missing.
+
+    with optional_import():
+        import some_optional_dep
+    """
+    try:
+        yield
+    except ImportError as e:
+        raise ImportError(
+            f"Package `{e.name}` is required for this functionality. "
+            "Please install it separately."
+        ) from e

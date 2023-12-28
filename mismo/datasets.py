@@ -5,6 +5,8 @@ from pathlib import Path
 import ibis
 from ibis.expr.types import Table
 
+from mismo import _util
+
 __all__ = [
     "load_febrl1",
     "load_febrl2",
@@ -16,7 +18,8 @@ _DATASETS_DIR = Path(__file__).parent / "_data/_datasets"
 
 
 def _wrap_febrl(loader_name: str) -> tuple[Table, Table]:
-    from recordlinkage import datasets as rlds
+    with _util.optional_import():
+        from recordlinkage import datasets as rlds
 
     loader = getattr(rlds, loader_name)
     pdf, links_multi_index = loader(return_links=True)

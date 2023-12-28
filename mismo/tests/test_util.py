@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ibis
+import pytest
 
 from mismo import _util
 
@@ -46,3 +47,22 @@ def test_sample_table_big_pop_big_sample(table_factory):
     assert s1 == s2
     s3 = set(_util.sample_table(t, 10_000, method="row", seed=43).v.execute())
     assert s1 != s3
+
+
+def test_optional_import():
+    with _util.optional_import():
+        import ibis  # noqa: F401
+
+    with pytest.raises(ImportError) as excinfo:
+        with _util.optional_import():
+            import does_not_exist  # noqa: F401
+
+            assert False, "should not get here"
+    assert "Package `does_not_exist` is required" in str(excinfo.value)
+
+    with pytest.raises(ImportError) as excinfo:
+        with _util.optional_import():
+            from does_not_exist import module  # noqa: F401
+
+            assert False, "should not get here"
+    assert "Package `does_not_exist` is required" in str(excinfo.value)
