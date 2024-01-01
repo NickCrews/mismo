@@ -7,22 +7,18 @@ from mismo.compare import Comparison, ComparisonLevel
 from mismo.fs import train_comparison
 
 
-def test_comparison_training(backend):
+def test_train_comparison_from_labels(backend):
     """Test that finding the weights for a Comparison works."""
     patents = datasets.load_patents(backend)
     left, right = patents, patents.view()
-    almost_level = ComparisonLevel(
-        name="almost",
-        condition=lambda table: table["name_l"][:3] == table["name_r"][:3],
-    )
+    close_level = ComparisonLevel(name="close", condition=_.name_l[:3] == _.name_r[:3])
     ex_level = ComparisonLevel("exact", _.name_l == _.name_r)
-    levels = [ex_level, almost_level]
-    comparison = Comparison(name="name", levels=levels)
+    comparison = Comparison(name="name", levels=[ex_level, close_level])
     weights = train_comparison(comparison, left, right, max_pairs=1_000, seed=42)
     assert weights.name == "name"
     assert len(weights) == 3  # 2 levels + 1 ELSE
 
-    exact, almost, else_ = weights
+    exact, close, else_ = weights
 
     assert exact.name == "exact"
     assert exact.m > 0.03
@@ -30,11 +26,11 @@ def test_comparison_training(backend):
     assert exact.u > 0
     assert exact.u < 0.02
 
-    assert almost.name == "almost"
-    assert almost.m > 0.2
-    assert almost.m < 0.5
-    assert almost.u > 0
-    assert almost.u < 0.1
+    assert close.name == "close"
+    assert close.m > 0.2
+    assert close.m < 0.5
+    assert close.u > 0
+    assert close.u < 0.1
 
     assert else_.name == "else"
     assert else_.m > 0.6
