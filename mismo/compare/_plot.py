@@ -10,8 +10,8 @@ from ibis.expr.types import Table
 import pandas as pd
 
 from mismo.compare import Comparison, ComparisonLevel, Comparisons
-from mismo.fs import Weights
 from mismo.fs._util import odds_to_log_odds
+from mismo.fs._weights import Weights
 from mismo.plot._common import LOG_ODDS_COLOR_SCALE
 
 
