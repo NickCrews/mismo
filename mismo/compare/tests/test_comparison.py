@@ -13,12 +13,10 @@ def blocked(table_factory) -> Table:
         {
             "cost_l": [1, 1, 99],
             "cost_r": [1, 2, 99],
-            "cost_name": ["exact", "else", "large"],
-            "cost_index": [1, 2, 0],
+            "cost_label_expected": ["exact", "else", "large"],
             "tag_l": ["a", "b", "c"],
             "tag_r": ["A", "d", None],
-            "tag_name": ["same ignore case", "else", "else"],
-            "tag_index": [1, 2, 2],
+            "tag_label_expected": ["same ignore case", "else", "else"],
         }
     )
 
@@ -122,16 +120,9 @@ def test_comparison_basic(cost_comparison, large_level, exact_level):
         cost_comparison[3]
 
 
-@pytest.mark.parametrize(
-    "how, expected_col",
-    [
-        ("name", "cost_name"),
-        ("index", "cost_index"),
-    ],
-)
-def test_comparison_label(blocked: Table, cost_comparison, how, expected_col):
-    t = blocked.mutate(label=cost_comparison.label_pairs(blocked, how=how))
-    assert (t.label == t[expected_col]).all().execute()
+def test_comparison_label(blocked: Table, cost_comparison):
+    t = blocked.mutate(label=cost_comparison.label_pairs(blocked))
+    assert (t.label == t.cost_label_expected).all().execute()
 
 
 @pytest.fixture
@@ -166,8 +157,8 @@ def test_comparisons_basic(comparisons, cost_comparison, tag_comparison):
 def test_comparisons_label(comparisons: Comparisons, blocked):
     t = comparisons.label_pairs(blocked)
     assert set(t.columns) == set(blocked.columns) | {"cost", "tag"}
-    assert (t.cost == t.cost_index).all().execute()
-    assert (t.tag == t.tag_index).all().execute()
+    assert (t.cost == t.cost_label_expected).all().execute()
+    assert (t.tag == t.tag_label_expected).all().execute()
 
 
 @pytest.mark.xfail(reason="ibis bug? Need to check")

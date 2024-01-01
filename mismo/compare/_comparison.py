@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import Callable, Iterable, Iterator, Literal, overload
+from typing import Callable, Iterable, Iterator, overload
 
 import ibis
 from ibis.common.deferred import Deferred
-from ibis.expr.types import BooleanValue, IntegerColumn, StringColumn, Table
+from ibis.expr.types import BooleanValue, StringColumn, Table
 
 
 @dataclasses.dataclass(frozen=True)
@@ -126,17 +126,7 @@ class Comparison:
         """The number of levels, including the ELSE level."""
         return len(self._levels)
 
-    @overload
-    def label_pairs(
-        self, pairs: Table, how: Literal["index"] = "index"
-    ) -> IntegerColumn:
-        ...
-
-    @overload
-    def label_pairs(self, pairs: Table, how: Literal["name"] = "index") -> StringColumn:
-        ...
-
-    def label_pairs(self, pairs, how="index"):
+    def label_pairs(self, pairs: Table) -> StringColumn:
         """Label each record pair with the level that it matches.
 
         Go through the levels in order. If a record pair matches a level, label it.
@@ -160,13 +150,12 @@ class Comparison:
             The labels for each record pair.
         """
         labels = ibis.case()
-        for i, level in enumerate(self[:-1]):
-            label = ibis.literal(i, type="uint8") if how == "index" else level.name
-            labels = labels.when(level.is_match(pairs), label)
-        if how == "name":
-            labels = labels.else_("else")
-        else:
-            labels = labels.else_(None)
+        # Skip the ELSE level, do that ourselves. This is to avoid if someone
+        # mis-specifies the ELSE level condition so that it doesn't
+        # match everything.
+        for level in self[:-1]:
+            labels = labels.when(level.is_match(pairs), level.name)
+        labels = labels.else_("else")
         return labels.end().name(self.name)
 
     def __repr__(self) -> str:
@@ -217,34 +206,20 @@ class Comparisons:
                 )
             self._lookup[c.name] = c
 
-    def label_pairs(
-        self,
-        blocked: Table,
-        *,
-        how: Literal["index", "name"] = "index",
-    ) -> Table:
+    def label_pairs(self, pairs: Table) -> Table:
         """Label each record pair for each Comparison.
 
-        Adds columns to the blocked table, one for each Comparison.
+        Adds columns to the pairs table, one for each Comparison.
         The columns are named after the Comparison, and contain the label for each
         record pair.
 
         Parameters
         ----------
-        blocked : Table
-            A table of blocked record pairs.
-        how : {'index', 'name'}, default 'index'
-            Whether to label the pairs with the index (uint8)
-            or the name (string) of the level.
-
-            If 'index', any ELSE results will be labelled as NULL.
-            If 'name', any ELSE results will be labelled as 'else'.
+        pairs : Table
+            A table of record pairs, with each column suffixed with _l or _r.
         """
-        m = {}
-        for comparison in self:
-            labels = comparison.label_pairs(blocked, how=how)
-            m[comparison.name] = labels
-        result = blocked.mutate(**m)
+        m = {comparison.name: comparison.label_pairs(pairs) for comparison in self}
+        result = pairs.mutate(**m)
         if "record_id_r" in result.columns:
             result = result.relocate(*m.keys(), after="record_id_r")
         return result

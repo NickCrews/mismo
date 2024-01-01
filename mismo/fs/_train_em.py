@@ -20,7 +20,7 @@ def train_using_em(
     initial_blocking = _train.all_possible_pairs(
         left, right, max_pairs=max_pairs, seed=seed
     )
-    initial_compared: Table = comparisons.label_pairs(initial_blocking, how="name")
+    initial_compared: Table = comparisons.label_pairs(initial_blocking)
     initial_compared = initial_compared[[c.name for c in comparisons]].cache()
     weights = _initial_weights(comparisons, initial_compared)
     for _i in range(5):
