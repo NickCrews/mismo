@@ -188,12 +188,12 @@ class Comparison:
 class Comparisons:
     """An unordered, dict-like collection of [Comparison](#mismo.block.Comparison)s."""
 
-    def __init__(self, *comparisons: Comparison):
+    def __init__(self, comparisons: Iterable[Comparison]):
         """Create a set of Comparisons.
 
         Parameters
         ----------
-        comparisons : Iterable[Comparison] | Comparisons
+        comparisons : Iterable[Comparison]
             The comparisons to include in the set.
         """
         self._lookup: dict[str, Comparison] = {}

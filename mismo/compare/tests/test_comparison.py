@@ -138,7 +138,7 @@ def tag_comparison():
 
 @pytest.fixture
 def comparisons(cost_comparison, tag_comparison):
-    return Comparisons(cost_comparison, tag_comparison)
+    return Comparisons([cost_comparison, tag_comparison])
 
 
 def test_comparisons_basic(comparisons, cost_comparison, tag_comparison):
