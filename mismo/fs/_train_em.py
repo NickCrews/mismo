@@ -13,6 +13,7 @@ def train_using_em(
     comparisons: Comparisons,
     left: Table,
     right: Table,
+    *,
     max_pairs: int | None = None,
     seed: int | None = None,
 ) -> Weights:
