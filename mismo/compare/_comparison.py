@@ -109,7 +109,7 @@ class Comparison:
         ...
 
     @overload
-    def __getitem__(self, name_or_index: slice) -> tuple[ComparisonLevel]:
+    def __getitem__(self, name_or_index: slice) -> tuple[ComparisonLevel, ...]:
         ...
 
     def __getitem__(self, name_or_index):
