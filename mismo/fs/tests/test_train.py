@@ -1,20 +1,25 @@
 from __future__ import annotations
 
 from ibis import _
+import pytest
 
 from mismo import datasets
 from mismo.compare import Comparison, ComparisonLevel
 from mismo.fs import train_comparison
 
 
-def test_train_comparison_from_labels(backend):
+@pytest.fixture
+def name_comparison():
+    close_level = ComparisonLevel(name="close", condition=_.name_l[:3] == _.name_r[:3])
+    ex_level = ComparisonLevel("exact", _.name_l == _.name_r)
+    return Comparison(name="name", levels=[ex_level, close_level])
+
+
+def test_train_comparison_from_labels(backend, name_comparison):
     """Test that finding the weights for a Comparison works."""
     patents = datasets.load_patents(backend)
     left, right = patents, patents.view()
-    close_level = ComparisonLevel(name="close", condition=_.name_l[:3] == _.name_r[:3])
-    ex_level = ComparisonLevel("exact", _.name_l == _.name_r)
-    comparison = Comparison(name="name", levels=[ex_level, close_level])
-    weights = train_comparison(comparison, left, right, max_pairs=1_000, seed=42)
+    weights = train_comparison(name_comparison, left, right, max_pairs=1_000, seed=42)
     assert weights.name == "name"
     assert len(weights) == 3  # 2 levels + 1 ELSE
 
