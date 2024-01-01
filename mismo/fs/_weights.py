@@ -260,6 +260,10 @@ class Weights:
         """Iterate over the contained `ComparisonWeights`."""
         return iter(self._lookup.values())
 
+    def __len__(self) -> int:
+        """The number of `ComparisonWeights`."""
+        return len(self._lookup)
+
     def score(self, compared: Table) -> Table:
         """Score each already-compared record pair.
 
