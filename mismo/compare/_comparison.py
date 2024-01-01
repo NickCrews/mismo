@@ -73,9 +73,8 @@ class Comparison:
     This acts like an ordered, dict-like collection of
     [ComparisonLevels](#mismo.block.ComparisonLevels).
     You can access the levels by index or by name, or iterate over them.
-    We don't explicitly store an `ELSE` ComparisonLevel.
-    If a record pair doesn't match any of the level conditions, it is considered
-    to be an `ELSE` implicitly.
+    The last level is always an `else` level, which matches all record pairs
+    if none of the previous levels matched.
     """
 
     def __init__(
@@ -90,11 +89,12 @@ class Comparison:
         name : str
             The name of the comparison. Must be unique within a set of Comparisons.
         levels : Iterable[ComparisonLevel]
-            The levels of the comparison. Do not include the implicit `ELSE` level.
+            The levels of the comparison. You may include an `else` level as a final
+            level that matches everything, or it will be added automatically if
+            you don't include one.
         """
         self._name = name
-        self._levels = tuple(levels) + (_ELSE_LEVEL,)
-        self._lookup = self._build_lookup(self._levels)
+        self._levels, self._lookup = self._parse_levels(levels)
 
     @property
     def name(self) -> str:
@@ -111,11 +111,11 @@ class Comparison:
         return self._lookup[name_or_index]
 
     def __iter__(self) -> Iterator[ComparisonLevel]:
-        """Iterate over the levels, including the implicit ELSE level."""
+        """Iterate over the levels, including the ELSE level."""
         return iter(self._levels)
 
     def __len__(self) -> int:
-        """The number of levels, including the implicit ELSE level."""
+        """The number of levels, including the ELSE level."""
         return len(self._levels)
 
     @overload
@@ -165,16 +165,26 @@ class Comparison:
         return f"Comparison(name={self.name}, levels=[{levels_str}])"
 
     @staticmethod
-    def _build_lookup(
+    def _parse_levels(
         levels: Iterable[ComparisonLevel],
-    ) -> dict[str | int, ComparisonLevel]:
+    ) -> tuple[tuple[ComparisonLevel], dict[str | int, ComparisonLevel]]:
+        levels = tuple(levels)
+        rest, last = levels[:-1], levels[-1]
+        for level in rest:
+            if level.name == "else":
+                raise ValueError(
+                    "ELSE ComparisonLevel must be the last level in a Comparison."
+                )
+        if last.name != "else":
+            levels = (*levels, _ELSE_LEVEL)
+
         lookup = {}
         for i, level in enumerate(levels):
             if level.name in lookup:
                 raise ValueError(f"Duplicate level name: {level.name}")
             lookup[level.name] = level
             lookup[i] = level
-        return lookup
+        return levels, lookup
 
 
 class Comparisons:

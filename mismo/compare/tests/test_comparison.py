@@ -51,6 +51,51 @@ def exact_level():
     return ComparisonLevel("exact", _.cost_l == _.cost_r)
 
 
+def test_comparison_without_else_level(large_level, exact_level):
+    """You can construct a Comparison *without* an ELSE level."""
+    comp = Comparison("cost", [large_level, exact_level])
+    assert comp.name == "cost"
+    assert len(comp) == 3
+    assert comp["large"] == large_level
+    assert comp["exact"] == exact_level
+    assert comp["else"].name == "else"
+
+
+def test_comparison_with_else_level(large_level, exact_level):
+    """You can construct a Comparison *with* an ELSE level."""
+    comp = Comparison("cost", [large_level, exact_level, ComparisonLevel("else", True)])
+    assert comp.name == "cost"
+    assert len(comp) == 3
+    assert comp["large"] == large_level
+    assert comp["exact"] == exact_level
+    assert comp["else"].name == "else"
+
+
+def test_comparison_else_case_sensitive(large_level, exact_level):
+    """The ELSE level should be case sensitive"""
+    comp = Comparison(
+        "cost",
+        [
+            large_level,
+            exact_level,
+            ComparisonLevel("ELSE", True),
+            ComparisonLevel("else", True),
+        ],
+    )
+    assert comp.name == "cost"
+    assert len(comp) == 4
+    assert comp["large"] == large_level
+    assert comp["exact"] == exact_level
+    assert comp["ELSE"].name == "ELSE"
+    assert comp["else"].name == "else"
+
+
+def test_comparison_else_level_not_last(large_level, exact_level):
+    """If else level is not last, it should error."""
+    with pytest.raises(ValueError):
+        Comparison("cost", [large_level, ComparisonLevel("else", True), exact_level])
+
+
 @pytest.fixture
 def cost_comparison(large_level, exact_level):
     return Comparison("cost", [large_level, exact_level])
