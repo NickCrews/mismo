@@ -104,7 +104,15 @@ class Comparison:
         """
         return self._name
 
-    def __getitem__(self, name_or_index: str | int | slice) -> ComparisonLevel:
+    @overload
+    def __getitem__(self, name_or_index: str | int) -> ComparisonLevel:
+        ...
+
+    @overload
+    def __getitem__(self, name_or_index: slice) -> tuple[ComparisonLevel]:
+        ...
+
+    def __getitem__(self, name_or_index):
         """Get a level by name or index."""
         if isinstance(name_or_index, (int, slice)):
             return self._levels[name_or_index]
@@ -151,14 +159,15 @@ class Comparison:
         labels : IntegerColumn | StringColumn
             The labels for each record pair.
         """
-        labels = ibis.NA
-        for i, level in enumerate(self):
-            is_match = labels.isnull() & level.is_match(pairs)
+        labels = ibis.case()
+        for i, level in enumerate(self[:-1]):
             label = ibis.literal(i, type="uint8") if how == "index" else level.name
-            labels = is_match.ifelse(label, labels)
+            labels = labels.when(level.is_match(pairs), label)
         if how == "name":
-            labels = labels.fillna("else")
-        return labels.name(self.name)
+            labels = labels.else_("else")
+        else:
+            labels = labels.else_(None)
+        return labels.end().name(self.name)
 
     def __repr__(self) -> str:
         levels_str = ", ".join(repr(level) for level in self)
