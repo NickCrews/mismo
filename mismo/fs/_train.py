@@ -139,7 +139,7 @@ def train_ms_from_labels(
     return level_proportions(comparison, labels)
 
 
-def train_comparison(
+def train_comparison_using_labels(
     comparison: Comparison,
     left: Table,
     right: Table,
@@ -155,7 +155,7 @@ def train_comparison(
     return make_weights(comparison, ms, us)
 
 
-def train_comparisons(
+def train_comparisons_using_labels(
     comparisons: Comparisons,
     left: Table,
     right: Table,
@@ -166,7 +166,9 @@ def train_comparisons(
     """Estimate all Weights for a set of Comparisons using labeled data."""
     return Weights(
         [
-            train_comparison(c, left, right, max_pairs=max_pairs, seed=seed)
+            train_comparison_using_labels(
+                c, left, right, max_pairs=max_pairs, seed=seed
+            )
             for c in comparisons
         ]
     )

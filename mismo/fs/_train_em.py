@@ -13,7 +13,7 @@ from ._weights import ComparisonWeights, Weights
 logger = logging.getLogger(__name__)
 
 
-def train_using_em(
+def train_comparisons_using_em(
     comparisons: Comparisons,
     left: Table,
     right: Table,

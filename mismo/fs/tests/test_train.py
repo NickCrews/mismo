@@ -61,7 +61,7 @@ def test_train_comparison_from_labels(backend, name_comparison):
     """Test that finding the weights for a Comparison works."""
     patents = datasets.load_patents(backend)
     left, right = patents, patents.view()
-    weights = fs.train_comparison(
+    weights = fs.train_comparison_using_labels(
         name_comparison, left, right, max_pairs=1_000, seed=42
     )
     assert weights.name == "name"
@@ -87,7 +87,7 @@ def test_train_comparison_from_labels(backend, name_comparison):
 def test_train_comparions_using_em(backend, name_comparison, location_comparison):
     patents = datasets.load_patents(backend)
     left, right = patents, patents.view()
-    weights = fs.train_using_em(
+    weights = fs.train_comparisons_using_em(
         Comparisons([name_comparison, location_comparison]),
         left,
         right,
