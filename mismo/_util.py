@@ -40,6 +40,13 @@ def sample_table(
     behaviors and limitations of `seed`, the different sampling methods,
     and how they relate to `n_approx`.
 
+    In addition, using `seed` does not guarantee reproducibility if the input
+    table is not deterministic, which can happen unexpectedly. For example,
+    if you use `.read_csv()` with duckdb, by default it uses a parallel CSV
+    reader, which does not guarantee row order. So if you pass that table into
+    this function, you could get different results each time. To fix this,
+    you can pass `parallel=False` to `.read_csv()`, or use `.order_by()`.
+
     Parameters
     ----------
     table
@@ -50,8 +57,8 @@ def sample_table(
         The sampling method to use. If None, use "row" for small tables and "block" for
         large tables.
 
-        See Ibis's documentation for more details:
-
+        See [Ibis's documentation on .sample()](https://ibis-project.org/reference/expression-tables.html#ibis.expr.types.relations.Table.sample)
+        for more details.
     seed
         The random seed to use for sampling. If None, use a random seed.
     """
