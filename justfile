@@ -26,9 +26,10 @@ test *FILES:
 docs-build:
     PYDEVD_DISABLE_FILE_VALIDATION=1 mkdocs build
 
+# include --dev-addr localhost:8001 to avoid conflicts with other mkdocs instances
 # serve docs for live editing
 docs-serve:
-    PYDEVD_DISABLE_FILE_VALIDATION=1 mkdocs serve
+    PYDEVD_DISABLE_FILE_VALIDATION=1 mkdocs serve --dev-addr localhost:8001
 
 # publish docs
 docs-publish:
