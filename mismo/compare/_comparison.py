@@ -130,23 +130,15 @@ class Comparison:
         """Label each record pair with the level that it matches.
 
         Go through the levels in order. If a record pair matches a level, label it.
-
-        If none of the levels match a pair, it labeled as an ELSE.
+        If none of the levels match a pair, it labeled as "else".
 
         Parameters
         ----------
         pairs : Table
             A table of record pairs.
-        how : {'index', 'name'}, default 'index'
-            Whether to label the pairs with the index (uint8)
-            or the name (string) of the level.
-
-            If 'index', any ELSE results will be labelled as NULL.
-            If 'name', any ELSE results will be labelled as 'else'.
-
         Returns
         -------
-        labels : IntegerColumn | StringColumn
+        labels : StringColumn
             The labels for each record pair.
         """
         labels = ibis.case()
