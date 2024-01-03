@@ -119,7 +119,9 @@ def load_patents(backend: ibis.BaseBackend | None = None) -> Table:
     └───────────┴────────────┴──────────────────────┴──────────────────────────────┴──────────┴───────────┴────────────────────────────────┴────────────────────────────────┘
     """  # noqa E501
     path = _DATASETS_DIR / "patstat/patents.csv"
-    if backend is not None:
-        return backend.read_csv(path)
-    else:
-        return ibis.read_csv(path)
+    if backend is None:
+        backend = ibis
+    # In order to guarantee row order, could either use
+    # parallel=False kwarg, but I'd rather just have them sorted
+    # by record_id
+    return backend.read_csv(path).order_by("record_id").cache()
