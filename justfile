@@ -19,8 +19,8 @@ lint:
     ruff format --check mismo docs
 
 # run tests
-test:
-    pytest
+test *FILES:
+    pytest {{FILES}}
 
 # build docs to the site/ directory
 docs-build:
