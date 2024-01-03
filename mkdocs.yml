@@ -38,7 +38,7 @@ plugins:
             docstring_style: numpy
             docstring_section_style: spacy
             heading_level: 3
-            show_category_heading: true
+            show_signature_annotations: true
             show_root_full_path: true
             show_root_heading: true
             show_root_toc_entry: true
