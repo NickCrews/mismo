@@ -1,5 +1,15 @@
 # Fellegi-Sunter Model
 
+The Fellegi-Sunter model is a linear model commonly used for record linkage.
+It uses bayesian statistics to assign odds to different levels of agreement
+for different dimensions. For example,
+"if two names are exactly the same, that makes the odds of a match 7.6 times more likely".
+The dimension is "name" and the level of agreement is "exactly the same".
+You then combine the multiple dimensions ("name", "location", "price", etc)
+together to get a final odds for a record pair.
+You can train the weights using labeled data, or from unlabeled data with
+an EM (Expectation Maximization) Algorithm.
+
 This is the model used by Splink, and I am trying to copy that over to Mismo.
 
 ## Glossary

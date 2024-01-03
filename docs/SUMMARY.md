@@ -1,7 +1,7 @@
 * [Home](index.md)
 * Concepts
     * [Goals and Alternatives](concepts/goals_and_alternatives.md)
-    * [Fellegi Sunter Model](concepts/fellegi-sunter.md)
+    * [Fellegi-Sunter Model](concepts/fs.md)
     * [Versioning Policy](concepts/versioning.md)
 * Examples
     * [Patent Deduplication](examples/patent_deduplication.ipynb)
