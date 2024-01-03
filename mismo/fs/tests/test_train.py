@@ -96,7 +96,6 @@ def test_train_comparions_using_em(backend, name_comparison, location_comparison
     )
     assert len(weights) == 2
     check_name_weights(weights["name"])
-    assert False
 
 
 def check_name_weights(weights):
