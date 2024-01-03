@@ -57,7 +57,6 @@ def sample_table(
     """
     if method is None:
         method = "row" if n_approx <= 2048 * 8 else "block"
-    table = table.cache()
     n_available = table.count().execute()
     fraction = n_approx / n_available
     return table.sample(fraction, method=method, seed=seed)
