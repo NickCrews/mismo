@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from ibis import _
 from ibis.expr.types import IntegerColumn, StringColumn, Table
 
@@ -7,6 +9,8 @@ from mismo.compare._comparison import Comparison, Comparisons
 
 from . import _train
 from ._weights import ComparisonWeights, Weights
+
+logger = logging.getLogger(__name__)
 
 
 def train_using_em(
@@ -21,11 +25,13 @@ def train_using_em(
     initial_blocking = _train.all_possible_pairs(
         left, right, max_pairs=max_pairs, seed=seed
     )
-    initial_compared: Table = comparisons.label_pairs(initial_blocking)
-    initial_compared = initial_compared[[c.name for c in comparisons]].cache()
-    weights = _initial_weights(comparisons, initial_compared)
-    for _i in range(5):
-        scored = weights.score(initial_compared)
+    compared = comparisons.label_pairs(initial_blocking)
+    compared = compared[[c.name for c in comparisons]]
+    compared = compared.cache()
+    weights = _initial_weights(comparisons, compared)
+    for i in range(5):
+        logger.info("EM iteration {i}, starting weights: {weights}", i, weights)
+        scored = weights.score(compared)
         is_match = _.odds >= 10
         matches = scored.filter(is_match)
         nonmatches = scored.filter(~is_match)
