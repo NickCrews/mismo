@@ -81,6 +81,7 @@ def load_patents(backend: ibis.BaseBackend | None = None) -> Table:
     -------
     Table
         An Ibis Table with the following schema:
+
         - record_id: int64
           A unique ID for each row in the table.
         - label_true: int64
@@ -93,9 +94,9 @@ def load_patents(backend: ibis.BaseBackend | None = None) -> Table:
           Geocoded from the inventor's address. 0.0 indicates no address was found
         - longitude: float64
         - coauthor: str
-          A list of coauthors on the patent, separated by **
+          A list of coauthors on the patent, separated by "**"
         - class_: str
-          A list of 4-character IPC technical codes, separated by **
+          A list of 4-character IPC technical codes, separated by "**"
 
     Examples
     --------

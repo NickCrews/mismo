@@ -10,7 +10,7 @@ from ibis.expr.types import BooleanValue, StringColumn, Table
 
 @dataclasses.dataclass(frozen=True)
 class ComparisonLevel:
-    """A Level within a [Comparison](#mismo.block.Comparison), such as *exact*, *phonetic*, or *within_1_day*.
+    """A Level within a [Comparison][mismo.compare.Comparison], such as *exact*, *phonetic*, or *within_1_day*.
 
     A ComparisonLevel is a named condition that determines whether a record pair
     matches that level.
@@ -71,7 +71,7 @@ class Comparison:
     A measure of record pair similarity based on one dimension, e.g. *name* or *date*.
 
     This acts like an ordered, dict-like collection of
-    [ComparisonLevels](#mismo.block.ComparisonLevels).
+    [ComparisonLevels][mismo.compare.ComparisonLevel].
     You can access the levels by index or by name, or iterate over them.
     The last level is always an `else` level, which matches all record pairs
     if none of the previous levels matched.
@@ -178,7 +178,7 @@ class Comparison:
 
 
 class Comparisons:
-    """An unordered, dict-like collection of [Comparison](#mismo.block.Comparison)s."""
+    """An unordered, dict-like collection of [Comparison][mismo.compare.Comparison]s."""
 
     def __init__(self, comparisons: Iterable[Comparison]):
         """Create a set of Comparisons.

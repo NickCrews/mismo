@@ -18,7 +18,7 @@ such as *exact*, *misspelling*, *within_1_km*, etc.
 
 ## Comparison Functions
 
-These utility functions help you create [ComparisonLevel](#mismo.compare.ComparisonLevel)
+These utility functions help you create [ComparisonLevels](#mismo.compare.ComparisonLevel)
 
 ::: mismo.compare.jaccard
 ::: mismo.compare.distance_km

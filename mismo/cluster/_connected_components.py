@@ -6,7 +6,7 @@ from typing import Callable
 
 import ibis
 from ibis import _
-from ibis.expr.types import Table, Value
+from ibis.expr.types import Column, Table
 
 from mismo import _util
 from mismo._factorizer import Factorizer
@@ -14,20 +14,19 @@ from mismo._factorizer import Factorizer
 logger = logging.getLogger(__name__)
 
 
+# I think more performant algorithms exist, but they are more complicated.
+# See https://arxiv.org/pdf/1802.09478.pdf
 def connected_components(
     edges: Table,
     *,
-    nodes: Table | Value | None = None,
+    nodes: Table | Column | None = None,
     max_iter: int | None = None,
 ) -> Table:
     """Compute the connected components of a graph.
 
-    This is based on the algorithm described at
-    https://www.drmaciver.com/2008/11/computing-connected-graph-components-via-sql/
-    This is linear in terms of the size of a component. This is usually
+    This uses [an iterative algorithm](https://www.drmaciver.com/2008/11/computing-connected-graph-components-via-sql/)
+    that is linear in terms of the size of the largest component. This is usually
     acceptable for our use case, because we expect the components to be small.
-    I think more performant algorithms exist, but they are more complicated.
-    See https://arxiv.org/pdf/1802.09478.pdf
 
     Parameters
     ----------
@@ -40,6 +39,14 @@ def connected_components(
         even if they are not in the edges.
         If not provided, the output will only include labels for nodes that
         appear in the edges.
+
+        !!! note
+
+            The record_ids are assumed to refer to the same universe of records:
+            If record_id 5 appears in both the left column and the right column,
+            then they are assumed to refer to the same record. If you have a left
+            dataset and right dataset and they both have a record with id 5, then
+            you should first make the ids unique across the two datasets.
     max_iter : int, optional
         The maximum number of iterations to run. If None, run until convergence.
 
@@ -47,14 +54,6 @@ def connected_components(
     -------
     labels : Table
         Labeling for left records. Has columns (record_id, component: uint64).
-
-    !!! note
-
-        The record_ids are assumed to refer to the same universe of records:
-        If record_id 5 appears in both the left column and the right column,
-        then they are assumed to refer to the same record. If you have a left
-        dataset and right dataset and they both have a record with id 5, then
-        you should first make the ids unique across the two datasets.
 
     Examples
     --------
@@ -183,7 +182,7 @@ def _get_initial_labels(edges: Table) -> Table:
     return ibis.union(labels_left, labels_right, distinct=True)
 
 
-def _add_labels_for_missing_nodes(labels: Table, nodes: Table | Value) -> Table:
+def _add_labels_for_missing_nodes(labels: Table, nodes: Table | Column) -> Table:
     """
     Add labels for nodes not in the original edgelist (and thus not in the labels)
     """
@@ -191,7 +190,7 @@ def _add_labels_for_missing_nodes(labels: Table, nodes: Table | Value) -> Table:
     return labels.union(additional_labels)
 
 
-def _get_additional_labels(labels: Table, nodes: Table | Value) -> Table:
+def _get_additional_labels(labels: Table, nodes: Table | Column) -> Table:
     if not isinstance(nodes, Table):
         nodes = nodes.name("record_id").as_table()
     nodes = nodes.select("record_id")

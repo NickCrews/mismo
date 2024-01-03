@@ -7,7 +7,10 @@ from mismo import _util
 
 
 def join(left: Table, right: Table, condition) -> Table:
-    """Join two tables, afterwards adding a _l or _r suffix to all columns
+    """Join two tables, afterwards adding a "_l" or "_r" suffix to all columns.
+
+    Unlike ibis, which only adds suffixes to columns that are duplicated,
+    this *always* adds suffixes to all columns.
 
     Parameters
     ----------
@@ -16,8 +19,9 @@ def join(left: Table, right: Table, condition) -> Table:
     right : Table
         The right table
     condition:
-        Anything that Ibis accepts as a join condition. This should be specified
-        without the _l and _r suffixes, eg `left.name == right.name`, not
+        Anything that [Ibis accepts as a join condition](https://ibis-project.org/reference/expression-tables#ibis.expr.types.relations.Table.join).
+        This should be specified
+        without the "_l" and "_r" suffixes, eg `left.name == right.name`, not
         `left.name_l == right.name_r`, because the suffixes will be added
         AFTER the join.
     """

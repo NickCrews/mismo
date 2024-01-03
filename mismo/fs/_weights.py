@@ -9,18 +9,19 @@ import altair as alt
 import ibis
 from ibis.expr.types import FloatingValue, IntegerValue, StringValue, Table
 
+from .._typing import Self
 from ._util import odds_to_log_odds, odds_to_prob
 
 
 class LevelWeights:
-    """Weights for a single ComparisonLevel.
+    """Weights for a single [ComparisonLevel][mismo.compare.ComparisonLevel].
 
     This describes for example "If zipcodes match perfectly, then
     this increases the probability of a match by 10x as compared to if we
     hadn't looked at zipcode".
     """
 
-    def __init__(self, name: str, *, m: float, u: float):
+    def __init__(self, name: str, *, m: float, u: float) -> None:
         """Create a new LevelWeights object."""
         self._name = name
         self._m = m
@@ -97,9 +98,10 @@ def _else_weights(other_level_weights: Iterable[LevelWeights]) -> LevelWeights:
 
 class ComparisonWeights:
     """
-    The weights for a single Comparison.
+    The weights for a single [Comparison][mismo.compare.Comparison].
 
-    An ordered, dict-like collection of LevelWeights, one for each level.
+    An ordered, dict-like collection of [LevelWeights][mismo.fs.LevelWeights]
+    one for each level.
     """
 
     def __init__(self, name: str, level_weights: Iterable[LevelWeights]):
@@ -244,8 +246,9 @@ class ComparisonWeights:
 class Weights:
     """Weights for the Fellegi-Sunter model.
 
-    An unordered, dict-like collection of `ComparisonWeights`, one for each Comparison
-    of the same name.
+    An unordered, dict-like collection of
+    [ComparisonWeights][mismo.fs.ComparisonWeights],
+    one for each [Comparison][mismo.compare.Comparison] of the same name.
     """
 
     def __init__(self, comparison_weights: Iterable[ComparisonWeights]):
@@ -331,8 +334,22 @@ class Weights:
         return d
 
     @classmethod
-    def from_json(cls, json: dict | str | Path) -> Weights:
-        """Create a Weights object from a JSON-serializable representation."""
+    def from_json(cls, json: dict | str | Path) -> Self:
+        """Create a Weights object from a JSON-serializable representation.
+
+        Parameters
+        ----------
+        json : dict | str | Path
+            If a dict, assumed to be the JSON-serializable representation.
+            Load it directly.
+            If a str or Path, assumed to be a path to a JSON file.
+            Load it from that file.
+
+        Returns
+        -------
+        Weights
+            The Weights object created from the JSON-serializable representation.
+        """
         if not isinstance(json, dict):
             json = loads(Path(json).read_text())
         return cls(
