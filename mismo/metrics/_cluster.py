@@ -30,13 +30,8 @@ def adjusted_rand_score(labels_true: Table, labels_pred: Table, **kwargs):
     pass
 
 
-@_wrap_sklearn_metric(_metrics.calinski_harabasz_score)
-def calinski_harabasz_score(labels_true: Table, labels_pred: Table, **kwargs):
-    pass
-
-
-@_wrap_sklearn_metric(_metrics.davies_bouldin_score)
-def davies_bouldin_score(labels_true: Table, labels_pred: Table, **kwargs):
+@_wrap_sklearn_metric(_metrics.fowlkes_mallows_score)
+def fowlkes_mallows_score(labels_true: Table, labels_pred: Table, **kwargs):
     pass
 
 
@@ -45,18 +40,13 @@ def completeness_score(labels_true: Table, labels_pred: Table, **kwargs):
     pass
 
 
-@_wrap_sklearn_metric(_metrics.cluster.contingency_matrix)
-def contingency_matrix(labels_true: Table, labels_pred: Table, **kwargs):
+@_wrap_sklearn_metric(_metrics.homogeneity_score)
+def homogeneity_score(labels_true: Table, labels_pred: Table, **kwargs):
     pass
 
 
-@_wrap_sklearn_metric(_metrics.cluster.pair_confusion_matrix)
-def pair_confusion_matrix(labels_true: Table, labels_pred: Table, **kwargs):
-    pass
-
-
-@_wrap_sklearn_metric(_metrics.fowlkes_mallows_score)
-def fowlkes_mallows_score(labels_true: Table, labels_pred: Table, **kwargs):
+@_wrap_sklearn_metric(_metrics.v_measure_score)
+def v_measure_score(labels_true: Table, labels_pred: Table, **kwargs):
     pass
 
 
@@ -64,11 +54,6 @@ def fowlkes_mallows_score(labels_true: Table, labels_pred: Table, **kwargs):
 def homogeneity_completeness_v_measure(
     labels_true: Table, labels_pred: Table, **kwargs
 ):
-    pass
-
-
-@_wrap_sklearn_metric(_metrics.homogeneity_score)
-def homogeneity_score(labels_true: Table, labels_pred: Table, **kwargs):
     pass
 
 
@@ -84,21 +69,6 @@ def normalized_mutual_info_score(labels_true: Table, labels_pred: Table, **kwarg
 
 @_wrap_sklearn_metric(_metrics.rand_score)
 def rand_score(labels_true: Table, labels_pred: Table, **kwargs):
-    pass
-
-
-@_wrap_sklearn_metric(_metrics.silhouette_score)
-def silhouette_score(labels_true: Table, labels_pred: Table, **kwargs):
-    pass
-
-
-@_wrap_sklearn_metric(_metrics.silhouette_samples)
-def silhouette_samples(labels_true: Table, labels_pred: Table, **kwargs):
-    pass
-
-
-@_wrap_sklearn_metric(_metrics.v_measure_score)
-def v_measure_score(labels_true: Table, labels_pred: Table, **kwargs):
     pass
 
 
