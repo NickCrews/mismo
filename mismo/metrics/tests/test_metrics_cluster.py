@@ -44,6 +44,7 @@ def test_scalar_metrics(func, labels_true: Table, labels_pred: Table):
     result = func(labels_true, labels_pred)
     assert result >= 0.0
     assert result <= 1.0
+    assert func.__doc__ is not None
 
 
 def test_homogeneity_completeness_v_measure(labels_true: Table, labels_pred: Table):
