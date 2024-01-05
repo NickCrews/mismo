@@ -39,6 +39,32 @@ def test_comparison_level_conditions(condition, expected_true_count, blocked):
     assert blocked.is_match.sum().execute() == expected_true_count
 
 
+def test_array_based_conditions(table_factory):
+    t = table_factory(
+        {
+            "tags_l": [["a", "b"], ["c", "d"], [], None],
+            "tags_r": [["b", "x"], ["y", "z"], ["m"], []],
+            "expected": [True, False, False, False],
+        }
+    )
+
+    def any_(arr):
+        # Because Ibis doesn't have an ArrayValue.any() method we need this function
+        # https://github.com/ibis-project/ibis/issues/7073
+        return arr.filter(lambda x: x).length() > 0
+
+    level = ComparisonLevel(
+        "any_equal",
+        # We could also do this with ibis's Array.intersect, but I want to check
+        # this more low-level approach works.
+        lambda t: any_(
+            t.tags_l.map(lambda ltag: any_(t.tags_r.map(lambda rtag: ltag == rtag)))
+        ),
+    )
+    t = t.mutate(is_match=level.is_match(t))
+    assert (t.is_match == t.expected).all().execute()
+
+
 @pytest.fixture
 def large_level():
     return ComparisonLevel("large", _.cost_l > 10)
