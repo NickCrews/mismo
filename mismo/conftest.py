@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Iterable
+from typing import Callable, Iterable
 
 import ibis
 from ibis.expr.types import Column, Table
@@ -13,14 +13,10 @@ def backend() -> ibis.BaseBackend:
 
 
 @pytest.fixture
-def table_factory(backend: ibis.BaseBackend) -> Callable[[Any], Table]:
+def table_factory(backend: ibis.BaseBackend) -> Callable[..., Table]:
     original = ibis.get_backend()
     ibis.set_backend(backend)
-
-    def func(data):
-        return ibis.memtable(data)
-
-    yield func
+    yield ibis.memtable
     ibis.set_backend(original)
 
 
