@@ -90,6 +90,18 @@ def test_connected_components(table_factory, edges, edges_dtype, expected_compon
     assert record_components == expected_components
 
 
+def test_connected_components_add_missing_nodes(table_factory, column_factory):
+    """If a node is not present in the edges table, it would normally be
+    missed by the connected components algorithm. But, if we pass it in
+    explicitly, it should be included in the output."""
+    edges_df = pd.DataFrame([(0, 1), (1, 2)], columns=["record_id_l", "record_id_r"])
+    nodes = column_factory([0, 1, 2, 3])
+    edges_table = table_factory(edges_df)
+    labels = connected_components(edges_table, nodes=nodes)
+    record_components = _labels_to_clusters(labels)
+    assert record_components == {frozenset({0, 1, 2}), frozenset({3})}
+
+
 def _labels_to_clusters(labels: Table) -> set[frozenset[Any]]:
     df = labels.to_pandas()
     component_ids = set(df.component)
