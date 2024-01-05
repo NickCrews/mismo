@@ -28,6 +28,77 @@ def connected_components(
     that is linear in terms of the size of the largest component. This is usually
     acceptable for our use case, because we expect the components to be small.
 
+    !!! note
+
+        The record_ids are assumed to refer to the same universe of records:
+        If you have a left dataset and right dataset and they both have a
+        record with id `5`, then this algorithm assumes that those two records
+        are the same, which is probably not what you want.
+
+        To fix this scenario, you should make the record ids be a composite keys
+        of type `struct<dataset: string, record_id: uint64>`:
+
+            ```python
+            >>> edges = ibis.memtable(
+            ...     {
+            ...         "record_id_l": [0, 0, 2],
+            ...         "record_id_r": [1, 2, 4],
+            ...     }
+            ... )
+            >>> connected_components(edges)
+            ┏━━━━━━━━━━━┳━━━━━━━━━━━┓
+            ┃ record_id ┃ component ┃
+            ┡━━━━━━━━━━━╇━━━━━━━━━━━┩
+            │ int64     │ int64     │
+            ├───────────┼───────────┤
+            │         3 │         0 │
+            │         0 │         0 │
+            │         1 │         0 │
+            │         8 │         8 │
+            │         2 │         0 │
+            │         9 │         8 │
+            └───────────┴───────────┘
+            >>> edges_fixed = edges.mutate(
+            ...     record_id_l=ibis.struct(
+            ...         {
+            ...             "dataset": "left",
+            ...             "record_id": edges.record_id_l,
+            ...         }
+            ...     ),
+            ...     record_id_r=ibis.struct(
+            ...         {
+            ...             "dataset": "right",
+            ...             "record_id": edges.record_id_r,
+            ...         }
+            ...     ),
+            ... )
+            >>> edges_fixed
+            ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+            ┃ record_id_l                               ┃ record_id_r                               ┃
+            ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+            │ struct<dataset: string, record_id: int64> │ struct<dataset: string, record_id: int64> │
+            ├───────────────────────────────────────────┼───────────────────────────────────────────┤
+            │ {'dataset': 'left', 'record_id': 0}       │ {'dataset': 'right', 'record_id': 1}      │
+            │ {'dataset': 'left', 'record_id': 0}       │ {'dataset': 'right', 'record_id': 2}      │
+            │ {'dataset': 'left', 'record_id': 2}       │ {'dataset': 'right', 'record_id': 3}      │
+            │ {'dataset': 'left', 'record_id': 8}       │ {'dataset': 'right', 'record_id': 9}      │
+            └───────────────────────────────────────────┴───────────────────────────────────────────┘
+            >>> connected_components(edges_fixed)
+            ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┓
+            ┃ record_id                                 ┃ component ┃
+            ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━┩
+            │ struct<dataset: string, record_id: int64> │ uint64    │
+            ├───────────────────────────────────────────┼───────────┤
+            │ {'dataset': 'right', 'record_id': 9}      │         2 │
+            │ {'dataset': 'left', 'record_id': 0}       │         0 │
+            │ {'dataset': 'left', 'record_id': 2}       │         1 │
+            │ {'dataset': 'right', 'record_id': 3}      │         1 │
+            │ {'dataset': 'left', 'record_id': 8}       │         2 │
+            │ {'dataset': 'right', 'record_id': 2}      │         0 │
+            │ {'dataset': 'right', 'record_id': 1}      │         0 │
+            └───────────────────────────────────────────┴───────────┘
+            ```
+
     Parameters
     ----------
     edges :
@@ -39,14 +110,6 @@ def connected_components(
         even if they are not in the edges.
         If not provided, the output will only include labels for nodes that
         appear in the edges.
-
-        !!! note
-
-            The record_ids are assumed to refer to the same universe of records:
-            If record_id 5 appears in both the left column and the right column,
-            then they are assumed to refer to the same record. If you have a left
-            dataset and right dataset and they both have a record with id 5, then
-            you should first make the ids unique across the two datasets.
     max_iter : int, optional
         The maximum number of iterations to run. If None, run until convergence.
 
@@ -83,7 +146,7 @@ def connected_components(
     │ c         │         0 │
     │ g         │         3 │
     └───────────┴───────────┘
-    """
+    """  # noqa: E501
     int_edges, restore = _intify_edges(edges)
     int_labels = _connected_components_ints(int_edges, max_iter=max_iter)
     result = restore(int_labels)

@@ -10,7 +10,7 @@ from mismo.cluster import connected_components
 
 
 @pytest.mark.parametrize(
-    "edges, edges_dtype, expected_clusters",
+    "edges_list, edges_dtype, expected_clusters",
     [
         pytest.param(
             [
@@ -59,6 +59,22 @@ from mismo.cluster import connected_components
             id="hub and singleton (string keys)",
         ),
         pytest.param(
+            [
+                (("a", 0), ("b", 10)),
+                (("a", 0), ("b", 11)),
+                (("a", 0), ("b", 12)),
+                (("a", 0), ("b", 13)),
+                (("a", 9), ("b", 20)),
+            ],
+            "struct<dataset: string, record_id: uint64>",
+            {
+                frozenset({("a", 0), ("b", 10), ("b", 11), ("b", 12), ("b", 13)}),
+                frozenset({("a", 9), ("b", 20)}),
+            },
+            # this could be useful if different datasets have the same record_id
+            id="struct keys",
+        ),
+        pytest.param(
             [],
             "uint64",
             set(),
@@ -78,11 +94,12 @@ from mismo.cluster import connected_components
         ),
     ],
 )
-def test_connected_components(table_factory, edges, edges_dtype, expected_clusters):
-    edges_df = pd.DataFrame(
-        edges, columns=["record_id_l", "record_id_r"], dtype=edges_dtype
-    )
-    edges_table = table_factory(edges_df)
+def test_connected_components(
+    table_factory, edges_list, edges_dtype, expected_clusters
+):
+    edges_df = pd.DataFrame(edges_list, columns=["record_id_l", "record_id_r"])
+    schema = {"record_id_l": edges_dtype, "record_id_r": edges_dtype}
+    edges_table = table_factory(edges_df, schema=schema)
     labels = connected_components(edges_table)
     clusters = _labels_to_clusters(labels)
     assert clusters == expected_clusters
@@ -114,5 +131,8 @@ def _labels_to_clusters(labels: Table) -> set[frozenset[Any]]:
     component_ids = set(df.component)
     cid_to_rid = {component_id: set() for component_id in component_ids}
     for row in df.itertuples():
-        cid_to_rid[row.component].add(row.record_id)
+        record_id = row.record_id
+        if isinstance(record_id, dict):
+            record_id = tuple(record_id.values())
+        cid_to_rid[row.component].add(record_id)
     return {frozenset(records) for records in cid_to_rid.values()}
