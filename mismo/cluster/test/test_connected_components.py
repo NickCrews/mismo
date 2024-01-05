@@ -10,7 +10,7 @@ from mismo.cluster import connected_components
 
 
 @pytest.mark.parametrize(
-    "edges, edges_dtype, expected_components",
+    "edges, edges_dtype, expected_clusters",
     [
         pytest.param(
             [
@@ -71,23 +71,21 @@ from mismo.cluster import connected_components
             id="single self-loop",
         ),
         pytest.param(
-            [
-                (0, 1),
-            ],
+            [(0, 1)],
             "uint64",
             {frozenset({0, 1})},
             id="single edge",
         ),
     ],
 )
-def test_connected_components(table_factory, edges, edges_dtype, expected_components):
+def test_connected_components(table_factory, edges, edges_dtype, expected_clusters):
     edges_df = pd.DataFrame(
         edges, columns=["record_id_l", "record_id_r"], dtype=edges_dtype
     )
     edges_table = table_factory(edges_df)
     labels = connected_components(edges_table)
-    record_components = _labels_to_clusters(labels)
-    assert record_components == expected_components
+    clusters = _labels_to_clusters(labels)
+    assert clusters == expected_clusters
 
 
 def test_connected_components_add_missing_nodes(table_factory, column_factory):
@@ -98,8 +96,17 @@ def test_connected_components_add_missing_nodes(table_factory, column_factory):
     nodes = column_factory([0, 1, 2, 3])
     edges_table = table_factory(edges_df)
     labels = connected_components(edges_table, nodes=nodes)
-    record_components = _labels_to_clusters(labels)
-    assert record_components == {frozenset({0, 1, 2}), frozenset({3})}
+    clusters = _labels_to_clusters(labels)
+    assert clusters == {frozenset({0, 1, 2}), frozenset({3})}
+
+
+def test_connected_components_max_iterations(table_factory):
+    """If we don't give it adequate iterations, it should not give the right result."""
+    edges_df = pd.DataFrame([(0, 1), (1, 2)], columns=["record_id_l", "record_id_r"])
+    edges_table = table_factory(edges_df)
+    labels = connected_components(edges_table, max_iter=1)
+    clusters = _labels_to_clusters(labels)
+    assert clusters != {frozenset({0, 1, 2})}
 
 
 def _labels_to_clusters(labels: Table) -> set[frozenset[Any]]:
