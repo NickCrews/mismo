@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from typing import Any
+
+from ibis.expr.types import Table
 import pandas as pd
 import pytest
 
@@ -83,10 +86,14 @@ def test_connected_components(table_factory, edges, edges_dtype, expected_compon
     )
     edges_table = table_factory(edges_df)
     labels = connected_components(edges_table)
-    labels = labels.execute()
-    component_ids = set(labels.component)
-    cid_to_rid = {component_id: set() for component_id in component_ids}
-    for row in labels.itertuples():
-        cid_to_rid[row.component].add(row.record_id)
-    record_components = {frozenset(records) for records in cid_to_rid.values()}
+    record_components = _labels_to_clusters(labels)
     assert record_components == expected_components
+
+
+def _labels_to_clusters(labels: Table) -> set[frozenset[Any]]:
+    df = labels.to_pandas()
+    component_ids = set(df.component)
+    cid_to_rid = {component_id: set() for component_id in component_ids}
+    for row in df.itertuples():
+        cid_to_rid[row.component].add(row.record_id)
+    return {frozenset(records) for records in cid_to_rid.values()}
