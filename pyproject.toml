@@ -12,9 +12,8 @@ license = { text = "LGPL-3.0-or-later" }
 keywords = []
 authors = [{ name = "Nick Crews", email = "nicholas.b.crews@gmail.com" }]
 classifiers = [
-  "Development Status :: 4 - Beta",
+  "Development Status :: 3 - Alpha",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -25,6 +24,7 @@ dependencies = [
   "altair",
   "ibis-framework[duckdb]>=7.2.0",
   "scikit-learn",
+  "solara",
   "typing-extensions ; python_version < \"3.11\"", # needed for Self
 ]
 
@@ -38,7 +38,8 @@ lint = ["ruff", "mypy", "pre-commit"]
 test = [
   "pytest",
   "pytest-cov",
-  "recordlinkage"]
+  "recordlinkage",
+]
 docs = [
   "mkdocs-git-revision-date-localized-plugin",
   "mkdocs-jupyter",

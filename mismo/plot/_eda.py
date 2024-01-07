@@ -3,20 +3,12 @@ from __future__ import annotations
 import altair as alt
 import ibis
 from ibis import _
-from ibis.expr.types import ColumnExpr, Table
+from ibis.expr.types import Column, Table
+import solara
 
 
-def _make_counts(vals: ColumnExpr) -> Table:
-    vals = vals.name("value")
-    counts = vals.value_counts().rename(n="value_count")
-    sort_keys = [_.n.desc(), _.value.asc()]
-    counts = counts.order_by(sort_keys)
-    counts = counts.mutate(rank=ibis.row_number(), pct=_.n / _.n.sum())
-    return counts
-
-
-def histograms(vals: ColumnExpr, limit: int | None = None) -> alt.Chart:
-    """Make a Altair histogram of the values in vals.
+def distribution_chart(vals: Column, *, limit: int | None = None) -> alt.Chart:
+    """Make a Altair histogram of values.
 
     Useful as an exploratory tool to look at what values are present in a column.
 
@@ -26,6 +18,11 @@ def histograms(vals: ColumnExpr, limit: int | None = None) -> alt.Chart:
         The values to plot.
     limit : int, optional
         The maximum number of bars to plot, by default 1000
+
+    Returns
+    -------
+    alt.Chart
+        The histogram.
     """
     if limit is None:
         limit = 100
@@ -96,26 +93,57 @@ def histograms(vals: ColumnExpr, limit: int | None = None) -> alt.Chart:
     return together
 
 
-def distributions(records: Table, limit: int | None = None) -> alt.Chart:
-    """For each column in records, make an Altair histogram.
-
-    The "record_id" column is ignored.
+@solara.component
+def distribution_dashboard(
+    records: Table,
+    *,
+    column: str | None = None,
+    limit: int | None = None,
+):
+    """Make a solara dashboard for exploring the distribution of values in a table.
 
     Parameters
     ----------
     records : Table
         The table to plot.
+    column : str, optional
+        The initial column to plot. If None, the first column is used.
+        You can change this interactively in the returned dashboard.
+    limit : int, optional
+        The initial maximum number of values to plot, by default 100.
+        You can change this interactively in the returned dashboard.
 
     Returns
     -------
-    alt.Chart
-        A chart with one histogram for each column in records.
+    solara.Element
+        The dashboard.
     """
-    sub_charts = []
-    for col in records.columns:
-        if col == "record_id":
-            continue
-        sub_charts.append(histograms(records[col], limit=limit))
-    result = alt.vconcat(*sub_charts)
-    result = result.resolve_legend(color="independent")
-    return result
+    if column is None:
+        column = records.columns[0]
+    limit_max = int(records.count().execute())
+    if limit is None:
+        limit = min(limit_max, 100)
+    column_r = solara.use_reactive(column)
+    limit_r = solara.use_reactive(limit)
+    chart = distribution_chart(records[column_r.value], limit=limit_r.value)
+    with solara.Row():
+        with solara.Column():
+            solara.Select("Column", values=records.columns, value=column_r, dense=True)
+            solara.SliderInt(
+                "Limit",
+                min=1,
+                max=limit_max,
+                value=limit_r,
+                thumb_label="always",
+                tick_labels="end_points",
+            )
+        solara.FigureAltair(chart)
+
+
+def _make_counts(vals: Column) -> Table:
+    vals = vals.name("value")
+    counts = vals.value_counts().rename(n="value_count")
+    sort_keys = [_.n.desc(), _.value.asc()]
+    counts = counts.order_by(sort_keys)
+    counts = counts.mutate(rank=ibis.row_number(), pct=_.n / _.n.sum())
+    return counts
