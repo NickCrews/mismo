@@ -99,7 +99,7 @@ def distribution_dashboard(
     *,
     column: str | None = None,
     limit: int | None = None,
-):
+) -> solara.Element:
     """Make a solara dashboard for exploring the distribution of values in a table.
 
     Parameters
