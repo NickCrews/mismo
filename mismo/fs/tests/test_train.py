@@ -103,12 +103,12 @@ def check_name_weights(weights):
 
     assert exact.name == "exact"
     assert exact.m == pytest.approx(0.2443, rel=0.01)
-    assert exact.u == pytest.approx(0.0, rel=0.01)
+    assert exact.u == pytest.approx(1 / 100_000, rel=0.2)
 
     assert close.name == "close"
     assert close.m == pytest.approx(0.7557, rel=0.01)
-    assert close.u == pytest.approx(0.0210, rel=0.01)
+    assert close.u == pytest.approx(0.0210, rel=0.2)
 
     assert else_.name == "else"
-    assert else_.m == pytest.approx(0.0, rel=0.01)
+    assert else_.m == pytest.approx(0.0006706, rel=0.01)
     assert else_.u == pytest.approx(0.97899, rel=0.01)

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from ibis import _
 from ibis.expr.types import IntegerColumn, StringColumn, Table
 
 from mismo._util import sample_table
@@ -49,17 +48,21 @@ def level_proportions(
     """
     Return the proportion of labels that fall into each Comparison level.
     """
-    vc = labels.name("level").value_counts()
-    vc = vc.select("level", pct=_.level_count / _.level_count.sum())
-    vc = vc.dropna(subset="level")
-    vc_dict = vc.to_pandas().set_index("level")["pct"].to_dict()
+    vc = labels.name("level").value_counts().rename(n="level_count")
+    vc_df = vc.to_pandas().set_index("level")
+    # If we didn't see a level, that won't be present in the value_counts table.
+    # Add it in, with a count of 1 to regularaize it.
+    # If a level shows shows up 0 times among nonmatches, this would lead to an odds
+    # of M/0 = infinity.
+    # If it shows up 0 times among matches, this would lead to an odds of 0/M = 0.
+    # To avoid this, for any levels that we didn't see, we pretend we saw them once.
+    vc_df = vc_df.reindex([lev.name for lev in comparison], fill_value=1)
+    vc_df["pct"] = vc_df["n"] / vc_df["n"].sum()
+    vc_dict = vc_df["pct"].to_dict()
     if isinstance(labels, StringColumn):
         name_to_i = {lev.name: i for i, lev in enumerate(comparison)}
         vc_dict = {name_to_i[name]: v for name, v in vc_dict.items()}
-    n_levels = len(comparison)
-    defaults = {i: 0 for i in range(n_levels)}
-    combined = {**defaults, **vc_dict}
-    return [combined[i] for i in range(n_levels)]
+    return [vc_dict[i] for i in range(len(comparison))]
 
 
 def train_us_using_sampling(
