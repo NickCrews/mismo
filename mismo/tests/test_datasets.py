@@ -9,6 +9,7 @@ from mismo.datasets import (
     load_patents,
     load_rldata500,
     load_rldata10000,
+    load_cen_msr,
 )
 
 
@@ -75,3 +76,36 @@ class TestRLData:
             )["unique_last_name"].mean()
         )
         assert name_variation_rate.execute() == 0.030444444444444496
+
+def test_load_cen_msr():
+    cen, msr = load_cen_msr()
+
+    CEN_COLUMNS = {
+        "record_id",  
+        "last_name",  
+        "first_name",
+        "middle_name",
+        "birth_year",
+        "birth_month",
+        "gender",
+        "birth_place",
+        "label_true",
+    }
+
+    MSR_COLUMNS = {
+        "record_id",     
+        "label_true",
+        "last_name",
+        "first_name",
+        "middle_name",
+        "birth_date",
+        "birth_place",
+        "enlistment_age",
+        "enlistment_date",
+    } 
+
+    assert set(cen.columns) == CEN_COLUMNS
+    assert cen.count().execute() == 54752
+
+    assert set(msr.columns) == MSR_COLUMNS
+    assert msr.count().execute() == 39340

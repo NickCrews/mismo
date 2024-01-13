@@ -14,6 +14,7 @@ __all__ = [
     "load_patents",
     "load_rldata500",
     "load_rldata10000",
+    "load_cen_msr",
 ]
 
 _DATASETS_DIR = Path(__file__).parent / "_data/_datasets"
@@ -254,3 +255,146 @@ def load_rldata10000(backend: ibis.BaseBackend | None = None) -> Table:
     if backend is None:
         backend = ibis
     return backend.read_csv(path).order_by("record_id").cache()
+
+
+def load_cen_msr(backend: ibis.BaseBackend | None = None) -> Table:
+    """Bipartite record linkage datasets based on Union Army Data
+
+    This function returns two datasets, `CEN` and `MSR`, with no duplication within, but with 
+    duplication between. These datasets contain personal information about soldiers from the 
+    Union Army and their family members. The task is to link the soldiers in the `MSR` dataset 
+    to their corresponding records in the `CEN` dataset, while accounting for noise and avoiding 
+    false matches.
+
+    Notes
+    -----
+
+    The `CEN` and `MSR` datasets were derived from the 
+    [Union Army Data Set](https://www.nber.org/research/data/union-army-data-set) 
+    for use in the paper titled 
+    ["Optimal F-Score Clustering for Bipartite Record Linkage"](https://arxiv.org/pdf/2311.13923.pdf).
+
+    From the paper:
+
+    > "The Union Army data comprise a longitudinal sample of Civil War veterans collected as part of the
+    Early Indicators of Aging project (Fogel et al., 2000). Records of soldiers from 331 Union companies
+    were collected and carefully linked to a data file comprising military service records—which we call
+    the MSR file—as well as other sources. These records also were linked to the 1850, 1860, 1900,
+    and 1910 censuses. The quality of the linkages in this project is considered very high, as the true
+    matches were manually made by experts (Fogel et al., 2000). Thus, the Union Army data file can
+    be used to test automated record linkage algorithms."
+
+    > "We consider re-linking soldiers from the MSR data to records from the 1900 census, which we
+    call the CEN data file. This linkage problem is difficult for automated record linkage algorithms due
+    to the presence of soldiers’ family members in the CEN data. Furthermore, not all soldiers from
+    the MSR data have a match in the CEN data. However, we can consider the linkages identified by
+    the Early Indicators of Aging project as truth. For the linking fields, we use first name, last name,
+    middle initial, and approximate birth year."
+
+    Note that the `CEN` file only contains:
+    1. The 1900 census records of soldiers who match `MSR` records in the Union Army dataset.
+    2. The 1900 census records of family members of these soldiers.
+
+    A unique identifier recorded in the `label_true` attribute can be used to identify matches. 
+    Some records have an `NA` value for this unique identifier, since they were out of the scope of the linkage performed for the Union Army Dataset.
+
+    Returns
+    -------
+    Tuple[Table, Table]
+        Tuple containing the `CEN` and `MSR` tables, with the following schemas.
+
+        **CEN dataset:**
+        - record_id: int64
+            Sequential identification of rows in the table.
+        - label_true: int64
+            Unique identifier for recruits in the Union Army dataset. This identifier 
+            can be used to identify matches between the `CEN` and `MSR` datasets. 
+            Note that some records have an `NA` value for this unique identifier, 
+            since they were out of the scope of the linkage performed for the 
+            Union Army Dataset.
+        - last_name: str
+            Last name of the recruit.
+        - first_name: str
+            First name of the recruit.
+        - middle_name: str
+            Middle name of the recruit.
+        - birth_year: str
+            Birth year of the recruit.
+        - birth_month: str
+            Birth month of the recruit.
+        - gender: str
+            Gender of the recruit.
+        - birth_place: str
+            Birth place of the recruit.
+
+        **MSR dataset:**
+        - record_id: int64
+            Sequential identification of rows in the table.
+        - label_true: int64
+            Unique identifier for recruits in the Union Army dataset, as above.
+        - last_name: str
+            Last name of the recruit.
+        - first_name: str
+            First name of the recruit.
+        - middle_name: str
+            Middle name of the recruit.
+        - birth_date: str
+            Birth date of the recruit.
+        - birth_place: str
+            Birth place of the recruit.
+        - enlistment_age: int64
+            Age of the recruit at enlistment.
+        - enlistment_date: str
+            Date of enlistment of the recruit.
+
+    Examples
+    --------
+    >>> CEN, MSR = load_cen_msr()
+    >>> CEN
+    ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+    ┃ record_id ┃ label_true ┃ last_name  ┃ first_name ┃ middle_name ┃ birth_date ┃ birth_place ┃ enlistment_age ┃ enlistment_date ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+    │ int64     │ int64      │ string     │ string     │ string      │ string     │ string      │ int64          │ string          │
+    ├───────────┼────────────┼────────────┼────────────┼─────────────┼────────────┼─────────────┼────────────────┼─────────────────┤
+    │         0 │  100501001 │ ANSON      │ CHARLES    │ H           │ NULL       │ EN          │             29 │ 18610722        │
+    │         1 │  100501002 │ ALLSHESKEY │ THEODORE   │ F           │ NULL       │ NY          │             21 │ 18610722        │
+    │         2 │  100501003 │ BILL       │ CHARLES    │ W           │ NULL       │ CT          │             25 │ 18610722        │
+    │         3 │  100501004 │ BRADLEY    │ GEORGE     │ A           │ NULL       │ CT          │             18 │ 18610722        │
+    │         4 │  100501005 │ BUNITT     │ WILLIAM    │ N           │ NULL       │ CT          │             18 │ 18610722        │
+    │         5 │  100501007 │ BOOTH      │ FREDERICK  │ J           │ NULL       │ CT          │             19 │ 18610722        │
+    │         6 │  100501008 │ BYERS      │ JAMES      │ NULL        │ NULL       │ IR          │             35 │ 18610722        │
+    │         7 │  100501009 │ BEERS      │ WILLIAM    │ E           │ NULL       │ CT          │             22 │ 18610722        │
+    │         8 │  100501010 │ BENEDICT   │ THOMAS     │ E           │ NULL       │ CT          │             21 │ 18610722        │
+    │         9 │  100501011 │ CLARK      │ THEODORE   │ D           │ NULL       │ CT          │             18 │ 18610722        │
+    │         … │          … │ …          │ …          │ …           │ …          │ …           │              … │ …               │
+    └───────────┴────────────┴────────────┴────────────┴─────────────┴────────────┴─────────────┴────────────────┴─────────────────┘
+
+    >>> MSR
+    ┏━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+    ┃ record_id ┃ last_name ┃ first_name ┃ middle_name ┃ birth_year ┃ birth_month ┃ gender ┃ birth_place ┃ label_true ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+    │ int64     │ string    │ string     │ string      │ string     │ string      │ string │ string      │ string     │
+    ├───────────┼───────────┼────────────┼─────────────┼────────────┼─────────────┼────────┼─────────────┼────────────┤
+    │         0 │ ALKESKEY  │ THEODORE   │ F           │ 1840       │ 03          │ M      │ NY          │ 0100501002 │
+    │         1 │ BRADLEY   │ GEORGE     │ A           │ 1847       │ 06          │ M      │ CT          │ 0100501004 │
+    │         2 │ BURRITT   │ WM         │ NULL        │ 1847       │ 11          │ M      │ CT          │ 0100501005 │
+    │         3 │ BOOTH     │ FREDRICK   │ J           │ 1842       │ 06          │ M      │ CT          │ 0100501007 │
+    │         4 │ BEERS     │ WILLIAM    │ E           │ 1839       │ 02          │ M      │ CT          │ 0100501009 │
+    │         5 │ BENEDICT  │ THOMAS     │ NULL        │ 1841       │ 02          │ M      │ CT          │ 0100501010 │
+    │         6 │ COLE      │ HIRAM      │ M           │ 1843       │ 01          │ M      │ CT          │ 0100501018 │
+    │         7 │ CURTISS   │ HENRY      │ B           │ 1840       │ 09          │ M      │ CT          │ 0100501019 │
+    │         8 │ CARNEY    │ JOHN       │ NULL        │ 1844       │ 03          │ M      │ IR          │ 0100501020 │
+    │         9 │ COMSTOCK  │ DAVID      │ O           │ 1841       │ 02          │ M      │ CT          │ 0100501021 │
+    │         … │ …         │ …          │ …           │ …          │ …           │ …      │ …           │ …          │
+    └───────────┴───────────┴────────────┴─────────────┴────────────┴─────────────┴────────┴─────────────┴────────────┘
+    """  # noqa: E501
+    if backend is None:
+        backend = ibis
+    
+    MSR_path = _DATASETS_DIR / "union_army/MSR.csv"
+    MSR = backend.read_csv(MSR_path).order_by("record_id").cache()
+
+    CEN_path = _DATASETS_DIR / "union_army/CEN.csv"
+    CEN = backend.read_csv(CEN_path).order_by("record_id").cache()
+
+    return CEN, MSR
