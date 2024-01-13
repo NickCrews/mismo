@@ -12,6 +12,8 @@ __all__ = [
     "load_febrl2",
     "load_febrl3",
     "load_patents",
+    "load_rldata500",
+    "load_rldata10000",
 ]
 
 _DATASETS_DIR = Path(__file__).parent / "_data/_datasets"
@@ -125,4 +127,130 @@ def load_patents(backend: ibis.BaseBackend | None = None) -> Table:
     # In order to guarantee row order, could either use
     # parallel=False kwarg, but I'd rather just have them sorted
     # by record_id
+    return backend.read_csv(path).order_by("record_id").cache()
+
+
+def load_rldata500(backend: ibis.BaseBackend | None = None) -> Table:
+    """Synthetic personal information dataset with 500 rows
+
+    This is a synthetic dataset with noisy names and dates of birth, with the task being
+    to determine which rows represent the same person. The duplication rate is 10% and
+    the level of noise is low.
+
+    This comes from the
+    [RecordLinkage R package](https://cran.r-project.org/web/packages/RecordLinkage/index.html)
+    and was generated using the data generation component of
+    [Febrl (Freely Extensible Biomedical Record Linkage)](https://sourceforge.net/projects/febrl/).
+
+    Returns
+    -------
+    Table
+        An Ibis Table with the following schema:
+
+        - record_id: int64
+          A unique ID for each row in the table.
+        - label_true: int64
+          The manually labeled, true ID of the inventor.
+        - fname_c1: str
+          First component of the first name.
+        - fname_c2: str
+          Second component of the first name (mostly NA values)
+        - lname_c1: str
+          First component of the last name.
+        - lname_c2: str
+          Second component of the last name (mostly NA values).
+        - by: int64
+          Birth year
+        - bm: int64
+          Birth month
+        - bd: int64
+          Birth day
+
+    Examples
+    --------
+    >>> load_rldata500()
+    ┏━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━┓
+    ┃ record_id ┃ fname_c1 ┃ fname_c2 ┃ lname_c1 ┃ lname_c2 ┃ by    ┃ bm    ┃ bd    ┃ label_true ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━┩
+    │ int64     │ string   │ string   │ string   │ string   │ int64 │ int64 │ int64 │ int64      │
+    ├───────────┼──────────┼──────────┼──────────┼──────────┼───────┼───────┼───────┼────────────┤
+    │         0 │ CARSTEN  │ NULL     │ MEIER    │ NULL     │  1949 │     7 │    22 │         34 │
+    │         1 │ GERD     │ NULL     │ BAUER    │ NULL     │  1968 │     7 │    27 │         51 │
+    │         2 │ ROBERT   │ NULL     │ HARTMANN │ NULL     │  1930 │     4 │    30 │        115 │
+    │         3 │ STEFAN   │ NULL     │ WOLFF    │ NULL     │  1957 │     9 │     2 │        189 │
+    │         4 │ RALF     │ NULL     │ KRUEGER  │ NULL     │  1966 │     1 │    13 │         72 │
+    │         5 │ JUERGEN  │ NULL     │ FRANKE   │ NULL     │  1929 │     7 │     4 │        142 │
+    │         6 │ GERD     │ NULL     │ SCHAEFER │ NULL     │  1967 │     8 │     1 │        162 │
+    │         7 │ UWE      │ NULL     │ MEIER    │ NULL     │  1942 │     9 │    20 │         48 │
+    │         8 │ DANIEL   │ NULL     │ SCHMIDT  │ NULL     │  1978 │     3 │     4 │        133 │
+    │         9 │ MICHAEL  │ NULL     │ HAHN     │ NULL     │  1971 │     2 │    27 │        190 │
+    │         … │ …        │ …        │ …        │ …        │     … │     … │     … │          … │
+    └───────────┴──────────┴──────────┴──────────┴──────────┴───────┴───────┴───────┴────────────┘
+    """  # noqa: E501
+    path = _DATASETS_DIR / "rldata/RLdata500.csv"
+    if backend is None:
+        backend = ibis
+    return backend.read_csv(path).order_by("record_id").cache()
+
+
+def load_rldata10000(backend: ibis.BaseBackend | None = None) -> Table:
+    """Synthetic personal information dataset with 10000 rows
+
+    This is a synthetic dataset with noisy names and dates of birth, with the task
+    being to determine which rows represent the same person. The duplication rate is
+    10% and the level of noise is low.
+
+    This comes from the
+    [RecordLinkage R package](https://cran.r-project.org/web/packages/RecordLinkage/index.html)
+    and was generated using the data generation component of
+    [Febrl (Freely Extensible Biomedical Record Linkage)](https://sourceforge.net/projects/febrl/).
+
+    Returns
+    -------
+    Table
+        An Ibis Table with the following schema:
+
+        - record_id: int64
+          A unique ID for each row in the table.
+        - label_true: int64
+          The manually labeled, true ID of the inventor.
+        - fname_c1: str
+          First component of the first name.
+        - fname_c2: str
+          Second component of the first name (mostly NA values)
+        - lname_c1: str
+          First component of the last name.
+        - lname_c2: str
+          Second component of the last name (mostly NA values).
+        - by: int64
+          Birth year
+        - bm: int64
+          Birth month
+        - bd: int64
+          Birth day
+
+    Examples
+    --------
+    >>> load_rldata10000()
+    ┏━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━┓
+    ┃ record_id ┃ fname_c1 ┃ fname_c2 ┃ lname_c1   ┃ lname_c2 ┃ by    ┃ bm    ┃ bd    ┃ label_true ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━┩
+    │ int64     │ string   │ string   │ string     │ string   │ int64 │ int64 │ int64 │ int64      │
+    ├───────────┼──────────┼──────────┼────────────┼──────────┼───────┼───────┼───────┼────────────┤
+    │         0 │ FRANK    │ NULL     │ MUELLER    │ NULL     │  1967 │     9 │    27 │       3606 │
+    │         1 │ MARTIN   │ NULL     │ SCHWARZ    │ NULL     │  1967 │     2 │    17 │       2560 │
+    │         2 │ HERBERT  │ NULL     │ ZIMMERMANN │ NULL     │  1961 │    11 │     6 │       3892 │
+    │         3 │ HANS     │ NULL     │ SCHMITT    │ NULL     │  1945 │     8 │    14 │        329 │
+    │         4 │ UWE      │ NULL     │ KELLER     │ NULL     │  2000 │     7 │     5 │       1994 │
+    │         5 │ DANIEL   │ NULL     │ HEINRICH   │ NULL     │  1967 │     5 │     6 │       2330 │
+    │         6 │ MARTIN   │ NULL     │ ZIMMERMANN │ NULL     │  1982 │    11 │     2 │       4420 │
+    │         7 │ ANDREAS  │ BENJAMIN │ BERGMANN   │ NULL     │  1989 │     9 │    13 │       2534 │
+    │         8 │ DIETER   │ NULL     │ SCHUSTER   │ NULL     │  1974 │     4 │    19 │       3076 │
+    │         9 │ MANFRED  │ NULL     │ SCHMIDT    │ NULL     │  1979 │     7 │    11 │       4305 │
+    │         … │ …        │ …        │ …          │ …        │     … │     … │     … │          … │
+    └───────────┴──────────┴──────────┴────────────┴──────────┴───────┴───────┴───────┴────────────┘
+    """  # noqa: E501
+    path = _DATASETS_DIR / "rldata/RLdata10000.csv"
+    if backend is None:
+        backend = ibis
     return backend.read_csv(path).order_by("record_id").cache()
