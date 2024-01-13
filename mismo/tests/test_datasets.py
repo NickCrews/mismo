@@ -2,7 +2,14 @@ from __future__ import annotations
 
 import pytest
 
-from mismo.datasets import load_febrl1, load_febrl2, load_febrl3, load_patents
+from mismo.datasets import (
+    load_febrl1,
+    load_febrl2,
+    load_febrl3,
+    load_patents,
+    load_rldata500,
+    load_rldata10000,
+)
 
 
 @pytest.mark.parametrize(
@@ -24,3 +31,47 @@ def test_load_patents_smoketest():
     dataset = load_patents()
     assert dataset.count().execute() == 2379
     repr(dataset)
+
+
+class TestRLData:
+    EXPECTED_COLS = {
+        "record_id",
+        "fname_c1",
+        "fname_c2",
+        "lname_c1",
+        "lname_c2",
+        "by",
+        "bm",
+        "bd",
+        "label_true",
+    }
+
+    def test_load_rldata500(self):
+        dataset = load_rldata500()
+
+        assert set(dataset.columns) == TestRLData.EXPECTED_COLS
+        assert dataset.count().execute() == 500
+        assert dataset["label_true"].nunique().execute() == 450  # 50 duplicates
+
+        name_variation_rate = 1 - (
+            dataset.aggregate(
+                by="label_true", unique_last_name=dataset["lname_c1"].nunique() == 1
+            )["unique_last_name"].mean()
+        )
+        assert (
+            name_variation_rate.execute() == 0.03555555555555556
+        )  # Proportion of clusters where last name is not unique. Should be around 3.5%, i.e. around one third of the 11% of clusters with more than one record.
+
+    def test_load_rldata10000(self):
+        dataset = load_rldata10000()
+
+        assert set(dataset.columns) == TestRLData.EXPECTED_COLS
+        assert dataset.count().execute() == 10000
+        assert dataset["label_true"].nunique().execute() == 9000  # 9000 duplicates
+
+        name_variation_rate = 1 - (
+            dataset.aggregate(
+                by="label_true", unique_last_name=dataset["lname_c1"].nunique() == 1
+            )["unique_last_name"].mean()
+        )
+        assert name_variation_rate.execute() == 0.030444444444444496
