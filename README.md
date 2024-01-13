@@ -49,11 +49,15 @@ record linkage packages.
 
 ## Examples
 
-See the [example notebook](https://nickcrews.github.io/mismo/examples/patent_deduplication)
+See the [example notebook](https://nickcrews.github.io/mismo/examples/patent_deduplication).
 
 ## Documentation
 
-See the [documentation](https://nickcrews.github.io/mismo)
+See the [documentation](https://nickcrews.github.io/mismo).
+
+## Contributing
+
+See the [contributing guide](https://nickcrews.github.io/mismo/contributing/).
 
 ## License
 
