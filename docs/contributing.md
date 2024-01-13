@@ -2,28 +2,26 @@
 
 ## Dependencies
 
-We use `PDM` as our project management tool. Install that per `PDM`'s instructions.
+We use [`PDM`](https://pdm-project.org) as our project management tool. Install that [per `PDM`'s instructions](https://pdm-project.org/latest/#recommended-installation-method). On Mac/Linux, you can install it with by running:
+```bash
+curl -sSL https://pdm-project.org/install-pdm.py | python3 -
+```
 
-Then, this is not necessary, but it makes things easier, we use `just` to automate
-many of the common development tasks. The rest of this guide will assume
-you have just installed, but if you don't want to use `just`, then you
-can run all the recipes manually, just look at the
-[justfile](https://github.com/NickCrews/mismo/blob/main/justfile)
-for the relevant recipe.
+As an optional tool, we use [`just`](https://just.systems/man/en/chapter_1.html) and a [justfile](https://github.com/NickCrews/mismo/blob/main/justfile) to automate many of the common development tasks. The rest of this guide will not assume that you have `just` installed.
 
 ## Setup dev environemnt
 
-Once `PDM` (and optionally `just`) are installed, run `just init`. This will
-create a virtual environment in `.venv/`, install all the locked dependencies
+Once `PDM` are installed, run `pdm install -d -G :all`. This will
+create a virtual environment in `.venv/` and install all the locked dependencies
 in `pdm.lock`.
 
 To enter the venv, use `. .venv/bin/activate`.
 You can exit the venv with `deactivate`, as usual.
 
 When you are in the venv, you can run common tasks such as
-- `just test`
-- `just fmt`
-- `just lint`
+- Running tests: `pytest`
+- Formatting code: `ruff format mismo docs `
+- Lint code: `ruff check mismo docs`
 
 See the [justfile](https://github.com/NickCrews/mismo/blob/main/justfile)
-for more recipes.
+for more tasks.
