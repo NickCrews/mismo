@@ -136,7 +136,9 @@ def load_rldata500(backend: ibis.BaseBackend | None = None) -> Table:
 
     This is a synthetic dataset with noisy names and dates of birth, with the task being
     to determine which rows represent the same person. The duplication rate is 10% and
-    the level of noise is low.
+    the level of noise is low. The dataset can be deduplicated with 90%+
+    precision and recall using very simple linkage rules. It is often used as a
+    sanity check for computational efficiency and disambiguation accuracy.
 
     This comes from the
     [RecordLinkage R package](https://cran.r-project.org/web/packages/RecordLinkage/index.html)
@@ -155,11 +157,11 @@ def load_rldata500(backend: ibis.BaseBackend | None = None) -> Table:
         - fname_c1: str
           First component of the first name.
         - fname_c2: str
-          Second component of the first name (mostly NA values)
+          Second component of the first name (mostly NULL values)
         - lname_c1: str
           First component of the last name.
         - lname_c2: str
-          Second component of the last name (mostly NA values).
+          Second component of the last name (mostly NULL values).
         - by: int64
           Birth year
         - bm: int64
@@ -170,23 +172,23 @@ def load_rldata500(backend: ibis.BaseBackend | None = None) -> Table:
     Examples
     --------
     >>> load_rldata500()
-    ┏━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━┓
-    ┃ record_id ┃ fname_c1 ┃ fname_c2 ┃ lname_c1 ┃ lname_c2 ┃ by    ┃ bm    ┃ bd    ┃ label_true ┃
-    ┡━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━┩
-    │ int64     │ string   │ string   │ string   │ string   │ int64 │ int64 │ int64 │ int64      │
-    ├───────────┼──────────┼──────────┼──────────┼──────────┼───────┼───────┼───────┼────────────┤
-    │         0 │ CARSTEN  │ NULL     │ MEIER    │ NULL     │  1949 │     7 │    22 │         34 │
-    │         1 │ GERD     │ NULL     │ BAUER    │ NULL     │  1968 │     7 │    27 │         51 │
-    │         2 │ ROBERT   │ NULL     │ HARTMANN │ NULL     │  1930 │     4 │    30 │        115 │
-    │         3 │ STEFAN   │ NULL     │ WOLFF    │ NULL     │  1957 │     9 │     2 │        189 │
-    │         4 │ RALF     │ NULL     │ KRUEGER  │ NULL     │  1966 │     1 │    13 │         72 │
-    │         5 │ JUERGEN  │ NULL     │ FRANKE   │ NULL     │  1929 │     7 │     4 │        142 │
-    │         6 │ GERD     │ NULL     │ SCHAEFER │ NULL     │  1967 │     8 │     1 │        162 │
-    │         7 │ UWE      │ NULL     │ MEIER    │ NULL     │  1942 │     9 │    20 │         48 │
-    │         8 │ DANIEL   │ NULL     │ SCHMIDT  │ NULL     │  1978 │     3 │     4 │        133 │
-    │         9 │ MICHAEL  │ NULL     │ HAHN     │ NULL     │  1971 │     2 │    27 │        190 │
-    │         … │ …        │ …        │ …        │ …        │     … │     … │     … │          … │
-    └───────────┴──────────┴──────────┴──────────┴──────────┴───────┴───────┴───────┴────────────┘
+    ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┓
+    ┃ record_id ┃ label_true ┃ fname_c1 ┃ fname_c2 ┃ lname_c1 ┃ lname_c2 ┃ by    ┃ bm    ┃ bd    ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━┩
+    │ int64     │ int64      │ string   │ string   │ string   │ string   │ int64 │ int64 │ int64 │
+    ├───────────┼────────────┼──────────┼──────────┼──────────┼──────────┼───────┼───────┼───────┤
+    │         0 │         34 │ CARSTEN  │ NULL     │ MEIER    │ NULL     │  1949 │     7 │    22 │
+    │         1 │         51 │ GERD     │ NULL     │ BAUER    │ NULL     │  1968 │     7 │    27 │
+    │         2 │        115 │ ROBERT   │ NULL     │ HARTMANN │ NULL     │  1930 │     4 │    30 │
+    │         3 │        189 │ STEFAN   │ NULL     │ WOLFF    │ NULL     │  1957 │     9 │     2 │
+    │         4 │         72 │ RALF     │ NULL     │ KRUEGER  │ NULL     │  1966 │     1 │    13 │
+    │         5 │        142 │ JUERGEN  │ NULL     │ FRANKE   │ NULL     │  1929 │     7 │     4 │
+    │         6 │        162 │ GERD     │ NULL     │ SCHAEFER │ NULL     │  1967 │     8 │     1 │
+    │         7 │         48 │ UWE      │ NULL     │ MEIER    │ NULL     │  1942 │     9 │    20 │
+    │         8 │        133 │ DANIEL   │ NULL     │ SCHMIDT  │ NULL     │  1978 │     3 │     4 │
+    │         9 │        190 │ MICHAEL  │ NULL     │ HAHN     │ NULL     │  1971 │     2 │    27 │
+    │         … │          … │ …        │ …        │ …        │ …        │     … │     … │     … │
+    └───────────┴────────────┴──────────┴──────────┴──────────┴──────────┴───────┴───────┴───────┘
     """  # noqa: E501
     path = _DATASETS_DIR / "rldata/RLdata500.csv"
     if backend is None:
@@ -197,9 +199,11 @@ def load_rldata500(backend: ibis.BaseBackend | None = None) -> Table:
 def load_rldata10000(backend: ibis.BaseBackend | None = None) -> Table:
     """Synthetic personal information dataset with 10000 rows
 
-    This is a synthetic dataset with noisy names and dates of birth, with the task
-    being to determine which rows represent the same person. The duplication rate is
-    10% and the level of noise is low.
+    This is a synthetic dataset with noisy names and dates of birth, with the task being
+    to determine which rows represent the same person. The duplication rate is 10% and
+    the level of noise is low. The dataset can be deduplicated with 90%+
+    precision and recall using very simple linkage rules. It is often used as a
+    sanity check for computational efficiency and disambiguation accuracy.
 
     This comes from the
     [RecordLinkage R package](https://cran.r-project.org/web/packages/RecordLinkage/index.html)
@@ -218,11 +222,11 @@ def load_rldata10000(backend: ibis.BaseBackend | None = None) -> Table:
         - fname_c1: str
           First component of the first name.
         - fname_c2: str
-          Second component of the first name (mostly NA values)
+          Second component of the first name (mostly NULL values)
         - lname_c1: str
           First component of the last name.
         - lname_c2: str
-          Second component of the last name (mostly NA values).
+          Second component of the last name (mostly NULL values).
         - by: int64
           Birth year
         - bm: int64
@@ -233,23 +237,23 @@ def load_rldata10000(backend: ibis.BaseBackend | None = None) -> Table:
     Examples
     --------
     >>> load_rldata10000()
-    ┏━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━┓
-    ┃ record_id ┃ fname_c1 ┃ fname_c2 ┃ lname_c1   ┃ lname_c2 ┃ by    ┃ bm    ┃ bd    ┃ label_true ┃
-    ┡━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━┩
-    │ int64     │ string   │ string   │ string     │ string   │ int64 │ int64 │ int64 │ int64      │
-    ├───────────┼──────────┼──────────┼────────────┼──────────┼───────┼───────┼───────┼────────────┤
-    │         0 │ FRANK    │ NULL     │ MUELLER    │ NULL     │  1967 │     9 │    27 │       3606 │
-    │         1 │ MARTIN   │ NULL     │ SCHWARZ    │ NULL     │  1967 │     2 │    17 │       2560 │
-    │         2 │ HERBERT  │ NULL     │ ZIMMERMANN │ NULL     │  1961 │    11 │     6 │       3892 │
-    │         3 │ HANS     │ NULL     │ SCHMITT    │ NULL     │  1945 │     8 │    14 │        329 │
-    │         4 │ UWE      │ NULL     │ KELLER     │ NULL     │  2000 │     7 │     5 │       1994 │
-    │         5 │ DANIEL   │ NULL     │ HEINRICH   │ NULL     │  1967 │     5 │     6 │       2330 │
-    │         6 │ MARTIN   │ NULL     │ ZIMMERMANN │ NULL     │  1982 │    11 │     2 │       4420 │
-    │         7 │ ANDREAS  │ BENJAMIN │ BERGMANN   │ NULL     │  1989 │     9 │    13 │       2534 │
-    │         8 │ DIETER   │ NULL     │ SCHUSTER   │ NULL     │  1974 │     4 │    19 │       3076 │
-    │         9 │ MANFRED  │ NULL     │ SCHMIDT    │ NULL     │  1979 │     7 │    11 │       4305 │
-    │         … │ …        │ …        │ …          │ …        │     … │     … │     … │          … │
-    └───────────┴──────────┴──────────┴────────────┴──────────┴───────┴───────┴───────┴────────────┘
+    ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┓
+    ┃ record_id ┃ label_true ┃ fname_c1 ┃ fname_c2 ┃ lname_c1   ┃ lname_c2 ┃ by    ┃ bm    ┃ bd    ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━┩
+    │ int64     │ int64      │ string   │ string   │ string     │ string   │ int64 │ int64 │ int64 │
+    ├───────────┼────────────┼──────────┼──────────┼────────────┼──────────┼───────┼───────┼───────┤
+    │         0 │       3606 │ FRANK    │ NULL     │ MUELLER    │ NULL     │  1967 │     9 │    27 │
+    │         1 │       2560 │ MARTIN   │ NULL     │ SCHWARZ    │ NULL     │  1967 │     2 │    17 │
+    │         2 │       3892 │ HERBERT  │ NULL     │ ZIMMERMANN │ NULL     │  1961 │    11 │     6 │
+    │         3 │        329 │ HANS     │ NULL     │ SCHMITT    │ NULL     │  1945 │     8 │    14 │
+    │         4 │       1994 │ UWE      │ NULL     │ KELLER     │ NULL     │  2000 │     7 │     5 │
+    │         5 │       2330 │ DANIEL   │ NULL     │ HEINRICH   │ NULL     │  1967 │     5 │     6 │
+    │         6 │       4420 │ MARTIN   │ NULL     │ ZIMMERMANN │ NULL     │  1982 │    11 │     2 │
+    │         7 │       2534 │ ANDREAS  │ BENJAMIN │ BERGMANN   │ NULL     │  1989 │     9 │    13 │
+    │         8 │       3076 │ DIETER   │ NULL     │ SCHUSTER   │ NULL     │  1974 │     4 │    19 │
+    │         9 │       4305 │ MANFRED  │ NULL     │ SCHMIDT    │ NULL     │  1979 │     7 │    11 │
+    │         … │          … │ …        │ …        │ …          │ …        │     … │     … │     … │
+    └───────────┴────────────┴──────────┴──────────┴────────────┴──────────┴───────┴───────┴───────┘
     """  # noqa: E501
     path = _DATASETS_DIR / "rldata/RLdata10000.csv"
     if backend is None:
@@ -257,21 +261,21 @@ def load_rldata10000(backend: ibis.BaseBackend | None = None) -> Table:
     return backend.read_csv(path).order_by("record_id").cache()
 
 
-def load_cen_msr(backend: ibis.BaseBackend | None = None) -> Table:
+def load_cen_msr(backend: ibis.BaseBackend | None = None) -> tuple[Table, Table]:
     """Bipartite record linkage datasets based on Union Army Data
 
-    This function returns two datasets, `CEN` and `MSR`, with no duplication within, but with 
-    duplication between. These datasets contain personal information about soldiers from the 
-    Union Army and their family members. The task is to link the soldiers in the `MSR` dataset 
-    to their corresponding records in the `CEN` dataset, while accounting for noise and avoiding 
+    This function returns two datasets, `CEN` and `MSR`, with no duplication within, but with
+    duplication between. These datasets contain personal information about soldiers from the
+    Union Army and their family members. The task is to link the soldiers in the `MSR` dataset
+    to their corresponding records in the `CEN` dataset, while accounting for noise and avoiding
     false matches.
 
     Notes
     -----
 
-    The `CEN` and `MSR` datasets were derived from the 
-    [Union Army Data Set](https://www.nber.org/research/data/union-army-data-set) 
-    for use in the paper titled 
+    The `CEN` and `MSR` datasets were derived from the
+    [Union Army Data Set](https://www.nber.org/research/data/union-army-data-set)
+    for use in the paper titled
     ["Optimal F-Score Clustering for Bipartite Record Linkage"](https://arxiv.org/pdf/2311.13923.pdf).
 
     From the paper:
@@ -295,22 +299,23 @@ def load_cen_msr(backend: ibis.BaseBackend | None = None) -> Table:
     1. The 1900 census records of soldiers who match `MSR` records in the Union Army dataset.
     2. The 1900 census records of family members of these soldiers.
 
-    A unique identifier recorded in the `label_true` attribute can be used to identify matches. 
-    Some records have an `NA` value for this unique identifier, since they were out of the scope of the linkage performed for the Union Army Dataset.
+    A unique identifier recorded in the `label_true` attribute can be used to identify matches.
+    Some records have an `NA` value for this unique identifier, since they were out of the scope
+    of the linkage performed for the Union Army Dataset.
 
     Returns
     -------
-    Tuple[Table, Table]
+    tuple[Table, Table]
         Tuple containing the `CEN` and `MSR` tables, with the following schemas.
 
         **CEN dataset:**
         - record_id: int64
             Sequential identification of rows in the table.
         - label_true: int64
-            Unique identifier for recruits in the Union Army dataset. This identifier 
-            can be used to identify matches between the `CEN` and `MSR` datasets. 
-            Note that some records have an `NA` value for this unique identifier, 
-            since they were out of the scope of the linkage performed for the 
+            Unique identifier for recruits in the Union Army dataset. This identifier
+            can be used to identify matches between the `CEN` and `MSR` datasets.
+            Note that some records have an `NA` value for this unique identifier,
+            since they were out of the scope of the linkage performed for the
             Union Army Dataset.
         - last_name: str
             Last name of the recruit.
@@ -390,7 +395,7 @@ def load_cen_msr(backend: ibis.BaseBackend | None = None) -> Table:
     """  # noqa: E501
     if backend is None:
         backend = ibis
-    
+
     MSR_path = _DATASETS_DIR / "union_army/MSR.csv"
     MSR = backend.read_csv(MSR_path).order_by("record_id").cache()
 
