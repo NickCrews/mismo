@@ -300,7 +300,7 @@ def load_cen_msr(backend: ibis.BaseBackend | None = None) -> tuple[Table, Table]
     2. The 1900 census records of family members of these soldiers.
 
     A unique identifier recorded in the `label_true` attribute can be used to identify matches.
-    Some records have an `NA` value for this unique identifier, since they were out of the scope
+    Some records have an NULL value for this unique identifier, since they were out of the scope
     of the linkage performed for the Union Army Dataset.
 
     Returns
