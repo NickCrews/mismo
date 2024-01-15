@@ -4,7 +4,7 @@ import altair as alt
 import ibis
 from ibis import _
 from ibis.expr.types import Column, Table
-import solara
+import ipywidgets
 
 
 def distribution_chart(vals: Column, *, limit: int | None = None) -> alt.Chart:
@@ -93,14 +93,13 @@ def distribution_chart(vals: Column, *, limit: int | None = None) -> alt.Chart:
     return together
 
 
-@solara.component
 def distribution_dashboard(
     records: Table,
     *,
     column: str | None = None,
     limit: int | None = None,
-) -> solara.Element:
-    """Make a solara dashboard for exploring the distribution of values in a table.
+) -> ipywidgets.VBox:
+    """Make an ipywidget dashboard for exploring the distribution of values in a table.
 
     Parameters
     ----------
@@ -115,7 +114,7 @@ def distribution_dashboard(
 
     Returns
     -------
-    solara.Element
+    ipywidgets.VBox
         The dashboard.
     """
     if column is None:
@@ -123,21 +122,31 @@ def distribution_dashboard(
     limit_max = int(records.count().execute())
     if limit is None:
         limit = min(limit_max, 100)
-    column_r = solara.use_reactive(column)
-    limit_r = solara.use_reactive(limit)
-    chart = distribution_chart(records[column_r.value], limit=limit_r.value)
-    with solara.Row():
-        with solara.Column():
-            solara.Select("Column", values=records.columns, value=column_r, dense=True)
-            solara.SliderInt(
-                "Limit",
-                min=1,
-                max=limit_max,
-                value=limit_r,
-                thumb_label="always",
-                tick_labels="end_points",
-            )
-        solara.FigureAltair(chart)
+    column_selector = ipywidgets.Dropdown(
+        options=records.columns,
+        value=column,
+        description="Column:",
+        disabled=False,
+    )
+    limit_selector = ipywidgets.IntSlider(
+        min=1, max=limit_max, value=limit, step=1, description="Limit:"
+    )
+
+    def get_chart():
+        return distribution_chart(
+            records[column_selector.value], limit=limit_selector.value
+        )
+
+    jupyter_chart = alt.JupyterChart(get_chart())
+
+    def on_change(change):
+        jupyter_chart.chart = get_chart()
+
+    column_selector.observe(on_change, names="value")
+    limit_selector.observe(on_change, names="value")
+
+    layout = ipywidgets.VBox([column_selector, limit_selector, jupyter_chart])
+    return layout
 
 
 def _make_counts(vals: Column) -> Table:
