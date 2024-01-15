@@ -2,9 +2,9 @@ name: test
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   pull_request:
-    branches: [main, master]
+    branches: [main]
 
 concurrency:
   group: test-${{ github.head_ref }}
@@ -65,8 +65,13 @@ jobs:
       - name: Install dev environment
         run: just install
 
-      - name: Publish docs
-        run: pdm run just docs-publish
-
       - name: Run linters
         run: pdm run just lint
+
+      - name: Build docs
+        run: pdm run just docs-build
+      
+      - name: Publish docs
+        if: github.repository == 'NickCrews/mismo' && github.ref == 'refs/heads/main'  && github.event_name == 'push'
+        run: pdm run just docs-publish
+

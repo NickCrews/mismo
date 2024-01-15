@@ -22,9 +22,10 @@ classifiers = [
 ]
 dependencies = [
   "altair>=5.0.0",
+  "anywidget",
   "ibis-framework[duckdb]>=7.2.0",
+  "ipywidgets",
   "scikit-learn",
-  "solara",
   "typing-extensions ; python_version < \"3.11\"", # needed for Self
 ]
 

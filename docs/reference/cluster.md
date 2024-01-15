@@ -5,3 +5,4 @@ into groups of records that are all the same entity. This is done with various
 graph algorithms, which are implemented in this module.
 
 ::: mismo.cluster.connected_components
+::: mismo.plot.plot_cluster

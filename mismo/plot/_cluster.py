@@ -6,7 +6,6 @@ from ibis import _
 from ibis.expr.types import Table
 import numpy as np
 import pandas as pd
-from sklearn.manifold import MDS
 
 from mismo import _util
 
@@ -47,6 +46,9 @@ def drop_orphaned(nodes: Table, edges: Table):
 
 def _layout_nodes(nodes: Table, edges: Table) -> Table:
     """Add columns x and y to nodes table that are the coordinates of the nodes"""
+    # import here to speed up the import of this module
+    from sklearn.manifold import MDS
+
     n, e = _reindex_from_0(nodes, edges)
     dis_matrix = _edges_to_dissimilarity_matrix(n, e)
     mds = MDS(
