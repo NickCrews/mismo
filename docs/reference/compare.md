@@ -23,3 +23,7 @@ These utility functions help you create [ComparisonLevels](#mismo.compare.Compar
 ::: mismo.compare.jaccard
 ::: mismo.compare.distance_km
 
+## Plotting
+
+::: mismo.compare.compared_dashboard
+
