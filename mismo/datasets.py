@@ -314,7 +314,7 @@ def load_cen_msr(backend: ibis.BaseBackend | None = None) -> tuple[Table, Table]
         - label_true: int64
             Unique identifier for recruits in the Union Army dataset. This identifier
             can be used to identify matches between the `CEN` and `MSR` datasets.
-            Note that some records have an `NA` value for this unique identifier,
+            Note that some records have a NULL value for this unique identifier,
             since they were out of the scope of the linkage performed for the
             Union Army Dataset.
         - last_name: str
@@ -356,43 +356,41 @@ def load_cen_msr(backend: ibis.BaseBackend | None = None) -> tuple[Table, Table]
     --------
     >>> CEN, MSR = load_cen_msr()
     >>> CEN
-    ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
-    ┃ record_id ┃ label_true ┃ last_name  ┃ first_name ┃ middle_name ┃ birth_date ┃ birth_place ┃ enlistment_age ┃ enlistment_date ┃
-    ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
-    │ int64     │ int64      │ string     │ string     │ string      │ string     │ string      │ int64          │ string          │
-    ├───────────┼────────────┼────────────┼────────────┼─────────────┼────────────┼─────────────┼────────────────┼─────────────────┤
-    │         0 │  100501001 │ ANSON      │ CHARLES    │ H           │ NULL       │ EN          │             29 │ 18610722        │
-    │         1 │  100501002 │ ALLSHESKEY │ THEODORE   │ F           │ NULL       │ NY          │             21 │ 18610722        │
-    │         2 │  100501003 │ BILL       │ CHARLES    │ W           │ NULL       │ CT          │             25 │ 18610722        │
-    │         3 │  100501004 │ BRADLEY    │ GEORGE     │ A           │ NULL       │ CT          │             18 │ 18610722        │
-    │         4 │  100501005 │ BUNITT     │ WILLIAM    │ N           │ NULL       │ CT          │             18 │ 18610722        │
-    │         5 │  100501007 │ BOOTH      │ FREDERICK  │ J           │ NULL       │ CT          │             19 │ 18610722        │
-    │         6 │  100501008 │ BYERS      │ JAMES      │ NULL        │ NULL       │ IR          │             35 │ 18610722        │
-    │         7 │  100501009 │ BEERS      │ WILLIAM    │ E           │ NULL       │ CT          │             22 │ 18610722        │
-    │         8 │  100501010 │ BENEDICT   │ THOMAS     │ E           │ NULL       │ CT          │             21 │ 18610722        │
-    │         9 │  100501011 │ CLARK      │ THEODORE   │ D           │ NULL       │ CT          │             18 │ 18610722        │
-    │         … │          … │ …          │ …          │ …           │ …          │ …           │              … │ …               │
-    └───────────┴────────────┴────────────┴────────────┴─────────────┴────────────┴─────────────┴────────────────┴─────────────────┘
-
+    ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
+    ┃ record_id ┃ label_true ┃ first_name ┃ middle_name ┃ last_name ┃ gender ┃ birth_year ┃ birth_month ┃ birth_place ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
+    │ int64     │ string     │ string     │ string      │ string    │ string │ string     │ string      │ string      │
+    ├───────────┼────────────┼────────────┼─────────────┼───────────┼────────┼────────────┼─────────────┼─────────────┤
+    │         0 │ 0100501002 │ THEODORE   │ F           │ ALKESKEY  │ M      │ 1840       │ 03          │ NY          │
+    │         1 │ 0100501004 │ GEORGE     │ A           │ BRADLEY   │ M      │ 1847       │ 06          │ CT          │
+    │         2 │ 0100501005 │ WM         │ NULL        │ BURRITT   │ M      │ 1847       │ 11          │ CT          │
+    │         3 │ 0100501007 │ FREDRICK   │ J           │ BOOTH     │ M      │ 1842       │ 06          │ CT          │
+    │         4 │ 0100501009 │ WILLIAM    │ E           │ BEERS     │ M      │ 1839       │ 02          │ CT          │
+    │         5 │ 0100501010 │ THOMAS     │ NULL        │ BENEDICT  │ M      │ 1841       │ 02          │ CT          │
+    │         6 │ 0100501018 │ HIRAM      │ M           │ COLE      │ M      │ 1843       │ 01          │ CT          │
+    │         7 │ 0100501019 │ HENRY      │ B           │ CURTISS   │ M      │ 1840       │ 09          │ CT          │
+    │         8 │ 0100501020 │ JOHN       │ NULL        │ CARNEY    │ M      │ 1844       │ 03          │ IR          │
+    │         9 │ 0100501021 │ DAVID      │ O           │ COMSTOCK  │ M      │ 1841       │ 02          │ CT          │
+    │         … │ …          │ …          │ …           │ …         │ …      │ …          │ …           │ …           │
+    └───────────┴────────────┴────────────┴─────────────┴───────────┴────────┴────────────┴─────────────┴─────────────┘
     >>> MSR
-    ┏━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
-    ┃ record_id ┃ last_name ┃ first_name ┃ middle_name ┃ birth_year ┃ birth_month ┃ gender ┃ birth_place ┃ label_true ┃
-    ┡━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
-    │ int64     │ string    │ string     │ string      │ string     │ string      │ string │ string      │ string     │
-    ├───────────┼───────────┼────────────┼─────────────┼────────────┼─────────────┼────────┼─────────────┼────────────┤
-    │         0 │ ALKESKEY  │ THEODORE   │ F           │ 1840       │ 03          │ M      │ NY          │ 0100501002 │
-    │         1 │ BRADLEY   │ GEORGE     │ A           │ 1847       │ 06          │ M      │ CT          │ 0100501004 │
-    │         2 │ BURRITT   │ WM         │ NULL        │ 1847       │ 11          │ M      │ CT          │ 0100501005 │
-    │         3 │ BOOTH     │ FREDRICK   │ J           │ 1842       │ 06          │ M      │ CT          │ 0100501007 │
-    │         4 │ BEERS     │ WILLIAM    │ E           │ 1839       │ 02          │ M      │ CT          │ 0100501009 │
-    │         5 │ BENEDICT  │ THOMAS     │ NULL        │ 1841       │ 02          │ M      │ CT          │ 0100501010 │
-    │         6 │ COLE      │ HIRAM      │ M           │ 1843       │ 01          │ M      │ CT          │ 0100501018 │
-    │         7 │ CURTISS   │ HENRY      │ B           │ 1840       │ 09          │ M      │ CT          │ 0100501019 │
-    │         8 │ CARNEY    │ JOHN       │ NULL        │ 1844       │ 03          │ M      │ IR          │ 0100501020 │
-    │         9 │ COMSTOCK  │ DAVID      │ O           │ 1841       │ 02          │ M      │ CT          │ 0100501021 │
-    │         … │ …         │ …          │ …           │ …          │ …           │ …      │ …           │ …          │
-    └───────────┴───────────┴────────────┴─────────────┴────────────┴─────────────┴────────┴─────────────┴────────────┘
-    """  # noqa: E501
+    ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+    ┃ record_id ┃ label_true ┃ first_name ┃ middle_name ┃ last_name  ┃ birth_date ┃ birth_place ┃ enlistment_age ┃ enlistment_date ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+    │ int64     │ int64      │ string     │ string      │ string     │ string     │ string      │ int64          │ string          │
+    ├───────────┼────────────┼────────────┼─────────────┼────────────┼────────────┼─────────────┼────────────────┼─────────────────┤
+    │         0 │  100501001 │ CHARLES    │ H           │ ANSON      │ NULL       │ EN          │             29 │ 18610722        │
+    │         1 │  100501002 │ THEODORE   │ F           │ ALLSHESKEY │ NULL       │ NY          │             21 │ 18610722        │
+    │         2 │  100501003 │ CHARLES    │ W           │ BILL       │ NULL       │ CT          │             25 │ 18610722        │
+    │         3 │  100501004 │ GEORGE     │ A           │ BRADLEY    │ NULL       │ CT          │             18 │ 18610722        │
+    │         4 │  100501005 │ WILLIAM    │ N           │ BUNITT     │ NULL       │ CT          │             18 │ 18610722        │
+    │         5 │  100501007 │ FREDERICK  │ J           │ BOOTH      │ NULL       │ CT          │             19 │ 18610722        │
+    │         6 │  100501008 │ JAMES      │ NULL        │ BYERS      │ NULL       │ IR          │             35 │ 18610722        │
+    │         7 │  100501009 │ WILLIAM    │ E           │ BEERS      │ NULL       │ CT          │             22 │ 18610722        │
+    │         8 │  100501010 │ THOMAS     │ E           │ BENEDICT   │ NULL       │ CT          │             21 │ 18610722        │
+    │         9 │  100501011 │ THEODORE   │ D           │ CLARK      │ NULL       │ CT          │             18 │ 18610722        │
+    │         … │          … │ …          │ …           │ …          │ …          │ …           │              … │ …               │
+    └───────────┴────────────┴────────────┴─────────────┴────────────┴────────────┴─────────────┴────────────────┴─────────────────┘"""  # noqa: E501
     if backend is None:
         backend = ibis
 
