@@ -7,6 +7,7 @@ import altair as alt
 import ibis
 from ibis import _
 from ibis.expr.types import Table
+import ipywidgets
 import pandas as pd
 
 from mismo.compare import Comparison, ComparisonLevel, Comparisons
@@ -15,14 +16,14 @@ from mismo.fs._weights import Weights
 from mismo.plot._common import LOG_ODDS_COLOR_SCALE
 
 
-def plot_compared(
+def compared_dashboard(
     compared: Table,
     comparisons: Comparisons,
     weights: Weights | None = None,
     *,
     width: int = 500,
-) -> alt.Chart:
-    """Plot a histogram of compared record pairs.
+) -> ipywidgets.VBox:
+    """A dashboard for debugging compared record pairs.
 
     Used to see which comparison levels are common, which are rare, and which
     Comparisons are related to each other. For example, exact matches should
@@ -33,13 +34,71 @@ def plot_compared(
     ----------
     compared : Table
         The result of a comparison.
+    comparisons : Comparisons
+        The Comparisons used to compare the records.
+    weights : Weights, optional
+        The Weights used to score the comparison, by default None
+        If provided, the chart will be colored by the odds found from
+        the Weights.
+    width : int, optional
+        The width of the chart, by default 500
+
+    Returns
+    -------
+    ipywidgets.VBox
+        The dashboard.
     """
+    chart = _compared_chart(compared, comparisons, weights, width=width)
+    chart_widget = alt.JupyterChart(chart)
+    limiter_widget = ipywidgets.IntSlider(
+        min=1, max=100, value=5, step=1, description="Show Pairs:"
+    )
+    vector_title_widget = ipywidgets.HTML()
+    table_widget = ipywidgets.HTML()
+
+    def set_table(data: Table):
+        df = data.limit(limiter_widget.value).to_pandas()
+        table_widget.value = df.to_html(index=False, render_links=True)
+
+    set_table(compared.head(0))
     cols = [comp.name for comp in comparisons]
 
-    vector_counts = compared.group_by(cols).agg(n_pairs=_.count())
+    def on_select(change):
+        vector_id = change.new.value[0]["vector_id"]
+        filtered = compared[_.vector_id == vector_id]
+        vector_values = filtered[cols].limit(1).to_pandas().iloc[0].to_dict()
+        vector_title_widget.value = "&nbsp;".join(
+            f"<b>{k}</b>: {v}" for k, v in vector_values.items()
+        )
+        set_table(filtered.drop("vector_id", *cols))
+
+    chart_widget.selections.observe(on_select, ["vector_click"])
+
+    return ipywidgets.VBox(
+        [
+            chart_widget,
+            limiter_widget,
+            vector_title_widget,
+            table_widget,
+        ]
+    )
+
+
+def _compared_chart(
+    compared: Table,
+    comparisons: Comparisons,
+    weights: Weights | None = None,
+    *,
+    width: int = 500,
+) -> alt.Chart:
+    cols = [comp.name for comp in comparisons]
+
+    compared = compared.mutate(
+        vector_id=ibis.literal(":").join([compared[c] for c in cols]),
+    )
+    vector_counts = compared.group_by(cols + ["vector_id"]).agg(n_pairs=_.count())
     vector_counts = vector_counts.mutate(
         pct_pairs=_.n_pairs / _.n_pairs.sum(),
-        vector_id=ibis.literal(":").join([vector_counts[c] for c in cols]),
     )
     if weights is not None:
         vector_counts = weights.score(vector_counts)
@@ -58,8 +117,13 @@ def plot_compared(
     vector_counts = vector_counts.to_pandas()
 
     scrubber_filter = alt.selection_interval(encodings=["x"])
-    vector_fader = alt.selection_point(fields=["vector_id"], on="mouseover")
-    opacity_vector = alt.condition(vector_fader, alt.value(1), alt.value(0.8))
+    vector_fader_mouseover = alt.selection_point(
+        name="vector_mouseover", fields=["vector_id"], on="mouseover"
+    )
+    vector_fader_click = alt.selection_point(
+        name="vector_click", fields=["vector_id"], on="click"
+    )
+    opacity_vector = alt.condition(vector_fader_mouseover, alt.value(1), alt.value(0.8))
     level_color = alt.Color(
         "level_uid",
         title="Comparison:Level",
@@ -99,7 +163,7 @@ def plot_compared(
             **{"color": hist_color.legend(None)} if hist_color is not None else {},
         )
         .add_params(scrubber_filter)
-        .add_params(vector_fader)
+        .add_params(vector_fader_mouseover)
     )
     hist = (
         alt.Chart(vector_counts, width=width)
@@ -121,7 +185,8 @@ def plot_compared(
             **{"color": hist_color} if hist_color is not None else {},
         )
         .transform_filter(scrubber_filter)
-        .add_params(vector_fader)
+        .add_params(vector_fader_mouseover)
+        .add_params(vector_fader_click)
     )
     vector_chart = (
         alt.Chart(_vector_grid_data(comparisons, vector_counts), height=80, width=width)
@@ -138,7 +203,8 @@ def plot_compared(
             tooltip=["level"],
         )
         .transform_filter(scrubber_filter)
-        .add_params(vector_fader)
+        .add_params(vector_fader_mouseover)
+        .add_params(vector_fader_click)
     )
     together = alt.vconcat(scrubber_chart, hist, vector_chart, spacing=0)
     together = together.properties(
@@ -149,7 +215,6 @@ def plot_compared(
             fontSize=14,
         )
     )
-    return together
 
 
 def _frange(start, stop, n):
