@@ -6,8 +6,8 @@ import altair as alt
 import pandas as pd
 
 
-def upset_plot(data: Any) -> alt.Chart:
-    """Generate an Altair-based UpSet plot.
+def upset_chart(data: Any) -> alt.Chart:
+    """Generate an UpSet plot.
 
     Parameters
     ----------

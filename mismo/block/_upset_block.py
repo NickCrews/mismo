@@ -7,8 +7,18 @@ from ibis.expr.types import Table
 from mismo.block import _upset
 
 
-def upset_plot(blocked: Table) -> alt.Chart:
+def upset_chart(blocked: Table) -> alt.Chart:
     """Generate an Altair-based UpSet plot for a blocked table.
+
+    An [UpSet plot](https://en.wikipedia.org/wiki/UpSet_Plot)
+    is useful to visualize the overlap between blocking rules.
+    For example, how many pairs are blocked by the "first name" rule,
+    how many pairs are blocked by the "last name" rule, and how many pairs
+    are blocked by both rules together.
+
+    For example, if there is one group that generates a lot of pairs,
+    that could be an opportunity to make those rules more restrictive,
+    so that they generate fewer pairs.
 
     Parameters
     ----------
@@ -32,4 +42,4 @@ def upset_plot(blocked: Table) -> alt.Chart:
     m = {name: _.blocking_rules.contains(name) for name in rule_names}
     intersections = intersections.mutate(**m)
     intersections = intersections.drop("blocking_rules")
-    return _upset.upset_plot(intersections)
+    return _upset.upset_chart(intersections)

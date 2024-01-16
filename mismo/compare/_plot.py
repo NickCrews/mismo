@@ -11,9 +11,9 @@ import ipywidgets
 import pandas as pd
 
 from mismo.compare import Comparison, ComparisonLevel, Comparisons
+from mismo.fs._plot import LOG_ODDS_COLOR_SCALE
 from mismo.fs._util import odds_to_log_odds
 from mismo.fs._weights import Weights
-from mismo.plot._common import LOG_ODDS_COLOR_SCALE
 
 
 def compared_dashboard(
@@ -215,6 +215,7 @@ def _compared_chart(
             fontSize=14,
         )
     )
+    return together
 
 
 def _frange(start, stop, n):

@@ -10,8 +10,8 @@ import pandas as pd
 from mismo import _util
 
 
-def plot_cluster(nodes: Table, edges: Table) -> alt.Chart:
-    """Plot a cluster of records and the links between them.
+def cluster_chart(nodes: Table, edges: Table) -> alt.Chart:
+    """Plot a cluster of records and the links between them as an altair chart.
 
     Parameters
     ----------

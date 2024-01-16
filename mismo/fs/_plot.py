@@ -5,9 +5,14 @@ from typing import Iterable
 import altair as alt
 import pandas as pd
 
-from mismo.plot._common import LOG_ODDS_COLOR_SCALE
-
 from ._weights import ComparisonWeights
+
+LOG_ODDS_COLOR_SCALE = alt.Scale(
+    domainMid=0,
+    domainMin=-3,
+    domainMax=3,
+    scheme="redyellowgreen",
+)
 
 
 def plot_weights(weights: ComparisonWeights | Iterable[ComparisonWeights]) -> alt.Chart:
