@@ -48,6 +48,10 @@ def compared_dashboard(
     ipywidgets.VBox
         The dashboard.
     """
+    cols = [comp.name for comp in comparisons]
+    compared = compared.mutate(
+        vector_id=ibis.literal(":").join([compared[c] for c in cols]),
+    )
     chart = _compared_chart(compared, comparisons, weights, width=width)
     chart_widget = alt.JupyterChart(chart)
     limiter_widget = ipywidgets.IntSlider(
@@ -61,7 +65,6 @@ def compared_dashboard(
         table_widget.value = df.to_html(index=False, render_links=True)
 
     set_table(compared.head(0))
-    cols = [comp.name for comp in comparisons]
 
     def on_select(change):
         vector_id = change.new.value[0]["vector_id"]
@@ -93,9 +96,6 @@ def _compared_chart(
 ) -> alt.Chart:
     cols = [comp.name for comp in comparisons]
 
-    compared = compared.mutate(
-        vector_id=ibis.literal(":").join([compared[c] for c in cols]),
-    )
     vector_counts = compared.group_by(cols + ["vector_id"]).agg(n_pairs=_.count())
     vector_counts = vector_counts.mutate(
         pct_pairs=_.n_pairs / _.n_pairs.sum(),
