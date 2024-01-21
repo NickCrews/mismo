@@ -54,14 +54,15 @@ class TestRLData:
         assert dataset.count().execute() == 500
         assert dataset["label_true"].nunique().execute() == 450  # 50 duplicates
 
+        # Proportion of clusters where last name is not unique.
+        # Should be around 3.5%, i.e. around one third of the
+        # 11% of clusters with more than one record.
         name_variation_rate = 1 - (
             dataset.aggregate(
                 by="label_true", unique_last_name=dataset["lname_c1"].nunique() == 1
             )["unique_last_name"].mean()
         )
-        assert (
-            name_variation_rate.execute() == 0.03555555555555556
-        )  # Proportion of clusters where last name is not unique. Should be around 3.5%, i.e. around one third of the 11% of clusters with more than one record.
+        assert name_variation_rate.execute() == 0.03555555555555556
 
     def test_load_rldata10000(self):
         dataset = load_rldata10000()
@@ -81,32 +82,35 @@ class TestRLData:
 def test_load_cen_msr():
     cen, msr = load_cen_msr()
 
-    CEN_COLUMNS = {
+    CEN_COLUMNS = [
         "record_id",
-        "last_name",
+        "label_true",
         "first_name",
         "middle_name",
+        "last_name",
         "birth_year",
         "birth_month",
-        "gender",
         "birth_place",
-        "label_true",
-    }
-
-    MSR_COLUMNS = {
+        "gender",
+    ]
+    MSR_COLUMNS = [
         "record_id",
         "label_true",
-        "last_name",
         "first_name",
         "middle_name",
-        "birth_date",
+        "last_name",
+        "birth_year",
+        "birth_month",
+        "birth_day",
         "birth_place",
         "enlistment_age",
-        "enlistment_date",
-    }
+        "enlistment_year",
+        "enlistment_month",
+        "enlistment_day",
+    ]
 
-    assert set(cen.columns) == CEN_COLUMNS
+    assert cen.columns == CEN_COLUMNS
     assert cen.count().execute() == 54752
 
-    assert set(msr.columns) == MSR_COLUMNS
+    assert msr.columns == MSR_COLUMNS
     assert msr.count().execute() == 39340

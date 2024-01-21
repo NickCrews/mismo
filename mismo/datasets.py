@@ -265,10 +265,11 @@ def load_cen_msr(backend: ibis.BaseBackend | None = None) -> tuple[Table, Table]
     """Bipartite record linkage datasets based on Union Army Data
 
     This function returns two datasets, `CEN` and `MSR`, with no duplication within, but with
-    duplication between. These datasets contain personal information about soldiers from the
-    Union Army and their family members. The task is to link the soldiers in the `MSR` dataset
-    to their corresponding records in the `CEN` dataset, while accounting for noise and avoiding
-    false matches.
+    duplication between. These datasets contain personal information about
+    civil war soldiers from the Union Army and their family members.
+    The task is to link the civil war soldiers in the
+    `MSR` dataset (Military Service Records) to their corresponding records in the
+    `CEN` dataset (1900 Census Data), while accounting for noise and avoiding false matches.
 
     Notes
     -----
@@ -290,7 +291,7 @@ def load_cen_msr(backend: ibis.BaseBackend | None = None) -> tuple[Table, Table]
 
     > "We consider re-linking soldiers from the MSR data to records from the 1900 census, which we
     call the CEN data file. This linkage problem is difficult for automated record linkage algorithms due
-    to the presence of soldiers’ family members in the CEN data. Furthermore, not all soldiers from
+    to the presence of soldiers' family members in the CEN data. Furthermore, not all soldiers from
     the MSR data have a match in the CEN data. However, we can consider the linkages identified by
     the Early Indicators of Aging project as truth. For the linking fields, we use first name, last name,
     middle initial, and approximate birth year."
@@ -307,6 +308,9 @@ def load_cen_msr(backend: ibis.BaseBackend | None = None) -> tuple[Table, Table]
     -------
     tuple[Table, Table]
         Tuple containing the `CEN` and `MSR` tables, with the following schemas.
+        Note that the `birth_year` and `birth_month` columns are strings
+        in the `CEN` dataset (because they can be poorly formatted),
+        but integers in the `MSR` dataset.
 
         **CEN dataset:**
         - record_id: int64
@@ -317,87 +321,125 @@ def load_cen_msr(backend: ibis.BaseBackend | None = None) -> tuple[Table, Table]
             Note that some records have a NULL value for this unique identifier,
             since they were out of the scope of the linkage performed for the
             Union Army Dataset.
-        - last_name: str
-            Last name of the recruit.
-        - first_name: str
+        - first_name: string
             First name of the recruit.
-        - middle_name: str
+        - middle_name: string
             Middle name of the recruit.
-        - birth_year: str
-            Birth year of the recruit.
-        - birth_month: str
+        - last_name: string
+            Last name of the recruit.
+        - birth_year: string
+            Birth year of the recruit. Contains noisy values like "18--"
+        - birth_month: string
             Birth month of the recruit.
-        - gender: str
-            Gender of the recruit.
-        - birth_place: str
-            Birth place of the recruit.
+            Contains noisy values like "02", "FEB", or "UNK"
+        - gender: string
+            Gender of the recruit. Usually "M" or "F", but can contain junk.
+        - birth_place: string
+            Birth place of the recruit, eg "NY".
+            Often represents a US state, but can also represent other things.
 
         **MSR dataset:**
         - record_id: int64
             Sequential identification of rows in the table.
         - label_true: int64
             Unique identifier for recruits in the Union Army dataset, as above.
-        - last_name: str
-            Last name of the recruit.
-        - first_name: str
+        - first_name: string
             First name of the recruit.
-        - middle_name: str
+        - middle_name: string
             Middle name of the recruit.
-        - birth_date: str
-            Birth date of the recruit.
-        - birth_place: str
-            Birth place of the recruit.
+        - last_name: string
+            Last name of the recruit.
+        - birth_year: int64
+            Birth year of the recruit. Can be NULL.
+        - birth_month: int64
+            Birth month of the recruit (1-12). Can be NULL.
+        - birth_day: int64
+            Birth day-of-month of the recruit. Can be NULL.
+        - birth_place: string
+            Two letter code representing a state, country, continent, etc.
+            eg "NY" (New York), "AG" (Afghanistan), "AS" (Aboard Ship).
+            See the paper for more details.
         - enlistment_age: int64
-            Age of the recruit at enlistment.
-        - enlistment_date: str
-            Date of enlistment of the recruit.
+            Age of the recruit at enlistment. Can be NULL.
+        - enlistment_year: int64
+            Year of enlistment. Can be NULL or noisy.
+        - enlistment_month: int64
+            Month of enlistment. Can be NULL or noisy.
+        - enlistment_day: int64
+            Day-of-month of enlistment. Can be NULL or noisy.
 
     Examples
     --------
     >>> CEN, MSR = load_cen_msr()
     >>> CEN
-    ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
-    ┃ record_id ┃ label_true ┃ first_name ┃ middle_name ┃ last_name ┃ gender ┃ birth_year ┃ birth_month ┃ birth_place ┃
-    ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
-    │ int64     │ string     │ string     │ string      │ string    │ string │ string     │ string      │ string      │
-    ├───────────┼────────────┼────────────┼─────────────┼───────────┼────────┼────────────┼─────────────┼─────────────┤
-    │         0 │ 0100501002 │ THEODORE   │ F           │ ALKESKEY  │ M      │ 1840       │ 03          │ NY          │
-    │         1 │ 0100501004 │ GEORGE     │ A           │ BRADLEY   │ M      │ 1847       │ 06          │ CT          │
-    │         2 │ 0100501005 │ WM         │ NULL        │ BURRITT   │ M      │ 1847       │ 11          │ CT          │
-    │         3 │ 0100501007 │ FREDRICK   │ J           │ BOOTH     │ M      │ 1842       │ 06          │ CT          │
-    │         4 │ 0100501009 │ WILLIAM    │ E           │ BEERS     │ M      │ 1839       │ 02          │ CT          │
-    │         5 │ 0100501010 │ THOMAS     │ NULL        │ BENEDICT  │ M      │ 1841       │ 02          │ CT          │
-    │         6 │ 0100501018 │ HIRAM      │ M           │ COLE      │ M      │ 1843       │ 01          │ CT          │
-    │         7 │ 0100501019 │ HENRY      │ B           │ CURTISS   │ M      │ 1840       │ 09          │ CT          │
-    │         8 │ 0100501020 │ JOHN       │ NULL        │ CARNEY    │ M      │ 1844       │ 03          │ IR          │
-    │         9 │ 0100501021 │ DAVID      │ O           │ COMSTOCK  │ M      │ 1841       │ 02          │ CT          │
-    │         … │ …          │ …          │ …           │ …         │ …      │ …          │ …           │ …           │
-    └───────────┴────────────┴────────────┴─────────────┴───────────┴────────┴────────────┴─────────────┴─────────────┘
+    ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┓
+    ┃ record_id ┃ label_true ┃ first_name ┃ middle_name ┃ last_name ┃ birth_year ┃ birth_month ┃ birth_place ┃ gender ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━┩
+    │ int64     │ string     │ string     │ string      │ string    │ string     │ string      │ string      │ string │
+    ├───────────┼────────────┼────────────┼─────────────┼───────────┼────────────┼─────────────┼─────────────┼────────┤
+    │         0 │ 0100501002 │ THEODORE   │ F           │ ALKESKEY  │ 1840       │ 03          │ NY          │ M      │
+    │         1 │ 0100501004 │ GEORGE     │ A           │ BRADLEY   │ 1847       │ 06          │ CT          │ M      │
+    │         2 │ 0100501005 │ WM         │ NULL        │ BURRITT   │ 1847       │ 11          │ CT          │ M      │
+    │         3 │ 0100501007 │ FREDRICK   │ J           │ BOOTH     │ 1842       │ 06          │ CT          │ M      │
+    │         4 │ 0100501009 │ WILLIAM    │ E           │ BEERS     │ 1839       │ 02          │ CT          │ M      │
+    │         5 │ 0100501010 │ THOMAS     │ NULL        │ BENEDICT  │ 1841       │ 02          │ CT          │ M      │
+    │         6 │ 0100501018 │ HIRAM      │ M           │ COLE      │ 1843       │ 01          │ CT          │ M      │
+    │         7 │ 0100501019 │ HENRY      │ B           │ CURTISS   │ 1840       │ 09          │ CT          │ M      │
+    │         8 │ 0100501020 │ JOHN       │ NULL        │ CARNEY    │ 1844       │ 03          │ IR          │ M      │
+    │         9 │ 0100501021 │ DAVID      │ O           │ COMSTOCK  │ 1841       │ 02          │ CT          │ M      │
+    │         … │ …          │ …          │ …           │ …         │ …          │ …           │ …           │ …      │
+    └───────────┴────────────┴────────────┴─────────────┴───────────┴────────────┴─────────────┴─────────────┴────────┘
     >>> MSR
-    ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
-    ┃ record_id ┃ label_true ┃ first_name ┃ middle_name ┃ last_name  ┃ birth_date ┃ birth_place ┃ enlistment_age ┃ enlistment_date ┃
-    ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
-    │ int64     │ int64      │ string     │ string      │ string     │ string     │ string      │ int64          │ string          │
-    ├───────────┼────────────┼────────────┼─────────────┼────────────┼────────────┼─────────────┼────────────────┼─────────────────┤
-    │         0 │  100501001 │ CHARLES    │ H           │ ANSON      │ NULL       │ EN          │             29 │ 18610722        │
-    │         1 │  100501002 │ THEODORE   │ F           │ ALLSHESKEY │ NULL       │ NY          │             21 │ 18610722        │
-    │         2 │  100501003 │ CHARLES    │ W           │ BILL       │ NULL       │ CT          │             25 │ 18610722        │
-    │         3 │  100501004 │ GEORGE     │ A           │ BRADLEY    │ NULL       │ CT          │             18 │ 18610722        │
-    │         4 │  100501005 │ WILLIAM    │ N           │ BUNITT     │ NULL       │ CT          │             18 │ 18610722        │
-    │         5 │  100501007 │ FREDERICK  │ J           │ BOOTH      │ NULL       │ CT          │             19 │ 18610722        │
-    │         6 │  100501008 │ JAMES      │ NULL        │ BYERS      │ NULL       │ IR          │             35 │ 18610722        │
-    │         7 │  100501009 │ WILLIAM    │ E           │ BEERS      │ NULL       │ CT          │             22 │ 18610722        │
-    │         8 │  100501010 │ THOMAS     │ E           │ BENEDICT   │ NULL       │ CT          │             21 │ 18610722        │
-    │         9 │  100501011 │ THEODORE   │ D           │ CLARK      │ NULL       │ CT          │             18 │ 18610722        │
-    │         … │          … │ …          │ …           │ …          │ …          │ …           │              … │ …               │
-    └───────────┴────────────┴────────────┴─────────────┴────────────┴────────────┴─────────────┴────────────────┴─────────────────┘"""  # noqa: E501
+    ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+    ┃ record_id ┃ label_true ┃ first_name ┃ middle_name ┃ last_name  ┃ birth_year ┃ birth_month ┃ birth_day ┃ birth_place ┃ enlistment_age ┃ enlistment_year ┃ enlistment_month ┃ enlistment_day ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+    │ int64     │ int64      │ string     │ string      │ string     │ int64      │ int64       │ int64     │ string      │ int64          │ int64           │ int64            │ int64          │
+    ├───────────┼────────────┼────────────┼─────────────┼────────────┼────────────┼─────────────┼───────────┼─────────────┼────────────────┼─────────────────┼──────────────────┼────────────────┤
+    │         0 │  100501001 │ CHARLES    │ H           │ ANSON      │       NULL │        NULL │      NULL │ EN          │             29 │            1861 │                7 │             22 │
+    │         1 │  100501002 │ THEODORE   │ F           │ ALLSHESKEY │       NULL │        NULL │      NULL │ NY          │             21 │            1861 │                7 │             22 │
+    │         2 │  100501003 │ CHARLES    │ W           │ BILL       │       NULL │        NULL │      NULL │ CT          │             25 │            1861 │                7 │             22 │
+    │         3 │  100501004 │ GEORGE     │ A           │ BRADLEY    │       NULL │        NULL │      NULL │ CT          │             18 │            1861 │                7 │             22 │
+    │         4 │  100501005 │ WILLIAM    │ N           │ BUNITT     │       NULL │        NULL │      NULL │ CT          │             18 │            1861 │                7 │             22 │
+    │         5 │  100501007 │ FREDERICK  │ J           │ BOOTH      │       NULL │        NULL │      NULL │ CT          │             19 │            1861 │                7 │             22 │
+    │         6 │  100501008 │ JAMES      │ NULL        │ BYERS      │       NULL │        NULL │      NULL │ IR          │             35 │            1861 │                7 │             22 │
+    │         7 │  100501009 │ WILLIAM    │ E           │ BEERS      │       NULL │        NULL │      NULL │ CT          │             22 │            1861 │                7 │             22 │
+    │         8 │  100501010 │ THOMAS     │ E           │ BENEDICT   │       NULL │        NULL │      NULL │ CT          │             21 │            1861 │                7 │             22 │
+    │         9 │  100501011 │ THEODORE   │ D           │ CLARK      │       NULL │        NULL │      NULL │ CT          │             18 │            1861 │                7 │             22 │
+    │         … │          … │ …          │ …           │ …          │          … │           … │         … │ …           │              … │               … │                … │              … │
+    └───────────┴────────────┴────────────┴─────────────┴────────────┴────────────┴─────────────┴───────────┴─────────────┴────────────────┴─────────────────┴──────────────────┴────────────────┘"""  # noqa: E501
     if backend is None:
         backend = ibis
 
-    MSR_path = _DATASETS_DIR / "union_army/MSR.csv"
-    MSR = backend.read_csv(MSR_path).order_by("record_id").cache()
-
     CEN_path = _DATASETS_DIR / "union_army/CEN.csv"
-    CEN = backend.read_csv(CEN_path).order_by("record_id").cache()
+    CEN_SCHEMA = {
+        "record_id": "int64",
+        "label_true": "int64",
+        "first_name": "string",
+        "middle_name": "string",
+        "last_name": "string",
+        "birth_year": "string",
+        "birth_month": "string",
+        "gender": "string",
+        "birth_place": "string",
+    }
+    CEN = backend.read_csv(CEN_path).cast(CEN_SCHEMA).order_by("record_id").cache()
+
+    MSR_path = _DATASETS_DIR / "union_army/MSR.csv"
+    MSR_SCHEMA = {
+        "record_id": "int64",
+        "label_true": "int64",
+        "first_name": "string",
+        "middle_name": "string",
+        "last_name": "string",
+        "birth_year": "int64",
+        "birth_month": "int64",
+        "birth_day": "int64",
+        "birth_place": "string",
+        "enlistment_age": "int64",
+        "enlistment_year": "int64",
+        "enlistment_month": "int64",
+        "enlistment_day": "int64",
+    }
+    MSR = backend.read_csv(MSR_path).cast(MSR_SCHEMA).order_by("record_id").cache()
 
     return CEN, MSR
