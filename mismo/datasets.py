@@ -89,16 +89,16 @@ def load_patents(backend: ibis.BaseBackend | None = None) -> Table:
           A unique ID for each row in the table.
         - label_true: int64
           The manually labeled, true ID of the inventor.
-        - name_true: str
+        - name_true: string
           The manually labeled, true name of the inventor.
-        - name: str
+        - name: string
           The raw name on the patent.
         - latitude: float64
           Geocoded from the inventor's address. 0.0 indicates no address was found
         - longitude: float64
-        - coauthor: str
+        - coauthor: string
           A list of coauthors on the patent, separated by "**"
-        - class_: str
+        - class_:string
           A list of 4-character IPC technical codes, separated by "**"
 
     Examples
@@ -154,13 +154,13 @@ def load_rldata500(backend: ibis.BaseBackend | None = None) -> Table:
           A unique ID for each row in the table.
         - label_true: int64
           The manually labeled, true ID of the inventor.
-        - fname_c1: str
+        - fname_c1: string
           First component of the first name.
-        - fname_c2: str
+        - fname_c2: string
           Second component of the first name (mostly NULL values)
-        - lname_c1: str
+        - lname_c1: string
           First component of the last name.
-        - lname_c2: str
+        - lname_c2: string
           Second component of the last name (mostly NULL values).
         - by: int64
           Birth year
@@ -219,13 +219,13 @@ def load_rldata10000(backend: ibis.BaseBackend | None = None) -> Table:
           A unique ID for each row in the table.
         - label_true: int64
           The manually labeled, true ID of the inventor.
-        - fname_c1: str
+        - fname_c1: string
           First component of the first name.
-        - fname_c2: str
+        - fname_c2: string
           Second component of the first name (mostly NULL values)
-        - lname_c1: str
+        - lname_c1: string
           First component of the last name.
-        - lname_c2: str
+        - lname_c2: string
           Second component of the last name (mostly NULL values).
         - by: int64
           Birth year
