@@ -99,14 +99,10 @@ def test_load_cen_msr():
         "first_name",
         "middle_name",
         "last_name",
-        "birth_year",
-        "birth_month",
-        "birth_day",
+        "birth_date",
         "birth_place",
-        "enlistment_age",
-        "enlistment_year",
-        "enlistment_month",
-        "enlistment_day",
+        "enlist_date",
+        "enlist_age",
     ]
 
     assert cen.columns == CEN_COLUMNS

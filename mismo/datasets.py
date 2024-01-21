@@ -322,21 +322,18 @@ def load_cen_msr(backend: ibis.BaseBackend | None = None) -> tuple[Table, Table]
             since they were out of the scope of the linkage performed for the
             Union Army Dataset.
         - first_name: string
-            First name of the recruit.
         - middle_name: string
-            Middle name of the recruit.
         - last_name: string
-            Last name of the recruit.
         - birth_year: string
-            Birth year of the recruit. Contains noisy values like "18--"
+            Often the real year as in "1842", but can be noisy, eg "?R" or "UN".
         - birth_month: string
-            Birth month of the recruit.
-            Contains noisy values like "02", "FEB", or "UNK"
+            Often the month as in "03", but can be noisy, eg "UNK".
         - gender: string
             Gender of the recruit. Usually "M" or "F", but can contain junk.
         - birth_place: string
-            Birth place of the recruit, eg "NY".
-            Often represents a US state, but can also represent other things.
+            Two letter code representing a state, country, continent, etc.
+            eg "NY" (New York), "AG" (Afghanistan), "AS" (Aboard Ship).
+            See the paper for more details.
 
         **MSR dataset:**
         - record_id: int64
@@ -344,29 +341,19 @@ def load_cen_msr(backend: ibis.BaseBackend | None = None) -> tuple[Table, Table]
         - label_true: int64
             Unique identifier for recruits in the Union Army dataset, as above.
         - first_name: string
-            First name of the recruit.
         - middle_name: string
-            Middle name of the recruit.
         - last_name: string
-            Last name of the recruit.
-        - birth_year: int64
-            Birth year of the recruit. Can be NULL.
-        - birth_month: int64
-            Birth month of the recruit (1-12). Can be NULL.
-        - birth_day: int64
-            Birth day-of-month of the recruit. Can be NULL.
+        - birth_date: string
+            In YYYYMMDD format. Dashes are used for missing values, eg "186-12--".
         - birth_place: string
             Two letter code representing a state, country, continent, etc.
             eg "NY" (New York), "AG" (Afghanistan), "AS" (Aboard Ship).
             See the paper for more details.
-        - enlistment_age: int64
-            Age of the recruit at enlistment. Can be NULL.
-        - enlistment_year: int64
-            Year of enlistment. Can be NULL or noisy.
-        - enlistment_month: int64
-            Month of enlistment. Can be NULL or noisy.
-        - enlistment_day: int64
-            Day-of-month of enlistment. Can be NULL or noisy.
+        - enlist_date: string
+            In YYYYMMDD format. Dashes are used for missing values, eg "186-12--".
+        - enlist_age: int64
+            Can be NULL. May be untrustworthy, as the age of 2 appears, which
+            seems unlikely to be true.
 
     Examples
     --------
@@ -390,23 +377,24 @@ def load_cen_msr(backend: ibis.BaseBackend | None = None) -> tuple[Table, Table]
     │         … │ …          │ …          │ …           │ …         │ …          │ …           │ …           │ …      │
     └───────────┴────────────┴────────────┴─────────────┴───────────┴────────────┴─────────────┴─────────────┴────────┘
     >>> MSR
-    ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
-    ┃ record_id ┃ label_true ┃ first_name ┃ middle_name ┃ last_name  ┃ birth_year ┃ birth_month ┃ birth_day ┃ birth_place ┃ enlistment_age ┃ enlistment_year ┃ enlistment_month ┃ enlistment_day ┃
-    ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
-    │ int64     │ int64      │ string     │ string      │ string     │ int64      │ int64       │ int64     │ string      │ int64          │ int64           │ int64            │ int64          │
-    ├───────────┼────────────┼────────────┼─────────────┼────────────┼────────────┼─────────────┼───────────┼─────────────┼────────────────┼─────────────────┼──────────────────┼────────────────┤
-    │         0 │  100501001 │ CHARLES    │ H           │ ANSON      │       NULL │        NULL │      NULL │ EN          │             29 │            1861 │                7 │             22 │
-    │         1 │  100501002 │ THEODORE   │ F           │ ALLSHESKEY │       NULL │        NULL │      NULL │ NY          │             21 │            1861 │                7 │             22 │
-    │         2 │  100501003 │ CHARLES    │ W           │ BILL       │       NULL │        NULL │      NULL │ CT          │             25 │            1861 │                7 │             22 │
-    │         3 │  100501004 │ GEORGE     │ A           │ BRADLEY    │       NULL │        NULL │      NULL │ CT          │             18 │            1861 │                7 │             22 │
-    │         4 │  100501005 │ WILLIAM    │ N           │ BUNITT     │       NULL │        NULL │      NULL │ CT          │             18 │            1861 │                7 │             22 │
-    │         5 │  100501007 │ FREDERICK  │ J           │ BOOTH      │       NULL │        NULL │      NULL │ CT          │             19 │            1861 │                7 │             22 │
-    │         6 │  100501008 │ JAMES      │ NULL        │ BYERS      │       NULL │        NULL │      NULL │ IR          │             35 │            1861 │                7 │             22 │
-    │         7 │  100501009 │ WILLIAM    │ E           │ BEERS      │       NULL │        NULL │      NULL │ CT          │             22 │            1861 │                7 │             22 │
-    │         8 │  100501010 │ THOMAS     │ E           │ BENEDICT   │       NULL │        NULL │      NULL │ CT          │             21 │            1861 │                7 │             22 │
-    │         9 │  100501011 │ THEODORE   │ D           │ CLARK      │       NULL │        NULL │      NULL │ CT          │             18 │            1861 │                7 │             22 │
-    │         … │          … │ …          │ …           │ …          │          … │           … │         … │ …           │              … │               … │                … │              … │
-    └───────────┴────────────┴────────────┴─────────────┴────────────┴────────────┴─────────────┴───────────┴─────────────┴────────────────┴─────────────────┴──────────────────┴────────────────┘"""  # noqa: E501
+    ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+    ┃ record_id ┃ label_true ┃ first_name ┃ middle_name ┃ last_name ┃ birth_date ┃ birth_place ┃ enlist_date ┃ enlist_age ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+    │ int64     │ int64      │ string     │ string      │ string    │ string     │ string      │ string      │ int64      │
+    ├───────────┼────────────┼────────────┼─────────────┼───────────┼────────────┼─────────────┼─────────────┼────────────┤
+    │     19479 │ 2202202138 │ WILLIAM    │ NULL        │ DAHLBY    │ NULL       │ NULL        │ 08051862    │         20 │
+    │     19626 │ 2202309133 │ JAMES      │ NULL        │ RIDD      │ NULL       │ NULL        │ 12141863    │         27 │
+    │     19861 │ 2202403214 │ DANIEL     │ O           │ LOUGHELIN │ NULL       │ NULL        │ 09201864    │         21 │
+    │     19868 │ 2202607002 │ CLARK      │ NULL        │ ETHER     │ NULL       │ NULL        │ 07271861    │         30 │
+    │     19906 │ 2202607040 │ WILLIAM    │ H           │ FINKLE    │ NULL       │ NULL        │ 07271861    │         18 │
+    │     19907 │ 2202607041 │ JONATHAN   │ NULL        │ FISH      │ NULL       │ NULL        │ 07271861    │         21 │
+    │     19982 │ 2202607116 │ JOHN       │ W           │ NISLY     │ NULL       │ NULL        │ 03031864    │         21 │
+    │     19997 │ 2202607131 │ WILLIAM    │ H           │ JONES     │ NULL       │ NULL        │ 11261864    │         22 │
+    │     20515 │ 2203703167 │ ROBERT     │ S           │ WARD      │ NULL       │ NULL        │ 10131864    │         19 │
+    │     20702 │ 2204205164 │ N          │ NULL        │ VA        │ NULL       │ NULL        │ 11221864    │         27 │
+    │         … │          … │ …          │ …           │ …         │ …          │ …           │ …           │          … │
+    └───────────┴────────────┴────────────┴─────────────┴───────────┴────────────┴─────────────┴─────────────┴────────────┘
+    """  # noqa: E501
     if backend is None:
         backend = ibis
 
@@ -419,10 +407,16 @@ def load_cen_msr(backend: ibis.BaseBackend | None = None) -> tuple[Table, Table]
         "last_name": "string",
         "birth_year": "string",
         "birth_month": "string",
-        "gender": "string",
         "birth_place": "string",
+        "gender": "string",
     }
-    CEN = backend.read_csv(CEN_path).cast(CEN_SCHEMA).order_by("record_id").cache()
+    CEN = (
+        backend.read_csv(CEN_path)
+        .cast(CEN_SCHEMA)
+        .select(*CEN_SCHEMA.keys())
+        .order_by("record_id")
+        .cache()
+    )
 
     MSR_path = _DATASETS_DIR / "union_army/MSR.csv"
     MSR_SCHEMA = {
@@ -431,15 +425,17 @@ def load_cen_msr(backend: ibis.BaseBackend | None = None) -> tuple[Table, Table]
         "first_name": "string",
         "middle_name": "string",
         "last_name": "string",
-        "birth_year": "int64",
-        "birth_month": "int64",
-        "birth_day": "int64",
+        "birth_date": "string",
         "birth_place": "string",
-        "enlistment_age": "int64",
-        "enlistment_year": "int64",
-        "enlistment_month": "int64",
-        "enlistment_day": "int64",
+        "enlist_date": "string",
+        "enlist_age": "int64",
     }
-    MSR = backend.read_csv(MSR_path).cast(MSR_SCHEMA).order_by("record_id").cache()
+    MSR = (
+        backend.read_csv(MSR_path)
+        .cast(MSR_SCHEMA)
+        .select(*MSR_SCHEMA.keys())
+        .order_by("record_id")
+        .cache()
+    )
 
     return CEN, MSR
