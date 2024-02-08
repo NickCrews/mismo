@@ -9,7 +9,7 @@ import pytest
 from mismo.block import SlowJoinError, SlowJoinWarning, block, join
 from mismo.tests.util import assert_tables_equal
 
-from .common import letters_blocked
+from .common import letters_blocked_ids
 
 
 @pytest.mark.parametrize(
@@ -26,8 +26,9 @@ from .common import letters_blocked
 )
 def test_block(table_factory, t1: Table, t2: Table, condition):
     blocked_table = block(t1, t2, condition)
-    expected = letters_blocked(table_factory)
-    assert_tables_equal(blocked_table, expected)
+    blocked_ids = blocked_table["record_id_l", "record_id_r"]
+    expected = letters_blocked_ids(table_factory)
+    assert_tables_equal(blocked_ids, expected)
 
 
 def test_cross_block(table_factory, t1: Table, t2: Table):
@@ -35,8 +36,8 @@ def test_cross_block(table_factory, t1: Table, t2: Table):
     blocked_ids = blocked_table["record_id_l", "record_id_r"]
     expected = table_factory(
         {
-            "record_id_l": [0, 1, 2, 0, 1, 2, 0, 1, 2],
-            "record_id_r": [90, 90, 90, 91, 91, 91, 92, 92, 92],
+            "record_id_l": [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2],
+            "record_id_r": [90, 90, 90, 91, 91, 91, 92, 92, 92, 93, 93, 93],
         }
     )
     assert_tables_equal(expected, blocked_ids)

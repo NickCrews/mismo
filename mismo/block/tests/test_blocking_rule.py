@@ -7,7 +7,7 @@ import pytest
 from mismo.block import BlockingRule, block
 from mismo.tests.util import assert_tables_equal
 
-from .common import letters_blocked
+from .common import letters_blocked_ids
 
 
 @pytest.mark.parametrize(
@@ -27,6 +27,6 @@ def test_blocking_rule(table_factory, t1: Table, t2: Table, condition):
     rule = BlockingRule(condition, name=name)
     assert rule.get_name() == name
     assert rule.condition == condition
-    expected = letters_blocked(table_factory)
-    assert_tables_equal(expected, rule.block(t1, t2))
-    assert_tables_equal(expected, block(t1, t2, rule))
+    expected = letters_blocked_ids(table_factory)
+    assert_tables_equal(expected, rule.block(t1, t2)["record_id_l", "record_id_r"])
+    assert_tables_equal(expected, block(t1, t2, rule)["record_id_l", "record_id_r"])

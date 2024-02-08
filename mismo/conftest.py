@@ -39,9 +39,21 @@ def column_factory(table_factory) -> Callable[[Iterable], Column]:
 
 @pytest.fixture
 def t1(table_factory) -> Table:
-    return table_factory({"record_id": [0, 1, 2], "letters": ["a", "b", "c"]})
+    return table_factory(
+        {
+            "record_id": [0, 1, 2],
+            "letters": ["a", "b", "c"],
+            "arrays": [["a", "b"], ["b"], []],
+        }
+    )
 
 
 @pytest.fixture
 def t2(table_factory) -> Table:
-    return table_factory({"record_id": [90, 91, 92], "letters": ["b", "c", "d"]})
+    return table_factory(
+        {
+            "record_id": [90, 91, 92, 93],
+            "letters": ["b", "c", "d", None],
+            "arrays": [["b"], ["c"], ["d"], None],
+        }
+    )
