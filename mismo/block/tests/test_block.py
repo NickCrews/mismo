@@ -6,18 +6,10 @@ from ibis import _
 from ibis.expr.types import Table
 import pytest
 
-from mismo.block import BlockingRule, SlowJoinError, SlowJoinWarning, join
+from mismo.block import SlowJoinError, SlowJoinWarning, block, join
 from mismo.tests.util import assert_tables_equal
 
-
-@pytest.fixture
-def left_table(table_factory) -> Table:
-    return table_factory({"record_id": [0, 1, 2], "letters": ["a", "b", "c"]})
-
-
-@pytest.fixture
-def right_table(table_factory) -> Table:
-    return table_factory({"record_id": [90, 91, 92], "letters": ["b", "c", "d"]})
+from .common import letters_blocked
 
 
 @pytest.mark.parametrize(
@@ -32,81 +24,67 @@ def right_table(table_factory) -> Table:
         [(_.letters, _.letters)],
     ],
 )
-def test_blocking_rule_condition(
-    table_factory, left_table: Table, right_table: Table, condition
-):
-    name = "test_rule"
-    rule = BlockingRule(condition, name=name)
-    assert rule.get_name() == name
-    assert rule.condition == condition
-    blocked_table = rule.block(left_table, right_table)
-    expected = table_factory(
-        {
-            "record_id_l": [1, 2],
-            "record_id_r": [90, 91],
-            "letters_l": ["b", "c"],
-            "letters_r": ["b", "c"],
-        }
-    )
+def test_block(table_factory, t1: Table, t2: Table, condition):
+    blocked_table = block(t1, t2, condition)
+    expected = letters_blocked(table_factory)
     assert_tables_equal(blocked_table, expected)
 
 
-def test_cross_block(table_factory, left_table: Table, right_table: Table):
-    name = "test_rule"
-    rule = BlockingRule(True, name=name)
-    # with warnings.catch_warnings():
-    #     warnings.simplefilter("ignore")
-    blocked_table = rule.block(left_table, right_table, on_slow="ignore")
+def test_cross_block(table_factory, t1: Table, t2: Table):
+    blocked_table = block(t1, t2, True, on_slow="ignore")
+    blocked_ids = blocked_table["record_id_l", "record_id_r"]
     expected = table_factory(
         {
             "record_id_l": [0, 1, 2, 0, 1, 2, 0, 1, 2],
             "record_id_r": [90, 90, 90, 91, 91, 91, 92, 92, 92],
-            "letters_l": ["a", "b", "c", "a", "b", "c", "a", "b", "c"],
-            "letters_r": ["b", "b", "b", "c", "c", "c", "d", "d", "d"],
         }
     )
-    assert_tables_equal(blocked_table, expected)
+    assert_tables_equal(expected, blocked_ids)
 
 
 @pytest.mark.parametrize(
-    "condition,on_slow,result",
+    "condition,is_slow",
     [
-        ("letters", "ignore", None),
-        ("letters", "warn", None),
-        ("letters", "error", None),
-        (True, "ignore", None),
-        (True, "warn", SlowJoinWarning),
-        (True, "error", SlowJoinError),
-        (
+        pytest.param("letters", False, id="simple equijoin"),
+        pytest.param(True, True, id="cross join"),
+        pytest.param(
             lambda left, right: left.letters.levenshtein(right.letters) < 2,
-            "ignore",
-            None,
+            True,
+            id="levenshtein",
         ),
-        (
-            lambda left, right: left.letters.levenshtein(right.letters) < 2,
-            "warn",
-            SlowJoinWarning,
+        pytest.param(
+            lambda left, right: (left.letters == right.letters)
+            | (left.record_id == right.record_id),
+            True,
+            id="OR",
         ),
-        (
-            lambda left, right: left.letters.levenshtein(right.letters) < 2,
-            "error",
-            SlowJoinError,
+        pytest.param(
+            lambda left, right: (left.letters == right.letters)
+            & (left.record_id == right.record_id),
+            False,
+            id="AND",
         ),
     ],
 )
-def test_warn_slow_join(
-    left_table: Table, right_table: Table, condition, on_slow, result
-):
+@pytest.mark.parametrize(
+    "on_slow,result",
+    [
+        ("ignore", None),
+        ("warn", SlowJoinWarning),
+        ("error", SlowJoinError),
+    ],
+)
+def test_warn_slow_join(t1: Table, t2: Table, condition, is_slow, on_slow, result):
     def f():
-        join(left_table, right_table, condition, on_slow=on_slow)
+        join(t1, t2, condition, on_slow=on_slow)
 
     if result is None:
         f()
-    elif result is SlowJoinWarning:
+    elif is_slow and result is SlowJoinWarning:
         with warnings.catch_warnings(record=True) as w:
             f()
             assert len(w) == 1
             assert issubclass(w[0].category, SlowJoinWarning)
-    elif result is SlowJoinError:
+    elif is_slow and result is SlowJoinError:
         with pytest.raises(SlowJoinError):
             f()
