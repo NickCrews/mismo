@@ -21,13 +21,7 @@ from mismo.compare._array import jaccard
     ],
 )
 def test_jaccard(a, b, expected):
-    def make_array(x):
-        if x is None:
-            return ibis.literal(None).cast("array<int64>")
-        else:
-            return ibis.array(x)
-
-    a = make_array(a)
-    b = make_array(b)
+    a = ibis.literal(a, type="array<int64>")
+    b = ibis.literal(b, type="array<int64>")
     result = jaccard(a, b).execute()
     assert result == pytest.approx(expected, abs=0, nan_ok=True)
