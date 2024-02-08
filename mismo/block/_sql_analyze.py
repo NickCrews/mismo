@@ -1,41 +1,47 @@
 from __future__ import annotations
 
 import re
+from typing import Literal
 import warnings
 
 import ibis
 from ibis.backends.duckdb import Backend as DuckDBBackend
 from ibis.expr.types import Expr, Table
 
-from mismo._util import join
+from mismo._join import join
 
-# Based on all the JOIN types in
-# https://github.com/duckdb/duckdb/blob/b0b1562e293718ee9279c9621cefe4cb5dc01ef9/src/common/enums/physical_operator_type.cpp#L56
-# (very good) explanation of these at https://duckdb.org/2022/05/27/iejoin.html
-JOIN_TYPES = [
-    "LEFT_DELIM_JOIN",
-    "RIGHT_DELIM_JOIN",
-    "BLOCKWISE_NL_JOIN",
-    "NESTED_LOOP_JOIN",
-    "HASH_JOIN",
-    "PIECEWISE_MERGE_JOIN",
-    "IE_JOIN",
-    "ASOF_JOIN",
-    "CROSS_PRODUCT",
-    "POSITIONAL_JOIN",
-]
+JOIN_TYPES = frozenset(
+    {
+        # If the duckdb analyzer can see the condition is always false (eg you pass 1=2)
+        "EMPTY_RESULT",  # O(1)
+        "LEFT_DELIM_JOIN",  # ??
+        "RIGHT_DELIM_JOIN",  # ??
+        "BLOCKWISE_NL_JOIN",  # O(n*m)
+        "NESTED_LOOP_JOIN",  # O(n*m)
+        "HASH_JOIN",  # O(n)
+        "PIECEWISE_MERGE_JOIN",  # O(m*log(n))
+        "IE_JOIN",  # O(n*log(n))
+        "ASOF_JOIN",  # ??
+        "CROSS_PRODUCT",  # O(n*m)
+        "POSITIONAL_JOIN",  # O(n)
+    }
+)
+"""Based on all the JOIN types in
+https://github.com/duckdb/duckdb/blob/b0b1562e293718ee9279c9621cefe4cb5dc01ef9/src/common/enums/physical_operator_type.cpp#L56
+(very good) explanation of these at https://duckdb.org/2022/05/27/iejoin.html
+"""
 
-SLOW_JOIN_TYPES = {
-    "NESTED_LOOP_JOIN",
-    "BLOCKWISE_NL_JOIN",
-    "CROSS_PRODUCT",
-}
+SLOW_JOIN_TYPES = frozenset(
+    {
+        "NESTED_LOOP_JOIN",
+        "BLOCKWISE_NL_JOIN",
+        "CROSS_PRODUCT",
+    }
+)
 
 
-class SlowJoinWarning(UserWarning):
-    """Warning for slow join types."""
-
-    def __init__(self, condition, join_type):
+class _SlowJoinMixin:
+    def __init__(self, condition, join_type: str) -> None:
         self.condition = condition
         self.join_type = join_type
         try:
@@ -49,23 +55,67 @@ class SlowJoinWarning(UserWarning):
         )
 
 
-class _UnsupportedBackendError(ValueError):
-    ...
+class SlowJoinWarning(_SlowJoinMixin, UserWarning):
+    """Warning for slow join types."""
 
 
-def warn_if_slow_join(left: Table, right: Table, condition) -> None:
-    """Warn if the join in the expression is likely to be slow.
+class SlowJoinError(_SlowJoinMixin, ValueError):
+    """Error for slow join types."""
 
-    This is done by checking the join type in the query plan.
+
+def get_join_type(left: Table, right: Table, condition) -> str:
+    """Return one of the JOIN_TYPES for the outermost join in the expression.
+
+    If there are multiple joins in the query, this will return the top (outermost) one.
+    This only works with expressions bound to a DuckDB backend.
+    Other kinds of expressions will raise NotImplementedError.
     """
     j = join(left, right, condition)
-    try:
-        ex = _explain_str(j)
-    except _UnsupportedBackendError:
-        return
+    ex = _explain_str(j)
     join_type = _extract_top_join_type(ex)
+    return join_type
+
+
+def check_join_type(
+    left: Table,
+    right: Table,
+    condition,
+    *,
+    on_slow: Literal["error", "warn", "ignore"] = "error",
+) -> None:
+    """Error or warn if the join in the expression is likely to be slow.
+
+    Issues a SlowJoinWarning or raises a SlowJoinError.
+
+    By "slow", we mean that the join is one of:
+
+    - "NESTED_LOOP_JOIN" O(n*m)
+    - "BLOCKWISE_NL_JOIN" O(n*m)
+    - "CROSS_PRODUCT" O(n*m)
+
+    and not one of the fast join algorithms:
+
+    - "EMPTY_RESULT" O(1)
+    - "POSITIONAL_JOIN" O(n)
+    - "HASH_JOIN" O(n)
+    - "PIECEWISE_MERGE_JOIN" O(m*log(n))
+    - "IE_JOIN" O(n*log(n))
+    - "ASOF_JOIN" O(n*log(n))
+
+    This is done by using the EXPLAIN command to generate the
+    query plan, and checking the join type.
+
+    See https://duckdb.org/2022/05/27/iejoin.html for a very good explanation
+    of these join types.
+    """
+    if on_slow == "ignore":
+        return
+    join_type = get_join_type(left, right, condition)
     if join_type in SLOW_JOIN_TYPES:
-        warnings.warn(SlowJoinWarning(condition, join_type), stacklevel=2)
+        if on_slow == "error":
+            raise SlowJoinError(condition, join_type)
+        elif on_slow == "warn":
+            warnings.warn(SlowJoinWarning(condition, join_type), stacklevel=2)
 
 
 # TODO: this appears to be causing flaky test failures, something
@@ -78,9 +128,9 @@ def _explain_str(duckdb_expr: Expr) -> str:
     try:
         con = duckdb_expr._find_backend()
     except AttributeError:
-        raise _UnsupportedBackendError
+        raise NotImplementedError("The given expression must have a backend.")
     if not isinstance(con, DuckDBBackend):
-        raise _UnsupportedBackendError
+        raise NotImplementedError("The given expression must be a DuckDB expression.")
     sql = ibis.to_sql(duckdb_expr, dialect="duckdb")
     explain_sql = "EXPLAIN " + sql
     with con.raw_sql(explain_sql) as cursor:

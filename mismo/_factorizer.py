@@ -5,7 +5,7 @@ from functools import cached_property
 from ibis import _
 from ibis.expr.types import Table
 
-from mismo import _util
+from mismo import _join, _util
 
 
 class Factorizer:
@@ -82,7 +82,7 @@ class Factorizer:
                 )
 
         assert self._int_column not in t.columns
-        joined = _util.join(
+        joined = _join.join(
             t, self._mapping, t[src] == self._mapping.original, how="left"
         )
         if src == "original":
@@ -124,7 +124,7 @@ class Factorizer:
                 )
 
         assert self._int_column not in t.columns
-        joined = _util.join(
+        joined = _join.join(
             t, self._mapping, t[src] == self._mapping[self._int_column], how="left"
         )
         orig = "original" if src != "original" else "original_right"
