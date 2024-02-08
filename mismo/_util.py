@@ -1,26 +1,14 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from contextlib import contextmanager
-from typing import Callable, Iterable, Literal
+from typing import Any, Callable, Iterable, Literal, TypeVar
 
 import ibis
 from ibis import _
 from ibis.expr.types import Column, IntegerColumn, Table
 
-
-def format_table(template: str, name: str, table: Table) -> str:
-    t = repr(table.head(5))
-    nindent = 0
-    search = "{" + name + "}"
-    for line in template.splitlines():
-        try:
-            nindent = line.index(search)
-        except ValueError:
-            continue
-    indent = " " * nindent
-    sep = "\n" + indent
-    t = sep.join(line for line in t.splitlines())
-    return template.format(table=t)
+from mismo import _join
 
 
 def sample_table(
@@ -69,70 +57,6 @@ def sample_table(
     return table.sample(fraction, method=method, seed=seed)
 
 
-def join(
-    left: Table,
-    right: Table,
-    predicates=tuple(),
-    how="inner",
-    *,
-    lname: str = "",
-    rname: str = "{name}_right",
-) -> Table:
-    """Similar to ibis's join, with a few differences
-
-    - Does a cross join when predicates is True or how is "cross"
-    - Converts the lname and rname suffixes to the appropriate kwargs for ibis<6.0.0
-    - Allows for a wider set of join predicates:
-      - anything that ibis accepts as a join predicate
-      - tuple[str, str]
-      - tuple[Column, Column]
-      - tuple[Deferred, Deferred]
-      - lambda (left, right) -> any of the above
-    """
-    rename_kwargs = _join_suffix_kwargs(lname=lname, rname=rname)
-    preds = _to_ibis_join_predicates(left, right, predicates)
-    return left.join(right, predicates=preds, how=how, **rename_kwargs)
-
-
-def _to_ibis_join_predicates(left, right, raw_predicates) -> tuple:
-    if isinstance(raw_predicates, tuple):
-        if len(raw_predicates) != 2:
-            raise ValueError(
-                f"predicates must be a tuple of length 2, got {raw_predicates}"
-            )
-        # Ibis has us covered with one adjustment
-        # https://github.com/ibis-project/ibis/pull/7424
-        return [raw_predicates]
-    if callable(raw_predicates):
-        return _to_ibis_join_predicates(left, right, raw_predicates(left, right))
-    else:
-        return raw_predicates
-
-
-def _join_suffix_kwargs(lname: str, rname: str) -> dict:
-    """create the suffix kwargs for ibis.join(), no matter the ibis version.
-
-    The suffixes kwarg got split into lname and rname in ibis 6.0.0:
-    https://ibis-project.org/release_notes/#600-2023-07-05"""
-    if ibis.__version__ >= "6.0.0":
-        return {"lname": lname, "rname": rname}
-    else:
-
-        def _convert_suffix(suffix: str) -> str:
-            if not len(suffix):
-                return ""
-            if not suffix.startswith("{name}"):
-                raise ValueError(
-                    "suffix must be empty or start with '{name}'"
-                    f"for ibis<6.0.0, got {suffix}"
-                )
-            return suffix.removeprefix("{name}")
-
-        lsuffix = _convert_suffix(lname)
-        rsuffix = _convert_suffix(rname)
-        return {"suffixes": (lsuffix, rsuffix)}
-
-
 def group_id(keys: str | Column | Iterable[str | Column]) -> IntegerColumn:
     """Number each group from 0 to "number of groups - 1".
 
@@ -167,7 +91,7 @@ def intify_column(t: Table, column: str) -> tuple[Table, Callable[[Table], Table
     augmented = augmented.mutate(**{column: _[int_col_name]}).drop(int_col_name)
 
     def restore(with_int_labels: Table) -> Table:
-        return join(
+        return _join.join(
             with_int_labels,
             mapping,
             with_int_labels[column] == mapping[int_col_name],
@@ -194,3 +118,68 @@ def optional_import():
             f"Package `{e.name}` is required for this functionality. "
             "Please install it separately."
         ) from e
+
+
+V = TypeVar("V")
+
+
+def promote_list(val: V | Sequence[V]) -> list[V]:
+    """Ensure that the value is a list.
+
+    Parameters
+    ----------
+    val
+        Value to promote
+
+    Returns
+    -------
+    list
+    """
+    if isinstance(val, list):
+        return val
+    elif isinstance(val, dict):
+        return [val]
+    elif is_iterable(val):
+        return list(val)
+    elif val is None:
+        return []
+    else:
+        return [val]
+
+
+def is_iterable(o: Any) -> bool:
+    """Return whether `o` is iterable and not a :class:`str` or :class:`bytes`.
+
+    Parameters
+    ----------
+    o : object
+        Any python object
+
+    Returns
+    -------
+    bool
+
+    Examples
+    --------
+    >>> is_iterable("1")
+    False
+    >>> is_iterable(b"1")
+    False
+    >>> is_iterable(iter("1"))
+    True
+    >>> is_iterable(i for i in range(1))
+    True
+    >>> is_iterable(1)
+    False
+    >>> is_iterable([])
+    True
+    """
+    if isinstance(o, (str, bytes)):
+        return False
+
+    try:
+        iter(o)
+    except TypeError:
+        return False
+    else:
+        return True

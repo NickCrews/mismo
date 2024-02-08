@@ -1,13 +1,21 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from ibis import _
 from ibis.expr.types import Table
 
-from mismo import _util
+from mismo import _join
 from mismo.block import _sql_analyze
 
 
-def join(left: Table, right: Table, condition, *, warn_on_slow: bool = True) -> Table:
+def join(
+    left: Table,
+    right: Table,
+    condition,
+    *,
+    on_slow: Literal["error", "warn", "ignore"] = "error",
+) -> Table:
     """Join two tables, afterwards adding a "_l" or "_r" suffix to all columns.
 
     Unlike ibis, which only adds suffixes to columns that are duplicated,
@@ -25,27 +33,11 @@ def join(left: Table, right: Table, condition, *, warn_on_slow: bool = True) -> 
         without the "_l" and "_r" suffixes, eg `left.name == right.name`, not
         `left.name_l == right.name_r`, because the suffixes will be added
         AFTER the join.
-    warn_on_slow:
-        If True, raise a SlowJoinWarning if the join is likely to be slow.
-        Currently only works with DuckDB backends.
-
-        By "slow", we mean that the join is one of:
-
-        - nested loop join O(n*m)
-        - cross product O(n*m)
-
-        and not one of the fast join algorithms:
-
-        - hash join O(n)
-        - range join O(n*log(n))
-        - merge join O(m*log(n))
-        - inequality join O(n*log(n))
-
-        This is done by using the EXPLAIN command to generate the
-        query plan, and checking the join type.
-
-        See https://duckdb.org/2022/05/27/iejoin.html for a very good explanation
-        of these join types.
+    on_slow:
+        What to do if the join condition causes a slow O(n*m) join algorithm.
+        If "error", raise a SlowJoinError. If "warn", issue a SlowJoinWarning.
+        If "ignore", do nothing.
+        See [check_join_type()][mismo.block.check_join_type] for more information.
     """
     if left is right:
         right = right.view()
@@ -53,9 +45,8 @@ def join(left: Table, right: Table, condition, *, warn_on_slow: bool = True) -> 
     rc = set(right.columns)
     just_left = lc - rc
     just_right = rc - lc
-    if warn_on_slow:
-        _sql_analyze.warn_if_slow_join(left, right, condition)
-    raw = _util.join(left, right, condition, lname="{name}_l", rname="{name}_r")
+    _sql_analyze.check_join_type(left, right, condition, on_slow=on_slow)
+    raw = _join.join(left, right, condition, lname="{name}_l", rname="{name}_r")
     left_renaming = {c + "_l": c for c in just_left}
     right_renaming = {c + "_r": c for c in just_right}
     renaming = {**left_renaming, **right_renaming}

@@ -7,7 +7,7 @@ from ibis.expr.types import Table
 import numpy as np
 import pandas as pd
 
-from mismo import _util
+from mismo import _join
 
 
 def cluster_chart(nodes: Table, edges: Table) -> alt.Chart:
@@ -62,7 +62,7 @@ def _layout_nodes(nodes: Table, edges: Table) -> Table:
     coords_df = pd.DataFrame(coords_np, columns=["x", "y"])
     coords_df["id_in_cluster"] = range(len(coords_df))
     coords_table = ibis.memtable(coords_df)
-    augmented = _util.join(n, coords_table, "id_in_cluster", how="left").drop(
+    augmented = _join.join(n, coords_table, "id_in_cluster", how="left").drop(
         "id_in_cluster", "id_in_cluster_right"
     )
     return augmented
@@ -99,8 +99,8 @@ def _reindex_from_0(nodes: Table, edges: Table):
     m = nodes["record_id", "id_in_cluster"]
     ml = m.rename("{name}_l")
     mr = m.rename("{name}_r")
-    edges = _util.join(edges, ml, "record_id_l", how="left").drop("record_id_l_right")
-    edges = _util.join(edges, mr, "record_id_r", how="left").drop("record_id_r_right")
+    edges = _join.join(edges, ml, "record_id_l", how="left").drop("record_id_l_right")
+    edges = _join.join(edges, mr, "record_id_r", how="left").drop("record_id_r_right")
     return nodes, edges
 
 
