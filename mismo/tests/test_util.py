@@ -55,14 +55,14 @@ def test_optional_import():
 
     with pytest.raises(ImportError) as excinfo:
         with _util.optional_import():
-            import does_not_exist  # noqa: F401
+            import does_not_exist  # noqa: F401 # type: ignore
 
             assert False, "should not get here"
     assert "Package `does_not_exist` is required" in str(excinfo.value)
 
     with pytest.raises(ImportError) as excinfo:
         with _util.optional_import():
-            from does_not_exist import module  # noqa: F401
+            from does_not_exist import module  # noqa: F401 # type: ignore
 
             assert False, "should not get here"
     assert "Package `does_not_exist` is required" in str(excinfo.value)
