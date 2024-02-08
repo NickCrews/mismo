@@ -35,3 +35,13 @@ def column_factory(table_factory) -> Callable[[Iterable], Column]:
         return table.column
 
     return func
+
+
+@pytest.fixture
+def t1(table_factory) -> Table:
+    return table_factory({"record_id": [0, 1, 2], "letters": ["a", "b", "c"]})
+
+
+@pytest.fixture
+def t2(table_factory) -> Table:
+    return table_factory({"record_id": [90, 91, 92], "letters": ["b", "c", "d"]})
