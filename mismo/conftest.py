@@ -12,12 +12,19 @@ def backend() -> ibis.BaseBackend:
     return ibis.duckdb.connect()
 
 
+_count = 0
+
+
 @pytest.fixture
 def table_factory(backend: ibis.BaseBackend) -> Callable[..., Table]:
-    original = ibis.get_backend()
-    ibis.set_backend(backend)
-    yield ibis.memtable
-    ibis.set_backend(original)
+    def factory(data, **kwargs):
+        global _count
+        name = f"__mismo_test{_count}"
+        _count += 1
+        mt = ibis.memtable(data)
+        return backend.create_table(name, mt, **kwargs)
+
+    return factory
 
 
 @pytest.fixture

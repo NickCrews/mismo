@@ -70,8 +70,6 @@ class BlockingRule:
 
     def block(self, left: Table, right: Table) -> Table:
         """Block two tables together."""
-        # TODO: use EXPLAIN to warn if the condition causes a O(n^2) nested loop join
-        # instead of the desired O(n) hash join
         return _util.join(left, right, self._condition)
 
     def __repr__(self) -> str:

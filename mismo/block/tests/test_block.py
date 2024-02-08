@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import warnings
+
 from ibis import _
 from ibis.expr.types import Table
 import pytest
 
-from mismo.block import BlockingRule
+from mismo.block import BlockingRule, SlowJoinWarning, join
 from mismo.tests.util import assert_tables_equal
 
 
@@ -52,7 +54,9 @@ def test_blocking_rule_condition(
 def test_cross_block(table_factory, left_table: Table, right_table: Table):
     name = "test_rule"
     rule = BlockingRule(name, True)
-    blocked_table = rule.block(left_table, right_table)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        blocked_table = rule.block(left_table, right_table)
     expected = table_factory(
         {
             "record_id_l": [0, 1, 2, 0, 1, 2, 0, 1, 2],
@@ -62,3 +66,25 @@ def test_cross_block(table_factory, left_table: Table, right_table: Table):
         }
     )
     assert_tables_equal(blocked_table, expected)
+
+
+@pytest.mark.parametrize(
+    "condition,warning",
+    [
+        ("letters", None),
+        (
+            True,
+            SlowJoinWarning,
+        ),
+        (
+            lambda left, right: left.letters.levenshtein(right.letters) < 2,
+            SlowJoinWarning,
+        ),
+    ],
+)
+def test_warn_slow_join(left_table: Table, right_table: Table, condition, warning):
+    if warning:
+        with pytest.warns(warning):
+            join(left_table, right_table, condition)
+    else:
+        join(left_table, right_table, condition)
