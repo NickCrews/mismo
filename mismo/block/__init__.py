@@ -10,5 +10,6 @@ from __future__ import annotations
 from mismo.block._array import block_on_arrays as block_on_arrays
 from mismo.block._blocking import BlockingRule as BlockingRule
 from mismo.block._blocking import BlockingRules as BlockingRules
+from mismo.block._sql_analyze import SlowJoinWarning as SlowJoinWarning
 from mismo.block._upset_block import upset_chart as upset_chart
 from mismo.block._util import join as join
