@@ -8,8 +8,7 @@ we choose pairs of records to compare.
 ::: mismo.block.block
 ::: mismo.block.join
 ::: mismo.block.BlockingRule
-<!-- ::: mismo.block.BlockingRules -->
-::: mismo.block.block_on_arrays
+::: mismo.block.ArrayBlocker
 
 ## Plotting
 
