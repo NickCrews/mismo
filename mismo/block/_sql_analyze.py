@@ -27,8 +27,8 @@ JOIN_TYPES = frozenset(
     }
 )
 """Based on all the JOIN types in
-https://github.com/duckdb/duckdb/blob/b0b1562e293718ee9279c9621cefe4cb5dc01ef9/src/common/enums/physical_operator_type.cpp#L56
-(very good) explanation of these at https://duckdb.org/2022/05/27/iejoin.html
+[https://github.com/duckdb/duckdb/blob/b0b1562e293718ee9279c9621cefe4cb5dc01ef9/src/common/enums/physical_operator_type.cpp#L56]()
+(very good) explanation of these at [https://duckdb.org/2022/05/27/iejoin.html]()
 """
 
 SLOW_JOIN_TYPES = frozenset(
@@ -105,7 +105,7 @@ def check_join_type(
     This is done by using the EXPLAIN command to generate the
     query plan, and checking the join type.
 
-    See https://duckdb.org/2022/05/27/iejoin.html for a very good explanation
+    See [https://duckdb.org/2022/05/27/iejoin.html]() for a very good explanation
     of these join types.
     """
     if on_slow == "ignore":

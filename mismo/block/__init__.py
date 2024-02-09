@@ -7,7 +7,7 @@ to be compared, hopefully to a manageable level.
 """
 from __future__ import annotations
 
-from mismo.block._array import block_on_arrays as block_on_arrays
+from mismo.block._array import ArrayBlocker as ArrayBlocker
 from mismo.block._blocking import BlockingRule as BlockingRule
 from mismo.block._blocking import block as block
 from mismo.block._sql_analyze import JOIN_TYPES as JOIN_TYPES

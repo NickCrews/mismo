@@ -39,8 +39,8 @@ def join(
         If "ignore", do nothing.
         See [check_join_type()][mismo.block.check_join_type] for more information.
     """
-    if left is right:
-        right = right.view()
+    # ALWAYS need to do this. see https://github.com/ibis-project/ibis/issues/8292
+    right = right.view()
     lc = set(left.columns)
     rc = set(right.columns)
     just_left = lc - rc

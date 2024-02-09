@@ -1,43 +1,28 @@
 from __future__ import annotations
 
+from ibis import _
 from ibis.expr.types import Table
+import pandas as pd
 import pytest
 
-
-@pytest.fixture
-def simple_table(table_factory) -> Table:
-    records = [
-        (0, ["a", "b"], False),
-        (1, ["b"], True),
-        (2, ["c"], False),
-        (3, ["c", "a", "b"], False),
-        (99, [], True),
-        (100, None, True),
-    ]
-    record_ids, strs, bools = zip(*records)
-    return table_factory({"record_id": record_ids, "strings": strs, "bools": bools})
+from mismo.block import ArrayBlocker, block
+from mismo.tests.util import assert_tables_equal
 
 
-@pytest.mark.skip(reason="Not implemented")
-def test_block_on_arrays(simple_table: Table):
-    from mismo.block import block, block_on_arrays
-
-    rule = block_on_arrays("strings", "strings")
-    blocking = block(simple_table, simple_table.view(), rule)
-    expected_id_pairs = {
-        (0, 0),
-        (1, 1),
-        (2, 2),
-        (3, 3),
-        (0, 3),
-        (3, 0),
-        (0, 1),
-        (1, 0),
-        (1, 3),
-        (3, 1),
-        (2, 3),
-        (3, 2),
-    }
-    df = blocking.ids.to_pandas()
-    actual_id_pairs = set(df.itertuples(index=False, name=None))
-    assert actual_id_pairs == expected_id_pairs
+@pytest.mark.parametrize(
+    "left,right",
+    [
+        ("arrays", _.arrays),
+        ("arrays", lambda t: t.arrays),
+    ],
+)
+def test_array_blocker(table_factory, t1: Table, t2: Table, left, right):
+    blocked = block(t1, t2, ArrayBlocker(left, right))
+    blocked_ids = blocked[["record_id_l", "record_id_r"]]
+    expected = table_factory(
+        pd.DataFrame(
+            [(0, 90), (1, 90)],
+            columns=["record_id_l", "record_id_r"],
+        )
+    )
+    assert_tables_equal(expected, blocked_ids)
