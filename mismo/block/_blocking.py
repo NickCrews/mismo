@@ -8,7 +8,7 @@ from ibis import selectors as s
 from ibis.common.deferred import Deferred
 from ibis.expr.types import BooleanValue, Column, Table
 
-from mismo import _join, _util
+from mismo import _util
 from mismo.block._util import join as _block_join
 
 # Something that can be used to reference a column in a table
@@ -133,13 +133,7 @@ def block(
         raise ValueError("No conditions provided")
 
     def blk(rule: _Condition) -> Table:
-        resolved_predicates = _join.resolve_predicates(left, right, rule)
-        if len(resolved_predicates) == 1 and isinstance(resolved_predicates[0], Table):
-            sub = resolved_predicates[0]
-        else:
-            sub = _block_join(
-                left, right, resolved_predicates, on_slow=on_slow, **kwargs
-            )
+        sub = _block_join(left, right, rule, on_slow=on_slow, **kwargs)
         if labels:
             sub = sub.mutate(blocking_rule=_get_name(rule))
         return sub

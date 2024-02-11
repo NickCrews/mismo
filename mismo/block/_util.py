@@ -39,17 +39,15 @@ def join(
         If "ignore", do nothing.
         See [check_join_type()][mismo.block.check_join_type] for more information.
     """
-    # ALWAYS need to do this. see https://github.com/ibis-project/ibis/issues/8292
-    right = right.view()
     lc = set(left.columns)
     rc = set(right.columns)
     just_left = lc - rc
     just_right = rc - lc
-    _sql_analyze.check_join_type(left, right, condition, on_slow=on_slow)
-    raw = _join.join(left, right, condition, lname="{name}_l", rname="{name}_r")
     left_renaming = {c + "_l": c for c in just_left}
     right_renaming = {c + "_r": c for c in just_right}
     renaming = {**left_renaming, **right_renaming}
+
+    raw = _do_join(left, right, condition, on_slow=on_slow)
     result = raw.rename(renaming)
 
     # If the condition is an equality condition, like `left.name == right.name`,
@@ -64,6 +62,23 @@ def join(
     result = result.mutate(**suffix_map).drop(*un_suffixed)
 
     return order_blocked_data_columns(result)
+
+
+def _do_join(
+    left: Table,
+    right: Table,
+    condition,
+    *,
+    on_slow: Literal["error", "warn", "ignore"] = "error",
+) -> Table:
+    # ALWAYS need to do this. see https://github.com/ibis-project/ibis/issues/8292
+    right = right.view()
+    resolved = _join.resolve_predicates(left, right, condition)
+    if len(resolved) == 1 and isinstance(resolved[0], Table):
+        return resolved[0]
+
+    _sql_analyze.check_join_type(left, right, resolved, on_slow=on_slow)
+    return _join.join(left, right, resolved, lname="{name}_l", rname="{name}_r")
 
 
 def order_blocked_data_columns(t: Table) -> Table:
