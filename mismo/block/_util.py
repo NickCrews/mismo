@@ -41,7 +41,7 @@ def join(
     """
     j = _do_join(left, right, condition, on_slow=on_slow)
     j = _ensure_suffixed(left.columns, right.columns, j)
-    return order_blocked_data_columns(j)
+    return _order_blocked_data_columns(j)
 
 
 def _do_join(
@@ -61,7 +61,7 @@ def _do_join(
     return _join.join(left, right, resolved, lname="{name}_l", rname="{name}_r")
 
 
-def order_blocked_data_columns(t: Table) -> Table:
+def _order_blocked_data_columns(t: Table) -> Table:
     if "record_id_l" not in t.columns or "record_id_r" not in t.columns:
         return t
     cols = set(t.columns) - {"record_id_l", "record_id_r"}
