@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Iterable, Literal
 
 from ibis import _
 from ibis.expr.types import Table
@@ -39,29 +39,9 @@ def join(
         If "ignore", do nothing.
         See [check_join_type()][mismo.block.check_join_type] for more information.
     """
-    lc = set(left.columns)
-    rc = set(right.columns)
-    just_left = lc - rc
-    just_right = rc - lc
-    left_renaming = {c + "_l": c for c in just_left}
-    right_renaming = {c + "_r": c for c in just_right}
-    renaming = {**left_renaming, **right_renaming}
-
-    raw = _do_join(left, right, condition, on_slow=on_slow)
-    result = raw.rename(renaming)
-
-    # If the condition is an equality condition, like `left.name == right.name`,
-    # then since we are doing an inner join ibis doesn't add suffixes to these
-    # columns. So we need duplicate these columns and add suffixes.
-    un_suffixed = [
-        c for c in result.columns if not c.endswith("_l") and not c.endswith("_r")
-    ]
-    suffix_map = {c + "_l": _[c] for c in un_suffixed} | {
-        c + "_r": _[c] for c in un_suffixed
-    }
-    result = result.mutate(**suffix_map).drop(*un_suffixed)
-
-    return order_blocked_data_columns(result)
+    j = _do_join(left, right, condition, on_slow=on_slow)
+    j = _ensure_suffixed(left.columns, right.columns, j)
+    return order_blocked_data_columns(j)
 
 
 def _do_join(
@@ -87,3 +67,25 @@ def order_blocked_data_columns(t: Table) -> Table:
     cols = set(t.columns) - {"record_id_l", "record_id_r"}
     cols_in_order = ["record_id_l", "record_id_r", *sorted(cols)]
     return t[cols_in_order]
+
+
+def _ensure_suffixed(
+    original_left_cols: Iterable[str], original_right_cols: Iterable[str], t: Table
+) -> Table:
+    """Ensure that all columns in `t` have a "_l" or "_r" suffix."""
+    lc = set(original_left_cols)
+    rc = set(original_right_cols)
+    just_left = lc - rc
+    just_right = rc - lc
+    m = {c + "_l": c for c in just_left} | {c + "_r": c for c in just_right}
+    t = t.rename(m)
+
+    # If the condition is an equality condition, like `left.name == right.name`,
+    # then since we are doing an inner join ibis doesn't add suffixes to these
+    # columns. So we need duplicate these columns and add suffixes.
+    un_suffixed = [
+        c for c in t.columns if not c.endswith("_l") and not c.endswith("_r")
+    ]
+    m = {c + "_l": _[c] for c in un_suffixed} | {c + "_r": _[c] for c in un_suffixed}
+    t = t.mutate(**m).drop(*un_suffixed)
+    return t
