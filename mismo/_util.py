@@ -6,9 +6,25 @@ from typing import Any, Callable, Iterable, Literal, TypeVar
 
 import ibis
 from ibis import _
+from ibis.common.deferred import Deferred
 from ibis.expr.types import Column, IntegerColumn, Table
 
 from mismo import _join
+
+
+def get_name(x) -> str:
+    """Find a suitable string representation of `x` to use as a blocker name."""
+    if isinstance(x, Deferred):
+        return x.__repr__()
+    try:
+        return x.get_name()
+    except AttributeError:
+        pass
+    if isinstance(x, tuple):
+        return "(" + ", ".join(get_name(y) for y in x) + ")"
+    if is_iterable(x):
+        return "[" + ", ".join(get_name(y) for y in x) + "]"
+    return str(x)
 
 
 def sample_table(
