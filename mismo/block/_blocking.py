@@ -9,6 +9,7 @@ from ibis.common.deferred import Deferred
 from ibis.expr.types import BooleanValue, Column, Table
 
 from mismo import _util
+from mismo.block._util import blocker_name
 from mismo.block._util import join as _block_join
 
 # Something that can be used to reference a column in a table
@@ -135,7 +136,7 @@ def block(
     def blk(rule: _Condition) -> Table:
         sub = _block_join(left, right, rule, on_slow=on_slow, **kwargs)
         if labels:
-            sub = sub.mutate(blocking_rule=_get_name(rule))
+            sub = sub.mutate(blocking_rule=blocker_name(rule))
         return sub
 
     sub_joined = [blk(rule) for rule in conds]
@@ -154,13 +155,6 @@ def _to_conditions(x) -> list[_Condition]:
     if isinstance(x, tuple) and len(x) == 2:
         return [x]
     return _util.promote_list(x)
-
-
-def _get_name(x: _Condition) -> str:
-    try:
-        return x.get_name()
-    except AttributeError:
-        return str(x)
 
 
 class BlockingRule:
@@ -184,10 +178,7 @@ class BlockingRule:
             The name of the rule.
         """
         self._condition = condition
-        if isinstance(name, str):
-            self._name = name
-        else:
-            self._name = _get_name(condition)
+        self._name = blocker_name(condition)
 
     def get_name(self) -> str:
         """The name of the rule."""

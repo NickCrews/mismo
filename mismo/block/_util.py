@@ -3,10 +3,27 @@ from __future__ import annotations
 from typing import Iterable, Literal
 
 from ibis import _
+from ibis.common.deferred import Deferred
 from ibis.expr.types import Table
 
-from mismo import _join
-from mismo.block import _sql_analyze
+from mismo import _join, _util
+
+
+def blocker_name(x) -> str:
+    """Find a suitable string representation of `x` to use as a blocker name."""
+    if isinstance(x, str):
+        return x
+    if isinstance(x, Deferred):
+        return x.__repr__()
+    try:
+        return x.get_name()
+    except AttributeError:
+        pass
+    if _util.is_iterable(x):
+        if isinstance(x, tuple):
+            return "(" + ", ".join(blocker_name(y) for y in x) + ")"
+        return "[" + ", ".join(blocker_name(y) for y in x) + "]"
+    return str(x)
 
 
 def join(
@@ -51,6 +68,8 @@ def _do_join(
     *,
     on_slow: Literal["error", "warn", "ignore"] = "error",
 ) -> Table:
+    from mismo.block import _sql_analyze
+
     # ALWAYS need to do this. see https://github.com/ibis-project/ibis/issues/8292
     right = right.view()
     resolved = _join.resolve_predicates(left, right, condition)

@@ -9,6 +9,7 @@ from ibis.backends.duckdb import Backend as DuckDBBackend
 from ibis.expr.types import Expr, Table
 
 from mismo._join import join
+from mismo.block._util import blocker_name
 
 JOIN_TYPES = frozenset(
     {
@@ -44,14 +45,8 @@ class _SlowJoinMixin:
     def __init__(self, condition, join_type: str) -> None:
         self.condition = condition
         self.join_type = join_type
-        try:
-            cond_name = str(condition)
-        except Exception:
-            cond_name = (
-                condition.get_name() if isinstance(condition, Expr) else condition
-            )
         super().__init__(
-            f"The join '{cond_name}' is of type {join_type} and likely to be slow."
+            f"The join '{blocker_name(self.condition)}' is of type {join_type} and likely to be slow."  # noqa: E501
         )
 
 
