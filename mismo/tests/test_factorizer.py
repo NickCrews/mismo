@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pandas._testing as tm
 import pytest
 
 from mismo._factorizer import Factorizer
@@ -61,40 +62,32 @@ def test_factorizer(table_factory, values, values_type):
 
     e = f.encode()
     assert set(e.columns) == {"values", "expected_codes"}
-    assert all_equal(e.values, e.expected_codes)
+    assert_equal(e.values, e.expected_codes)
 
     e = f.encode(dst="encoded")
     assert set(e.columns) == {"values", "expected_codes", "encoded"}
-    assert all_equal(e.encoded, e.expected_codes)
+    assert_equal(e.encoded, e.expected_codes)
 
     restored = f.decode(e, src="encoded")
     assert set(restored.columns) == {"values", "expected_codes", "encoded"}
-    assert all_equal(restored.encoded, restored.values)
+    assert_equal(restored.encoded, restored.values)
 
     restored = f.decode(e, src="encoded", dst="decoded")
     assert set(restored.columns) == {"values", "expected_codes", "encoded", "decoded"}
-    assert all_equal(restored.decoded, restored.values)
+    assert_equal(restored.decoded, restored.values)
 
     t2 = t.mutate(values2=t.values)
     e = f.encode(t2)
     assert set(e.columns) == {"values", "expected_codes", "values2"}
-    assert all_equal(e.values, e.expected_codes)
+    assert_equal(e.values, e.expected_codes)
 
     e = f.encode(t2, src="values2", dst="codes2")
     assert set(e.columns) == {"values", "expected_codes", "values2", "codes2"}
-    assert all_equal(e.values, e.values2)
-    assert all_equal(e.codes2, e.expected_codes)
+    assert_equal(e.values, e.values2)
+    assert_equal(e.codes2, e.expected_codes)
 
 
-def all_equal(x, y):
-    res = eq(x, y).all().execute()
-    if res is None:
-        # If len() == 0
-        return True
-    return res
-
-
-def eq(x, y):
-    base = x == y
-    nulls_differ = x.isnull() != y.isnull()
-    return base & ~nulls_differ
+def assert_equal(x, y):
+    x = x.to_pandas()
+    y = y.to_pandas()
+    tm.assert_series_equal(x, y, check_names=False, check_dtype=False)

@@ -8,6 +8,8 @@ import ibis
 from ibis.common.deferred import Deferred
 from ibis.expr import types as it
 
+from mismo import _util
+
 
 @dataclasses.dataclass
 class CoordinateBlocker:
@@ -40,8 +42,8 @@ class CoordinateBlocker:
         **kwargs,
     ) -> it.Table:
         """Return a hash value for the two coordinates."""
-        left_col = left._ensure_expr(self.left_col)
-        right_col = right._ensure_expr(self.right_col)
+        left_col = _util.get_column(left, self.left_col)
+        right_col = _util.get_column(right, self.right_col)
         # We have to use a grid size of ~3x the precision to avoid
         # two points falling right on either side of a grid cell boundary
         grid_size = self.distance_km * 3

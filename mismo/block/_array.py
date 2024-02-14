@@ -6,6 +6,7 @@ from typing import Callable
 from ibis.common.deferred import Deferred
 from ibis.expr.types import Column, Table
 
+from mismo._util import get_column
 from mismo.block import _util
 
 
@@ -82,8 +83,8 @@ class ArrayBlocker:
 
     def __call__(self, left: Table, right: Table) -> Table:
         """Block the two tables based on array overlap."""
-        left_array = left._ensure_expr(self.left_col)
-        right_array = right._ensure_expr(self.right_col)
+        left_array = get_column(left, self.left_col)
+        right_array = get_column(right, self.right_col)
         with_prints_left = left.mutate(__mismo_key=left_array.unnest())
         with_prints_right = right.mutate(__mismo_key=right_array.unnest())
         result: Table = _util.join(

@@ -113,10 +113,6 @@ def check_join_type(
             warnings.warn(SlowJoinWarning(condition, join_type), stacklevel=2)
 
 
-# TODO: this appears to be causing flaky test failures, something
-# to do with the connection not getting closed in the call to `con.raw_sql`
-# E   sqlalchemy.exc.OperationalError: (duckdb.duckdb.TransactionException) TransactionContext Error: cannot start a transaction within a transaction  # noqa: E501
-# E   (Background on this error at: https://sqlalche.me/e/20/e3q8)
 def _explain_str(duckdb_expr: Expr) -> str:
     # we can't use a separate backend eg from ibis.duckdb.connect()
     # or it might not be able to find the tables/data referenced
@@ -127,9 +123,8 @@ def _explain_str(duckdb_expr: Expr) -> str:
     if not isinstance(con, DuckDBBackend):
         raise NotImplementedError("The given expression must be a DuckDB expression.")
     sql = ibis.to_sql(duckdb_expr, dialect="duckdb")
-    explain_sql = "EXPLAIN " + sql
-    with con.raw_sql(explain_sql) as cursor:
-        return cursor.fetchall()[0][1]
+    cursor = con.raw_sql("EXPLAIN " + sql)
+    return cursor.fetchall()[0][1]
 
 
 def _extract_top_join_type(explain_str: str) -> str:

@@ -4,7 +4,7 @@ import ibis
 from ibis.common.deferred import Deferred
 from ibis.expr.types import BooleanColumn, Column, Table
 
-from mismo._util import promote_list
+from mismo import _util
 
 
 def join(
@@ -43,7 +43,7 @@ def resolve_predicates(
     # Deferreds are callable, so we have to guard against them
     if callable(raw) and not isinstance(raw, Deferred):
         return resolve_predicates(left, right, raw(left, right))
-    preds = promote_list(raw)
+    preds = _util.promote_list(raw)
     return [_resolve_predicate(left, right, pred) for pred in preds]
 
 

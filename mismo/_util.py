@@ -8,8 +8,20 @@ import ibis
 from ibis import _
 from ibis.common.deferred import Deferred
 from ibis.expr.types import Column, IntegerColumn, Table
+from ibis.expr.types.relations import bind
 
 from mismo import _join
+
+
+def get_column(t: Table, ref: Any) -> Column:
+    """Get a column from a table using some sort of reference to the column.
+
+    ref can be a string, a Deferred, a callable, an ibis selector, etc.
+    """
+    cols = list(bind(t, ref))
+    if len(cols) != 1:
+        raise ValueError(f"Expected one column, got {len(cols)} for {ref}", ref)
+    return cols[0]
 
 
 def get_name(x) -> str:
