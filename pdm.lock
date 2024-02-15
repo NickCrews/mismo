@@ -108,12 +108,12 @@ files = [
 
 [[package]]
 name = "bidict"
-version = "0.22.1"
-requires_python = ">=3.7"
+version = "0.23.0"
+requires_python = ">=3.8"
 summary = "The bidirectional mapping library for Python."
 files = [
-    {file = "bidict-0.22.1-py3-none-any.whl", hash = "sha256:6ef212238eb884b664f28da76f33f1d28b260f665fc737b413b287d5487d1e7b"},
-    {file = "bidict-0.22.1.tar.gz", hash = "sha256:1e0f7f74e4860e6d0943a05d4134c63a2fad86f3d4732fb265bd79e4e856d81d"},
+    {file = "bidict-0.23.0-py3-none-any.whl", hash = "sha256:f5154a0e42926b122f9b2cb06aeeb9af317f626eb864bd34c1b9cdc5eca8b040"},
+    {file = "bidict-0.23.0.tar.gz", hash = "sha256:3959ca59d4d6997702d642bf1e5fd93cba299863723fc289545198f70c468578"},
 ]
 
 [[package]]
@@ -563,7 +563,7 @@ files = [
 
 [[package]]
 name = "ibis-framework"
-version = "8.0.0"
+version = "9.0.0.dev249"
 requires_python = ">=3.9,<4.0"
 git = "https://github.com/ibis-project/ibis.git"
 ref = "7ab4fda354986715ec55eec2d20edbcc4c3db65b"
@@ -587,7 +587,7 @@ dependencies = [
 
 [[package]]
 name = "ibis-framework"
-version = "8.0.0"
+version = "9.0.0.dev249"
 extras = ["duckdb"]
 requires_python = ">=3.9,<4.0"
 git = "https://github.com/ibis-project/ibis.git"
@@ -2300,12 +2300,12 @@ files = [
 
 [[package]]
 name = "threadpoolctl"
-version = "3.2.0"
+version = "3.3.0"
 requires_python = ">=3.8"
 summary = "threadpoolctl"
 files = [
-    {file = "threadpoolctl-3.2.0-py3-none-any.whl", hash = "sha256:2b7818516e423bdaebb97c723f86a7c6b0a83d3f3b0970328d66f4d9104dc032"},
-    {file = "threadpoolctl-3.2.0.tar.gz", hash = "sha256:c96a0ba3bdddeaca37dc4cc7344aafad41cdb8c313f74fdfe387a867bba93355"},
+    {file = "threadpoolctl-3.3.0-py3-none-any.whl", hash = "sha256:6155be1f4a39f31a18ea70f94a77e0ccd57dced08122ea61109e7da89883781e"},
+    {file = "threadpoolctl-3.3.0.tar.gz", hash = "sha256:5dac632b4fa2d43f42130267929af3ba01399ef4bd1882918e92dbc30365d30c"},
 ]
 
 [[package]]
