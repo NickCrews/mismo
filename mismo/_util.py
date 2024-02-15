@@ -29,6 +29,12 @@ def get_name(x) -> str:
     if isinstance(x, Deferred):
         return x.__repr__()
     try:
+        n = x.name
+        if isinstance(n, str):
+            return n
+    except AttributeError:
+        pass
+    try:
         return x.get_name()
     except AttributeError:
         pass

@@ -11,29 +11,144 @@ from ibis.expr import types as it
 from mismo import _util
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True, kw_only=True)
 class CoordinateBlocker:
-    """Blocks two locations together if they are within a certain distance."""
+    """Blocks two locations together if they are within a certain distance.
 
-    distance_km: float | int
-    """The (approx) max distance in kilometers that two coords will be blocked together.
-    
     This isn't precise, and can include pairs that are actually up to about 2x
-    larger than this distance.
+    larger than the given threshold.
     This is because we use a simple grid to bin the coordinates, so
     1. This isn't accurate near the poles, and
     2. This isn't accurate near the international date line (longitude 180/-180).
     3. If two coords fall within opposite corners of the same grid cell, they
-       will be blocked together even if they are further apart than the
-       precision, due to the diagonal distance being longer than the horizontal
-       or vertical distance.
+        will be blocked together even if they are further apart than the
+        precision, due to the diagonal distance being longer than the horizontal
+        or vertical distance.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> from mismo.block import CoordinateBlocker, block
+    >>> ibis.options.interactive = True
+    >>> conn = ibis.duckdb.connect()
+    >>> left = conn.create_table(
+    ...    "left",
+    ...    {"latlon": [{"lat": 0, "lon": 2}]},
+    ... )
+    >>> right = conn.create_table(
+    ...     "right",
+    ...     {
+    ...         "latitude": [0, 1, 2],
+    ...         "longitude": [2, 3, 4],
+    ...     },
+    ... )
+    >>> blocker = CoordinateBlocker(
+    ...     distance_km=10,
+    ...     name="within_10_km",
+    ...     left_coord="latlon",
+    ...     right_lat="latitude",
+    ...     right_lon="longitude",
+    ... )
+    >>> block(left, right, blocker)
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
+    ┃ latlon_l                       ┃ latitude_r ┃ longitude_r ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
+    │ struct<lat: int64, lon: int64> │ int64      │ int64       │
+    ├────────────────────────────────┼────────────┼─────────────┤
+    │ {'lat': 0, 'lon': 2}           │          0 │           2 │
+    └────────────────────────────────┴────────────┴─────────────┘
     """
 
-    left_col: str | Deferred | Callable[[it.Table], it.StructColumn]
-    """The column from the left table containing the (lat, lon) coordinates."""
+    distance_km: float | int
+    """
+    The (approx) max distance in kilometers that two coords will be blocked together.
+    """
+    name: str | None = None
+    """The name of the blocker."""
+    coord: str | Deferred | Callable[[it.Table], it.StructColumn] | None = None
+    """The column in both tables containing the `struct<lat: float, lon: float>` coordinates."""  # noqa: E501
+    lat: str | Deferred | Callable[[it.Table], it.FloatingColumn] | None = None
+    """The column in both tables containing the latitude coordinates."""
+    lon: str | Deferred | Callable[[it.Table], it.FloatingColumn] | None = None
+    """The column in both tables containing the longitude coordinates."""
+    left_coord: str | Deferred | Callable[[it.Table], it.StructColumn] | None = None
+    """The column in the left tables containing the `struct<lat: float, lon: float>` coordinates."""  # noqa: E501
+    right_coord: str | Deferred | Callable[[it.Table], it.StructColumn] | None = None
+    """The column in the right tables containing the `struct<lat: float, lon: float>` coordinates."""  # noqa: E501
+    left_lat: str | Deferred | Callable[[it.Table], it.FloatingColumn] | None = None
+    """The column in the left tables containing the latitude coordinates."""
+    left_lon: str | Deferred | Callable[[it.Table], it.FloatingColumn] | None = None
+    """The column in the left tables containing the longitude coordinates."""
+    right_lat: str | Deferred | Callable[[it.Table], it.FloatingColumn] | None = None
+    """The column in the right tables containing the latitude coordinates."""
+    right_lon: str | Deferred | Callable[[it.Table], it.FloatingColumn] | None = None
+    """The column in the right tables containing the longitude coordinates."""
 
-    right_col: str | Deferred | Callable[[it.Table], it.StructColumn]
-    """The column from the right table containing the (lat, lon) coordinates."""
+    def __post_init__(self):
+        ok_subsets = [
+            {"coord"},
+            {"left_coord", "right_coord"},
+            {"left_coord", "right_lat", "right_lon"},
+            {"left_lat", "left_lon", "right_coord"},
+            {"left_lat", "left_lon", "right_lat", "right_lon"},
+            {"lat", "lon"},
+            {"lat", "right_lat", "right_lon"},
+            {"left_lat", "left_lon", "lon"},
+        ]
+        options = [
+            "coord",
+            "left_coord",
+            "right_coord",
+            "lat",
+            "lon",
+            "left_lat",
+            "left_lon",
+            "right_lat",
+            "right_lon",
+        ]
+        present = {k for k in options if getattr(self, k) is not None}
+        if present not in ok_subsets:
+            ok_subsets_str = "\n".join("- " + str(s) for s in ok_subsets)
+            raise ValueError(
+                "You must specify exactly one of the following subsets of options:\n"
+                + ok_subsets_str
+                + f"\nYou provided:\n{present}"
+            )
+
+    def _get_cols(
+        self, left: it.Table, right: it.Table
+    ) -> tuple[
+        it.FloatingColumn, it.FloatingColumn, it.FloatingColumn, it.FloatingColumn
+    ]:
+        if self.coord is not None:
+            left
+            left_coord = _util.get_column(left, self.coord)
+            right_coord = _util.get_column(right, self.coord)
+            return (left_coord.lat, left_coord.lon, right_coord.lat, right_coord.lon)
+        if self.left_coord is not None:
+            left_coord = _util.get_column(left, self.left_coord)
+            left_lat = left_coord.lat
+            left_lon = left_coord.lon
+        if self.right_coord is not None:
+            right_coord = _util.get_column(right, self.right_coord)
+            right_lat = right_coord.lat
+            right_lon = right_coord.lon
+        if self.lat is not None:
+            left_lat = _util.get_column(left, self.lat)
+            right_lat = _util.get_column(right, self.lat)
+        if self.lon is not None:
+            left_lon = _util.get_column(left, self.lon)
+            right_lon = _util.get_column(right, self.lon)
+        if self.left_lat is not None:
+            left_lat = _util.get_column(left, self.left_lat)
+        if self.left_lon is not None:
+            left_lon = _util.get_column(left, self.left_lon)
+        if self.right_lat is not None:
+            right_lat = _util.get_column(right, self.right_lat)
+        if self.right_lon is not None:
+            right_lon = _util.get_column(right, self.right_lon)
+        return left_lat, left_lon, right_lat, right_lon
+        assert False, "Unreachable"
 
     def __call__(
         self,
@@ -42,13 +157,12 @@ class CoordinateBlocker:
         **kwargs,
     ) -> it.Table:
         """Return a hash value for the two coordinates."""
-        left_col = _util.get_column(left, self.left_col)
-        right_col = _util.get_column(right, self.right_col)
+        left_lat, left_lon, right_lat, right_lon = self._get_cols(left, right)
         # We have to use a grid size of ~3x the precision to avoid
         # two points falling right on either side of a grid cell boundary
         grid_size = self.distance_km * 3
-        left_hashed = _bin_lat_lon(left_col.lat, left_col.lon, grid_size)
-        right_hashed = _bin_lat_lon(right_col.lat, right_col.lon, grid_size)
+        left_hashed = _bin_lat_lon(left_lat, left_lon, grid_size)
+        right_hashed = _bin_lat_lon(right_lat, right_lon, grid_size)
         return left_hashed == right_hashed
 
 
