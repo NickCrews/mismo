@@ -25,6 +25,7 @@ dependencies = [
   "anywidget",
   # "ibis-framework[duckdb]>=7.2.0",
   # "ibis-framework[duckdb]>=9.0.0.dev34",
+  "duckdb>=0.8.0",
   "ibis-framework[duckdb] @ git+https://github.com/ibis-project/ibis.git@7ab4fda354986715ec55eec2d20edbcc4c3db65b",
   "ipywidgets",
   "scikit-learn",

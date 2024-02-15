@@ -5,7 +5,7 @@
 groups = ["default", "docs", "lint", "test"]
 strategy = ["cross_platform"]
 lock_version = "4.4.1"
-content_hash = "sha256:47d19b2ea091b5d315a1a8adb5d94b8e633e3fdc8befec33cac32ada0c64106b"
+content_hash = "sha256:a3e32564c0ddd3c455ded85f7f923216c3b4addd3d834b21fa612b86e16b2f26"
 
 [[package]]
 name = "altair"
@@ -472,6 +472,47 @@ files = [
 ]
 
 [[package]]
+name = "duckdb"
+version = "0.10.0"
+requires_python = ">=3.7.0"
+summary = "DuckDB in-process database"
+files = [
+    {file = "duckdb-0.10.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:bd0ffb3fddef0f72a150e4d76e10942a84a1a0447d10907df1621b90d6668060"},
+    {file = "duckdb-0.10.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:f3d709d5c7c1a12b5e10d0b05fa916c670cd2b50178e3696faa0cc16048a1745"},
+    {file = "duckdb-0.10.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:9114aa22ec5d591a20ce5184be90f49d8e5b5348ceaab21e102c54560d07a5f8"},
+    {file = "duckdb-0.10.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:77a37877efadf39caf7cadde0f430fedf762751b9c54750c821e2f1316705a21"},
+    {file = "duckdb-0.10.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:87cbc9e1d9c3fc9f14307bea757f99f15f46843c0ab13a6061354410824ed41f"},
+    {file = "duckdb-0.10.0-cp310-cp310-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:f0bfec79fed387201550517d325dff4fad2705020bc139d936cab08b9e845662"},
+    {file = "duckdb-0.10.0-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:c5622134d2d9796b15e09de810e450859d4beb46d9b861357ec9ae40a61b775c"},
+    {file = "duckdb-0.10.0-cp310-cp310-win_amd64.whl", hash = "sha256:089ee8e831ccaef1b73fc89c43b661567175eed0115454880bafed5e35cda702"},
+    {file = "duckdb-0.10.0-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:a05af63747f1d7021995f0811c333dee7316cec3b06c0d3e4741b9bdb678dd21"},
+    {file = "duckdb-0.10.0-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:072d6eba5d8a59e0069a8b5b4252fed8a21f9fe3f85a9129d186a39b3d0aea03"},
+    {file = "duckdb-0.10.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:a77b85668f59b919042832e4659538337f1c7f197123076c5311f1c9cf077df7"},
+    {file = "duckdb-0.10.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:96a666f1d2da65d03199a977aec246920920a5ea1da76b70ae02bd4fb1ffc48c"},
+    {file = "duckdb-0.10.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2ec76a4262b783628d26612d184834852d9c92fb203e91af789100c17e3d7173"},
+    {file = "duckdb-0.10.0-cp311-cp311-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:009dd9d2cdbd3b061a9efbdfc79f2d1a8377bcf49f1e5f430138621f8c083a6c"},
+    {file = "duckdb-0.10.0-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:878f06766088090dad4a2e5ee0081555242b2e8dcb29415ecc97e388cf0cf8d8"},
+    {file = "duckdb-0.10.0-cp311-cp311-win_amd64.whl", hash = "sha256:713ff0a1fb63a6d60f454acf67f31656549fb5d63f21ac68314e4f522daa1a89"},
+    {file = "duckdb-0.10.0-cp312-cp312-macosx_10_9_universal2.whl", hash = "sha256:9c0ee450dfedfb52dd4957244e31820feef17228da31af6d052979450a80fd19"},
+    {file = "duckdb-0.10.0-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:ff79b2ea9994398b545c0d10601cd73565fbd09f8951b3d8003c7c5c0cebc7cb"},
+    {file = "duckdb-0.10.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:6bdf1aa71b924ef651062e6b8ff9981ad85bec89598294af8a072062c5717340"},
+    {file = "duckdb-0.10.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d0265bbc8216be3ced7b377ba8847128a3fc0ef99798a3c4557c1b88e3a01c23"},
+    {file = "duckdb-0.10.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1d418a315a07707a693bd985274c0f8c4dd77015d9ef5d8d3da4cc1942fd82e0"},
+    {file = "duckdb-0.10.0-cp312-cp312-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:2828475a292e68c71855190b818aded6bce7328f79e38c04a0c75f8f1c0ceef0"},
+    {file = "duckdb-0.10.0-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:c3aaeaae2eba97035c65f31ffdb18202c951337bf2b3d53d77ce1da8ae2ecf51"},
+    {file = "duckdb-0.10.0-cp312-cp312-win_amd64.whl", hash = "sha256:c51790aaaea97d8e4a58a114c371ed8d2c4e1ca7cbf29e3bdab6d8ccfc5afc1e"},
+    {file = "duckdb-0.10.0-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:79799b3a270dcd9070f677ba510f1e66b112df3068425691bac97c5e278929c7"},
+    {file = "duckdb-0.10.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:e8fc394bfe3434920cdbcfbdd0ac3ba40902faa1dbda088db0ba44003a45318a"},
+    {file = "duckdb-0.10.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:c116605551b4abf5786243a59bcef02bd69cc51837d0c57cafaa68cdc428aa0c"},
+    {file = "duckdb-0.10.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3191170c3b0a43b0c12644800326f5afdea00d5a4621d59dbbd0c1059139e140"},
+    {file = "duckdb-0.10.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fee69a50eb93c72dc77e7ab1fabe0c38d21a52c5da44a86aa217081e38f9f1bd"},
+    {file = "duckdb-0.10.0-cp39-cp39-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:c5f449e87dacb16b0d145dbe65fa6fdb5a55b2b6911a46d74876e445dd395bac"},
+    {file = "duckdb-0.10.0-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:4487d0df221b17ea4177ad08131bc606b35f25cfadf890987833055b9d10cdf6"},
+    {file = "duckdb-0.10.0-cp39-cp39-win_amd64.whl", hash = "sha256:c099ae2ff8fe939fda62da81704f91e2f92ac45e48dc0e37c679c9d243d01e65"},
+    {file = "duckdb-0.10.0.tar.gz", hash = "sha256:c02bcc128002aa79e3c9d89b9de25e062d1096a8793bc0d7932317b7977f6845"},
+]
+
+[[package]]
 name = "exceptiongroup"
 version = "1.2.0"
 requires_python = ">=3.7"
@@ -537,15 +578,15 @@ files = [
 
 [[package]]
 name = "gitpython"
-version = "3.1.41"
+version = "3.1.42"
 requires_python = ">=3.7"
 summary = "GitPython is a Python library used to interact with Git repositories"
 dependencies = [
     "gitdb<5,>=4.0.1",
 ]
 files = [
-    {file = "GitPython-3.1.41-py3-none-any.whl", hash = "sha256:c36b6634d069b3f719610175020a9aed919421c87552185b085e04fbbdb10b7c"},
-    {file = "GitPython-3.1.41.tar.gz", hash = "sha256:ed66e624884f76df22c8e16066d567aaa5a37d5b5fa19db2c6df6f7156db9048"},
+    {file = "GitPython-3.1.42-py3-none-any.whl", hash = "sha256:1bf9cd7c9e7255f77778ea54359e54ac22a72a5b51288c457c881057b7bb9ecd"},
+    {file = "GitPython-3.1.42.tar.gz", hash = "sha256:2d99869e0fef71a73cbd242528105af1d6c1b108c60dfabd994bf292f76c3ceb"},
 ]
 
 [[package]]
