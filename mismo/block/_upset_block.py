@@ -42,4 +42,10 @@ def upset_chart(blocked: Table) -> alt.Chart:
     m = {name: _.blocking_rules.contains(name) for name in rule_names}
     intersections = intersections.mutate(**m)
     intersections = intersections.drop("blocking_rules")
-    return _upset.upset_chart(intersections)
+    chart = _upset.upset_chart(intersections)
+    title = alt.Title(
+        f"{len(rule_names)} Rules generated {blocked.count().execute():,} unique pairs",
+        anchor="middle",
+    )
+    chart = chart.properties(title=title)
+    return chart

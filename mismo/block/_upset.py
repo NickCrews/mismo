@@ -174,7 +174,7 @@ def _intersection_plot(base: alt.Chart, sets: Iterable[str], x) -> alt.Chart:
     sets = list(sets)
     intersection_base = base.transform_filter(alt.datum.set == sets[0]).encode(
         x=x,
-        y=alt.Y("intersection_size:Q", title="Intersection Size"),
+        y=alt.Y("intersection_size:Q", title="Number of Pairs"),
     )
     bars = intersection_base.mark_bar(color="black")
     text = intersection_base.mark_text(
@@ -188,7 +188,7 @@ def _intersection_plot(base: alt.Chart, sets: Iterable[str], x) -> alt.Chart:
 
 def _set_plot(base: alt.Chart, y) -> alt.Chart:
     set_base = base.transform_filter(alt.datum.is_intersect).encode(
-        x=alt.X("sum(intersection_size):Q", title="Set Size"),
+        x=alt.X("sum(intersection_size):Q", title="Number of Pairs"),
         y=y.axis(None),
     )
     set_bars = set_base.mark_bar().encode(color=alt.Color("set:N", legend=None))
