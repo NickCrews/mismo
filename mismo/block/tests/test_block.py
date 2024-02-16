@@ -6,7 +6,7 @@ from ibis import _
 from ibis.expr.types import Table
 import pytest
 
-from mismo.block import SlowJoinError, SlowJoinWarning, block, join
+from mismo.block import SlowJoinError, SlowJoinWarning, block
 from mismo.tests.util import assert_tables_equal
 
 from .common import letters_blocked_ids
@@ -82,7 +82,7 @@ def test_cross_block(table_factory, t1: Table, t2: Table):
 )
 def test_warn_slow_join(t1: Table, t2: Table, condition, is_slow, on_slow, result):
     def f():
-        join(t1, t2, condition, on_slow=on_slow)
+        block(t1, t2, condition, on_slow=on_slow)
 
     if result is None:
         f()

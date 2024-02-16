@@ -15,9 +15,9 @@ from .common import letters_blocked_ids
     [
         "letters",
         ("letters", "letters"),
-        lambda left, right: left.letters == right.letters,
-        lambda left, right: "letters",
-        lambda left, right: (_.letters, _.letters),
+        lambda left, right, **kwargs: left.letters == right.letters,
+        lambda left, right, **kwargs: "letters",
+        lambda left, right, **kwargs: (_.letters, _.letters),
         (_.letters, _.letters),
         [(_.letters, _.letters)],
     ],

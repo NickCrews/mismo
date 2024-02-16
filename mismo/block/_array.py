@@ -7,7 +7,7 @@ from ibis.common.deferred import Deferred
 from ibis.expr.types import Column, Table
 
 from mismo._util import get_column
-from mismo.block import _util
+from mismo.block._block import block
 
 
 @dataclasses.dataclass(frozen=True)
@@ -94,7 +94,7 @@ def join_on_arrays(
     right_array = get_column(right, right_col)
     with_prints_left = left.mutate(__mismo_key=left_array.unnest())
     with_prints_right = right.mutate(__mismo_key=right_array.unnest())
-    result: Table = _util.join(
+    result: Table = block(
         with_prints_left, with_prints_right, "__mismo_key", **kwargs
     ).drop("__mismo_key_l", "__mismo_key_r")
     return result

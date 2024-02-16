@@ -8,8 +8,7 @@ from ibis import selectors as s
 from ibis.common.deferred import Deferred
 from ibis.expr.types import BooleanValue, Column, Table
 
-from mismo import _util
-from mismo.block._util import join as _block_join
+from mismo import _join, _util
 
 # Something that can be used to reference a column in a table
 _ColumnReferenceLike = Union[
@@ -58,9 +57,28 @@ def block(
 
         `conditions` can be any of the following:
 
-        - Anything that ibis accepts as a join predicate
-        - A Table, which is assumed to be the result of a join, and will be used as-is
-        - A callable that takes two tables and returns one of the above
+        - A string, which is interpreted as the name of a column in both tables.
+          eg "price" is equivalent to `left.price == right.price`
+        - A Deferred, which is used to reference a column in a table
+          eg "_.price.fillna(0)" is equivalent to `left.price.fillna(0) == right.price.fillna(0)`
+        - A tuple of two of the above, which is interpreted as a join condition,
+          in case you need to tread the two tables differently.
+          eg `("price", _.cost.fillna(0)")` is equivalent to `left.price == right.cost.fillna(0)`
+        - A literal `True`, which results in a cross join.
+        - A literal `False`, which results in an empty table.
+        - A Table in the expected output schema, which is assumed to be
+          the result of blocking, and will be used as-is.
+        - A callable with the signature
+            def block(
+                left: Table,
+                right: Table,
+                conditions,
+                *,
+                on_slow: Literal["error", "warn", "ignore"] = "error",
+                labels: bool = False,
+                dedupe: bool | None = None,
+                **kwargs,
+            ) -> <one of the above>
 
         !!! note
             You can't reference the input tables directly in the conditions.
@@ -75,10 +93,11 @@ def block(
         If "ignore", do nothing.
         See [check_join_type()][mismo.block.check_join_type] for more information.
     labels
-        If False, the resulting table will only contain the columns of left and
-        right. If True, a column of type `array<string>` will be added to the
+        If True, a column of type `array<string>` will be added to the
         resulting table indicating which
         rules caused each record pair to be blocked.
+        If False, the resulting table will only contain the columns of left and
+        right.
     dedupe
         If True, the blocking is assumed to be for a deduplication task, and
         the resulting pairs will have the additional restriction that
@@ -141,13 +160,10 @@ def block(
     if not conds:
         raise ValueError("No conditions provided")
 
-    def blk(rule: _Condition) -> Table:
-        sub = _block_join(left, right, rule, on_slow=on_slow, dedupe=dedupe, **kwargs)
-        if labels:
-            sub = sub.mutate(blocking_rule=_util.get_name(rule))
-        return sub
-
-    sub_joined = [blk(rule) for rule in conds]
+    sub_joined = [
+        _block_one(left, right, rule, on_slow=on_slow, dedupe=dedupe, **kwargs)
+        for rule in conds
+    ]
     if labels:
         result = ibis.union(*sub_joined, distinct=False)
         result = result.group_by(~s.c("blocking_rule")).agg(
@@ -159,54 +175,85 @@ def block(
     return result
 
 
+def _block_one(
+    left: Table,
+    right: Table,
+    condition,
+    *,
+    labels: bool = False,
+    on_slow: Literal["error", "warn", "ignore"] = "error",
+    dedupe: bool | None = None,
+    **kwargs,
+) -> Table:
+    j = _do_join(left, right, condition, on_slow=on_slow, dedupe=dedupe, **kwargs)
+    j = _ensure_suffixed(left.columns, right.columns, j)
+    if labels:
+        j = j.mutate(blocking_rule=_util.get_name(condition))
+    return _order_blocked_data_columns(j)
+
+
+def _do_join(
+    left: Table,
+    right: Table,
+    condition,
+    *,
+    on_slow: Literal["error", "warn", "ignore"] = "error",
+    dedupe: bool | None,
+    **kwargs,
+) -> Table:
+    from mismo.block import _sql_analyze
+
+    if id(left) == id(right):
+        right = right.view()
+        if dedupe is None:
+            dedupe = True
+    resolved = _join.resolve_predicates(left, right, condition, dedupe=dedupe, **kwargs)
+    if len(resolved) == 1 and isinstance(resolved[0], Table):
+        return resolved[0]
+
+    if "record_id" in left.columns and "record_id" in right.columns:
+        if dedupe:
+            resolved = resolved + [left.record_id < right.record_id]
+        else:
+            resolved = resolved + [left.record_id != right.record_id]
+
+    _sql_analyze.check_join_type(left, right, resolved, on_slow=on_slow)
+    result = _join.join(left, right, resolved, lname="{name}_l", rname="{name}_r")
+    result = result.distinct()
+    return result
+
+
+def _order_blocked_data_columns(t: Table) -> Table:
+    if "record_id_l" not in t.columns or "record_id_r" not in t.columns:
+        return t
+    cols = set(t.columns) - {"record_id_l", "record_id_r"}
+    cols_in_order = ["record_id_l", "record_id_r", *sorted(cols)]
+    return t[cols_in_order]
+
+
+def _ensure_suffixed(
+    original_left_cols: Iterable[str], original_right_cols: Iterable[str], t: Table
+) -> Table:
+    """Ensure that all columns in `t` have a "_l" or "_r" suffix."""
+    lc = set(original_left_cols)
+    rc = set(original_right_cols)
+    just_left = lc - rc
+    just_right = rc - lc
+    m = {c + "_l": c for c in just_left} | {c + "_r": c for c in just_right}
+    t = t.rename(m)
+
+    # If the condition is an equality condition, like `left.name == right.name`,
+    # then since we are doing an inner join ibis doesn't add suffixes to these
+    # columns. So we need duplicate these columns and add suffixes.
+    un_suffixed = [
+        c for c in t.columns if not c.endswith("_l") and not c.endswith("_r")
+    ]
+    m = {c + "_l": _[c] for c in un_suffixed} | {c + "_r": _[c] for c in un_suffixed}
+    t = t.mutate(**m).drop(*un_suffixed)
+    return t
+
+
 def _to_conditions(x) -> list[_Condition]:
     if isinstance(x, tuple) and len(x) == 2:
         return [x]
     return _util.promote_list(x)
-
-
-class BlockingRule:
-    """A rule for blocking two tables together."""
-
-    def __init__(self, condition: _Condition, *, name: str | None = None) -> None:
-        """Create a new blocking rule.
-
-        Parameters
-        ----------
-        condition
-            The condition that determines if two records should be blocked together.
-            This can be any of the following:
-
-            - anything that ibis accepts as a join predicate
-            - A callable that takes two tables and returns any of the above
-        name
-            The name of the rule. If not provided, a name will be generated based on
-            the condition.
-        """
-        self._condition = condition
-        self._name = name if name is not None else _util.get_name(condition)
-
-    def get_name(self) -> str:
-        """The name of the rule."""
-        return self._name
-
-    @property
-    def condition(self) -> _Condition:
-        """The condition that determines if two records should be blocked together."""
-        return self._condition
-
-    def __call__(
-        self,
-        left: Table,
-        right: Table,
-        *,
-        on_slow: Literal["error", "warn", "ignore"] = "error",
-        **kwargs,
-    ) -> Table:
-        return self.condition
-
-    def block(self, left: Table, right: Table, **kwargs) -> Table:
-        return block(left, right, self, **kwargs)
-
-    def __repr__(self) -> str:
-        return f"BlockingRule({self.get_name()})"
