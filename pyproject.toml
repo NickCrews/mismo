@@ -63,13 +63,13 @@ exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
 
 [tool.ruff]
 extend-include = ["*.ipynb"]
-select = [
+lint.select = [
   "E", # pyflakes
   "F", # pyflakes
   "I", # isort
 ]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 # See https://github.com/charliermarsh/ruff#isort
 force-sort-within-sections = true
 required-imports = ["from __future__ import annotations"]
