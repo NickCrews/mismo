@@ -13,4 +13,7 @@
     * [Clustering](reference/cluster.md)
     * [Metrics](reference/metrics.md)
     * [Datasets](reference/datasets.md)
+    * [Library](reference/lib/index.md)
+        * [Geospatial](reference/lib/geo.md)
+        * [Human Names](reference/lib/name.md)
 * [Contribute](contributing.md)

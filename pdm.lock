@@ -5,7 +5,7 @@
 groups = ["default", "docs", "lint", "test"]
 strategy = ["cross_platform"]
 lock_version = "4.4.1"
-content_hash = "sha256:a3e32564c0ddd3c455ded85f7f923216c3b4addd3d834b21fa612b86e16b2f26"
+content_hash = "sha256:e345f31c5623eb1fd3ea914eef55f15dfc8feba0507834562a6e330be7038b79"
 
 [[package]]
 name = "altair"
@@ -604,11 +604,11 @@ files = [
 
 [[package]]
 name = "ibis-framework"
-version = "9.0.0.dev249"
+version = "8.0.0"
 requires_python = ">=3.9,<4.0"
 git = "https://github.com/ibis-project/ibis.git"
-ref = "7ab4fda354986715ec55eec2d20edbcc4c3db65b"
-revision = "7ab4fda354986715ec55eec2d20edbcc4c3db65b"
+ref = "42f45fe59da492897f0449468a3036384be34214"
+revision = "42f45fe59da492897f0449468a3036384be34214"
 summary = "Productivity-centric Python Big Data Framework"
 dependencies = [
     "atpublic<5,>=2.3",
@@ -628,15 +628,15 @@ dependencies = [
 
 [[package]]
 name = "ibis-framework"
-version = "9.0.0.dev249"
+version = "8.0.0"
 extras = ["duckdb"]
 requires_python = ">=3.9,<4.0"
 git = "https://github.com/ibis-project/ibis.git"
-ref = "7ab4fda354986715ec55eec2d20edbcc4c3db65b"
-revision = "7ab4fda354986715ec55eec2d20edbcc4c3db65b"
+ref = "42f45fe59da492897f0449468a3036384be34214"
+revision = "42f45fe59da492897f0449468a3036384be34214"
 summary = "Productivity-centric Python Big Data Framework"
 dependencies = [
-    "ibis-framework @ git+https://github.com/ibis-project/ibis.git@7ab4fda354986715ec55eec2d20edbcc4c3db65b",
+    "ibis-framework @ git+https://github.com/ibis-project/ibis.git@42f45fe59da492897f0449468a3036384be34214",
 ]
 
 [[package]]
@@ -1362,6 +1362,16 @@ summary = "Patch asyncio to allow nested event loops"
 files = [
     {file = "nest_asyncio-1.6.0-py3-none-any.whl", hash = "sha256:87af6efd6b5e897c81050477ef65c62e2b2f35d51703cae01aff2905b1852e1c"},
     {file = "nest_asyncio-1.6.0.tar.gz", hash = "sha256:6f172d5449aca15afd6c646851f4e31e02c598d553a667e38cafa997cfec55fe"},
+]
+
+[[package]]
+name = "nicknames"
+version = "0.1.8"
+requires_python = ">=3.7"
+summary = "Hand-curated dataset of English given names and nicknames"
+files = [
+    {file = "nicknames-0.1.8-py3-none-any.whl", hash = "sha256:5ade4180652e17e788443546258a63c6b7e25d792455df972633bbbffd27c7c6"},
+    {file = "nicknames-0.1.8.tar.gz", hash = "sha256:c2d1b73b8272f74afe58bae7beb7dc7d1a72f610e7e0e6b90bf7db0337c0d883"},
 ]
 
 [[package]]

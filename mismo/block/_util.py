@@ -14,6 +14,7 @@ def join(
     condition,
     *,
     on_slow: Literal["error", "warn", "ignore"] = "error",
+    dedupe: bool | None = None,
 ) -> Table:
     """Join two tables, afterwards adding a "_l" or "_r" suffix to all columns.
 
@@ -37,8 +38,16 @@ def join(
         If "error", raise a SlowJoinError. If "warn", issue a SlowJoinWarning.
         If "ignore", do nothing.
         See [check_join_type()][mismo.block.check_join_type] for more information.
+    dedupe:
+        If True, the blocking is assumed to be for a deduplication task, and
+        the resulting pairs will have the additional restriction that
+        `record_id_l < record_id_r`.
+        If False, the resulting pairs will only have the restriction that
+        `record_id_l != record_id_r`.
+        If None, the restriction will be added if and only if `left` and `right`
+        are the same table.
     """
-    j = _do_join(left, right, condition, on_slow=on_slow)
+    j = _do_join(left, right, condition, on_slow=on_slow, dedupe=dedupe)
     j = _ensure_suffixed(left.columns, right.columns, j)
     return _order_blocked_data_columns(j)
 
@@ -49,17 +58,28 @@ def _do_join(
     condition,
     *,
     on_slow: Literal["error", "warn", "ignore"] = "error",
+    dedupe: bool | None,
 ) -> Table:
     from mismo.block import _sql_analyze
 
-    # ALWAYS need to do this. see https://github.com/ibis-project/ibis/issues/8292
-    right = right.view()
-    resolved = _join.resolve_predicates(left, right, condition)
+    if id(left) == id(right):
+        right = right.view()
+        if dedupe is None:
+            dedupe = True
+    resolved = _join.resolve_predicates(left, right, condition, dedupe=dedupe)
     if len(resolved) == 1 and isinstance(resolved[0], Table):
         return resolved[0]
 
+    if "record_id" in left.columns and "record_id" in right.columns:
+        if dedupe:
+            resolved = resolved + [left.record_id < right.record_id]
+        else:
+            resolved = resolved + [left.record_id != right.record_id]
+
     _sql_analyze.check_join_type(left, right, resolved, on_slow=on_slow)
-    return _join.join(left, right, resolved, lname="{name}_l", rname="{name}_r")
+    result = _join.join(left, right, resolved, lname="{name}_l", rname="{name}_r")
+    result = result.distinct()
+    return result
 
 
 def _order_blocked_data_columns(t: Table) -> Table:

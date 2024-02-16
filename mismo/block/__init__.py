@@ -8,9 +8,9 @@ to be compared, hopefully to a manageable level.
 from __future__ import annotations
 
 from mismo.block._array import ArrayBlocker as ArrayBlocker
+from mismo.block._array import join_on_arrays as join_on_arrays
 from mismo.block._blocking import BlockingRule as BlockingRule
 from mismo.block._blocking import block as block
-from mismo.block._geo import CoordinateBlocker as CoordinateBlocker
 from mismo.block._sql_analyze import JOIN_TYPES as JOIN_TYPES
 from mismo.block._sql_analyze import SLOW_JOIN_TYPES as SLOW_JOIN_TYPES
 from mismo.block._sql_analyze import SlowJoinError as SlowJoinError

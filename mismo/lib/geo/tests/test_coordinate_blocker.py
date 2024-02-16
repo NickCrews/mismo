@@ -3,7 +3,8 @@ from __future__ import annotations
 from ibis import _
 import pytest
 
-from mismo.block import CoordinateBlocker, block
+from mismo.block import block
+from mismo.lib.geo import CoordinateBlocker
 
 
 @pytest.mark.parametrize(

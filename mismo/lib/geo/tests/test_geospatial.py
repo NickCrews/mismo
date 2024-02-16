@@ -4,7 +4,7 @@ import ibis
 import numpy as np
 import pytest
 
-from mismo.compare import distance_km
+from mismo.lib.geo import distance_km
 
 
 @pytest.mark.parametrize(

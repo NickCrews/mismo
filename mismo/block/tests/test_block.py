@@ -15,13 +15,18 @@ from .common import letters_blocked_ids
 @pytest.mark.parametrize(
     "condition",
     [
-        "letters",
-        ("letters", "letters"),
-        lambda left, right: left.letters == right.letters,
-        lambda left, right: "letters",
-        lambda left, right: (_.letters, _.letters),
-        (_.letters, _.letters),
-        [(_.letters, _.letters)],
+        pytest.param("letters", id="string"),
+        pytest.param(("letters", "letters"), id="tuple_strings"),
+        pytest.param(
+            lambda left, right, **_: left.letters == right.letters,
+            id="lambda_bool_column",
+        ),
+        pytest.param(lambda left, right, **_: "letters", id="lambda_string"),
+        pytest.param(
+            lambda left, right, **_kwargs: (_.letters, _.letters), id="lambda_tuple"
+        ),
+        pytest.param((_.letters, _.letters), id="tuple_deferred"),
+        pytest.param([(_.letters, _.letters)], id="list_tuple_deferred"),
     ],
 )
 def test_block(table_factory, t1: Table, t2: Table, condition):
@@ -49,18 +54,18 @@ def test_cross_block(table_factory, t1: Table, t2: Table):
         pytest.param("letters", False, id="simple equijoin"),
         pytest.param(True, True, id="cross join"),
         pytest.param(
-            lambda left, right: left.letters.levenshtein(right.letters) < 2,
+            lambda left, right, **_: left.letters.levenshtein(right.letters) < 2,
             True,
             id="levenshtein",
         ),
         pytest.param(
-            lambda left, right: (left.letters == right.letters)
+            lambda left, right, **_: (left.letters == right.letters)
             | (left.record_id == right.record_id),
             True,
             id="OR",
         ),
         pytest.param(
-            lambda left, right: (left.letters == right.letters)
+            lambda left, right, **_: (left.letters == right.letters)
             & (left.record_id == right.record_id),
             False,
             id="AND",

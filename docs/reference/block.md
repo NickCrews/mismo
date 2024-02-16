@@ -16,6 +16,10 @@ we choose pairs of records to compare.
 
 ## Analysis
 
+Analyze blocking performance, such as the actual algorithm that
+the SQL engine will use. In particular, check for slow O(n*m)
+nested loop joins.
+
 ::: mismo.block.get_join_type
 ::: mismo.block.check_join_type
 ::: mismo.block.JOIN_TYPES

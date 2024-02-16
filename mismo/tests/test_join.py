@@ -11,25 +11,23 @@ _TABLE = ibis.table(schema={"x": int})
 
 def check_letters(t1, t2, resolved):
     assert len(resolved) == 1
-    x, y = resolved[0]
-    assert x.equals(t1.letters)
-    assert y.equals(t2.letters)
+    expected = t1.letters == t2.letters
+    assert expected.equals(resolved[0])
 
 
 def check_letters_arrays(t1, t2, resolved):
     assert len(resolved) == 1
-    x, y = resolved[0]
-    assert x.equals(t1.letters)
-    assert y.equals(t2.arrays)
+    expected = t1.letters == t2.letters
+    assert expected.equals(resolved[0])
 
 
 def check_letters_arrays2(t1, t2, resolved):
     assert len(resolved) == 2
     letters, arrays = resolved
-    assert letters[0].equals(t1.letters)
-    assert letters[1].equals(t2.letters)
-    assert arrays[0].equals(t1.arrays)
-    assert arrays[1].equals(t2.arrays)
+    letters_expected = t1.letters == t2.letters
+    arrays_expected = t1.arrays == t2.arrays
+    assert letters_expected.equals(letters)
+    assert arrays_expected.equals(arrays)
 
 
 @pytest.mark.parametrize(
@@ -45,17 +43,28 @@ def check_letters_arrays2(t1, t2, resolved):
             [("letters", _.letters)], check_letters, id="list_pair_str_deferred"
         ),
         pytest.param(
-            ("letters", "arrays"), check_letters_arrays, id="pair_letters_arrays"
+            ("letters", "arrays"),
+            None,
+            id="pair_letters_arrays",
+            marks=pytest.mark.xfail(
+                reason="strings and array<string> are not comparable"
+            ),
         ),
         pytest.param(
             ("letters", _.arrays),
-            check_letters_arrays,
+            None,
             id="pair_letters_arrays_deferred",
+            marks=pytest.mark.xfail(
+                reason="strings and array<string> are not comparable"
+            ),
         ),
         pytest.param(
             [("letters", _.arrays)],
-            check_letters_arrays,
+            None,
             id="list_pair_letters_arrays_deferred",
+            marks=pytest.mark.xfail(
+                reason="strings and array<string> are not comparable"
+            ),
         ),
         pytest.param(
             ["letters", _.arrays],

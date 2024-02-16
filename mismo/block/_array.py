@@ -81,13 +81,20 @@ class ArrayBlocker:
     right_col: str | Deferred | Callable[[Table], Column]
     """A reference to the column in the right table that contains the array."""
 
-    def __call__(self, left: Table, right: Table) -> Table:
+    def __call__(self, left: Table, right: Table, **kwargs) -> Table:
         """Block the two tables based on array overlap."""
-        left_array = get_column(left, self.left_col)
-        right_array = get_column(right, self.right_col)
-        with_prints_left = left.mutate(__mismo_key=left_array.unnest())
-        with_prints_right = right.mutate(__mismo_key=right_array.unnest())
-        result: Table = _util.join(
-            with_prints_left, with_prints_right, "__mismo_key", on_slow="ignore"
-        ).drop("__mismo_key_l", "__mismo_key_r")
-        return result
+        return join_on_arrays(left, right, self.left_col, self.right_col, **kwargs)
+
+
+def join_on_arrays(
+    left: Table, right: Table, left_col: str, right_col: str, **kwargs
+) -> Table:
+    """Join two tables wherever the arrays in the specified columns overlap."""
+    left_array = get_column(left, left_col)
+    right_array = get_column(right, right_col)
+    with_prints_left = left.mutate(__mismo_key=left_array.unnest())
+    with_prints_right = right.mutate(__mismo_key=right_array.unnest())
+    result: Table = _util.join(
+        with_prints_left, with_prints_right, "__mismo_key", **kwargs
+    ).drop("__mismo_key_l", "__mismo_key_r")
+    return result

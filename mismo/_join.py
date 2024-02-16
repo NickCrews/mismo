@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ibis
 from ibis.common.deferred import Deferred
-from ibis.expr.types import BooleanColumn, Column, Table
+from ibis.expr.types import BooleanColumn, Table
 
 from mismo import _util
 
@@ -33,8 +33,8 @@ def join(
 
 
 def resolve_predicates(
-    left: Table, right: Table, raw, kwargs={}
-) -> list[bool | BooleanColumn | Table | tuple[Column, Column]]:
+    left: Table, right: Table, raw, **kwargs
+) -> list[bool | BooleanColumn | Table]:
     """Resolve the predicates for a join"""
     if isinstance(raw, tuple):
         if len(raw) != 2:
@@ -42,14 +42,12 @@ def resolve_predicates(
         raw = [raw]
     # Deferreds are callable, so we have to guard against them
     if callable(raw) and not isinstance(raw, Deferred):
-        return resolve_predicates(left, right, raw(left, right))
+        return resolve_predicates(left, right, raw(left, right, **kwargs))
     preds = _util.promote_list(raw)
     return [_resolve_predicate(left, right, pred) for pred in preds]
 
 
-def _resolve_predicate(
-    left: Table, right: Table, raw
-) -> bool | BooleanColumn | Table | tuple[Column, Column]:
+def _resolve_predicate(left: Table, right: Table, raw) -> bool | BooleanColumn | Table:
     if isinstance(raw, Table):
         return raw
     if isinstance(raw, BooleanColumn):
@@ -59,24 +57,14 @@ def _resolve_predicate(
     if isinstance(raw, tuple):
         if len(raw) != 2:
             raise ValueError(f"predicate must be a tuple of length 2, got {raw}")
-        return _resolve_column(left, raw[0]), _resolve_column(right, raw[1])
+        return _util.get_column(left, raw[0]) == _util.get_column(right, raw[1])
     if isinstance(raw, Deferred):
-        return _resolve_column(left, raw), _resolve_column(right, raw)
+        return _util.get_column(left, raw) == _util.get_column(right, raw)
     if isinstance(raw, str):
-        return _resolve_column(left, raw), _resolve_column(right, raw)
+        return _util.get_column(left, raw) == _util.get_column(right, raw)
     # This case must come after the Deferred case, because Deferred is callable
     if callable(raw):
         return _resolve_predicate(left, right, raw(left, right))
-
-
-def _resolve_column(t: Table, colish: str | Column | Deferred) -> Column:
-    if isinstance(colish, str):
-        return t[colish]
-    if isinstance(colish, Column):
-        return colish
-    if isinstance(colish, Deferred):
-        return colish.resolve(t)
-    raise ValueError(f"colish must be a string or Column, got {colish}")
 
 
 def _join_suffix_kwargs(lname: str, rname: str) -> dict:

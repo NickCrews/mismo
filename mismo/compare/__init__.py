@@ -9,5 +9,4 @@ from ._array import jaccard as jaccard
 from ._comparison import Comparison as Comparison
 from ._comparison import ComparisonLevel as ComparisonLevel
 from ._comparison import Comparisons as Comparisons
-from ._geospatial import distance_km as distance_km
 from ._plot import compared_dashboard as compared_dashboard

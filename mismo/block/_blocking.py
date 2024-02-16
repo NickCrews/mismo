@@ -40,6 +40,7 @@ def block(
     *,
     on_slow: Literal["error", "warn", "ignore"] = "error",
     labels: bool = False,
+    dedupe: bool | None = None,
     **kwargs,
 ) -> Table:
     """Block two tables together using the given conditions.
@@ -78,6 +79,14 @@ def block(
         right. If True, a column of type `array<string>` will be added to the
         resulting table indicating which
         rules caused each record pair to be blocked.
+    dedupe
+        If True, the blocking is assumed to be for a deduplication task, and
+        the resulting pairs will have the additional restriction that
+        `record_id_l < record_id_r`.
+        If False, the resulting pairs will only have the restriction that
+        `record_id_l != record_id_r`.
+        If None, the restriction will be added if and only if `left` and `right`
+        are the same table.
 
     Examples
     --------
@@ -133,7 +142,7 @@ def block(
         raise ValueError("No conditions provided")
 
     def blk(rule: _Condition) -> Table:
-        sub = _block_join(left, right, rule, on_slow=on_slow, **kwargs)
+        sub = _block_join(left, right, rule, on_slow=on_slow, dedupe=dedupe, **kwargs)
         if labels:
             sub = sub.mutate(blocking_rule=_util.get_name(rule))
         return sub
