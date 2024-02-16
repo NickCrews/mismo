@@ -7,6 +7,8 @@ import ibis
 from ibis.common.deferred import Deferred
 from ibis.expr.types import BooleanValue, StringColumn, Table
 
+from mismo import _util
+
 
 @dataclasses.dataclass(frozen=True)
 class ComparisonLevel:
@@ -51,10 +53,8 @@ class ComparisonLevel:
         """
         if isinstance(self.condition, bool):
             return ibis.literal(self.condition)
-        elif isinstance(self.condition, Deferred):
-            return self.condition.resolve(pairs)
         else:
-            return self.condition(pairs)
+            return _util.get_column(pairs, self.condition)
 
     def __repr__(self) -> str:
         return f"ComparisonLevel(name={self.name})"
