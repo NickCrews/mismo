@@ -39,7 +39,7 @@ def block(
     *,
     on_slow: Literal["error", "warn", "ignore"] = "error",
     labels: bool = False,
-    dedupe: bool | None = None,
+    task: Literal["dedupe", "link"] | None = None,
     **kwargs,
 ) -> Table:
     """Block two tables together using the given conditions.
@@ -98,13 +98,10 @@ def block(
         rules caused each record pair to be blocked.
         If False, the resulting table will only contain the columns of left and
         right.
-    dedupe
-        If True, the blocking is assumed to be for a deduplication task, and
-        the resulting pairs will have the additional restriction that
+    task
+        If "dedupe", the resulting pairs will have the additional restriction that
         `record_id_l < record_id_r`.
-        If False, the resulting pairs will only have the restriction that
-        `record_id_l != record_id_r`.
-        If None, the restriction will be added if and only if `left` and `right`
+        If None, will be assumed to be "dedupe" if `left` and `right`
         are the same table.
 
     Examples
@@ -161,7 +158,7 @@ def block(
         raise ValueError("No conditions provided")
 
     sub_joined = [
-        _block_one(left, right, rule, on_slow=on_slow, dedupe=dedupe, **kwargs)
+        _block_one(left, right, rule, on_slow=on_slow, task=task, **kwargs)
         for rule in conds
     ]
     if labels:
@@ -182,14 +179,14 @@ def _block_one(
     *,
     labels: bool = False,
     on_slow: Literal["error", "warn", "ignore"] = "error",
-    dedupe: bool | None = None,
+    task: Literal["dedupe", "link"] | None = None,
     **kwargs,
 ) -> Table:
-    j = _do_join(left, right, condition, on_slow=on_slow, dedupe=dedupe, **kwargs)
+    j = _do_join(left, right, condition, on_slow=on_slow, task=task, **kwargs)
     j = _ensure_suffixed(left.columns, right.columns, j)
     if labels:
         j = j.mutate(blocking_rule=_util.get_name(condition))
-    return _order_blocked_data_columns(j)
+    return _move_record_id_cols_first(j)
 
 
 def _do_join(
@@ -198,24 +195,27 @@ def _do_join(
     condition,
     *,
     on_slow: Literal["error", "warn", "ignore"] = "error",
-    dedupe: bool | None,
+    task: Literal["dedupe", "link"] | None,
     **kwargs,
 ) -> Table:
     from mismo.block import _sql_analyze
 
     if id(left) == id(right):
         right = right.view()
-        if dedupe is None:
-            dedupe = True
-    resolved = _join.resolve_predicates(left, right, condition, dedupe=dedupe, **kwargs)
+        if task is None:
+            task = "dedupe"
+    resolved = _join.resolve_predicates(
+        left, right, condition, on_slow=on_slow, task=task, **kwargs
+    )
     if len(resolved) == 1 and isinstance(resolved[0], Table):
         return resolved[0]
 
-    if "record_id" in left.columns and "record_id" in right.columns:
-        if dedupe:
-            resolved = resolved + [left.record_id < right.record_id]
-        else:
-            resolved = resolved + [left.record_id != right.record_id]
+    if (
+        task == "dedupe"
+        and "record_id" in left.columns
+        and "record_id" in right.columns
+    ):
+        resolved = resolved + [left.record_id < right.record_id]
 
     _sql_analyze.check_join_type(left, right, resolved, on_slow=on_slow)
     result = _join.join(left, right, resolved, lname="{name}_l", rname="{name}_r")
@@ -223,7 +223,7 @@ def _do_join(
     return result
 
 
-def _order_blocked_data_columns(t: Table) -> Table:
+def _move_record_id_cols_first(t: Table) -> Table:
     if "record_id_l" not in t.columns or "record_id_r" not in t.columns:
         return t
     cols = set(t.columns) - {"record_id_l", "record_id_r"}
