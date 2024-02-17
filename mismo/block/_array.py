@@ -4,7 +4,7 @@ import dataclasses
 from typing import Callable
 
 from ibis.common.deferred import Deferred
-from ibis.expr.types import Column, Table
+from ibis.expr import types as it
 
 from mismo._util import get_column
 from mismo.block._block import block
@@ -75,26 +75,26 @@ class ArrayBlocker:
     └─────────────┴─────────────┴──────────────────┴──────────────────┘
     """
 
-    left_col: str | Deferred | Callable[[Table], Column]
+    left_col: str | Deferred | Callable[[it.Table], it.Column]
     """A reference to the column in the left table that contains the array."""
 
-    right_col: str | Deferred | Callable[[Table], Column]
+    right_col: str | Deferred | Callable[[it.Table], it.Column]
     """A reference to the column in the right table that contains the array."""
 
-    def __call__(self, left: Table, right: Table, **kwargs) -> Table:
+    def __call__(self, left: it.Table, right: it.Table, **kwargs) -> it.Table:
         """Block the two tables based on array overlap."""
         return join_on_arrays(left, right, self.left_col, self.right_col, **kwargs)
 
 
 def join_on_arrays(
-    left: Table, right: Table, left_col: str, right_col: str, **kwargs
-) -> Table:
+    left: it.Table, right: it.Table, left_col: str, right_col: str, **kwargs
+) -> it.Table:
     """Join two tables wherever the arrays in the specified columns overlap."""
     left_array = get_column(left, left_col)
     right_array = get_column(right, right_col)
     with_prints_left = left.mutate(__mismo_key=left_array.unnest())
     with_prints_right = right.mutate(__mismo_key=right_array.unnest())
-    result: Table = block(
+    result: it.Table = block(
         with_prints_left, with_prints_right, "__mismo_key", **kwargs
     ).drop("__mismo_key_l", "__mismo_key_r")
     return result

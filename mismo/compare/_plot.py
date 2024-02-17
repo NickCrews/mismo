@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import colorsys
 from itertools import product
+from typing import Iterable
 
 import altair as alt
 import ibis
@@ -10,7 +11,7 @@ from ibis.expr.types import Table
 import ipywidgets
 import pandas as pd
 
-from mismo.compare import Comparison, ComparisonLevel, Comparisons
+from mismo.compare._level_comparer import AgreementLevel, LevelComparer
 from mismo.fs._plot import LOG_ODDS_COLOR_SCALE
 from mismo.fs._util import odds_to_log_odds
 from mismo.fs._weights import Weights
@@ -18,7 +19,7 @@ from mismo.fs._weights import Weights
 
 def compared_dashboard(
     compared: Table,
-    comparisons: Comparisons,
+    comparisons: Iterable[LevelComparer],
     weights: Weights | None = None,
     *,
     width: int = 500,
@@ -32,15 +33,15 @@ def compared_dashboard(
 
     Parameters
     ----------
-    compared : Table
+    compared :
         The result of a comparison.
-    comparisons : Comparisons
+    comparisons :
         The Comparisons used to compare the records.
-    weights : Weights, optional
+    weights :
         The Weights used to score the comparison, by default None
         If provided, the chart will be colored by the odds found from
         the Weights.
-    width : int, optional
+    width :
         The width of the chart, by default 500
 
     Returns
@@ -89,7 +90,7 @@ def compared_dashboard(
 
 def _compared_chart(
     compared: Table,
-    comparisons: Comparisons,
+    comparisons: Iterable[LevelComparer],
     weights: Weights | None = None,
     *,
     width: int = 500,
@@ -223,20 +224,20 @@ def _frange(start, stop, n):
 
 
 def _vector_grid_data(
-    comparisons: Comparisons, vector_data: pd.DataFrame
+    comparisons: Iterable[LevelComparer], vector_data: pd.DataFrame
 ) -> pd.DataFrame:
     records = []
     for levels in product(*comparisons):
-        vector_id = ":".join(level.name for level in levels)
+        vector_id = ":".join(level["name"] for level in levels)
         for comp, level in zip(comparisons, levels):
             level_info = {c.name: None for c in comparisons}
-            level_info[comp.name] = level.name
+            level_info[comp.name] = level["name"]
             records.append(
                 {
                     "vector_id": vector_id,
                     "level_uid": _level_uid(comp, level),
                     "comparison": comp.name,
-                    "level": level.name,
+                    "level": level["name"],
                     **level_info,
                 }
             )
@@ -247,7 +248,7 @@ def _vector_grid_data(
     return result
 
 
-def _make_level_color_scale(comparisons: Comparisons) -> alt.Scale:
+def _make_level_color_scale(comparisons: Iterable[LevelComparer]) -> alt.Scale:
     domain = []
     range = []
     hues = _frange(0, 1, len(comparisons))
@@ -264,8 +265,8 @@ def _make_level_color_scale(comparisons: Comparisons) -> alt.Scale:
     return alt.Scale(domain=domain, range=range)
 
 
-def _level_uid(comparison: Comparison, level: ComparisonLevel) -> str:
-    return comparison.name + ":" + level.name
+def _level_uid(comparison: LevelComparer, level: AgreementLevel) -> str:
+    return comparison.name + ":" + level["name"]
 
 
 # TODO: make this work as a filter for the above histogram

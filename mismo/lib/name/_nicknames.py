@@ -4,13 +4,13 @@ import functools
 from typing import overload
 
 import ibis
-from ibis.expr.types import BooleanValue, Scalar, StringValue, Table
+from ibis.expr import types as it
 
 from mismo._util import optional_import
 
 
 @overload
-def are_aliases(name1: StringValue, name2: StringValue) -> BooleanValue:
+def are_aliases(name1: it.StringValue, name2: it.StringValue) -> it.BooleanValue:
     ...
 
 
@@ -39,7 +39,9 @@ def are_aliases(name1, name2):
 
 
 @overload
-def is_nickname_for(nickname: StringValue, canonical: StringValue) -> BooleanValue:
+def is_nickname_for(
+    nickname: it.StringValue, canonical: it.StringValue
+) -> it.BooleanValue:
     ...
 
 
@@ -57,9 +59,9 @@ def is_nickname_for(nickname, canonical):
     is_string = False
     if isinstance(nickname, str) and isinstance(canonical, str):
         is_string = True
-    if not isinstance(nickname, StringValue):
+    if not isinstance(nickname, it.StringValue):
         nickname = ibis.literal(nickname)
-    if not isinstance(canonical, StringValue):
+    if not isinstance(canonical, it.StringValue):
         canonical = ibis.literal(canonical)
     result = _is_nickname_for(nickname, canonical)
     if is_string:
@@ -67,7 +69,9 @@ def is_nickname_for(nickname, canonical):
     return result
 
 
-def _is_nickname_for(nickname: StringValue, canonical: StringValue) -> BooleanValue:
+def _is_nickname_for(
+    nickname: it.StringValue, canonical: it.StringValue
+) -> it.BooleanValue:
     nickname = nickname.lower().strip()
     canonical = canonical.lower().strip()
     NICKNAMES = _nicknames_table()
@@ -77,17 +81,17 @@ def _is_nickname_for(nickname: StringValue, canonical: StringValue) -> BooleanVa
     needle = ibis.struct({"canonical": canonical, "nickname": nickname})
     result = needle.isin(haystack) | (canonical == nickname)
     # workaround for https://github.com/ibis-project/ibis/issues/8361
-    if isinstance(needle, Scalar):
+    if isinstance(needle, it.Scalar):
         return result.as_scalar()
     return result
 
 
-def _are_aliases(name1: StringValue, name2: StringValue) -> BooleanValue:
+def _are_aliases(name1: it.StringValue, name2: it.StringValue) -> it.BooleanValue:
     return is_nickname_for(name1, name2) | is_nickname_for(name2, name1)
 
 
 @functools.cache
-def _nicknames_table() -> Table:
+def _nicknames_table() -> it.Table:
     with optional_import():
         from nicknames import NickNamer
 

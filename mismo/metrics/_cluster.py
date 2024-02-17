@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from ibis.expr.types import Table
+from ibis.expr import types as it
 import numpy as np
 from sklearn import metrics as _metrics
 
 
 def _wrap(metric):
-    def wrapped(labels_true: Table, labels_pred: Table, **kwargs) -> float:
+    def wrapped(labels_true: it.Table, labels_pred: it.Table, **kwargs) -> float:
         labels_true, labels_pred = _to_numpy_labels(labels_true, labels_pred)
         return metric(labels_true, labels_pred, **kwargs)
 
@@ -29,7 +29,7 @@ rand_score = _wrap(_metrics.rand_score)
 
 
 def _to_numpy_labels(
-    labels_true: Table, labels_pred: Table
+    labels_true: it.Table, labels_pred: it.Table
 ) -> tuple[np.ndarray, np.ndarray]:
     labels_true = labels_true["record_id", "label"]
     labels_pred = labels_pred["record_id", "label"]

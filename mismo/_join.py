@@ -2,20 +2,20 @@ from __future__ import annotations
 
 import ibis
 from ibis.common.deferred import Deferred
-from ibis.expr.types import BooleanColumn, Table
+from ibis.expr import types as it
 
 from mismo import _util
 
 
 def join(
-    left: Table,
-    right: Table,
+    left: it.Table,
+    right: it.Table,
     predicates=tuple(),
     how="inner",
     *,
     lname: str = "",
     rname: str = "{name}_right",
-) -> Table:
+) -> it.Table:
     """Similar to ibis's join, with a few differences
 
     - Does a cross join when predicates is True or how is "cross"
@@ -33,8 +33,8 @@ def join(
 
 
 def resolve_predicates(
-    left: Table, right: Table, raw, **kwargs
-) -> list[bool | BooleanColumn | Table]:
+    left: it.Table, right: it.Table, raw, **kwargs
+) -> list[bool | it.BooleanColumn | it.Table]:
     """Resolve the predicates for a join"""
     if isinstance(raw, tuple):
         if len(raw) != 2:
@@ -47,10 +47,12 @@ def resolve_predicates(
     return [_resolve_predicate(left, right, pred) for pred in preds]
 
 
-def _resolve_predicate(left: Table, right: Table, raw) -> bool | BooleanColumn | Table:
-    if isinstance(raw, Table):
+def _resolve_predicate(
+    left: it.Table, right: it.Table, raw
+) -> bool | it.BooleanColumn | it.Table:
+    if isinstance(raw, it.Table):
         return raw
-    if isinstance(raw, BooleanColumn):
+    if isinstance(raw, it.BooleanColumn):
         return raw
     if isinstance(raw, bool):
         return raw

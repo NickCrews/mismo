@@ -6,7 +6,7 @@ import ibis
 from ibis.common.deferred import Deferred
 from ibis.expr import types as it
 
-from mismo.compare import ComparisonLevel
+from mismo.compare import compare
 from mismo.lib.name._nicknames import are_aliases
 
 
@@ -38,14 +38,17 @@ class NameComparer:
         self.column_left = column_left
         self.column_right = column_right
 
+    def __call__(self, t: it.Table) -> it.BooleanColumn:
+        return compare(t, self.levels)
+
     @property
     def levels(self):
         return [
-            ComparisonLevel(
+            dict(
                 name="exact",
                 condition=lambda t: t[self.column_left] == t[self.column_right],
             ),
-            ComparisonLevel(
+            dict(
                 name="nicknames",
                 condition=lambda t: are_aliases(
                     t[self.column_left], t[self.column_right]

@@ -6,7 +6,7 @@ from typing import Callable
 
 import ibis
 from ibis import _
-from ibis.expr.types import Column, Table
+from ibis.expr import types as it
 
 from mismo import _join
 from mismo._factorizer import Factorizer
@@ -17,11 +17,11 @@ logger = logging.getLogger(__name__)
 # I think more performant algorithms exist, but they are more complicated.
 # See https://arxiv.org/pdf/1802.09478.pdf
 def connected_components(
-    edges: Table,
+    edges: it.Table,
     *,
-    nodes: Table | Column | None = None,
+    nodes: it.Table | it.Column | None = None,
     max_iter: int | None = None,
-) -> Table:
+) -> it.Table:
     """Compute the connected components of a graph.
 
     This uses [an iterative algorithm](https://www.drmaciver.com/2008/11/computing-connected-graph-components-via-sql/)
@@ -156,8 +156,8 @@ def connected_components(
 
 
 def _connected_components_ints(
-    edges: Table, max_iter: int | None = None
-) -> tuple[Table, Table]:
+    edges: it.Table, max_iter: int | None = None
+) -> tuple[it.Table, it.Table]:
     """The core algorithm. Assumes you already translated the record ids to ints."""
     labels = _get_initial_labels(edges).cache()
     for i in count(1):
@@ -172,7 +172,7 @@ def _connected_components_ints(
             return labels
 
 
-def _n_updates(labels: Table, new_labels: Table) -> int:
+def _n_updates(labels: it.Table, new_labels: it.Table) -> int:
     """Count the number of updates between two labelings."""
     condition = (labels.record_id == new_labels.record_id) & (
         labels.component != new_labels.component
@@ -180,7 +180,7 @@ def _n_updates(labels: Table, new_labels: Table) -> int:
     return _join.join(labels, new_labels, condition).count().execute()
 
 
-def _updated_labels(node_labels: Table, edges: Table) -> Table:
+def _updated_labels(node_labels: it.Table, edges: it.Table) -> it.Table:
     component_equivalences = _get_component_equivalences(edges, node_labels)
     component_mapping = _get_component_update_map(component_equivalences)
     return node_labels.rename(component_old="component").left_join(
@@ -188,7 +188,7 @@ def _updated_labels(node_labels: Table, edges: Table) -> Table:
     )["record_id", "component"]
 
 
-def _get_component_equivalences(edges: Table, node_labels: Table) -> Table:
+def _get_component_equivalences(edges: it.Table, node_labels: it.Table) -> it.Table:
     """Get a table of which components are equivalent to each other."""
     same_components = (
         edges.join(node_labels, edges.record_id_l == node_labels.record_id)
@@ -205,7 +205,7 @@ def _get_component_equivalences(edges: Table, node_labels: Table) -> Table:
     return same_components["component_l", "component_r"].distinct()
 
 
-def _get_component_update_map(component_equivalences: Table) -> Table:
+def _get_component_update_map(component_equivalences: it.Table) -> it.Table:
     """Create mapping from old component ids to new component ids"""
     representative = ibis.least(
         component_equivalences.component_l, component_equivalences.component_r
@@ -218,7 +218,9 @@ def _get_component_update_map(component_equivalences: Table) -> Table:
     return together["component_old", "component"]
 
 
-def _intify_edges(raw_edges: Table) -> tuple[Table, Callable[[Table], Table]]:
+def _intify_edges(
+    raw_edges: it.Table,
+) -> tuple[it.Table, Callable[[it.Table], it.Table]]:
     """Translate edges to uint64s and create restoring function"""
     if "record_id_l" not in raw_edges.columns or "record_id_r" not in raw_edges.columns:
         raise ValueError(
@@ -233,19 +235,21 @@ def _intify_edges(raw_edges: Table) -> tuple[Table, Callable[[Table], Table]]:
     edges = f.encode(raw_edges, "record_id_l")
     edges = f.encode(edges, "record_id_r")
 
-    def restore(int_labels: Table) -> Table:
+    def restore(int_labels: it.Table) -> it.Table:
         return f.decode(int_labels, "record_id")
 
     return edges, restore
 
 
-def _get_initial_labels(edges: Table) -> Table:
+def _get_initial_labels(edges: it.Table) -> it.Table:
     labels_left = edges.select(record_id=_.record_id_l, component=_.record_id_l)
     labels_right = edges.select(record_id=_.record_id_r, component=_.record_id_r)
     return ibis.union(labels_left, labels_right, distinct=True)
 
 
-def _add_labels_for_missing_nodes(labels: Table, nodes: Table | Column) -> Table:
+def _add_labels_for_missing_nodes(
+    labels: it.Table, nodes: it.Table | it.Column
+) -> it.Table:
     """
     Add labels for nodes not in the original edgelist (and thus not in the labels)
     """
@@ -253,8 +257,8 @@ def _add_labels_for_missing_nodes(labels: Table, nodes: Table | Column) -> Table
     return labels.union(additional_labels)
 
 
-def _get_additional_labels(labels: Table, nodes: Table | Column) -> Table:
-    if not isinstance(nodes, Table):
+def _get_additional_labels(labels: it.Table, nodes: it.Table | it.Column) -> it.Table:
+    if not isinstance(nodes, it.Table):
         nodes = nodes.name("record_id").as_table()
     nodes = nodes.select("record_id")
     is_missing_label = nodes.record_id.notin(labels.record_id)

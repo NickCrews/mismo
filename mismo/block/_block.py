@@ -6,7 +6,7 @@ import ibis
 from ibis import _
 from ibis import selectors as s
 from ibis.common.deferred import Deferred
-from ibis.expr.types import BooleanValue, Column, Table
+from ibis.expr import types as it
 
 from mismo import _join, _util
 
@@ -14,11 +14,11 @@ from mismo import _join, _util
 _ColumnReferenceLike = Union[
     str,
     Deferred,
-    Callable[[Table], Column],
+    Callable[[it.Table], it.Column],
 ]
 # Something that can be used as a condition in a join between two tables
 _ConditionAtom = Union[
-    BooleanValue,
+    it.BooleanValue,
     Literal[True],
     tuple[_ColumnReferenceLike, _ColumnReferenceLike],
 ]
@@ -28,20 +28,20 @@ _ConditionOrConditions = Union[
 ]
 _Condition = Union[
     _ConditionOrConditions,
-    Callable[[Table, Table], _ConditionOrConditions],
+    Callable[[it.Table, it.Table], _ConditionOrConditions],
 ]
 
 
 def block(
-    left: Table,
-    right: Table,
+    left: it.Table,
+    right: it.Table,
     conditions,
     *,
     on_slow: Literal["error", "warn", "ignore"] = "error",
     labels: bool = False,
     task: Literal["dedupe", "link"] | None = None,
     **kwargs,
-) -> Table:
+) -> it.Table:
     """Block two tables together using the given conditions.
 
     Parameters
@@ -173,15 +173,15 @@ def block(
 
 
 def _block_one(
-    left: Table,
-    right: Table,
+    left: it.Table,
+    right: it.Table,
     condition,
     *,
     labels: bool = False,
     on_slow: Literal["error", "warn", "ignore"] = "error",
     task: Literal["dedupe", "link"] | None = None,
     **kwargs,
-) -> Table:
+) -> it.Table:
     j = _do_join(left, right, condition, on_slow=on_slow, task=task, **kwargs)
     j = _ensure_suffixed(left.columns, right.columns, j)
     if labels:
@@ -190,14 +190,14 @@ def _block_one(
 
 
 def _do_join(
-    left: Table,
-    right: Table,
+    left: it.Table,
+    right: it.Table,
     condition,
     *,
     on_slow: Literal["error", "warn", "ignore"] = "error",
     task: Literal["dedupe", "link"] | None,
     **kwargs,
-) -> Table:
+) -> it.Table:
     from mismo.block import _sql_analyze
 
     if id(left) == id(right):
@@ -207,7 +207,7 @@ def _do_join(
     resolved = _join.resolve_predicates(
         left, right, condition, on_slow=on_slow, task=task, **kwargs
     )
-    if len(resolved) == 1 and isinstance(resolved[0], Table):
+    if len(resolved) == 1 and isinstance(resolved[0], it.Table):
         return resolved[0]
 
     if (
@@ -223,7 +223,7 @@ def _do_join(
     return result
 
 
-def _move_record_id_cols_first(t: Table) -> Table:
+def _move_record_id_cols_first(t: it.Table) -> it.Table:
     if "record_id_l" not in t.columns or "record_id_r" not in t.columns:
         return t
     cols = set(t.columns) - {"record_id_l", "record_id_r"}
@@ -232,8 +232,8 @@ def _move_record_id_cols_first(t: Table) -> Table:
 
 
 def _ensure_suffixed(
-    original_left_cols: Iterable[str], original_right_cols: Iterable[str], t: Table
-) -> Table:
+    original_left_cols: Iterable[str], original_right_cols: Iterable[str], t: it.Table
+) -> it.Table:
     """Ensure that all columns in `t` have a "_l" or "_r" suffix."""
     lc = set(original_left_cols)
     rc = set(original_right_cols)

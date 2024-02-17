@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from ibis.expr.types import Table
+from ibis.expr import types as it
 import pytest
 
 from mismo.metrics import _cluster
 
 
 @pytest.fixture
-def labels_true(table_factory) -> Table:
+def labels_true(table_factory) -> it.Table:
     return table_factory(
         {
             "record_id": [0, 1, 2, 3],
@@ -17,7 +17,7 @@ def labels_true(table_factory) -> Table:
 
 
 @pytest.fixture
-def labels_pred(table_factory) -> Table:
+def labels_pred(table_factory) -> it.Table:
     return table_factory(
         {
             "record_id": [0, 1, 2, 3],
@@ -39,7 +39,7 @@ def labels_pred(table_factory) -> Table:
         _cluster.normalized_mutual_info_score,
     ],
 )
-def test_scalar_metrics(func, labels_true: Table, labels_pred: Table):
+def test_scalar_metrics(func, labels_true: it.Table, labels_pred: it.Table):
     # We assume sklearns implementation is correct
     result = func(labels_true, labels_pred)
     assert result >= 0.0
@@ -47,7 +47,9 @@ def test_scalar_metrics(func, labels_true: Table, labels_pred: Table):
     assert func.__doc__ is not None
 
 
-def test_homogeneity_completeness_v_measure(labels_true: Table, labels_pred: Table):
+def test_homogeneity_completeness_v_measure(
+    labels_true: it.Table, labels_pred: it.Table
+):
     # We assume sklearns implementation is correct
     homogeneity, completeness, v_measure = _cluster.homogeneity_completeness_v_measure(
         labels_true, labels_pred

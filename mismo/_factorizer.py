@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import cached_property
 
 from ibis import _
-from ibis.expr.types import Table
+from ibis.expr import types as it
 
 from mismo import _join, _util
 
@@ -15,7 +15,7 @@ class Factorizer:
     integer codes to do some operation, and then restore the original column.
     """
 
-    def __init__(self, t: Table, column: str) -> None:
+    def __init__(self, t: it.Table, column: str) -> None:
         """Create a Factorizer from column of values.
 
         If the input column is already an integer, the Factorizer is a no-op.
@@ -36,11 +36,11 @@ class Factorizer:
 
     def encode(
         self,
-        t: Table | None = None,
+        t: it.Table | None = None,
         src: str | None = None,
         dst: str | None = None,
         verify: bool = True,
-    ) -> Table:
+    ) -> it.Table:
         """Encode a column to integer codes.
 
         Parameters
@@ -92,8 +92,8 @@ class Factorizer:
         return result
 
     def decode(
-        self, t: Table, src: str, dst: str | None = None, verify: bool = True
-    ) -> Table:
+        self, t: it.Table, src: str, dst: str | None = None, verify: bool = True
+    ) -> it.Table:
         """Decode a column of integer codes back to the original values.
 
         Parameters
@@ -132,11 +132,11 @@ class Factorizer:
         return result
 
     @cached_property
-    def _augmented(self) -> Table:
+    def _augmented(self) -> it.Table:
         return self.t.mutate(_util.group_id(self.column).name(self._int_column))
 
     @cached_property
-    def _mapping(self) -> Table:
+    def _mapping(self) -> it.Table:
         return self._augmented.select(
             self._int_column, original=_[self.column]
         ).distinct()

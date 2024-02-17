@@ -6,7 +6,7 @@ import warnings
 
 import ibis
 from ibis.backends.duckdb import Backend as DuckDBBackend
-from ibis.expr.types import Expr, Table
+from ibis.expr import types as it
 
 from mismo import _util
 from mismo._join import join
@@ -58,7 +58,7 @@ class SlowJoinError(_SlowJoinMixin, ValueError):
     """Error for slow join types."""
 
 
-def get_join_type(left: Table, right: Table, condition) -> str:
+def get_join_type(left: it.Table, right: it.Table, condition) -> str:
     """Return one of the JOIN_TYPES for the outermost join in the expression.
 
     If there are multiple joins in the query, this will return the top (outermost) one.
@@ -72,8 +72,8 @@ def get_join_type(left: Table, right: Table, condition) -> str:
 
 
 def check_join_type(
-    left: Table,
-    right: Table,
+    left: it.Table,
+    right: it.Table,
     condition,
     *,
     on_slow: Literal["error", "warn", "ignore"] = "error",
@@ -113,7 +113,7 @@ def check_join_type(
             warnings.warn(SlowJoinWarning(condition, join_type), stacklevel=2)
 
 
-def _explain_str(duckdb_expr: Expr) -> str:
+def _explain_str(duckdb_expr: it.Expr) -> str:
     # we can't use a separate backend eg from ibis.duckdb.connect()
     # or it might not be able to find the tables/data referenced
     try:

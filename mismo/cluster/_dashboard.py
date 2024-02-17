@@ -3,15 +3,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Callable
 
 from ibis import _
-from ibis.expr.types import Table
+from ibis.expr import types as it
 import ipywidgets
 import rich
 
+from mismo import _util
+
 if TYPE_CHECKING:
-    import ipycytoscape
+    import ipycytoscape  # type: ignore
 
 
-def cluster_widget(records: Table, links: Table) -> ipycytoscape.CytoscapeWidget:
+def cluster_widget(records: it.Table, links: it.Table) -> ipycytoscape.CytoscapeWidget:
     """Make a Widget that shows a cluster of records and the links between them.
 
     Uses ipycytoscape to make an interactive widget.
@@ -29,7 +31,8 @@ def cluster_widget(records: Table, links: Table) -> ipycytoscape.CytoscapeWidget
         The column `opacity` is used to set the opacity of the edges.
         If not given, it is set to 0.5.
     """
-    import ipycytoscape
+    with _util.optional_import():
+        import ipycytoscape  # type: ignore
 
     links = links[_.record_id_l != _.record_id_r]
     links = links[
@@ -105,8 +108,8 @@ def display_edge(
 
 
 def cluster_dashboard(
-    records: Table,
-    links: Table,
+    records: it.Table,
+    links: it.Table,
     *,
     display_record: Callable | None = display_record,
     display_edge: Callable | None = display_edge,
@@ -115,7 +118,7 @@ def cluster_dashboard(
     cyto = cluster_widget(records, links)
     info = ipywidgets.Output(layout={"height": "500px"})
 
-    def _to_dict(t: Table, filter):
+    def _to_dict(t: it.Table, filter):
         one_row = t[filter]
         return one_row.execute().to_dict("records")[0]
 
@@ -142,7 +145,7 @@ def cluster_dashboard(
     return ipywidgets.VBox([cyto, info])
 
 
-def _ensure_has_width(links: Table) -> Table:
+def _ensure_has_width(links: it.Table) -> it.Table:
     if "width" in links.columns:
         return links
     if "odds" not in links.columns:
@@ -153,7 +156,7 @@ def _ensure_has_width(links: Table) -> Table:
     return links.mutate(width=width)
 
 
-def _ensure_has_opacity(links: Table) -> Table:
+def _ensure_has_opacity(links: it.Table) -> it.Table:
     if "opacity" in links.columns:
         return links
     return links.mutate(opacity=0.5)

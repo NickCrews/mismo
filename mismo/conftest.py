@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Callable, Iterable
 
 import ibis
-from ibis.expr.types import Column, Table
+from ibis.expr import types as it
 import pytest
 
 
@@ -16,7 +16,7 @@ _count = 0
 
 
 @pytest.fixture
-def table_factory(backend: ibis.BaseBackend) -> Callable[..., Table]:
+def table_factory(backend: ibis.BaseBackend) -> Callable[..., it.Table]:
     def factory(data, schema=None, **kwargs):
         global _count
         name = f"__mismo_test{_count}"
@@ -29,7 +29,7 @@ def table_factory(backend: ibis.BaseBackend) -> Callable[..., Table]:
 
 
 @pytest.fixture
-def column_factory(table_factory) -> Callable[[Iterable], Column]:
+def column_factory(table_factory) -> Callable[[Iterable], it.Column]:
     def func(column_data):
         table = table_factory({"column": column_data})
         return table.column
@@ -38,7 +38,7 @@ def column_factory(table_factory) -> Callable[[Iterable], Column]:
 
 
 @pytest.fixture
-def t1(table_factory) -> Table:
+def t1(table_factory) -> it.Table:
     return table_factory(
         {
             "record_id": [0, 1, 2],
@@ -49,7 +49,7 @@ def t1(table_factory) -> Table:
 
 
 @pytest.fixture
-def t2(table_factory) -> Table:
+def t2(table_factory) -> it.Table:
     return table_factory(
         {
             "record_id": [90, 91, 92, 93],

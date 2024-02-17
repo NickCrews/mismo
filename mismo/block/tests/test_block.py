@@ -3,7 +3,7 @@ from __future__ import annotations
 import warnings
 
 from ibis import _
-from ibis.expr.types import Table
+from ibis.expr import types as it
 import pytest
 
 from mismo.block import SlowJoinError, SlowJoinWarning, block
@@ -29,14 +29,14 @@ from .common import letters_blocked_ids
         pytest.param([(_.letters, _.letters)], id="list_tuple_deferred"),
     ],
 )
-def test_block(table_factory, t1: Table, t2: Table, condition):
+def test_block(table_factory, t1: it.Table, t2: it.Table, condition):
     blocked_table = block(t1, t2, condition)
     blocked_ids = blocked_table["record_id_l", "record_id_r"]
     expected = letters_blocked_ids(table_factory)
     assert_tables_equal(blocked_ids, expected)
 
 
-def test_cross_block(table_factory, t1: Table, t2: Table):
+def test_cross_block(table_factory, t1: it.Table, t2: it.Table):
     blocked_table = block(t1, t2, True, on_slow="ignore")
     blocked_ids = blocked_table["record_id_l", "record_id_r"]
     expected = table_factory(
@@ -80,7 +80,9 @@ def test_cross_block(table_factory, t1: Table, t2: Table):
         ("error", SlowJoinError),
     ],
 )
-def test_warn_slow_join(t1: Table, t2: Table, condition, is_slow, on_slow, result):
+def test_warn_slow_join(
+    t1: it.Table, t2: it.Table, condition, is_slow, on_slow, result
+):
     def f():
         block(t1, t2, condition, on_slow=on_slow)
 

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from ibis.expr.types import ArrayValue, FloatingValue
+from ibis.expr import types as it
 
 
-def jaccard(a: ArrayValue, b: ArrayValue) -> FloatingValue:
+def jaccard(a: it.ArrayValue, b: it.ArrayValue) -> it.FloatingValue:
     """The Jaccard similarity between two arrays.
 
     Parameters

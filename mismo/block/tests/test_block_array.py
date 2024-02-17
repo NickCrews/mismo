@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from ibis import _
-from ibis.expr.types import Table
+from ibis.expr import types as it
 import pandas as pd
 import pytest
 
@@ -16,7 +16,7 @@ from mismo.tests.util import assert_tables_equal
         ("arrays", lambda t: t.arrays),
     ],
 )
-def test_array_blocker(table_factory, t1: Table, t2: Table, left, right):
+def test_array_blocker(table_factory, t1: it.Table, t2: it.Table, left, right):
     blocked = block(t1, t2, ArrayBlocker(left, right))
     blocked_ids = blocked[["record_id_l", "record_id_r"]]
     expected = table_factory(

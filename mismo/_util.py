@@ -7,13 +7,13 @@ from typing import Any, Callable, Iterable, Literal, TypeVar
 import ibis
 from ibis import _
 from ibis.common.deferred import Deferred
-from ibis.expr.types import Column, IntegerColumn, Table
+from ibis.expr import types as it
 from ibis.expr.types.relations import bind
 
 from mismo import _join
 
 
-def get_column(t: Table, ref: Any) -> Column:
+def get_column(t: it.Table, ref: Any) -> it.Column:
     """Get a column from a table using some sort of reference to the column.
 
     ref can be a string, a Deferred, a callable, an ibis selector, etc.
@@ -46,12 +46,12 @@ def get_name(x) -> str:
 
 
 def sample_table(
-    table: Table,
+    table: it.Table,
     n_approx: int,
     *,
     method: Literal["row", "block"] | None = None,
     seed: int | None = None,
-) -> Table:
+) -> it.Table:
     """Sample a table to approximately n rows.
 
     Due to the way ibis does sampling, this is not guaranteed to be exactly n rows.
@@ -91,7 +91,7 @@ def sample_table(
     return table.sample(fraction, method=method, seed=seed)
 
 
-def group_id(keys: str | Column | Iterable[str | Column]) -> IntegerColumn:
+def group_id(keys: str | it.Column | Iterable[str | it.Column]) -> it.IntegerColumn:
     """Number each group from 0 to "number of groups - 1".
 
     This is equivalent to pandas.DataFrame.groupby(keys).ngroup().
@@ -99,7 +99,7 @@ def group_id(keys: str | Column | Iterable[str | Column]) -> IntegerColumn:
     return ibis.dense_rank().over(ibis.window(order_by=keys)).cast("uint64")
 
 
-def unique_column_name(t: Table) -> str:
+def unique_column_name(t: it.Table) -> str:
     """Return a column name that is not already in the table"""
     i = 0
     while True:
@@ -109,7 +109,9 @@ def unique_column_name(t: Table) -> str:
         i += 1
 
 
-def intify_column(t: Table, column: str) -> tuple[Table, Callable[[Table], Table]]:
+def intify_column(
+    t: it.Table, column: str
+) -> tuple[it.Table, Callable[[it.Table], it.Table]]:
     """
     Translate column to integer, and return a restoring function.
 
@@ -124,7 +126,7 @@ def intify_column(t: Table, column: str) -> tuple[Table, Callable[[Table], Table
     mapping = augmented.select(int_col_name, column).distinct()
     augmented = augmented.mutate(**{column: _[int_col_name]}).drop(int_col_name)
 
-    def restore(with_int_labels: Table) -> Table:
+    def restore(with_int_labels: it.Table) -> it.Table:
         return _join.join(
             with_int_labels,
             mapping,

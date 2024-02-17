@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ibis.expr.types import Table
+from ibis.expr import types as it
 import pandas as pd
 import pytest
 
@@ -126,7 +126,7 @@ def test_connected_components_max_iterations(table_factory):
     assert clusters != {frozenset({0, 1, 2})}
 
 
-def _labels_to_clusters(labels: Table) -> set[frozenset[Any]]:
+def _labels_to_clusters(labels: it.Table) -> set[frozenset[Any]]:
     df = labels.to_pandas()
     component_ids = set(df.component)
     cid_to_rid = {component_id: set() for component_id in component_ids}

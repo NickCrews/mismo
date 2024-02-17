@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from ibis.expr.types import StringColumn
+from ibis.expr import types as it
 import pytest
 
 from mismo.clean import _strings
 
 
 @pytest.fixture
-def string_column(column_factory) -> StringColumn:
+def string_column(column_factory) -> it.StringColumn:
     return column_factory(
         [
             "jane's   house",
