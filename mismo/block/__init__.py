@@ -11,10 +11,10 @@ from mismo.block._array import ArrayBlocker as ArrayBlocker
 from mismo.block._array import join_on_arrays as join_on_arrays
 from mismo.block._block import block as block
 from mismo.block._blocking_rule import BlockingRule as BlockingRule
-from mismo.block._sql_analyze import JOIN_TYPES as JOIN_TYPES
-from mismo.block._sql_analyze import SLOW_JOIN_TYPES as SLOW_JOIN_TYPES
+from mismo.block._sql_analyze import JOIN_ALGORITHMS as JOIN_ALGORITHMS
+from mismo.block._sql_analyze import SLOW_JOIN_ALGORITHMS as SLOW_JOIN_ALGORITHMS
 from mismo.block._sql_analyze import SlowJoinError as SlowJoinError
 from mismo.block._sql_analyze import SlowJoinWarning as SlowJoinWarning
-from mismo.block._sql_analyze import check_join_type as check_join_type
-from mismo.block._sql_analyze import get_join_type as get_join_type
+from mismo.block._sql_analyze import check_join_algorithm as check_join_algorithm
+from mismo.block._sql_analyze import get_join_algorithm as get_join_algorithm
 from mismo.block._upset_block import upset_chart as upset_chart

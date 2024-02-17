@@ -91,7 +91,7 @@ def block(
         What to do if the join condition causes a slow O(n*m) join algorithm.
         If "error", raise a SlowJoinError. If "warn", issue a SlowJoinWarning.
         If "ignore", do nothing.
-        See [check_join_type()][mismo.block.check_join_type] for more information.
+        See [check_join_algorithm()][mismo.block.check_join_algorithm] for more information.
     labels
         If True, a column of type `array<string>` will be added to the
         resulting table indicating which
@@ -217,7 +217,7 @@ def _do_join(
     ):
         resolved = resolved + [left.record_id < right.record_id]
 
-    _sql_analyze.check_join_type(left, right, resolved, on_slow=on_slow)
+    _sql_analyze.check_join_algorithm(left, right, resolved, on_slow=on_slow)
     result = _join.join(left, right, resolved, lname="{name}_l", rname="{name}_r")
     result = result.distinct()
     return result

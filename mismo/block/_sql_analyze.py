@@ -11,7 +11,7 @@ from ibis.expr import types as it
 from mismo import _util
 from mismo._join import join
 
-JOIN_TYPES = frozenset(
+JOIN_ALGORITHMS = frozenset(
     {
         # If the duckdb analyzer can see the condition is always false (eg you pass 1=2)
         "EMPTY_RESULT",  # O(1)
@@ -27,12 +27,12 @@ JOIN_TYPES = frozenset(
         "POSITIONAL_JOIN",  # O(n)
     }
 )
-"""Based on all the JOIN types in
+"""Based on all the JOIN operators in
 [https://github.com/duckdb/duckdb/blob/b0b1562e293718ee9279c9621cefe4cb5dc01ef9/src/common/enums/physical_operator_type.cpp#L56]()
 (very good) explanation of these at [https://duckdb.org/2022/05/27/iejoin.html]()
 """
 
-SLOW_JOIN_TYPES = frozenset(
+SLOW_JOIN_ALGORITHMS = frozenset(
     {
         "NESTED_LOOP_JOIN",
         "BLOCKWISE_NL_JOIN",
@@ -42,24 +42,24 @@ SLOW_JOIN_TYPES = frozenset(
 
 
 class _SlowJoinMixin:
-    def __init__(self, condition, join_type: str) -> None:
+    def __init__(self, condition, algorithm: str) -> None:
         self.condition = condition
-        self.join_type = join_type
+        self.algorithm = algorithm
         super().__init__(
-            f"The join '{_util.get_name(self.condition)}' is of type {join_type} and likely to be slow."  # noqa: E501
+            f"The join '{_util.get_name(self.condition)}' uses the {algorithm} algorithm and is likely to be slow."  # noqa: E501
         )
 
 
 class SlowJoinWarning(_SlowJoinMixin, UserWarning):
-    """Warning for slow join types."""
+    """Warning for slow join algorithms."""
 
 
 class SlowJoinError(_SlowJoinMixin, ValueError):
-    """Error for slow join types."""
+    """Error for slow join algorithms."""
 
 
-def get_join_type(left: it.Table, right: it.Table, condition) -> str:
-    """Return one of the JOIN_TYPES for the outermost join in the expression.
+def get_join_algorithm(left: it.Table, right: it.Table, condition) -> str:
+    """Return one of the JOIN_ALGORITHMS for the outermost join in the expression.
 
     If there are multiple joins in the query, this will return the top (outermost) one.
     This only works with expressions bound to a DuckDB backend.
@@ -67,11 +67,10 @@ def get_join_type(left: it.Table, right: it.Table, condition) -> str:
     """
     j = join(left, right, condition)
     ex = _explain_str(j)
-    join_type = _extract_top_join_type(ex)
-    return join_type
+    return _extract_top_join_alg(ex)
 
 
-def check_join_type(
+def check_join_algorithm(
     left: it.Table,
     right: it.Table,
     condition,
@@ -82,7 +81,7 @@ def check_join_type(
 
     Issues a SlowJoinWarning or raises a SlowJoinError.
 
-    By "slow", we mean that the join is one of:
+    By "slow", we mean that the join algorithm is one of:
 
     - "NESTED_LOOP_JOIN" O(n*m)
     - "BLOCKWISE_NL_JOIN" O(n*m)
@@ -98,19 +97,19 @@ def check_join_type(
     - "ASOF_JOIN" O(n*log(n))
 
     This is done by using the EXPLAIN command to generate the
-    query plan, and checking the join type.
+    query plan, and checking the join algorithm.
 
     See [https://duckdb.org/2022/05/27/iejoin.html]() for a very good explanation
-    of these join types.
+    of these join algorithms.
     """
     if on_slow == "ignore":
         return
-    join_type = get_join_type(left, right, condition)
-    if join_type in SLOW_JOIN_TYPES:
+    alg = get_join_algorithm(left, right, condition)
+    if alg in SLOW_JOIN_ALGORITHMS:
         if on_slow == "error":
-            raise SlowJoinError(condition, join_type)
+            raise SlowJoinError(condition, alg)
         elif on_slow == "warn":
-            warnings.warn(SlowJoinWarning(condition, join_type), stacklevel=2)
+            warnings.warn(SlowJoinWarning(condition, alg), stacklevel=2)
 
 
 def _explain_str(duckdb_expr: it.Expr) -> str:
@@ -127,8 +126,8 @@ def _explain_str(duckdb_expr: it.Expr) -> str:
     return cursor.fetchall()[0][1]
 
 
-def _extract_top_join_type(explain_str: str) -> str:
-    """Given the output of `EXPLAIN`, return one of the JOIN_TYPES.
+def _extract_top_join_alg(explain_str: str) -> str:
+    """Given the output of `EXPLAIN`, return one of the JOIN_ALGORITHMS.
 
     If there are multiple joins in the query, this will return the top (outermost) one.
     """
@@ -161,10 +160,10 @@ def _extract_top_join_type(explain_str: str) -> str:
     # │   ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─   ││   ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─   │
     # │           EC: 5           ││           EC: 5           │
     # └───────────────────────────┘└───────────────────────────┘
-    pattern = r"\s+({})\s+".format("|".join(JOIN_TYPES))
+    pattern = r"\s+({})\s+".format("|".join(JOIN_ALGORITHMS))
     match = re.search(pattern, explain_str)
     if match is None:
         raise ValueError(
-            f"Could not find a join type in the explain string: {explain_str}"
+            f"Could not find a join algorithm in the explain string: {explain_str}"
         )
     return match.group(1)

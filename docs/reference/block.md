@@ -20,9 +20,9 @@ Analyze blocking performance, such as the actual algorithm that
 the SQL engine will use. In particular, check for slow O(n*m)
 nested loop joins.
 
-::: mismo.block.get_join_type
-::: mismo.block.check_join_type
-::: mismo.block.JOIN_TYPES
-::: mismo.block.SLOW_JOIN_TYPES
+::: mismo.block.get_join_algorithm
+::: mismo.block.check_join_algorithm
+::: mismo.block.JOIN_ALGORTITHMS
+::: mismo.block.SLOW_JOIN_ALGORTITHMS
 ::: mismo.block.SlowJoinError
 ::: mismo.block.SlowJoinWarning
