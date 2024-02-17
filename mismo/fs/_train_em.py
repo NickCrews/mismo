@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import logging
+from typing import Iterable
 
 from ibis import _
 from ibis.expr.types import IntegerColumn, StringColumn, Table
 
-from mismo.compare._comparison import Comparison, Comparisons
+from mismo.compare import LevelComparer, compare
 
 from . import _train
 from ._weights import ComparisonWeights, Weights
@@ -13,8 +14,8 @@ from ._weights import ComparisonWeights, Weights
 logger = logging.getLogger(__name__)
 
 
-def train_comparisons_using_em(
-    comparisons: Comparisons,
+def train_using_em(
+    comparers: Iterable[LevelComparer],
     left: Table,
     right: Table,
     *,
@@ -25,26 +26,26 @@ def train_comparisons_using_em(
     initial_blocking = _train.all_possible_pairs(
         left, right, max_pairs=max_pairs, seed=seed
     )
-    compared = comparisons.label_pairs(initial_blocking)
-    compared = compared[[c.name for c in comparisons]]
+    compared = compare(initial_blocking, *comparers)
+    compared = compared[[c.name for c in comparers]]
     compared = compared.cache()
-    weights = _initial_weights(comparisons, compared)
+    weights = _initial_weights(comparers, compared)
     for i in range(5):
         logger.info("EM iteration {i}, starting weights: {weights}", i, weights)
         scored = weights.score(compared)
         is_match = _.odds >= 10
         matches = scored.filter(is_match)
         nonmatches = scored.filter(~is_match)
-        weights = _weights_from_matches_nonmatches(comparisons, matches, nonmatches)
+        weights = _weights_from_matches_nonmatches(comparers, matches, nonmatches)
     return weights
 
 
-def _initial_weights(comparisons: Comparisons, labels: Table) -> Weights:
+def _initial_weights(comparisons: Iterable[LevelComparer], labels: Table) -> Weights:
     return Weights(_initial_comparison_weights(c, labels[c.name]) for c in comparisons)
 
 
 def _initial_comparison_weights(
-    comparison: Comparison, labels: IntegerColumn
+    comparison: LevelComparer, labels: IntegerColumn
 ) -> ComparisonWeights:
     n_levels = len(comparison)
     ms = [1 / n_levels] * n_levels
@@ -53,7 +54,7 @@ def _initial_comparison_weights(
 
 
 def _weights_from_matches_nonmatches(
-    comparisons: Comparisons, matches: Table, nonmatches: Table
+    comparisons: Iterable[LevelComparer], matches: Table, nonmatches: Table
 ) -> Weights:
     return Weights(
         [
@@ -66,7 +67,7 @@ def _weights_from_matches_nonmatches(
 
 
 def _comparison_weights_from_matches_nonmatches(
-    comparison: Comparison,
+    comparison: LevelComparer,
     match_labels: IntegerColumn | StringColumn,
     nonmatch_labels: IntegerColumn | StringColumn,
 ) -> ComparisonWeights:

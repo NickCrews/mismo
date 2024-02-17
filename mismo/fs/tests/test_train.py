@@ -4,33 +4,34 @@ from ibis import _
 import pytest
 
 from mismo import datasets, fs
-from mismo.compare import Comparison, ComparisonLevel, Comparisons
+from mismo.compare import LevelComparer
 from mismo.lib.geo import distance_km
 
 
 @pytest.fixture
-def name_comparison():
-    return Comparison(
+def name_comparer():
+    return LevelComparer(
         name="name",
         levels=[
-            ComparisonLevel("exact", _.name_l == _.name_r),
-            ComparisonLevel("close", _.name_l[:3] == _.name_r[:3]),
+            dict(name="exact", condition=_.name_l == _.name_r),
+            dict(name="close", condition=_.name_l[:3] == _.name_r[:3]),
         ],
     )
 
 
 @pytest.fixture
-def location_comparison():
-    return Comparison(
+def location_comparer():
+    return LevelComparer(
         name="location",
         levels=[
-            ComparisonLevel(
-                "exact",
-                (_.latitude_l == _.latitude_r) & (_.longitude_l == _.longitude_r),
+            dict(
+                name="exact",
+                condition=(_.latitude_l == _.latitude_r)
+                & (_.longitude_l == _.longitude_r),
             ),
-            ComparisonLevel(
-                "coords <= 10km",
-                distance_km(
+            dict(
+                name="coords <= 10km",
+                condition=distance_km(
                     lat1=_.latitude_l,
                     lon1=_.longitude_l,
                     lat2=_.latitude_r,
@@ -38,9 +39,9 @@ def location_comparison():
                 )
                 <= 10,
             ),
-            ComparisonLevel(
-                "coords <= 100km",
-                distance_km(
+            dict(
+                name="coords <= 100km",
+                condition=distance_km(
                     lat1=_.latitude_l,
                     lon1=_.longitude_l,
                     lat2=_.latitude_r,
@@ -48,22 +49,24 @@ def location_comparison():
                 )
                 <= 100,
             ),
-            ComparisonLevel(
-                "both coord missing", _.latitude_l.isnull() & _.latitude_r.isnull()
+            dict(
+                name="both coord missing",
+                condition=_.latitude_l.isnull() & _.latitude_r.isnull(),
             ),
-            ComparisonLevel(
-                "one coord missing", _.latitude_l.isnull() | _.latitude_r.isnull()
+            dict(
+                name="one coord missing",
+                condition=_.latitude_l.isnull() | _.latitude_r.isnull(),
             ),
         ],
     )
 
 
-def test_train_comparison_from_labels(backend, name_comparison):
+def test_train_comparison_from_labels(backend, name_comparer):
     """Test that finding the weights for a Comparison works."""
     patents = datasets.load_patents(backend)
     left, right = patents, patents.view()
-    weights = fs.train_comparison_using_labels(
-        name_comparison, left, right, max_pairs=1_000, seed=42
+    (weights,) = fs.train_using_labels(
+        [name_comparer], left, right, max_pairs=1_000, seed=42
     )
     assert weights.name == "name"
     assert len(weights) == 3  # 2 levels + 1 ELSE
@@ -85,11 +88,11 @@ def test_train_comparison_from_labels(backend, name_comparison):
 
 # TODO: Actually check that these weights are correct
 # At this point this just checks that there are no errors
-def test_train_comparions_using_em(backend, name_comparison, location_comparison):
+def test_train_comparions_using_em(backend, name_comparer, location_comparer):
     patents = datasets.load_patents(backend)
     left, right = patents, patents.view()
-    weights = fs.train_comparisons_using_em(
-        Comparisons([name_comparison, location_comparison]),
+    weights = fs.train_using_em(
+        [name_comparer, location_comparer],
         left,
         right,
         max_pairs=100_000,

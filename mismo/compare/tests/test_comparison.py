@@ -4,7 +4,7 @@ from ibis import _
 from ibis.expr.types import Table
 import pytest
 
-from mismo.compare import Comparison, ComparisonLevel, Comparisons
+from mismo.compare import LevelComparer, compare
 
 
 @pytest.fixture()
@@ -21,30 +21,12 @@ def blocked(table_factory) -> Table:
     )
 
 
-@pytest.mark.parametrize(
-    "condition, expected_true_count",
-    [
-        (_.cost_r == 1, 1),
-        (_.cost_l == _.cost_r, 2),
-        (True, 3),
-        (False, 0),
-        (lambda _: True, 3),
-        (lambda t: t.cost_l == t.cost_r, 2),
-    ],
-)
-def test_comparison_level_conditions(condition, expected_true_count, blocked):
-    level = ComparisonLevel("foo", condition)
-    assert level.name == "foo"
-    blocked = blocked.mutate(is_match=level.is_match(blocked))
-    assert blocked.is_match.sum().execute() == expected_true_count
-
-
 def test_array_based_conditions(table_factory):
     t = table_factory(
         {
             "tags_l": [["a", "b"], ["c", "d"], [], None],
             "tags_r": [["b", "x"], ["y", "z"], ["m"], []],
-            "expected": [True, False, False, False],
+            "expected": ["any_equal", "else", "else", "else"],
         }
     )
 
@@ -53,135 +35,126 @@ def test_array_based_conditions(table_factory):
         # https://github.com/ibis-project/ibis/issues/7073
         return arr.filter(lambda x: x).length() > 0
 
-    level = ComparisonLevel(
-        "any_equal",
+    level = dict(
+        name="any_equal",
         # We could also do this with ibis's Array.intersect, but I want to check
         # this more low-level approach works.
-        lambda t: any_(
+        condition=lambda t: any_(
             t.tags_l.map(lambda ltag: any_(t.tags_r.map(lambda rtag: ltag == rtag)))
         ),
     )
-    t = t.mutate(is_match=level.is_match(t))
-    assert (t.is_match == t.expected).all().execute()
+    t = compare(t, LevelComparer("intersection", [level]))
+    assert (t.intersection == t.expected).all().execute()
 
 
 @pytest.fixture
 def large_level():
-    return ComparisonLevel("large", _.cost_l > 10)
+    return dict(name="large", condition=_.cost_l > 10)
 
 
 @pytest.fixture
 def exact_level():
-    return ComparisonLevel("exact", _.cost_l == _.cost_r)
+    return dict(name="exact", condition=_.cost_l == _.cost_r)
 
 
 def test_comparison_without_else_level(large_level, exact_level):
     """You can construct a Comparison *without* an ELSE level."""
-    comp = Comparison("cost", [large_level, exact_level])
+    comp = LevelComparer("cost", [large_level, exact_level])
     assert comp.name == "cost"
     assert len(comp) == 3
     assert comp["large"] == large_level
     assert comp["exact"] == exact_level
-    assert comp["else"].name == "else"
+    assert comp["else"]["name"] == "else"
 
 
 def test_comparison_with_else_level(large_level, exact_level):
     """You can construct a Comparison *with* an ELSE level."""
-    comp = Comparison("cost", [large_level, exact_level, ComparisonLevel("else", True)])
+    comp = LevelComparer(
+        "cost", [large_level, exact_level, dict(name="else", condition=True)]
+    )
     assert comp.name == "cost"
     assert len(comp) == 3
     assert comp["large"] == large_level
     assert comp["exact"] == exact_level
-    assert comp["else"].name == "else"
+    assert comp["else"]["name"] == "else"
 
 
 def test_comparison_else_case_sensitive(large_level, exact_level):
     """The ELSE level should be case sensitive"""
-    comp = Comparison(
+    comp = LevelComparer(
         "cost",
         [
             large_level,
             exact_level,
-            ComparisonLevel("ELSE", True),
-            ComparisonLevel("else", True),
+            dict(name="ELSE", condition=True),
+            dict(name="else", condition=True),
         ],
     )
     assert comp.name == "cost"
     assert len(comp) == 4
     assert comp["large"] == large_level
     assert comp["exact"] == exact_level
-    assert comp["ELSE"].name == "ELSE"
-    assert comp["else"].name == "else"
+    assert comp["ELSE"]["name"] == "ELSE"
+    assert comp["else"]["name"] == "else"
 
 
-def test_comparison_else_level_not_last(large_level, exact_level):
+def test_else_level_not_last(large_level, exact_level):
     """If else level is not last, it should error."""
     with pytest.raises(ValueError):
-        Comparison("cost", [large_level, ComparisonLevel("else", True), exact_level])
+        LevelComparer(
+            "cost", [large_level, dict(name="else", condition=True), exact_level]
+        )
 
 
 @pytest.fixture
-def cost_comparison(large_level, exact_level):
-    return Comparison("cost", [large_level, exact_level])
+def cost_comparer(large_level, exact_level) -> LevelComparer:
+    return LevelComparer("cost", [large_level, exact_level])
 
 
-def test_comparison_basic(cost_comparison, large_level, exact_level):
-    assert cost_comparison.name == "cost"
-    assert len(cost_comparison) == 3
-    assert cost_comparison["large"] == large_level
-    assert cost_comparison["exact"] == exact_level
-    assert cost_comparison["else"].name == "else"
-    assert cost_comparison[0] == large_level
-    assert cost_comparison[1] == exact_level
-    assert cost_comparison[2].name == "else"
+def test_comparer_basic(cost_comparer: LevelComparer, large_level, exact_level):
+    assert cost_comparer.name == "cost"
+    assert len(cost_comparer) == 3
+    assert cost_comparer["large"] == large_level
+    assert cost_comparer["exact"] == exact_level
+    assert cost_comparer["else"]["name"] == "else"
+    assert cost_comparer[0] == large_level
+    assert cost_comparer[1] == exact_level
+    assert cost_comparer[2]["name"] == "else"
 
-    levels = [level for level in cost_comparison]
+    levels = [level for level in cost_comparer]
     assert levels[0] == large_level
     assert levels[1] == exact_level
-    assert levels[2].name == "else"
+    assert levels[2]["name"] == "else"
 
     with pytest.raises(KeyError):
-        cost_comparison["foo"]
+        cost_comparer["foo"]
     with pytest.raises(IndexError):
-        cost_comparison[3]
+        cost_comparer[3]
 
 
-def test_comparison_label(blocked: Table, cost_comparison):
-    t = blocked.mutate(label=cost_comparison.label_pairs(blocked))
-    assert (t.label == t.cost_label_expected).all().execute()
+def test_comparison_label(blocked: Table, cost_comparer):
+    t = compare(blocked, cost_comparer)
+    assert (t.cost == t.cost_label_expected).all().execute()
 
 
 @pytest.fixture
-def tag_comparison():
-    return Comparison(
+def tag_comparer():
+    return LevelComparer(
         "tag",
         [
-            ComparisonLevel("exact", _.tag_l == _.tag_r),
-            ComparisonLevel("same ignore case", _.tag_l.lower() == _.tag_r.lower()),
+            dict(name="exact", condition=_.tag_l == _.tag_r),
+            dict(name="same ignore case", condition=_.tag_l.lower() == _.tag_r.lower()),
         ],
     )
 
 
 @pytest.fixture
-def comparisons(cost_comparison, tag_comparison):
-    return Comparisons([cost_comparison, tag_comparison])
+def comparers(cost_comparer, tag_comparer):
+    return [cost_comparer, tag_comparer]
 
 
-def test_comparisons_basic(comparisons, cost_comparison, tag_comparison):
-    assert len(comparisons) == 2
-    assert comparisons["cost"] == cost_comparison
-    assert comparisons["tag"] == tag_comparison
-
-    assert set(comparisons) == {cost_comparison, tag_comparison}
-
-    with pytest.raises(KeyError):
-        comparisons["foo"]
-    with pytest.raises(KeyError):
-        comparisons[0]
-
-
-def test_comparisons_label(comparisons: Comparisons, blocked):
-    t = comparisons.label_pairs(blocked)
+def test_comparisons_label(comparers: list[LevelComparer], blocked):
+    t = compare(blocked, *comparers)
     assert set(t.columns) == set(blocked.columns) | {"cost", "tag"}
     assert (t.cost == t.cost_label_expected).all().execute()
     assert (t.tag == t.tag_label_expected).all().execute()
@@ -195,14 +168,14 @@ def test_setwise_comparison(table_factory):
         "expected": [True, False, False, False],
     }
     t = table_factory(d)
-    c = Comparison(
+    c = LevelComparer(
         "names",
         [
-            ComparisonLevel(
-                "any_equal",
+            dict(
+                name="any_equal",
                 # could do the same with ibis's Array.intersect,
                 # but I want to check this works with a custom function
-                _array_any(
+                condition=_array_any(
                     _.names_l.map(
                         lambda left: _array_any(
                             _.names_r.map(lambda right: left == right)
@@ -212,7 +185,7 @@ def test_setwise_comparison(table_factory):
             ),
         ],
     )
-    t = t.mutate(result=c.label_pairs(t))
+    t = compare(t, c)
     assert (t.result == t.expected).all().execute()
 
 

@@ -3,10 +3,12 @@
 Utilities and classes for the blocking phase of record linkage, where
 we choose pairs of records to compare.
 
+Without blocking, we would have to compare N*M records, which
+becomes intractable for datasets much larger than a few thousand.
+
 ## High-Level
 
 ::: mismo.block.block
-::: mismo.block.join
 ::: mismo.block.BlockingRule
 ::: mismo.block.ArrayBlocker
 
@@ -22,7 +24,7 @@ nested loop joins.
 
 ::: mismo.block.get_join_algorithm
 ::: mismo.block.check_join_algorithm
-::: mismo.block.JOIN_ALGORTITHMS
-::: mismo.block.SLOW_JOIN_ALGORTITHMS
+::: mismo.block.JOIN_ALGORITHMS
+::: mismo.block.SLOW_JOIN_ALGORITHMS
 ::: mismo.block.SlowJoinError
 ::: mismo.block.SlowJoinWarning

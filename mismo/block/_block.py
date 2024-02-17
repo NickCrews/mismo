@@ -158,7 +158,9 @@ def block(
         raise ValueError("No conditions provided")
 
     sub_joined = [
-        _block_one(left, right, rule, on_slow=on_slow, task=task, **kwargs)
+        _block_one(
+            left, right, rule, labels=labels, on_slow=on_slow, task=task, **kwargs
+        )
         for rule in conds
     ]
     if labels:

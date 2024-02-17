@@ -1,16 +1,14 @@
 from __future__ import annotations
 
+from typing import Iterable
+
 from ibis.expr.types import IntegerColumn, StringColumn, Table
 
 from mismo._util import sample_table
 from mismo.block import block
-from mismo.compare._comparison import Comparison, Comparisons
+from mismo.compare import LevelComparer, compare
 
 from ._weights import ComparisonWeights, LevelWeights, Weights
-
-
-def min_ignore_None(*args):
-    return min(*(a for a in args if a is not None))
 
 
 def all_possible_pairs(
@@ -22,7 +20,7 @@ def all_possible_pairs(
 ) -> Table:
     """Blocks together all possible pairs of records."""
     pairs = block(left, right, True, on_slow="ignore")
-    n_pairs = min_ignore_None(pairs.count().execute(), max_pairs)
+    n_pairs = _min_ignore_None(pairs.count().execute(), max_pairs)
     return sample_table(pairs, n_pairs, seed=seed)
 
 
@@ -35,17 +33,11 @@ def true_pairs_from_labels(left: Table, right: Table) -> Table:
         raise ValueError(
             "Right dataset must have a label_true column. Found: {right.columns}"
         )
-
-    # condition = "labe"
-    # rule = BlockingRule(
-    #     lambda left, right: left.label_true == right.label_true, name="labels_match"
-    # )
     return block(left, right, "label_true")
-    # return rule(left, right)
 
 
 def level_proportions(
-    comparison: Comparison, labels: IntegerColumn | StringColumn
+    comparer: LevelComparer, labels: IntegerColumn | StringColumn
 ) -> list[float]:
     """
     Return the proportion of labels that fall into each Comparison level.
@@ -58,17 +50,17 @@ def level_proportions(
     # of M/0 = infinity.
     # If it shows up 0 times among matches, this would lead to an odds of 0/M = 0.
     # To avoid this, for any levels that we didn't see, we pretend we saw them once.
-    vc_df = vc_df.reindex([lev.name for lev in comparison], fill_value=1)
+    vc_df = vc_df.reindex([lev["name"] for lev in comparer], fill_value=1)
     vc_df["pct"] = vc_df["n"] / vc_df["n"].sum()
     vc_dict = vc_df["pct"].to_dict()
     if isinstance(labels, StringColumn):
-        name_to_i = {lev.name: i for i, lev in enumerate(comparison)}
+        name_to_i = {lev["name"]: i for i, lev in enumerate(comparer)}
         vc_dict = {name_to_i[name]: v for name, v in vc_dict.items()}
-    return [vc_dict[i] for i in range(len(comparison))]
+    return [vc_dict[i] for i in range(len(comparer))]
 
 
 def train_us_using_sampling(
-    comparison: Comparison,
+    comparer: LevelComparer,
     left: Table,
     right: Table,
     *,
@@ -105,12 +97,12 @@ def train_us_using_sampling(
     if max_pairs is None:
         max_pairs = 1_000_000_000
     sample = all_possible_pairs(left, right, max_pairs=max_pairs, seed=seed)
-    labels = comparison.label_pairs(sample)
-    return level_proportions(comparison, labels)
+    labels = compare(sample, comparer)[comparer.name]
+    return level_proportions(comparer, labels)
 
 
 def train_ms_from_labels(
-    comparison: Comparison,
+    comparer: LevelComparer,
     left: Table,
     right: Table,
     *,
@@ -140,49 +132,48 @@ def train_ms_from_labels(
         max_pairs = 1_000_000_000
     n_pairs = min(pairs.count().execute(), max_pairs)
     sample = sample_table(pairs, n_pairs, seed=seed)
-    labels = comparison.label_pairs(sample)
-    return level_proportions(comparison, labels)
+    labels = compare(sample, comparer)[comparer.name]
+    return level_proportions(comparer, labels)
 
 
-def train_comparison_using_labels(
-    comparison: Comparison,
+def _train_using_labels(
+    comparer: LevelComparer,
     left: Table,
     right: Table,
     *,
     max_pairs: int | None = None,
     seed: int | None = None,
 ) -> ComparisonWeights:
-    """Estimate the weights for a single Comparison using labeled data."""
-    ms = train_ms_from_labels(comparison, left, right, max_pairs=max_pairs, seed=seed)
-    us = train_us_using_sampling(
-        comparison, left, right, max_pairs=max_pairs, seed=seed
-    )
-    return make_weights(comparison, ms, us)
+    ms = train_ms_from_labels(comparer, left, right, max_pairs=max_pairs, seed=seed)
+    us = train_us_using_sampling(comparer, left, right, max_pairs=max_pairs, seed=seed)
+    return make_weights(comparer, ms, us)
 
 
-def train_comparisons_using_labels(
-    comparisons: Comparisons,
+def train_using_labels(
+    comparers: Iterable[LevelComparer],
     left: Table,
     right: Table,
     *,
     max_pairs: int | None = None,
     seed: int | None = None,
 ) -> Weights:
-    """Estimate all Weights for a set of Comparisons using labeled data."""
+    """Estimate all Weights for a set of LevelComparers using labeled data."""
     return Weights(
         [
-            train_comparison_using_labels(
-                c, left, right, max_pairs=max_pairs, seed=seed
-            )
-            for c in comparisons
+            _train_using_labels(c, left, right, max_pairs=max_pairs, seed=seed)
+            for c in comparers
         ]
     )
 
 
-def make_weights(comparison: Comparison, ms: list[float], us: list[float]):
-    assert len(ms) == len(us) == len(comparison)
+def make_weights(comparer: LevelComparer, ms: list[float], us: list[float]):
+    assert len(ms) == len(us) == len(comparer)
     level_weights = [
-        LevelWeights(level.name, m=m, u=u) for m, u, level in zip(ms, us, comparison)
+        LevelWeights(level["name"], m=m, u=u) for m, u, level in zip(ms, us, comparer)
     ]
     level_weights = [lw for lw in level_weights if lw.name != "else"]
-    return ComparisonWeights(comparison.name, level_weights)
+    return ComparisonWeights(comparer.name, level_weights)
+
+
+def _min_ignore_None(*args):
+    return min(*(a for a in args if a is not None))
