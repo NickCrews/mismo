@@ -6,13 +6,15 @@
 - Have some built-in algorithms such as a splink-inspired Fellegi-Sunter
   model so you can get going out of the box, but also leave the door open
   for others to plug in their own blocking, comparing, and clustering
-  algorithms. If we desgin the interfaces between all these stages carefully,
+  algorithms. If we design the interfaces between all these stages carefully,
   then they should all inter-operate and individual components can be swapped
   out for better/custom implementations. Ideally this could position mismo
   as the de-facto experimental platform, similar to how huggingface and pytorch
   are the standard platforms for machine learning.
   platform for researchers. 
-- Use duck typing/Protocols to allow users to plug in their own components.
+- *3rd party IS 1st party*: It should be as easy for 3rd party authors to extend
+  mismo as it is to implement those features directly in the core.
+  APIs should also be exposed
 - Wrap the core logic in helper classes to make it easy to get started, but
   have these be shortcuts instead of dead ends.
 - Reproducible results using `random_state` similar to sklearn. No peer of Mismo
@@ -20,7 +22,25 @@
 - Ergonomic model persistence.
 - Python-first approach. Instead of configuring using JSON, the majority of
   the implementation logic should be in python. This prevents dead ends and makes
-  things much more extendable.
+  things much more extendable. I found with splink that the JSON representation
+  of a model was often inadequate: the data loading and cleaning steps are just
+  as important to have a reproducible workflow, but those are only defined in
+  python code and are excluded from the JSON.
+- Be useful for resolving datasets with disparate schemas: Instead of determining
+  "do these records from different datasets refer to the same person?", you should
+  also be able to determine "which politician does this campaign contribution go to?".
+  In the first case, both records are "people", so they probably have similar schemas.
+  In the second case, one record is a person, and the other is a contribution, so
+  they likely have different schemas. The leading libraries of `splink` and `dedupe`
+  do not account for this.
+
+## What Mismo is NOT good for
+
+- Mismo is targeted for programmers moderately proficient in python.
+  It does *not* have GUI or any sort of interface that makes it suitable
+  for non-techinical users.
+- Having a single JSON file representation of the model. The entire python/notebook
+  will need to be stored/shared to reproduce a workflow.
 
 ## Alternatives to Mismo
 
