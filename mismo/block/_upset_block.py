@@ -43,8 +43,9 @@ def upset_chart(blocked: it.Table) -> alt.Chart:
     intersections = intersections.mutate(**m)
     intersections = intersections.drop("blocking_rules")
     chart = _upset.upset_chart(intersections)
+    total_pairs = intersections.intersection_size.sum().execute()
     title = alt.Title(
-        f"{len(rule_names)} Rules generated {blocked.count().execute():,} unique pairs",
+        f"{len(rule_names)} Rules generated {total_pairs:,} total pairs",
         anchor="middle",
     )
     chart = chart.properties(title=title)
