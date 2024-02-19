@@ -219,3 +219,31 @@ def is_iterable(o: Any) -> bool:
         return False
     else:
         return True
+
+
+def struct_equal(
+    left: it.StructValue, right: it.StructValue, *, fields: Iterable[str] | None = None
+) -> it.BooleanValue:
+    """
+    The specified fields match exactly. If fields is None, all fields are compared.
+    """
+    if fields is None:
+        return left == right
+    return ibis.and_(*(left[f] == right[f] for f in fields))
+
+
+def struct_isnull(
+    struct: it.StructValue, *, how: Literal["any", "all"], fields: Iterable[str] | None
+) -> it.BooleanValue:
+    """Are any/all of the specified fields null (or the struct itself is null)?
+
+    If fields is None, all fields are compared."""
+    if fields is None:
+        fields = struct.type().names
+    vals = [struct[f].isnull() for f in fields]
+    if how == "any":
+        return struct.isnull() | ibis.or_(*vals)
+    elif how == "all":
+        return struct.isnull() | ibis.and_(*vals)
+    else:
+        raise ValueError(f"how must be 'any' or 'all'. Got {how}")

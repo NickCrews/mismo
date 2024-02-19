@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import Callable, Iterable, Literal
+from typing import Callable
 
 import ibis
 from ibis.common.deferred import Deferred
 from ibis.expr import types as it
 
+from mismo import _util
 from mismo.compare import LevelComparer, compare
 from mismo.lib.name._nicknames import are_aliases
 
@@ -56,14 +57,16 @@ class NameLevelComparer:
             (
                 "null",
                 lambda t: ibis.or_(
-                    is_null(t[left], how="any", fields=["first", "last"]),
-                    is_null(t[right], how="any", fields=["first", "last"]),
+                    _util.struct_isnull(t[left], how="any", fields=["first", "last"]),
+                    _util.struct_isnull(t[right], how="any", fields=["first", "last"]),
                 ),
             ),
-            ("exact", lambda t: exact_match(t[left], t[right])),
+            ("exact", lambda t: _util.struct_equal(t[left], t[right])),
             (
                 "first_last",
-                lambda t: exact_match(t[left], t[right], fields=["first", "last"]),
+                lambda t: _util.struct_equal(
+                    t[left], t[right], fields=["first", "last"]
+                ),
             ),
             ("nicknames", lambda t: are_match_with_nicknames(t[left], t[right])),
             (
@@ -75,34 +78,6 @@ class NameLevelComparer:
 
     def __call__(self, t: it.Table) -> it.BooleanColumn:
         return compare(t, LevelComparer(self.name, self.levels))
-
-
-def exact_match(
-    left: it.StructValue, right: it.StructValue, *, fields: Iterable[str] | None = None
-) -> it.BooleanValue:
-    """
-    The specified fields match exactly. If fields is None, all fields are compared.
-    """
-    if fields is None:
-        return left == right
-    return ibis.and_(*(left[f] == right[f] for f in fields))
-
-
-def is_null(
-    struct: it.StructValue, *, how: Literal["any", "all"], fields: Iterable[str] | None
-) -> it.BooleanValue:
-    """Are any/all of the specified fields in the struct null.
-
-    If fields is None, all fields are compared."""
-    if fields is None:
-        fields = struct.type().names
-    vals = [struct[f].isnull() for f in fields]
-    if how == "any":
-        return struct.isnull() | ibis.or_(*vals)
-    elif how == "all":
-        return struct.isnull() | ibis.and_(*vals)
-    else:
-        raise ValueError(f"how must be 'any' or 'all'. Got {how}")
 
 
 def are_match_with_nicknames(
