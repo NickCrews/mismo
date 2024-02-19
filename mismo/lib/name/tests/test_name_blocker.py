@@ -11,7 +11,7 @@ def test_name_blocker_with_column(name_table):
     blocked = block(name_table, name_table, blocker)
     record_ids = blocked["record_id_l", "record_id_r"].execute()
     record_ids = set(record_ids.itertuples(index=False, name=None))
-    expected = {(0, 1), (2, 3), (4, 5)}
+    expected = {(1, 2), (3, 4), (5, 6)}
     assert record_ids == expected
 
 

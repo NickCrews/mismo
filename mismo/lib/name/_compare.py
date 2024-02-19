@@ -21,6 +21,7 @@ class NameLevelComparer:
         self,
         column_left: str | Deferred | Callable[[it.Table], it.StructColumn],
         column_right: str | Deferred | Callable[[it.Table], it.StructColumn],
+        name: str = "name_agreement",
         levels: list[
             dict[str, str | Deferred | Callable[[it.Table], it.BooleanValue]]
         ] = None,
@@ -46,6 +47,7 @@ class NameLevelComparer:
         """
         self.column_left = column_left
         self.column_right = column_right
+        self.name = name
         self.levels = levels or self.default_levels(column_left, column_right)
 
     @staticmethod
@@ -64,10 +66,15 @@ class NameLevelComparer:
                 lambda t: exact_match(t[left], t[right], fields=["first", "last"]),
             ),
             ("nicknames", lambda t: are_match_with_nicknames(t[left], t[right])),
+            (
+                "initials",
+                lambda t: initials_equal(t[left]["first"], t[right]["first"])
+                & (t[left]["last"] == t[right]["last"]),
+            ),
         )
 
     def __call__(self, t: it.Table) -> it.BooleanColumn:
-        return compare(t, LevelComparer("name", self.levels))
+        return compare(t, LevelComparer(self.name, self.levels))
 
 
 def exact_match(
@@ -108,7 +115,7 @@ def are_match_with_nicknames(
     )
 
 
-def initials_match(left: it.StringValue, right: it.StringValue) -> it.BooleanValue:
+def initials_equal(left: it.StringValue, right: it.StringValue) -> it.BooleanValue:
     """The first letter matches, and at least one is a single letter."""
     return ibis.and_(
         left[0] == right[0],

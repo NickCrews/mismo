@@ -6,6 +6,7 @@ import pytest
 @pytest.fixture
 def name_table(table_factory):
     names = [
+        None,
         {
             "first": "Alice",
             "last": "Anderson",
@@ -44,5 +45,5 @@ def name_table(table_factory):
         "suffix": None,
         "nickname": None,
     }
-    names = [{**base, **name} for name in names]
+    names = [{**base, **name} if name is not None else None for name in names]
     return table_factory({"name": names, "record_id": range(len(names))})
