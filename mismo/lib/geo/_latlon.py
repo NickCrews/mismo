@@ -55,7 +55,7 @@ def distance_km(
     return R_earth * c
 
 
-@dataclasses.dataclass(frozen=True, kw_only=True)
+@dataclasses.dataclass(frozen=True)
 class CoordinateBlocker:
     """Blocks two locations together if they are within a certain distance.
 
