@@ -7,34 +7,33 @@ from typing import Callable
 import ibis
 from ibis.common.deferred import Deferred
 from ibis.expr import types as it
-from ibis.expr.types import FloatingValue
 
 from mismo import _util
 
 
 def distance_km(
     *,
-    lat1: FloatingValue,
-    lon1: FloatingValue,
-    lat2: FloatingValue,
-    lon2: FloatingValue,
-) -> FloatingValue:
+    lat1: it.FloatingValue,
+    lon1: it.FloatingValue,
+    lat2: it.FloatingValue,
+    lon2: it.FloatingValue,
+) -> it.FloatingValue:
     """The distance between two points on the Earth's surface, in kilometers.
 
     Parameters
     ----------
-    lat1 : FloatingValue
+    lat1:
         The latitude of the first point.
-    lon1 : FloatingValue
+    lon1:
         The longitude of the first point.
-    lat2 : FloatingValue
+    lat2:
         The latitude of the second point.
-    lon2 : FloatingValue
+    lon2:
         The longitude of the second point.
 
     Returns
     -------
-    distance : FloatingValue
+    distance:
         The distance between the two points, in kilometers.
     """
 
@@ -47,7 +46,7 @@ def distance_km(
     lat2 = radians(lat2)
     lon2 = radians(lon2)
 
-    def haversine(theta: FloatingValue) -> FloatingValue:
+    def haversine(theta: it.FloatingValue) -> it.FloatingValue:
         return (theta / 2).sin() ** 2
 
     a = haversine(lat2 - lat1) + lat1.cos() * lat2.cos() * haversine(lon2 - lon1)
