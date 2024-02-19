@@ -51,27 +51,19 @@ class NameLevelComparer:
     @staticmethod
     def default_levels(left: it.StructColumn, right: it.StructColumn):
         return (
-            dict(
-                name="null",
-                condition=lambda t: ibis.or_(
+            (
+                "null",
+                lambda t: ibis.or_(
                     is_null(t[left], how="any", fields=["first", "last"]),
                     is_null(t[right], how="any", fields=["first", "last"]),
                 ),
             ),
-            dict(
-                name="exact",
-                condition=lambda t: exact_match(t[left], t[right]),
+            ("exact", lambda t: exact_match(t[left], t[right])),
+            (
+                "first_last",
+                lambda t: exact_match(t[left], t[right], fields=["first", "last"]),
             ),
-            dict(
-                name="first_last",
-                condition=lambda t: exact_match(
-                    t[left], t[right], fields=["first", "last"]
-                ),
-            ),
-            dict(
-                name="nicknames",
-                condition=lambda t: are_match_with_nicknames(t[left], t[right]),
-            ),
+            ("nicknames", lambda t: are_match_with_nicknames(t[left], t[right])),
         )
 
     def __call__(self, t: it.Table) -> it.BooleanColumn:
