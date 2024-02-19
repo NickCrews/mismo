@@ -228,16 +228,16 @@ def _vector_grid_data(
 ) -> pd.DataFrame:
     records = []
     for levels in product(*comparisons):
-        vector_id = ":".join(level["name"] for level in levels)
+        vector_id = ":".join(level.name for level in levels)
         for comp, level in zip(comparisons, levels):
             level_info = {c.name: None for c in comparisons}
-            level_info[comp.name] = level["name"]
+            level_info[comp.name] = level.name
             records.append(
                 {
                     "vector_id": vector_id,
                     "level_uid": _level_uid(comp, level),
                     "comparison": comp.name,
-                    "level": level["name"],
+                    "level": level.name,
                     **level_info,
                 }
             )
@@ -266,7 +266,7 @@ def _make_level_color_scale(comparisons: Iterable[LevelComparer]) -> alt.Scale:
 
 
 def _level_uid(comparison: LevelComparer, level: AgreementLevel) -> str:
-    return comparison.name + ":" + level["name"]
+    return comparison.name + ":" + level.name
 
 
 # TODO: make this work as a filter for the above histogram

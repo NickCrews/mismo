@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Iterable, Iterator, TypedDict, overload
+from typing import Callable, Iterable, Iterator, NamedTuple, overload
 
 import ibis
 from ibis.common.deferred import Deferred
@@ -9,12 +9,12 @@ from ibis.expr import types as it
 from mismo import _util
 
 
-class AgreementLevel(TypedDict):
+class AgreementLevel(NamedTuple):
     """A level of agreement such as *exact*, *phonetic*, or *within_1_day*.
 
     A AgreementLevel is a named condition that determines whether a record pair
     matches that level.
-    """  # noqa: E501
+    """
 
     name: str
     """The name of the level. Should be short and unique within a LevelComparer.
@@ -47,10 +47,7 @@ class AgreementLevel(TypedDict):
     """
 
 
-_ELSE_LEVEL = AgreementLevel(
-    name="else",
-    condition=True,
-)
+_ELSE_LEVEL = AgreementLevel("else", True)
 
 
 class LevelComparer:
@@ -67,7 +64,10 @@ class LevelComparer:
     def __init__(
         self,
         name: str,
-        levels: Iterable[AgreementLevel],
+        levels: Iterable[
+            AgreementLevel
+            | tuple[str, bool | Deferred | Callable[[it.Table], it.BooleanValue]]
+        ],
     ):
         """Create a LevelComparer.
 
@@ -76,7 +76,10 @@ class LevelComparer:
         name :
             The name of the comparer, eg "date", "address", "latlon", "price".
         levels :
-            The levels of agreement. You may include an `else` level as a final
+            The levels of agreement. Can be either actual AgreementLevel objects,
+            or tuples of (name, condition) that will be converted into AgreementLevels.
+
+            You may include an `else` level as a final
             level that matches everything, or it will be added automatically if
             you don't include one.
         """
@@ -130,9 +133,7 @@ class LevelComparer:
         # mis-specifies the ELSE level condition so that it doesn't
         # match everything.
         for level in self[:-1]:
-            labels = labels.when(
-                _util.get_column(pairs, level["condition"]), level["name"]
-            )
+            labels = labels.when(_util.get_column(pairs, level.condition), level.name)
         labels = labels.else_("else")
         return labels.end().name(self.name)
 
@@ -145,21 +146,20 @@ class LevelComparer:
         cls,
         levels: Iterable[AgreementLevel],
     ) -> tuple[tuple[AgreementLevel], dict[str | int, AgreementLevel]]:
-        levels = tuple(levels)
+        levels = tuple(AgreementLevel(*level) for level in levels)
         rest, last = levels[:-1], levels[-1]
         for level in rest:
-            if level["name"] == "else":
+            if level.name == "else":
                 raise ValueError(
                     f"ELSE AgreementLevel must be the last level in a {cls.__name__}."
                 )
-        if last["name"] != "else":
+        if last.name != "else":
             levels = (*levels, _ELSE_LEVEL)
 
         lookup = {}
         for i, level in enumerate(levels):
-            name = level["name"]
-            if name in lookup:
-                raise ValueError(f"Duplicate level name: {name}")
-            lookup[name] = level
+            if level.name in lookup:
+                raise ValueError(f"Duplicate level name: {level.name}")
+            lookup[level.name] = level
             lookup[i] = level
         return levels, lookup

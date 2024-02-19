@@ -13,8 +13,8 @@ def name_comparer():
     return LevelComparer(
         name="name",
         levels=[
-            dict(name="exact", condition=_.name_l == _.name_r),
-            dict(name="close", condition=_.name_l[:3] == _.name_r[:3]),
+            ("exact", _.name_l == _.name_r),
+            ("close", _.name_l[:3] == _.name_r[:3]),
         ],
     )
 
@@ -24,14 +24,13 @@ def location_comparer():
     return LevelComparer(
         name="location",
         levels=[
-            dict(
-                name="exact",
-                condition=(_.latitude_l == _.latitude_r)
-                & (_.longitude_l == _.longitude_r),
+            (
+                "exact",
+                (_.latitude_l == _.latitude_r) & (_.longitude_l == _.longitude_r),
             ),
-            dict(
-                name="coords <= 10km",
-                condition=distance_km(
+            (
+                "coords <= 10km",
+                distance_km(
                     lat1=_.latitude_l,
                     lon1=_.longitude_l,
                     lat2=_.latitude_r,
@@ -39,9 +38,9 @@ def location_comparer():
                 )
                 <= 10,
             ),
-            dict(
-                name="coords <= 100km",
-                condition=distance_km(
+            (
+                "coords <= 100km",
+                distance_km(
                     lat1=_.latitude_l,
                     lon1=_.longitude_l,
                     lat2=_.latitude_r,
@@ -49,13 +48,13 @@ def location_comparer():
                 )
                 <= 100,
             ),
-            dict(
-                name="both coord missing",
-                condition=_.latitude_l.isnull() & _.latitude_r.isnull(),
+            (
+                "both coord missing",
+                _.latitude_l.isnull() & _.latitude_r.isnull(),
             ),
-            dict(
-                name="one coord missing",
-                condition=_.latitude_l.isnull() | _.latitude_r.isnull(),
+            (
+                "one coord missing",
+                _.latitude_l.isnull() | _.latitude_r.isnull(),
             ),
         ],
     )

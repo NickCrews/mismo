@@ -50,11 +50,11 @@ def level_proportions(
     # of M/0 = infinity.
     # If it shows up 0 times among matches, this would lead to an odds of 0/M = 0.
     # To avoid this, for any levels that we didn't see, we pretend we saw them once.
-    vc_df = vc_df.reindex([lev["name"] for lev in comparer], fill_value=1)
+    vc_df = vc_df.reindex([lev.name for lev in comparer], fill_value=1)
     vc_df["pct"] = vc_df["n"] / vc_df["n"].sum()
     vc_dict = vc_df["pct"].to_dict()
     if isinstance(labels, StringColumn):
-        name_to_i = {lev["name"]: i for i, lev in enumerate(comparer)}
+        name_to_i = {lev.name: i for i, lev in enumerate(comparer)}
         vc_dict = {name_to_i[name]: v for name, v in vc_dict.items()}
     return [vc_dict[i] for i in range(len(comparer))]
 
@@ -169,7 +169,7 @@ def train_using_labels(
 def make_weights(comparer: LevelComparer, ms: list[float], us: list[float]):
     assert len(ms) == len(us) == len(comparer)
     level_weights = [
-        LevelWeights(level["name"], m=m, u=u) for m, u, level in zip(ms, us, comparer)
+        LevelWeights(level.name, m=m, u=u) for m, u, level in zip(ms, us, comparer)
     ]
     level_weights = [lw for lw in level_weights if lw.name != "else"]
     return ComparisonWeights(comparer.name, level_weights)
