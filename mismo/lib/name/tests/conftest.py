@@ -7,22 +7,33 @@ import pytest
 def name_table(table_factory):
     names = [
         {
-            "first": "JOHN",
-            "last": "Doe",
+            "first": "Alice",
+            "last": "Anderson",
+        },
+        {
+            "first": "A",
+            "last": "Anderson",
+            "suffix": "PhD",
+        },
+        {
+            "first": "Bob",
+            "last": "Baker",
+        },
+        {
+            "first": "Robert",
+            "middle": "b",
+            "last": "Baker",
             "suffix": "Jr.",
         },
         {
-            "first": " john",
-            "middle": "Q",
-            "last": "Doe",
-            "suffix": "Jr.",
+            "prefix": "Mr",
+            "first": "Charles",
+            "last": "Carter",
+            "nickname": "Charlie",
         },
         {
-            "prefix": "Ms.",
-            "first": "Jane",
-            "middle": "A",
-            "last": "Smith",
-            "nickname": "Janie",
+            "first": "  CHARLES",
+            "last": " CARTER.",
         },
     ]
     base = {
