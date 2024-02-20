@@ -34,7 +34,7 @@ def join(
 
 def resolve_predicates(
     left: it.Table, right: it.Table, raw, **kwargs
-) -> list[bool | it.BooleanColumn | it.Table]:
+) -> list[bool | it.BooleanColumn] | it.Table:
     """Resolve the predicates for a join"""
     if isinstance(raw, tuple):
         if len(raw) != 2:
@@ -44,7 +44,10 @@ def resolve_predicates(
     if callable(raw) and not isinstance(raw, Deferred):
         return resolve_predicates(left, right, raw(left, right, **kwargs))
     preds = _util.promote_list(raw)
-    return [_resolve_predicate(left, right, pred) for pred in preds]
+    result = [_resolve_predicate(left, right, pred) for pred in preds]
+    if len(result) == 1 and isinstance(result[0], it.Table):
+        return result[0]
+    return result
 
 
 def _resolve_predicate(

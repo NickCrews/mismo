@@ -75,8 +75,7 @@ def check_letters_arrays2(t1, t2, resolved):
         pytest.param([True], [True], id="true_list"),
         pytest.param(False, [False], id="false"),
         pytest.param([False], [False], id="false_list"),
-        pytest.param(_TABLE, [_TABLE], id="table"),
-        pytest.param([_TABLE], [_TABLE], id="table"),
+        pytest.param(_TABLE, _TABLE, id="table"),
     ],
 )
 @pytest.mark.parametrize("wrap_in_lambda", [False, True])
