@@ -186,9 +186,19 @@ def _block_one(
 ) -> it.Table:
     j = _do_join(left, right, condition, on_slow=on_slow, task=task, **kwargs)
     j = _ensure_suffixed(left.columns, right.columns, j)
+    j = _distinct(j)
     if labels:
         j = j.mutate(blocking_rule=_util.get_name(condition))
     return _move_record_id_cols_first(j)
+
+
+def _distinct(t: it.Table) -> it.Table:
+    on = (
+        ["record_id_l", "record_id_r"]
+        if "record_id_l" in t.columns and "record_id_r" in t.columns
+        else None
+    )
+    return t.distinct(on=on)
 
 
 def _do_join(
@@ -221,7 +231,6 @@ def _do_join(
 
     _sql_analyze.check_join_algorithm(left, right, resolved, on_slow=on_slow)
     result = _join.join(left, right, resolved, lname="{name}_l", rname="{name}_r")
-    result = result.distinct()
     return result
 
 

@@ -22,6 +22,14 @@ lint:
 test *FILES:
     pytest {{FILES}}
 
+# run the timing benchmark suite
+bench:
+    pytest --benchmark-only --benchmark-enable --benchmark-autosave
+
+# run timing benchmarks and compare with a previous run
+benchcmp number *args:
+    just bench --benchmark-compare {{ number }} {{ args }}
+
 # build docs to the site/ directory
 docs-build:
     PYDEVD_DISABLE_FILE_VALIDATION=1 mkdocs build

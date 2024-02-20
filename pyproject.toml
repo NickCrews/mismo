@@ -41,6 +41,7 @@ Source = "https://github.com/NickCrews/mismo"
 lint = ["ruff", "mypy", "pre-commit"]
 test = [
   "pytest",
+  "pytest-benchmark>=3.4.1",
   "nicknames",
   "pytest-cov",
   "recordlinkage",
@@ -51,6 +52,16 @@ docs = [
   "mkdocs-literate-nav",
   "mkdocs-material",
   "mkdocstrings[python]",
+]
+
+[tool.pytest.ini_options]
+xfail_strict = true
+addopts = [
+  "--strict-markers",
+  "--strict-config",
+  "--benchmark-disable",
+  "--benchmark-group-by=name",
+  "--benchmark-sort=name",
 ]
 
 [tool.coverage.run]
