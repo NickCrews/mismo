@@ -23,10 +23,9 @@ classifiers = [
 dependencies = [
   "altair>=5.0.0",
   "anywidget",
-  # "ibis-framework[duckdb]>=7.2.0",
-  # "ibis-framework[duckdb]>=9.0.0.dev34",
   "duckdb>=0.8.0",
-  "ibis-framework[duckdb] @ git+https://github.com/ibis-project/ibis.git@42f45fe59da492897f0449468a3036384be34214",
+  "ibis-framework[duckdb]>=9.0.0.dev272",
+  # "ibis-framework[duckdb] @ git+https://github.com/ibis-project/ibis.git@42f45fe59da492897f0449468a3036384be34214",
   "ipywidgets",
   "scikit-learn",
   "typing-extensions ; python_version < \"3.11\"", # needed for Self
