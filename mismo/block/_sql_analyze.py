@@ -112,22 +112,33 @@ def check_join_algorithm(
             warnings.warn(SlowJoinWarning(condition, alg), stacklevel=2)
 
 
-def _explain_str(duckdb_expr: it.Expr, *, analyze: bool = False) -> str:
+def _explain_str(duckdb_expr: it.Expr | str, *, analyze: bool = False) -> str:
     # we can't use a separate backend eg from ibis.duckdb.connect()
     # or it might not be able to find the tables/data referenced
-    try:
-        con = duckdb_expr._find_backend()
-    except AttributeError:
-        raise NotImplementedError("The given expression must have a backend.")
-    if not isinstance(con, DuckDBBackend):
-        raise NotImplementedError("The given expression must be a DuckDB expression.")
-    sql = ibis.to_sql(duckdb_expr, dialect="duckdb")
+    sql, con = _to_sql_and_backend(duckdb_expr)
     if analyze:
         sql = "EXPLAIN ANALYZE " + sql
     else:
         sql = "EXPLAIN " + sql
     cursor = con.raw_sql(sql)
     return cursor.fetchall()[0][1]
+
+
+def _to_sql_and_backend(duckdb_expr: it.Expr | str) -> tuple[str, DuckDBBackend]:
+    if isinstance(duckdb_expr, str):
+        sql = duckdb_expr
+        con = ibis.duckdb.connect()
+    else:
+        try:
+            con = duckdb_expr._find_backend()
+        except AttributeError:
+            raise NotImplementedError("The given expression must have a backend.")
+        if not isinstance(con, DuckDBBackend):
+            raise NotImplementedError(
+                "The given expression must be a DuckDB expression."
+            )
+        sql = ibis.to_sql(duckdb_expr, dialect="duckdb")
+    return sql, con
 
 
 def _extract_top_join_alg(explain_str: str) -> str:
