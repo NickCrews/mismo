@@ -53,23 +53,17 @@ class AddressLevelComparer:
         self.name = name
 
     def __call__(self, t: it.Table) -> it.Table:
-        al, ar = (
-            _util.get_column(t, self.column_left),
-            _util.get_column(t, self.column_right),
-        )
+        al = _util.get_column(t, self.column_left)
+        ar = _util.get_column(t, self.column_right)
         levels = [
             (
                 "null",
                 ibis.or_(
                     _util.struct_isnull(
-                        al,
-                        how="any",
-                        fields=["street1", "city", "state"],
+                        al, how="any", fields=["street1", "city", "state"]
                     ),
                     _util.struct_isnull(
-                        ar,
-                        how="any",
-                        fields=["street1", "city", "state"],
+                        ar, how="any", fields=["street1", "city", "state"]
                     ),
                 ),
             ),
