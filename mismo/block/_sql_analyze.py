@@ -112,7 +112,7 @@ def check_join_algorithm(
             warnings.warn(SlowJoinWarning(condition, alg), stacklevel=2)
 
 
-def _explain_str(duckdb_expr: it.Expr) -> str:
+def _explain_str(duckdb_expr: it.Expr, *, analyze: bool = False) -> str:
     # we can't use a separate backend eg from ibis.duckdb.connect()
     # or it might not be able to find the tables/data referenced
     try:
@@ -122,7 +122,11 @@ def _explain_str(duckdb_expr: it.Expr) -> str:
     if not isinstance(con, DuckDBBackend):
         raise NotImplementedError("The given expression must be a DuckDB expression.")
     sql = ibis.to_sql(duckdb_expr, dialect="duckdb")
-    cursor = con.raw_sql("EXPLAIN " + sql)
+    if analyze:
+        sql = "EXPLAIN ANALYZE " + sql
+    else:
+        sql = "EXPLAIN " + sql
+    cursor = con.raw_sql(sql)
     return cursor.fetchall()[0][1]
 
 

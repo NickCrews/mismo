@@ -6,7 +6,7 @@ from ibis.common.deferred import Deferred
 from ibis.expr import types as it
 
 from mismo import _util
-from mismo.block import join_on_arrays
+from mismo.block import join_on_array
 
 
 class NameBlocker:
@@ -68,7 +68,7 @@ class NameBlocker:
         nr: it.StructColumn = _util.get_column(right, self.column_right)
         tokensl = _oneline(nl).upper().re_split(r"\s+")
         tokensr = _oneline(nr).upper().re_split(r"\s+")
-        return join_on_arrays(left, right, tokensl, tokensr, **kwargs)
+        return join_on_array(left, right, tokensl, tokensr, **kwargs)
 
 
 def _oneline(name: it.StructValue) -> it.StringValue:

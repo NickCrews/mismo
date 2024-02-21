@@ -5,7 +5,7 @@ from ibis import _
 import numpy as np
 import pytest
 
-from mismo.block import block
+from mismo.block import block_many
 from mismo.lib.geo import CoordinateBlocker, distance_km
 
 
@@ -65,10 +65,20 @@ def test_distance_km(lat1, lon1, lat2, lon2, expected):
 def test_coordinate_blocker(table_factory, coord1, coord2, km, expected, kwargs):
     lat1, lon1 = coord1
     lat2, lon2 = coord2
-    t1 = table_factory({"coord": [{"lat": lat1, "lon": lon1}]})
-    t2 = table_factory({"coord": [{"lat": lat2, "lon": lon2}]})
+    t1 = table_factory(
+        {
+            "coord": [{"lat": lat1, "lon": lon1}],
+            "record_id": [42],
+        }
+    )
+    t2 = table_factory(
+        {
+            "coord": [{"lat": lat2, "lon": lon2}],
+            "record_id": [53],
+        }
+    )
     blocker = CoordinateBlocker(distance_km=km, **kwargs)
-    blocked = block(t1, t2, blocker)
+    blocked = block_many(t1, t2, blocker)
     n_blocked = blocked.count().execute()
     if expected:
         assert n_blocked == 1

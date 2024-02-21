@@ -8,9 +8,14 @@ becomes intractable for datasets much larger than a few thousand.
 
 ## High-Level
 
-::: mismo.block.block
+::: mismo.block.block_one
+::: mismo.block.block_many
 ::: mismo.block.BlockingRule
-::: mismo.block.ArrayBlocker
+
+## Low-level
+
+::: mismo.block.join
+::: mismo.block.join_on_array
 
 ## Plotting
 

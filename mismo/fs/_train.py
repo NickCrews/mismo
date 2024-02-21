@@ -5,7 +5,7 @@ from typing import Iterable
 from ibis.expr.types import IntegerColumn, StringColumn, Table
 
 from mismo._util import sample_table
-from mismo.block import block
+from mismo.block import block_many
 from mismo.compare import LevelComparer, compare
 
 from ._weights import ComparisonWeights, LevelWeights, Weights
@@ -19,7 +19,7 @@ def all_possible_pairs(
     seed: int | None = None,
 ) -> Table:
     """Blocks together all possible pairs of records."""
-    pairs = block(left, right, True, on_slow="ignore")
+    pairs = block_many(left, right, True, on_slow="ignore")
     n_pairs = _min_ignore_None(pairs.count().execute(), max_pairs)
     return sample_table(pairs, n_pairs, seed=seed)
 
@@ -33,7 +33,7 @@ def true_pairs_from_labels(left: Table, right: Table) -> Table:
         raise ValueError(
             "Right dataset must have a label_true column. Found: {right.columns}"
         )
-    return block(left, right, "label_true")
+    return block_many(left, right, "label_true")
 
 
 def level_proportions(

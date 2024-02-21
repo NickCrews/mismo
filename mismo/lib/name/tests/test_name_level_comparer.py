@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ibis
 
-from mismo.block import block
+from mismo.block import block_many
 from mismo.compare import compare
 from mismo.lib.name import NameLevelComparer
 
@@ -14,7 +14,7 @@ def test_name_level_comparer(name_table):
         (3, 4),
         (5, 6),
     ]
-    blocked = block(
+    blocked = block_many(
         name_table,
         name_table,
         lambda left, right, **_: ibis.array([left.record_id, right.record_id]).isin(

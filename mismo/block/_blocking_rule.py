@@ -69,7 +69,7 @@ class BlockingRule:
         return self.condition
 
     def block(self, left: it.Table, right: it.Table, **kwargs) -> it.Table:
-        return _block.block(left, right, self.condition, **kwargs)
+        return _block.block_many(left, right, self.condition, **kwargs)
 
     def __repr__(self) -> str:
         return f"BlockingRule({self.get_name()})"
