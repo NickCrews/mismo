@@ -14,7 +14,7 @@ from ._util import odds_to_log_odds, odds_to_prob
 
 
 class LevelWeights:
-    """Weights for a single [ComparisonLevel][mismo.compare.ComparisonLevel].
+    """Weights for a single [AgreementLevel][mismo.compare.AgreementLevel].
 
     This describes for example "If zipcodes match perfectly, then
     this increases the probability of a match by 10x as compared to if we
@@ -98,7 +98,7 @@ def _else_weights(other_level_weights: Iterable[LevelWeights]) -> LevelWeights:
 
 class ComparisonWeights:
     """
-    The weights for a single [Comparison][mismo.compare.Comparison].
+    The weights for a single [LevelComparer][mismo.compare.LevelComparer].
 
     An ordered, dict-like collection of [LevelWeights][mismo.fs.LevelWeights]
     one for each level.
@@ -248,7 +248,7 @@ class Weights:
 
     An unordered, dict-like collection of
     [ComparisonWeights][mismo.fs.ComparisonWeights],
-    one for each [Comparison][mismo.compare.Comparison] of the same name.
+    one for each [LevelComparer][mismo.compare.LevelComparer] of the same name.
     """
 
     def __init__(self, comparison_weights: Iterable[ComparisonWeights]):
