@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import pytest
 
-from mismo.block import block_many
+from mismo.block import block_one
 from mismo.lib.name import NameBlocker
 
 
 def test_name_blocker_with_column(name_table):
     blocker = NameBlocker(column="name")
-    blocked = block_many(name_table, name_table, blocker)
+    blocked = block_one(name_table, name_table, blocker)
     record_ids = blocked["record_id_l", "record_id_r"].execute()
     record_ids = set(record_ids.itertuples(index=False, name=None))
     expected = {(1, 2), (3, 4), (5, 6)}

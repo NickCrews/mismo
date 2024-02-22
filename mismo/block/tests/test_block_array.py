@@ -6,7 +6,7 @@ from ibis.expr import types as it
 import pandas as pd
 import pytest
 
-from mismo.block import block_many, join_on_array
+from mismo.block import block_one, join_on_array
 from mismo.tests.util import assert_tables_equal
 
 
@@ -21,7 +21,7 @@ def test_array_blocker(table_factory, t1: it.Table, t2: it.Table, left, right):
     def f(tl, tr, **kwargs):
         return join_on_array(tl, tr, left, right, **kwargs)
 
-    blocked = block_many(t1, t2, f)
+    blocked = block_one(t1, t2, f)
     blocked_ids = blocked[["record_id_l", "record_id_r"]]
     expected = table_factory(
         pd.DataFrame(
@@ -61,7 +61,7 @@ def test_benchmark_array_blocker(backend, benchmark, nk):
     i = 0
 
     def f():
-        b = block_many(
+        b = block_one(
             t,
             t,
             lambda left, right, **kwargs: join_on_array(

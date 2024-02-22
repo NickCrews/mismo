@@ -233,7 +233,7 @@ def block_many(
     │           … │           … │          … │          … │ …                            │ …                            │
     └─────────────┴─────────────┴────────────┴────────────┴──────────────────────────────┴──────────────────────────────┘
     """  # noqa: E501
-    conds = _to_conditions(conditions)
+    conds = _util.promote_list(conditions)
     if not conds:
         raise ValueError("No conditions provided")
 
@@ -341,9 +341,3 @@ def _ensure_suffixed(
     m = {c + "_l": _[c] for c in un_suffixed} | {c + "_r": _[c] for c in un_suffixed}
     t = t.mutate(**m).drop(*un_suffixed)
     return t
-
-
-def _to_conditions(x) -> list[_Condition]:
-    if isinstance(x, tuple) and len(x) == 2:
-        return [x]
-    return _util.promote_list(x)

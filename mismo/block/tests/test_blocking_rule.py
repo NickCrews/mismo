@@ -4,7 +4,7 @@ from ibis import _
 from ibis.expr import types as it
 import pytest
 
-from mismo.block import BlockingRule, block_many
+from mismo.block import BlockingRule, block_one
 from mismo.tests.util import assert_tables_equal
 
 from .common import letter_blocked_ids
@@ -29,6 +29,4 @@ def test_blocking_rule(table_factory, t1: it.Table, t2: it.Table, condition):
     assert rule.condition == condition
     expected = letter_blocked_ids(table_factory)
     assert_tables_equal(expected, rule.block(t1, t2)["record_id_l", "record_id_r"])
-    assert_tables_equal(
-        expected, block_many(t1, t2, rule)["record_id_l", "record_id_r"]
-    )
+    assert_tables_equal(expected, block_one(t1, t2, rule)["record_id_l", "record_id_r"])

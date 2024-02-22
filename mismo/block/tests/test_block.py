@@ -6,7 +6,7 @@ from ibis import _
 from ibis.expr import types as it
 import pytest
 
-from mismo.block import SlowJoinError, SlowJoinWarning, block_many
+from mismo.block import SlowJoinError, SlowJoinWarning, block_one
 from mismo.tests.util import assert_tables_equal
 
 from .common import letter_blocked_ids
@@ -26,18 +26,17 @@ from .common import letter_blocked_ids
             lambda left, right, **_kwargs: (_.letter, _.letter), id="lambda_tuple"
         ),
         pytest.param((_.letter, _.letter), id="tuple_deferred"),
-        pytest.param([(_.letter, _.letter)], id="list_tuple_deferred"),
     ],
 )
 def test_block(table_factory, t1: it.Table, t2: it.Table, condition):
-    blocked_table = block_many(t1, t2, condition)
+    blocked_table = block_one(t1, t2, condition)
     blocked_ids = blocked_table["record_id_l", "record_id_r"]
     expected = letter_blocked_ids(table_factory)
     assert_tables_equal(blocked_ids, expected)
 
 
 def test_cross_block(table_factory, t1: it.Table, t2: it.Table):
-    blocked_table = block_many(t1, t2, True, on_slow="ignore")
+    blocked_table = block_one(t1, t2, True, on_slow="ignore")
     blocked_ids = blocked_table["record_id_l", "record_id_r"]
     expected = table_factory(
         {
@@ -84,7 +83,7 @@ def test_warn_slow_join(
     t1: it.Table, t2: it.Table, condition, is_slow, on_slow, result
 ):
     def f():
-        block_many(t1, t2, condition, on_slow=on_slow)
+        block_one(t1, t2, condition, on_slow=on_slow)
 
     if result is None:
         f()
