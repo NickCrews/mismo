@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 
-def letters_blocked_ids(table_factory):
-    """If you block the fixtures t1 and t2 on the letters column,
+def letter_blocked_ids(table_factory):
+    """If you block the fixtures t1 and t2 on the letter column,
     these are the record_ids what you should get."""
     return table_factory(
         {

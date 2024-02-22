@@ -9,30 +9,30 @@ import pytest
 from mismo.block import SlowJoinError, SlowJoinWarning, block_many
 from mismo.tests.util import assert_tables_equal
 
-from .common import letters_blocked_ids
+from .common import letter_blocked_ids
 
 
 @pytest.mark.parametrize(
     "condition",
     [
-        pytest.param("letters", id="string"),
-        pytest.param(("letters", "letters"), id="tuple_strings"),
+        pytest.param("letter", id="string"),
+        pytest.param(("letter", "letter"), id="tuple_strings"),
         pytest.param(
-            lambda left, right, **_: left.letters == right.letters,
+            lambda left, right, **_: left.letter == right.letter,
             id="lambda_bool_column",
         ),
-        pytest.param(lambda left, right, **_: "letters", id="lambda_string"),
+        pytest.param(lambda left, right, **_: "letter", id="lambda_string"),
         pytest.param(
-            lambda left, right, **_kwargs: (_.letters, _.letters), id="lambda_tuple"
+            lambda left, right, **_kwargs: (_.letter, _.letter), id="lambda_tuple"
         ),
-        pytest.param((_.letters, _.letters), id="tuple_deferred"),
-        pytest.param([(_.letters, _.letters)], id="list_tuple_deferred"),
+        pytest.param((_.letter, _.letter), id="tuple_deferred"),
+        pytest.param([(_.letter, _.letter)], id="list_tuple_deferred"),
     ],
 )
 def test_block(table_factory, t1: it.Table, t2: it.Table, condition):
     blocked_table = block_many(t1, t2, condition)
     blocked_ids = blocked_table["record_id_l", "record_id_r"]
-    expected = letters_blocked_ids(table_factory)
+    expected = letter_blocked_ids(table_factory)
     assert_tables_equal(blocked_ids, expected)
 
 
@@ -51,21 +51,21 @@ def test_cross_block(table_factory, t1: it.Table, t2: it.Table):
 @pytest.mark.parametrize(
     "condition,is_slow",
     [
-        pytest.param("letters", False, id="simple equijoin"),
+        pytest.param("letter", False, id="simple equijoin"),
         pytest.param(True, True, id="cross join"),
         pytest.param(
-            lambda left, right, **_: left.letters.levenshtein(right.letters) < 2,
+            lambda left, right, **_: left.letter.levenshtein(right.letter) < 2,
             True,
             id="levenshtein",
         ),
         pytest.param(
-            lambda left, right, **_: (left.letters == right.letters)
+            lambda left, right, **_: (left.letter == right.letter)
             | (left.record_id == right.record_id),
             True,
             id="OR",
         ),
         pytest.param(
-            lambda left, right, **_: (left.letters == right.letters)
+            lambda left, right, **_: (left.letter == right.letter)
             & (left.record_id == right.record_id),
             False,
             id="AND",

@@ -13,8 +13,8 @@ from mismo.tests.util import assert_tables_equal
 @pytest.mark.parametrize(
     "left,right",
     [
-        ("arrays", _.arrays),
-        ("arrays", lambda t: t.arrays),
+        ("array", _.array),
+        ("array", lambda t: t.array),
     ],
 )
 def test_array_blocker(table_factory, t1: it.Table, t2: it.Table, left, right):

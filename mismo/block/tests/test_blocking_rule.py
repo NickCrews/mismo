@@ -7,19 +7,19 @@ import pytest
 from mismo.block import BlockingRule, block_many
 from mismo.tests.util import assert_tables_equal
 
-from .common import letters_blocked_ids
+from .common import letter_blocked_ids
 
 
 @pytest.mark.parametrize(
     "condition",
     [
-        "letters",
-        ("letters", "letters"),
-        lambda left, right, **kwargs: left.letters == right.letters,
-        lambda left, right, **kwargs: "letters",
-        lambda left, right, **kwargs: (_.letters, _.letters),
-        (_.letters, _.letters),
-        [(_.letters, _.letters)],
+        "letter",
+        ("letter", "letter"),
+        lambda left, right, **kwargs: left.letter == right.letter,
+        lambda left, right, **kwargs: "letter",
+        lambda left, right, **kwargs: (_.letter, _.letter),
+        (_.letter, _.letter),
+        [(_.letter, _.letter)],
     ],
 )
 def test_blocking_rule(table_factory, t1: it.Table, t2: it.Table, condition):
@@ -27,7 +27,7 @@ def test_blocking_rule(table_factory, t1: it.Table, t2: it.Table, condition):
     rule = BlockingRule(condition, name=name)
     assert rule.get_name() == name
     assert rule.condition == condition
-    expected = letters_blocked_ids(table_factory)
+    expected = letter_blocked_ids(table_factory)
     assert_tables_equal(expected, rule.block(t1, t2)["record_id_l", "record_id_r"])
     assert_tables_equal(
         expected, block_many(t1, t2, rule)["record_id_l", "record_id_r"]

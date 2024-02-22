@@ -9,67 +9,59 @@ from mismo._join import resolve_predicates
 _TABLE = ibis.table(schema={"x": int})
 
 
-def check_letters(t1, t2, resolved):
+def check_letter(t1, t2, resolved):
     assert len(resolved) == 1
-    expected = t1.letters == t2.letters
+    expected = t1.letter == t2.letter
     assert expected.equals(resolved[0])
 
 
-def check_letters_arrays(t1, t2, resolved):
-    assert len(resolved) == 1
-    expected = t1.letters == t2.letters
-    assert expected.equals(resolved[0])
-
-
-def check_letters_arrays2(t1, t2, resolved):
+def check_letter_array(t1, t2, resolved):
     assert len(resolved) == 2
-    letters, arrays = resolved
-    letters_expected = t1.letters == t2.letters
-    arrays_expected = t1.arrays == t2.arrays
-    assert letters_expected.equals(letters)
-    assert arrays_expected.equals(arrays)
+    letter, array = resolved
+    letter_expected = t1.letter == t2.letter
+    array_expected = t1.array == t2.array
+    assert letter_expected.equals(letter)
+    assert array_expected.equals(array)
 
 
 @pytest.mark.parametrize(
     "condition, expected",
     [
-        pytest.param("letters", check_letters, id="single_str"),
-        pytest.param(_.letters, check_letters, id="single_deferred"),
-        pytest.param(("letters", "letters"), check_letters, id="pair_str"),
-        pytest.param(("letters", _.letters), check_letters, id="pair_str_deferred"),
-        pytest.param(["letters"], check_letters, id="list_single_str"),
-        pytest.param([("letters", "letters")], check_letters, id="list_pair_str"),
+        pytest.param("letter", check_letter, id="single_str"),
+        pytest.param(_.letter, check_letter, id="single_deferred"),
+        pytest.param(("letter", "letter"), check_letter, id="pair_str"),
+        pytest.param(("letter", _.letter), check_letter, id="pair_str_deferred"),
+        pytest.param(["letter"], check_letter, id="list_single_str"),
+        pytest.param([("letter", "letter")], check_letter, id="list_pair_str"),
+        pytest.param([("letter", _.letter)], check_letter, id="list_pair_str_deferred"),
         pytest.param(
-            [("letters", _.letters)], check_letters, id="list_pair_str_deferred"
-        ),
-        pytest.param(
-            ("letters", "arrays"),
+            ("letter", "array"),
             None,
-            id="pair_letters_arrays",
+            id="pair_letter_array",
             marks=pytest.mark.xfail(
                 reason="strings and array<string> are not comparable"
             ),
         ),
         pytest.param(
-            ("letters", _.arrays),
+            ("letter", _.array),
             None,
-            id="pair_letters_arrays_deferred",
+            id="pair_letter_array_deferred",
             marks=pytest.mark.xfail(
                 reason="strings and array<string> are not comparable"
             ),
         ),
         pytest.param(
-            [("letters", _.arrays)],
+            [("letter", _.array)],
             None,
-            id="list_pair_letters_arrays_deferred",
+            id="list_pair_letter_array_deferred",
             marks=pytest.mark.xfail(
                 reason="strings and array<string> are not comparable"
             ),
         ),
         pytest.param(
-            ["letters", _.arrays],
-            check_letters_arrays2,
-            id="list_letters_arrays_deferred",
+            ["letter", _.array],
+            check_letter_array,
+            id="list_letter_array_deferred",
         ),
         pytest.param(True, [True], id="true"),
         pytest.param([True], [True], id="true_list"),
