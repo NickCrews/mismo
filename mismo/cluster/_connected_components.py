@@ -8,7 +8,6 @@ import ibis
 from ibis import _
 from ibis.expr import types as it
 
-from mismo import _join
 from mismo._factorizer import Factorizer
 
 logger = logging.getLogger(__name__)
@@ -177,7 +176,7 @@ def _n_updates(labels: it.Table, new_labels: it.Table) -> int:
     condition = (labels.record_id == new_labels.record_id) & (
         labels.component != new_labels.component
     )
-    return _join.join(labels, new_labels, condition).count().execute()
+    return ibis.join(labels, new_labels, condition).count().execute()
 
 
 def _updated_labels(node_labels: it.Table, edges: it.Table) -> it.Table:

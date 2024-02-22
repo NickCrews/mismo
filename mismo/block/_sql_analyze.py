@@ -9,7 +9,6 @@ from ibis.backends.duckdb import Backend as DuckDBBackend
 from ibis.expr import types as it
 
 from mismo import _util
-from mismo._join import join
 
 JOIN_ALGORITHMS = frozenset(
     {
@@ -65,7 +64,7 @@ def get_join_algorithm(left: it.Table, right: it.Table, condition) -> str:
     This only works with expressions bound to a DuckDB backend.
     Other kinds of expressions will raise NotImplementedError.
     """
-    j = join(left, right, condition)
+    j = ibis.join(left, right, condition)
     ex = _explain_str(j)
     return _extract_top_join_alg(ex)
 

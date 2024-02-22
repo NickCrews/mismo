@@ -10,8 +10,6 @@ from ibis.common.deferred import Deferred
 from ibis.expr import types as it
 from ibis.expr.types.relations import bind
 
-from mismo import _join
-
 
 def get_column(t: it.Table, ref: Any) -> it.Column:
     """Get a column from a table using some sort of reference to the column.
@@ -127,7 +125,7 @@ def intify_column(
     augmented = augmented.mutate(**{column: _[int_col_name]}).drop(int_col_name)
 
     def restore(with_int_labels: it.Table) -> it.Table:
-        return _join.join(
+        return ibis.join(
             with_int_labels,
             mapping,
             with_int_labels[column] == mapping[int_col_name],

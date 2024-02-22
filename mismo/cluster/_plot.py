@@ -7,8 +7,6 @@ from ibis.expr import types as it
 import numpy as np
 import pandas as pd
 
-from mismo import _join
-
 
 def cluster_chart(nodes: it.Table, edges: it.Table) -> alt.Chart:
     """Plot a cluster of records and the links between them as an altair chart.
@@ -62,7 +60,7 @@ def _layout_nodes(nodes: it.Table, edges: it.Table) -> it.Table:
     coords_df = pd.DataFrame(coords_np, columns=["x", "y"])
     coords_df["id_in_cluster"] = range(len(coords_df))
     coords_table = ibis.memtable(coords_df)
-    augmented = _join.join(n, coords_table, "id_in_cluster", how="left").drop(
+    augmented = ibis.join(n, coords_table, "id_in_cluster", how="left").drop(
         "id_in_cluster", "id_in_cluster_right"
     )
     return augmented
@@ -99,8 +97,8 @@ def _reindex_from_0(nodes: it.Table, edges: it.Table):
     m = nodes["record_id", "id_in_cluster"]
     ml = m.rename("{name}_l")
     mr = m.rename("{name}_r")
-    edges = _join.join(edges, ml, "record_id_l", how="left").drop("record_id_l_right")
-    edges = _join.join(edges, mr, "record_id_r", how="left").drop("record_id_r_right")
+    edges = ibis.join(edges, ml, "record_id_l", how="left").drop("record_id_l_right")
+    edges = ibis.join(edges, mr, "record_id_r", how="left").drop("record_id_r_right")
     return nodes, edges
 
 

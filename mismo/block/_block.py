@@ -8,7 +8,7 @@ from ibis import selectors as s
 from ibis.common.deferred import Deferred
 from ibis.expr import types as it
 
-from mismo import _join, _util
+from mismo import _util
 
 # Something that can be used to reference a column in a table
 _ColumnReferenceLike = Union[
@@ -277,7 +277,7 @@ def join(
         right = right.view()
         if task is None:
             task = "dedupe"
-    resolved = _join.resolve_predicates(
+    resolved = _resolve_predicates(
         left, right, condition, on_slow=on_slow, task=task, **kwargs
     )
     if isinstance(resolved, it.Table):
@@ -291,7 +291,7 @@ def join(
         resolved = resolved + [left.record_id < right.record_id]
 
     _sql_analyze.check_join_algorithm(left, right, resolved, on_slow=on_slow)
-    j = _join.join(left, right, resolved, lname="{name}_l", rname="{name}_r")
+    j = ibis.join(left, right, resolved, lname="{name}_l", rname="{name}_r")
     j = _ensure_suffixed(left.columns, right.columns, j)
     j = _move_record_id_cols_first(j)
     return j
@@ -339,3 +339,43 @@ def _ensure_suffixed(
     m = {c + "_l": _[c] for c in un_suffixed} | {c + "_r": _[c] for c in un_suffixed}
     t = t.mutate(**m).drop(*un_suffixed)
     return t
+
+
+def _resolve_predicates(
+    left: it.Table, right: it.Table, raw, **kwargs
+) -> list[bool | it.BooleanColumn] | it.Table:
+    """Resolve the predicates for a join"""
+    if isinstance(raw, tuple):
+        if len(raw) != 2:
+            raise ValueError(f"predicates must be a tuple of length 2, got {raw}")
+        raw = [raw]
+    # Deferreds are callable, so we have to guard against them
+    if callable(raw) and not isinstance(raw, Deferred):
+        return _resolve_predicates(left, right, raw(left, right, **kwargs))
+    preds = _util.promote_list(raw)
+    result = [_resolve_predicate(left, right, pred) for pred in preds]
+    if len(result) == 1 and isinstance(result[0], it.Table):
+        return result[0]
+    return result
+
+
+def _resolve_predicate(
+    left: it.Table, right: it.Table, raw
+) -> bool | it.BooleanColumn | it.Table:
+    if isinstance(raw, it.Table):
+        return raw
+    if isinstance(raw, it.BooleanColumn):
+        return raw
+    if isinstance(raw, bool):
+        return raw
+    if isinstance(raw, tuple):
+        if len(raw) != 2:
+            raise ValueError(f"predicate must be a tuple of length 2, got {raw}")
+        return _util.get_column(left, raw[0]) == _util.get_column(right, raw[1])
+    if isinstance(raw, Deferred):
+        return _util.get_column(left, raw) == _util.get_column(right, raw)
+    if isinstance(raw, str):
+        return _util.get_column(left, raw) == _util.get_column(right, raw)
+    # This case must come after the Deferred case, because Deferred is callable
+    if callable(raw):
+        return _resolve_predicate(left, right, raw(left, right))
