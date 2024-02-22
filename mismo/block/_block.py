@@ -65,10 +65,8 @@ def block_one(
             def block(
                 left: Table,
                 right: Table,
-                conditions,
                 *,
                 on_slow: Literal["error", "warn", "ignore"] = "error",
-                labels: bool = False,
                 dedupe: bool | None = None,
                 **kwargs,
             ) -> <one of the above>
