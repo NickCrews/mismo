@@ -362,20 +362,14 @@ def _resolve_predicates(
 def _resolve_predicate(
     left: it.Table, right: it.Table, raw
 ) -> bool | it.BooleanColumn | it.Table:
-    if isinstance(raw, it.Table):
+    if isinstance(raw, (it.Table, it.BooleanColumn, bool)):
         return raw
-    if isinstance(raw, it.BooleanColumn):
-        return raw
-    if isinstance(raw, bool):
-        return raw
+    if isinstance(raw, (Deferred, str)):
+        return _util.get_column(left, raw) == _util.get_column(right, raw)
     if isinstance(raw, tuple):
         if len(raw) != 2:
             raise ValueError(f"predicate must be a tuple of length 2, got {raw}")
         return _util.get_column(left, raw[0]) == _util.get_column(right, raw[1])
-    if isinstance(raw, Deferred):
-        return _util.get_column(left, raw) == _util.get_column(right, raw)
-    if isinstance(raw, str):
-        return _util.get_column(left, raw) == _util.get_column(right, raw)
     # This case must come after the Deferred case, because Deferred is callable
     if callable(raw):
         return _resolve_predicate(left, right, raw(left, right))
