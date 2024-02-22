@@ -6,7 +6,6 @@ from ibis.common.deferred import Deferred
 from ibis.expr import types as it
 
 from mismo import _util
-from mismo.block import _block
 
 # Something that can be used to reference a column in a table
 _ColumnReferenceLike = Union[
@@ -67,9 +66,6 @@ class BlockingRule:
         **kwargs,
     ) -> it.Table:
         return self.condition
-
-    def block(self, left: it.Table, right: it.Table, **kwargs) -> it.Table:
-        return _block.block_many(left, right, self.condition, **kwargs)
 
     def __repr__(self) -> str:
         return f"BlockingRule({self.get_name()})"

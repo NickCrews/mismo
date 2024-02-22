@@ -28,5 +28,4 @@ def test_blocking_rule(table_factory, t1: it.Table, t2: it.Table, condition):
     assert rule.get_name() == name
     assert rule.condition == condition
     expected = letter_blocked_ids(table_factory)
-    assert_tables_equal(expected, rule.block(t1, t2)["record_id_l", "record_id_r"])
     assert_tables_equal(expected, block_one(t1, t2, rule)["record_id_l", "record_id_r"])

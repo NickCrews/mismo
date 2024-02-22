@@ -72,7 +72,7 @@ class CoordinateBlocker:
     Examples
     --------
     >>> import ibis
-    >>> from mismo.block import CoordinateBlocker, block
+    >>> from mismo.block import CoordinateBlocker, block_one
     >>> ibis.options.interactive = True
     >>> conn = ibis.duckdb.connect()
     >>> left = conn.create_table(
@@ -93,7 +93,7 @@ class CoordinateBlocker:
     ...     right_lat="latitude",
     ...     right_lon="longitude",
     ... )
-    >>> block(left, right, blocker)
+    >>> block_one(left, right, blocker)
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
     ┃ latlon_l                       ┃ latitude_r ┃ longitude_r ┃
     ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━┩

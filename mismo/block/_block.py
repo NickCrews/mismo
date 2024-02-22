@@ -75,7 +75,7 @@ def block_one(
 
         !!! note
             You can't reference the input tables directly in the conditions.
-            eg `block(left, right, left.name == right.name)` will raise an error.
+            eg `block_one(left, right, left.name == right.name)` will raise an error.
             This is because mismo might be modifying the tables before the
             actual join takes place, which would lead to the condition referencing
             stale tables that don't exist anymore.
@@ -189,7 +189,7 @@ def block_many(
     Examples
     --------
     >>> import ibis
-    >>> from mismo.block import block
+    >>> from mismo.block import block_one
     >>> from mismo.datasets import load_patents
     >>> ibis.options.interactive = True
     >>> t = load_patents()["record_id", "name", "latitude"]
@@ -214,7 +214,7 @@ def block_many(
 
     Block the table with itself wherever the names match:
 
-    >>> block(t, t, "name")
+    >>> block_one(t, t, "name")
     ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l                       ┃ name_r                       ┃
     ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
