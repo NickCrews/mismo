@@ -42,6 +42,7 @@ def t1(table_factory) -> it.Table:
     return table_factory(
         {
             "record_id": [0, 1, 2],
+            "int": [1, 2, 3],
             "letter": ["a", "b", "c"],
             "array": [["a", "b"], ["b"], []],
         }
@@ -53,6 +54,7 @@ def t2(table_factory) -> it.Table:
     return table_factory(
         {
             "record_id": [90, 91, 92, 93],
+            "int": [2, 4, None, 6],
             "letter": ["b", "c", "d", None],
             "array": [["b"], ["c"], ["d"], None],
         }

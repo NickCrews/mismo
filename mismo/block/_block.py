@@ -54,9 +54,9 @@ def block_one(
           eg "price" is equivalent to `left.price == right.price`
         - A Deferred, which is used to reference a column in a table
           eg "_.price.fillna(0)" is equivalent to `left.price.fillna(0) == right.price.fillna(0)`
-        - A tuple of two of the above, which is interpreted as a join condition,
-          in case you need to tread the two tables differently.
-          eg `("price", _.cost.fillna(0)")` is equivalent to `left.price == right.cost.fillna(0)`
+        - An iterable of the above, which is interpreted as a tuple of conditions.
+          eg `("age", _.first_name.upper()")` is equivalent to
+          `(left.age == right.age) & (left.first_name.upper() == right.first_name.upper())`
         - A literal `True`, which results in a cross join.
         - A literal `False`, which results in an empty table.
         - A Table in the expected output schema, which is assumed to be
@@ -69,7 +69,7 @@ def block_one(
                 on_slow: Literal["error", "warn", "ignore"] = "error",
                 dedupe: bool | None = None,
                 **kwargs,
-            ) -> <one of the above>
+            ) -> BooleanColumn of the join condition, or one of the above.
 
         !!! note
             You can't reference the input tables directly in the conditions.
@@ -277,7 +277,7 @@ def join(
         right = right.view()
         if task is None:
             task = "dedupe"
-    resolved = _resolve_predicates(
+    resolved = _resolve_predicate(
         left, right, condition, on_slow=on_slow, task=task, **kwargs
     )
     if isinstance(resolved, it.Table):
@@ -288,7 +288,7 @@ def join(
         and "record_id" in left.columns
         and "record_id" in right.columns
     ):
-        resolved = resolved + [left.record_id < right.record_id]
+        resolved = resolved & (left.record_id < right.record_id)
 
     _sql_analyze.check_join_algorithm(left, right, resolved, on_slow=on_slow)
     j = ibis.join(left, right, resolved, lname="{name}_l", rname="{name}_r")
@@ -341,35 +341,20 @@ def _ensure_suffixed(
     return t
 
 
-def _resolve_predicates(
-    left: it.Table, right: it.Table, raw, **kwargs
-) -> list[bool | it.BooleanColumn] | it.Table:
-    """Resolve the predicates for a join"""
-    if isinstance(raw, tuple):
-        if len(raw) != 2:
-            raise ValueError(f"predicates must be a tuple of length 2, got {raw}")
-        raw = [raw]
-    # Deferreds are callable, so we have to guard against them
-    if callable(raw) and not isinstance(raw, Deferred):
-        return _resolve_predicates(left, right, raw(left, right, **kwargs))
-    preds = _util.promote_list(raw)
-    result = [_resolve_predicate(left, right, pred) for pred in preds]
-    if len(result) == 1 and isinstance(result[0], it.Table):
-        return result[0]
-    return result
-
-
 def _resolve_predicate(
-    left: it.Table, right: it.Table, raw
+    left: it.Table, right: it.Table, raw, **kwargs
 ) -> bool | it.BooleanColumn | it.Table:
     if isinstance(raw, (it.Table, it.BooleanColumn, bool)):
         return raw
     if isinstance(raw, (Deferred, str)):
         return _util.get_column(left, raw) == _util.get_column(right, raw)
     if isinstance(raw, tuple):
-        if len(raw) != 2:
-            raise ValueError(f"predicate must be a tuple of length 2, got {raw}")
-        return _util.get_column(left, raw[0]) == _util.get_column(right, raw[1])
+        return ibis.and_(
+            *(
+                _util.get_column(left, col) == _util.get_column(right, col)
+                for col in raw
+            )
+        )
     # This case must come after the Deferred case, because Deferred is callable
     if callable(raw):
-        return _resolve_predicate(left, right, raw(left, right))
+        return _resolve_predicate(left, right, raw(left, right, **kwargs))

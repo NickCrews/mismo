@@ -11,29 +11,51 @@ from mismo.block import SlowJoinError, SlowJoinWarning, block_one
 from mismo.block._block import _resolve_predicates
 from mismo.tests.util import assert_tables_equal
 
-from .common import letter_blocked_ids
+
+def blocked_on_letter(t1, t2, **kwargs):
+    return ibis.join(
+        t1, t2, t1.letter == t2.letter, lname="{name}_l", rname="{name}_r"
+    )["record_id_l", "record_id_r"]
+
+
+def blocked_on_letter_int(t1, t2, **kwargs):
+    return ibis.join(
+        t1,
+        t2,
+        (t1.letter == t2.letter) & (t1.int == t2.int),
+        lname="{name}_l",
+        rname="{name}_r",
+    )["record_id_l", "record_id_r"]
 
 
 @pytest.mark.parametrize(
-    "condition",
+    "condition,expected_maker",
     [
-        pytest.param("letter", id="string"),
-        pytest.param(("letter", "letter"), id="tuple_strings"),
+        pytest.param("letter", blocked_on_letter, id="letter"),
+        pytest.param(("letter", "int"), blocked_on_letter_int, id="letter_int"),
+        pytest.param((_.letter, _.int + 1), blocked_on_letter_int, id="tuple_deferred"),
         pytest.param(
             lambda left, right, **_: left.letter == right.letter,
+            blocked_on_letter,
             id="lambda_bool_column",
         ),
-        pytest.param(lambda left, right, **_: "letter", id="lambda_string"),
         pytest.param(
-            lambda left, right, **_kwargs: (_.letter, _.letter), id="lambda_tuple"
+            lambda left, right, **_: "letter", blocked_on_letter, id="lambda_letter"
         ),
-        pytest.param((_.letter, _.letter), id="tuple_deferred"),
+        pytest.param(
+            lambda left, right, **_kwargs: (_.letter, _.int + 1),
+            blocked_on_letter_int,
+            id="lambda_tuple",
+        ),
+        pytest.param(
+            blocked_on_letter, blocked_on_letter, id="callable_returning_table"
+        ),
     ],
 )
-def test_block(table_factory, t1: it.Table, t2: it.Table, condition):
+def test_block(t1: it.Table, t2: it.Table, condition, expected_maker):
     blocked_table = block_one(t1, t2, condition)
     blocked_ids = blocked_table["record_id_l", "record_id_r"]
-    expected = letter_blocked_ids(table_factory)
+    expected = expected_maker(t1, t2)
     assert_tables_equal(blocked_ids, expected)
 
 
@@ -108,13 +130,10 @@ def check_letter(t1, t2, resolved):
     assert expected.equals(resolved[0])
 
 
-def check_letter_array(t1, t2, resolved):
-    assert len(resolved) == 2
-    letter, array = resolved
-    letter_expected = t1.letter == t2.letter
-    array_expected = t1.array == t2.array
-    assert letter_expected.equals(letter)
-    assert array_expected.equals(array)
+def check_letter_int(t1, t2, resolved):
+    assert len(resolved) == 1
+    expected = (t1.letter == t2.letter) & (t1.int == t2.int)
+    assert expected.equals(resolved[0])
 
 
 @pytest.mark.parametrize(
@@ -122,40 +141,12 @@ def check_letter_array(t1, t2, resolved):
     [
         pytest.param("letter", check_letter, id="single_str"),
         pytest.param(_.letter, check_letter, id="single_deferred"),
-        pytest.param(("letter", "letter"), check_letter, id="pair_str"),
-        pytest.param(("letter", _.letter), check_letter, id="pair_str_deferred"),
+        pytest.param(("letter",), check_letter, id="mono_tuple_str"),
+        pytest.param((_.letter,), check_letter, id="mono_tuple_deferred"),
+        pytest.param(("letter", "int"), check_letter_int, id="pair_str"),
+        pytest.param({"letter", "int"}, check_letter_int, id="set_str"),
+        pytest.param(("letter", _.int), check_letter_int, id="pair_str_deferred"),
         pytest.param(["letter"], check_letter, id="list_single_str"),
-        pytest.param([("letter", "letter")], check_letter, id="list_pair_str"),
-        pytest.param([("letter", _.letter)], check_letter, id="list_pair_str_deferred"),
-        pytest.param(
-            ("letter", "array"),
-            None,
-            id="pair_letter_array",
-            marks=pytest.mark.xfail(
-                reason="strings and array<string> are not comparable"
-            ),
-        ),
-        pytest.param(
-            ("letter", _.array),
-            None,
-            id="pair_letter_array_deferred",
-            marks=pytest.mark.xfail(
-                reason="strings and array<string> are not comparable"
-            ),
-        ),
-        pytest.param(
-            [("letter", _.array)],
-            None,
-            id="list_pair_letter_array_deferred",
-            marks=pytest.mark.xfail(
-                reason="strings and array<string> are not comparable"
-            ),
-        ),
-        pytest.param(
-            ["letter", _.array],
-            check_letter_array,
-            id="list_letter_array_deferred",
-        ),
         pytest.param(True, [True], id="true"),
         pytest.param([True], [True], id="true_list"),
         pytest.param(False, [False], id="false"),
