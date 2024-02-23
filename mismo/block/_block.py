@@ -348,13 +348,10 @@ def _resolve_predicate(
         return raw
     if isinstance(raw, (Deferred, str)):
         return _util.get_column(left, raw) == _util.get_column(right, raw)
-    if isinstance(raw, tuple):
-        return ibis.and_(
-            *(
-                _util.get_column(left, col) == _util.get_column(right, col)
-                for col in raw
-            )
-        )
     # This case must come after the Deferred case, because Deferred is callable
     if callable(raw):
         return _resolve_predicate(left, right, raw(left, right, **kwargs))
+    cols = _util.promote_list(raw)
+    return ibis.and_(
+        *(_util.get_column(left, col) == _util.get_column(right, col) for col in cols)
+    )
