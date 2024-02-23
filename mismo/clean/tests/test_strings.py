@@ -1,29 +1,26 @@
 from __future__ import annotations
 
-from ibis.expr import types as it
+import ibis
 import pytest
 
-from mismo.clean import _strings
+from mismo import clean
 
 
-@pytest.fixture
-def string_column(column_factory) -> it.StringColumn:
-    return column_factory(
-        [
-            "jane's   house",
-            "Ross' house  ",
-            "a",
-            "",
-            None,
-            "bees\tall cook",
-        ]
-    )
-
-
-def test_norm_whitespace(string_column):
-    result = _strings.norm_whitespace(string_column)
-    expected = ["jane's house", "Ross' house", "a", "", None, "bees all cook"]
-    assert result.execute().tolist() == expected
+@pytest.mark.parametrize(
+    "inp,exp",
+    [
+        ("jane's   house", "jane's house"),
+        ("Ross' house  ", "Ross' house"),
+        ("a", "a"),
+        ("", ""),
+        (None, None),
+        ("bees\tall cook", "bees all cook"),
+    ],
+)
+def test_norm_whitespace(inp, exp):
+    inp = ibis.literal(inp, type="string")
+    result = clean.norm_whitespace(inp).execute()
+    assert result == exp
 
 
 @pytest.mark.parametrize(
@@ -44,7 +41,7 @@ def test_norm_whitespace(string_column):
     ],
 )
 def test_ngrams(inp, n, exp):
-    result = _strings.ngrams(inp, n).execute()
+    result = clean.ngrams(inp, n).execute()
     if exp is None:
         assert result is None
     else:
