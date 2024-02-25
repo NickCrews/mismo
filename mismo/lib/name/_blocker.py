@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import Callable
 
+from ibis import _
 from ibis.common.deferred import Deferred
 from ibis.expr import types as it
 
 from mismo import _util
-from mismo.block import join_on_array
 
 
 class NameBlocker:
@@ -64,11 +64,11 @@ class NameBlocker:
     def __call__(
         self, left: it.Table, right: it.Table, **kwargs
     ) -> tuple[it.Table, it.Table]:
-        nl: it.StructColumn = _util.get_column(left, self.column_left)
-        nr: it.StructColumn = _util.get_column(right, self.column_right)
+        # nl: it.StructColumn = _util.get_column(left, self.column_left)
+        # nr: it.StructColumn = _util.get_column(right, self.column_right)
+        nl: it.StructColumn = _util.get_column(_, self.column_left)
         tokensl = _oneline(nl).upper().re_split(r"\s+")
-        tokensr = _oneline(nr).upper().re_split(r"\s+")
-        return join_on_array(left, right, tokensl, tokensr, **kwargs)
+        return tokensl.unnest()
 
 
 def _oneline(name: it.StructValue) -> it.StringValue:

@@ -2,34 +2,9 @@ from __future__ import annotations
 
 import ibis
 from ibis import _
-from ibis.expr import types as it
-import pandas as pd
 import pytest
 
-from mismo.block import block_one, join_on_array
-from mismo.tests.util import assert_tables_equal
-
-
-@pytest.mark.parametrize(
-    "left,right",
-    [
-        ("array", _.array),
-        ("array", lambda t: t.array),
-    ],
-)
-def test_array_blocker(table_factory, t1: it.Table, t2: it.Table, left, right):
-    def f(tl, tr, **kwargs):
-        return join_on_array(tl, tr, left, right, **kwargs)
-
-    blocked = block_one(t1, t2, f)
-    blocked_ids = blocked[["record_id_l", "record_id_r"]]
-    expected = table_factory(
-        pd.DataFrame(
-            [(0, 90), (1, 90)],
-            columns=["record_id_l", "record_id_r"],
-        )
-    )
-    assert_tables_equal(expected, blocked_ids)
+from mismo.block import block_one
 
 
 def _n_pairs(n: int, k: int) -> int:
@@ -49,7 +24,7 @@ def _id_func(nk):
     ],
     ids=_id_func,
 )
-def test_benchmark_array_blocker(backend, benchmark, nk):
+def test_benchmark_block_array(backend, benchmark, nk):
     n, k = nk
     t = ibis.memtable(
         {
@@ -64,9 +39,7 @@ def test_benchmark_array_blocker(backend, benchmark, nk):
         b = block_one(
             t,
             t,
-            lambda left, right, **kwargs: join_on_array(
-                left, right, "vals", "vals", **kwargs
-            ),
+            _.vals.unnest(),
         )
         # do this to prevent caching
         nonlocal i

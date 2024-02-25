@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ibis
+from ibis.common.deferred import Deferred
 from ibis.expr import types as it
 
 
@@ -52,7 +53,7 @@ def ngrams(string: it.StringValue, n: int) -> it.ArrayValue:
     >>> ngrams("abcdef", 3).execute()
     ["abc", "def", "bcd", "cde"]
     """
-    if not isinstance(string, it.Expr):
+    if not isinstance(string, it.Expr) and not isinstance(string, Deferred):
         string = ibis.literal(string, type="string")
     pattern = "." * n
     # if you just do _re_extract_all("abcdef", "..."), you get ["abc", "def"].

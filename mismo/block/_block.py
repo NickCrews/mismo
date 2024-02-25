@@ -94,11 +94,11 @@ def block_one(
     Examples
     --------
     >>> import ibis
-    >>> from mismo.block import block
-    >>> from mismo.datasets import load_patents
+    >>> from ibis import _
+    >>> import mismo
     >>> ibis.options.interactive = True
-    >>> t = load_patents()["record_id", "name", "latitude"]
-    >>> t
+    >>> t = mismo.datasets.load_patents()["record_id", "name", "latitude"]
+    >>> t.head()
     ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┓
     ┃ record_id ┃ name                         ┃ latitude ┃
     ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━┩
@@ -109,34 +109,86 @@ def block_one(
     │      3575 │ * AKZO NOBEL NV              │     0.00 │
     │      3779 │ * ALCATEL N.V.               │    52.35 │
     │      3780 │ * ALCATEL N.V.               │    52.35 │
-    │      3782 │ * ALCATEL N.V.               │     0.00 │
-    │     15041 │ * CANON EUROPA N.V           │     0.00 │
-    │     15042 │ * CANON EUROPA N.V.          │     0.00 │
-    │     15043 │ * CANON EUROPA NV            │     0.00 │
-    │     25387 │ * DSM N.V.                   │     0.00 │
-    │         … │ …                            │        … │
     └───────────┴──────────────────────────────┴──────────┘
 
     Block the table with itself wherever the names match:
 
-    >>> block_one(t, t, "name")
-    ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l                       ┃ name_r                       ┃
-    ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-    │ int64       │ int64       │ float64    │ float64    │ string                       │ string                       │
-    ├─────────────┼─────────────┼────────────┼────────────┼──────────────────────────────┼──────────────────────────────┤
-    │        2909 │        2909 │       0.00 │        0.0 │ * AGILENT TECHNOLOGIES, INC. │ * AGILENT TECHNOLOGIES, INC. │
-    │        3574 │        3574 │       0.00 │        0.0 │ * AKZO NOBEL N.V.            │ * AKZO NOBEL N.V.            │
-    │        3575 │        3575 │       0.00 │        0.0 │ * AKZO NOBEL NV              │ * AKZO NOBEL NV              │
-    │        3779 │        3782 │      52.35 │        0.0 │ * ALCATEL N.V.               │ * ALCATEL N.V.               │
-    │        3780 │        3782 │      52.35 │        0.0 │ * ALCATEL N.V.               │ * ALCATEL N.V.               │
-    │        3782 │        3782 │       0.00 │        0.0 │ * ALCATEL N.V.               │ * ALCATEL N.V.               │
-    │       15041 │       15041 │       0.00 │        0.0 │ * CANON EUROPA N.V           │ * CANON EUROPA N.V           │
-    │       15042 │       15042 │       0.00 │        0.0 │ * CANON EUROPA N.V.          │ * CANON EUROPA N.V.          │
-    │       15043 │       15043 │       0.00 │        0.0 │ * CANON EUROPA NV            │ * CANON EUROPA NV            │
-    │       25388 │     7651594 │       0.00 │        0.0 │ DSM N.V.                     │ DSM N.V.                     │
-    │           … │           … │          … │          … │ …                            │ …                            │
-    └─────────────┴─────────────┴────────────┴────────────┴──────────────────────────────┴──────────────────────────────┘
+    >>> mismo.block.block_one(t, t, "name").head()
+    ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l               ┃ name_r               ┃
+    ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+    │ int64       │ int64       │ float64    │ float64    │ string               │ string               │
+    ├─────────────┼─────────────┼────────────┼────────────┼──────────────────────┼──────────────────────┤
+    │      665768 │      665769 │  51.683333 │        0.0 │ ALCOA NEDERLAND B.V. │ ALCOA NEDERLAND B.V. │
+    │     1598894 │     1598895 │  51.416667 │        0.0 │ ASML NETHERLAND B.V. │ ASML NETHERLAND B.V. │
+    │     4332214 │     4332215 │  52.350000 │        0.0 │ Canon Europa N.V.    │ Canon Europa N.V.    │
+    │     7651166 │     7651167 │  50.900000 │        0.0 │ DSM B.V.             │ DSM B.V.             │
+    │     7651339 │     7651340 │  50.900000 │       50.9 │ DSM I.P. Assets B.V. │ DSM I.P. Assets B.V. │
+    └─────────────┴─────────────┴────────────┴────────────┴──────────────────────┴──────────────────────┘
+
+    Arbitrary blocking keys are supported. Example: block the table wherever
+    - the first 5 characters of the name in uppercase, are the same
+    AND
+    - the latitudes, rounded to 1 decimal place, are the same
+
+    >>> mismo.block.block_one(t, t, (_["name"][:5].upper(), _.latitude.round(1))).head()
+    ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l                ┃ name_r                     ┃
+    ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ int64       │ int64       │ float64    │ float64    │ string                │ string                     │
+    ├─────────────┼─────────────┼────────────┼────────────┼───────────────────────┼────────────────────────────┤
+    │        3574 │        3575 │   0.000000 │   0.000000 │ * AKZO NOBEL N.V.     │ * AKZO NOBEL NV            │
+    │      663246 │      663255 │  52.016667 │  52.025498 │ Alcatel NV            │ ALCATEL N.V., RIJSWIJK, NL │
+    │      665768 │      665773 │  51.683333 │  51.683333 │ ALCOA NEDERLAND B.V.  │ Alcoa Nederland B.V.       │
+    │     1598972 │     1598988 │  51.416667 │  51.416667 │ Asml Netherlands B.V. │ ASML Netherlands-B.V.      │
+    │     7651427 │     7651428 │  50.900000 │  50.900000 │ DSM IP assets B.V.    │ DSM Ip Assets B.V.         │
+    └─────────────┴─────────────┴────────────┴────────────┴───────────────────────┴────────────────────────────┘
+
+    We can even block on arrays! For example, first let's split each name into
+    significant tokens:
+
+    >>> tokens = _.name.upper().split(" ").filter(lambda x: x.length() > 4)
+    >>> tokens.resolve(t)
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ ArrayFilter(StringSplit(Uppercase(name), ' '), Greater(StringLength(x), 4)) ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ array<string>                                                               │
+    ├─────────────────────────────────────────────────────────────────────────────┤
+    │ ['AGILENT', 'TECHNOLOGIES,']                                                │
+    │ ['NOBEL']                                                                   │
+    │ ['NOBEL']                                                                   │
+    │ ['ALCATEL']                                                                 │
+    │ ['ALCATEL']                                                                 │
+    │ ['ALCATEL']                                                                 │
+    │ ['CANON', 'EUROPA']                                                         │
+    │ ['CANON', 'EUROPA']                                                         │
+    │ ['CANON', 'EUROPA']                                                         │
+    │ []                                                                          │
+    │ …                                                                           │
+    └─────────────────────────────────────────────────────────────────────────────┘
+
+    Now, block the tables together wherever two records share a token.
+    Note that this blocked `* SCHLUMBERGER LIMITED` with `* SCHLUMBERGER TECHNOLOGY BV`.
+
+    >>> b = mismo.block.block_one(t, t, tokens.unnest())
+    >>> b[_.name_l != _.name_r]
+    ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l                                            ┃ name_r                                            ┃
+    ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ int64       │ int64       │ float64    │ float64    │ string                                            │ string                                            │
+    ├─────────────┼─────────────┼────────────┼────────────┼───────────────────────────────────────────────────┼───────────────────────────────────────────────────┤
+    │        3574 │        3575 │   0.000000 │   0.000000 │ * AKZO NOBEL N.V.                                 │ * AKZO NOBEL NV                                   │
+    │       62445 │       66329 │   0.000000 │   0.000000 │ * N V PHILIPS' GLOEILAMPENFABRIEKEN               │ * N.V. PHILIPS' GLOEILAMPENFABRIEKEN              │
+    │       79860 │       79872 │  52.500000 │   0.000000 │ * SCHLUMBERGER LIMITED                            │ * SCHLUMBERGER TECHNOLOGY BV                      │
+    │       81613 │       81633 │  52.083333 │  52.083333 │ * SHELL INTERNATIONAL RESEARCH MAATSCHHAPPIJ B.V. │ * SHELL INTERNATIONALE RESEARCH MAATSCHAPPIJ B.V. │
+    │       81631 │       81641 │  52.500000 │  52.083333 │ * SHELL INTERNATIONALE RESEARCH MAATSCHAPPIJ B.V. │ * SHELL INTERNATIONALE RESEARCH MAATSCHAPPIJ BV   │
+    │       81614 │      317966 │   0.000000 │  52.350000 │ * SHELL INTERNATIONAL RESEARCH MAATSCHHAPPIJ B.V. │ Adidas International Marketing B.V.               │
+    │       81614 │      317969 │   0.000000 │  52.350000 │ * SHELL INTERNATIONAL RESEARCH MAATSCHHAPPIJ B.V. │ adidas International Marketing B.V,               │
+    │      317969 │      317971 │  52.350000 │  52.500000 │ adidas International Marketing B.V,               │ adidas International Marketing B.V.               │
+    │      317967 │      317971 │   0.000000 │  52.500000 │ Adidas International Marketing B.V.               │ adidas International Marketing B.V.               │
+    │      317968 │      317971 │  52.350000 │  52.500000 │ adidas International Marketing, B.V.              │ adidas International Marketing B.V.               │
+    │           … │           … │          … │          … │ …                                                 │ …                                                 │
+    └─────────────┴─────────────┴────────────┴────────────┴───────────────────────────────────────────────────┴───────────────────────────────────────────────────┘
     """  # noqa: E501
     j = join(left, right, condition, on_slow=on_slow, task=task, **kwargs)
     id_pairs = _distinct_record_ids(j)
@@ -170,7 +222,8 @@ def block_many(
         If "error", raise a SlowJoinError.
         If "warn", issue a SlowJoinWarning.
         If "ignore", do nothing.
-        See [check_join_algorithm()][mismo.block.check_join_algorithm] for more information.
+        See [check_join_algorithm()][mismo.block.check_join_algorithm]
+        for more information.
     task
         If "dedupe", the resulting pairs will have the additional restriction that
         `record_id_l < record_id_r`.
@@ -183,54 +236,7 @@ def block_many(
         rules caused each record pair to be blocked.
         If False, the resulting table will only contain the columns of left and
         right.
-
-    Examples
-    --------
-    >>> import ibis
-    >>> from mismo.block import block_one
-    >>> from mismo.datasets import load_patents
-    >>> ibis.options.interactive = True
-    >>> t = load_patents()["record_id", "name", "latitude"]
-    >>> t
-    ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┓
-    ┃ record_id ┃ name                         ┃ latitude ┃
-    ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━┩
-    │ int64     │ string                       │ float64  │
-    ├───────────┼──────────────────────────────┼──────────┤
-    │      2909 │ * AGILENT TECHNOLOGIES, INC. │     0.00 │
-    │      3574 │ * AKZO NOBEL N.V.            │     0.00 │
-    │      3575 │ * AKZO NOBEL NV              │     0.00 │
-    │      3779 │ * ALCATEL N.V.               │    52.35 │
-    │      3780 │ * ALCATEL N.V.               │    52.35 │
-    │      3782 │ * ALCATEL N.V.               │     0.00 │
-    │     15041 │ * CANON EUROPA N.V           │     0.00 │
-    │     15042 │ * CANON EUROPA N.V.          │     0.00 │
-    │     15043 │ * CANON EUROPA NV            │     0.00 │
-    │     25387 │ * DSM N.V.                   │     0.00 │
-    │         … │ …                            │        … │
-    └───────────┴──────────────────────────────┴──────────┘
-
-    Block the table with itself wherever the names match:
-
-    >>> block_one(t, t, "name")
-    ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l                       ┃ name_r                       ┃
-    ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-    │ int64       │ int64       │ float64    │ float64    │ string                       │ string                       │
-    ├─────────────┼─────────────┼────────────┼────────────┼──────────────────────────────┼──────────────────────────────┤
-    │        2909 │        2909 │       0.00 │        0.0 │ * AGILENT TECHNOLOGIES, INC. │ * AGILENT TECHNOLOGIES, INC. │
-    │        3574 │        3574 │       0.00 │        0.0 │ * AKZO NOBEL N.V.            │ * AKZO NOBEL N.V.            │
-    │        3575 │        3575 │       0.00 │        0.0 │ * AKZO NOBEL NV              │ * AKZO NOBEL NV              │
-    │        3779 │        3782 │      52.35 │        0.0 │ * ALCATEL N.V.               │ * ALCATEL N.V.               │
-    │        3780 │        3782 │      52.35 │        0.0 │ * ALCATEL N.V.               │ * ALCATEL N.V.               │
-    │        3782 │        3782 │       0.00 │        0.0 │ * ALCATEL N.V.               │ * ALCATEL N.V.               │
-    │       15041 │       15041 │       0.00 │        0.0 │ * CANON EUROPA N.V           │ * CANON EUROPA N.V           │
-    │       15042 │       15042 │       0.00 │        0.0 │ * CANON EUROPA N.V.          │ * CANON EUROPA N.V.          │
-    │       15043 │       15043 │       0.00 │        0.0 │ * CANON EUROPA NV            │ * CANON EUROPA NV            │
-    │       25388 │     7651594 │       0.00 │        0.0 │ DSM N.V.                     │ DSM N.V.                     │
-    │           … │           … │          … │          … │ …                            │ …                            │
-    └─────────────┴─────────────┴────────────┴────────────┴──────────────────────────────┴──────────────────────────────┘
-    """  # noqa: E501
+    """
     conds = tuple(conditions)
     if not conds:
         raise ValueError("No conditions provided")
@@ -282,16 +288,16 @@ def join(
     )
     if isinstance(resolved, it.Table):
         return resolved
-
+    left, right, pred = resolved
     if (
         task == "dedupe"
         and "record_id" in left.columns
         and "record_id" in right.columns
     ):
-        resolved = resolved & (left.record_id < right.record_id)
+        pred = pred & (left.record_id < right.record_id)
 
-    _sql_analyze.check_join_algorithm(left, right, resolved, on_slow=on_slow)
-    j = ibis.join(left, right, resolved, lname="{name}_l", rname="{name}_r")
+    _sql_analyze.check_join_algorithm(left, right, pred, on_slow=on_slow)
+    j = ibis.join(left, right, pred, lname="{name}_l", rname="{name}_r")
     j = _ensure_suffixed(left.columns, right.columns, j)
     j = _move_record_id_cols_first(j)
     return j
@@ -343,15 +349,19 @@ def _ensure_suffixed(
 
 def _resolve_predicate(
     left: it.Table, right: it.Table, raw, **kwargs
-) -> bool | it.BooleanColumn | it.Table:
-    if isinstance(raw, (it.Table, it.BooleanColumn, bool)):
+) -> tuple[it.Table, it.Table, bool | it.BooleanColumn] | it.Table:
+    if isinstance(raw, it.Table):
         return raw
-    if isinstance(raw, (Deferred, str)):
-        return _util.get_column(left, raw) == _util.get_column(right, raw)
-    # This case must come after the Deferred case, because Deferred is callable
-    if callable(raw):
+    if isinstance(raw, (it.BooleanColumn, bool)):
+        return left, right, raw
+    # Deferred is callable, so guard against that
+    if callable(raw) and not isinstance(raw, Deferred):
         return _resolve_predicate(left, right, raw(left, right, **kwargs))
-    cols = _util.promote_list(raw)
-    return ibis.and_(
-        *(_util.get_column(left, col) == _util.get_column(right, col) for col in cols)
-    )
+    keys_l = list(_util.bind(left, raw))
+    keys_r = list(_util.bind(right, raw))
+    left = left.mutate(keys_l)
+    right = right.mutate(keys_r)
+    keys_l = [left[val.get_name()] for val in keys_l]
+    keys_r = [right[val.get_name()] for val in keys_r]
+    cond = ibis.and_(*[lkey == rkey for lkey, rkey in zip(keys_l, keys_r)])
+    return left, right, cond

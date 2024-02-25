@@ -5,28 +5,22 @@ we choose pairs of records to compare.
 Without blocking, we would have to compare N*M records, which
 becomes intractable for datasets much larger than a few thousand.
 
-## High-Level
+## Main
 
 ::: mismo.block.block_one
 ::: mismo.block.block_many
 ::: mismo.block.BlockingRule
-
-## Low-level
-
 ::: mismo.block.join
-::: mismo.block.join_on_array
 
 ## Plotting
 
 ::: mismo.block.upset_chart
-
 
 ## Analyze: Cardinality
 Estimate the number of record pairs that would be created from blocking.
 
 ::: mismo.block.key_counts
 ::: mismo.block.estimate_n_pairs
-
 
 ## Analyze: Join Algorithm
 Analyze the actual algorithm that the SQL engine will use when

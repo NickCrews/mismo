@@ -7,6 +7,7 @@ from ibis import _
 from ibis.expr import types as it
 import pytest
 
+import mismo
 from mismo.block import SlowJoinError, SlowJoinWarning, block_one
 from mismo.tests.util import assert_tables_equal
 
@@ -70,12 +71,28 @@ def test_cross_block(table_factory, t1: it.Table, t2: it.Table):
     assert_tables_equal(expected, blocked_ids)
 
 
-def test_empty_block(table_factory, t1: it.Table, t2: it.Table):
-    blocked = block_one(t1, t2, False, on_slow="ignore")
+def test_empty_block(t1: it.Table, t2: it.Table):
+    blocked = block_one(t1, t2, False)
     assert "record_id_l" in blocked.columns
     assert "record_id_r" in blocked.columns
     n = blocked.count().execute()
     assert n == 0
+
+
+def test_block_unnest(table_factory, t1: it.Table, t2: it.Table):
+    # If you do a ibis.join(l, r, _.array.unnest()), that will fail because
+    # you can't use unnest in a join condition.
+    # But we want to support this case, so test our workaround.
+    blocked_table = block_one(t1, t2, _.array.unnest())
+    blocked_ids = blocked_table["record_id_l", "record_id_r"]
+    expected = table_factory({"record_id_l": [0, 1], "record_id_r": [90, 90]})
+    assert_tables_equal(blocked_ids, expected)
+
+
+def test_patents_unnest():
+    t = mismo.datasets.load_patents().select("record_id", classes=_.classes.split("**"))
+    b = block_one(t, t, _.classes.unnest())
+    assert b.count().execute() == 569034
 
 
 @pytest.mark.parametrize(
