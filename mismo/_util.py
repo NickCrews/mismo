@@ -139,7 +139,7 @@ def intify_column(
 
 
 @contextmanager
-def optional_import():
+def optional_import(pip_name: str):
     """
     Raises a more helpful ImportError when an optional dep is missing.
 
@@ -151,7 +151,7 @@ def optional_import():
     except ImportError as e:
         raise ImportError(
             f"Package `{e.name}` is required for this functionality. "
-            "Please install it separately."
+            f"Please install it separately using `python -m pip install {pip_name}`."
         ) from e
 
 

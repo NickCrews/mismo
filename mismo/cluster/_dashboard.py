@@ -31,7 +31,7 @@ def cluster_widget(records: it.Table, links: it.Table) -> ipycytoscape.Cytoscape
         The column `opacity` is used to set the opacity of the edges.
         If not given, it is set to 0.5.
     """
-    with _util.optional_import():
+    with _util.optional_import("ipycytoscape"):
         import ipycytoscape  # type: ignore
 
     links = links[_.record_id_l != _.record_id_r]

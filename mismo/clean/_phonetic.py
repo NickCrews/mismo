@@ -29,7 +29,7 @@ def double_metaphone(s: it.StringValue) -> it.ArrayValue[it.StringValue]:
 
 @ibis.udf.scalar.python(signature=(("string",), "array<string>"))
 def _dm_udf(s):
-    with _util.optional_import():
+    with _util.optional_import("DoubleMetaphone"):
         from doublemetaphone import doublemetaphone
 
     return doublemetaphone(s)

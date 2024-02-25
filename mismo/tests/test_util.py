@@ -70,19 +70,20 @@ def test_sample_table_big_pop_big_sample(table_factory):
 
 
 def test_optional_import():
-    with _util.optional_import():
+    with _util.optional_import("foo"):
         import ibis  # noqa: F401
 
     with pytest.raises(ImportError) as excinfo:
-        with _util.optional_import():
+        with _util.optional_import("foo"):
             import does_not_exist  # noqa: F401 # type: ignore
 
             assert False, "should not get here"
     assert "Package `does_not_exist` is required" in str(excinfo.value)
 
     with pytest.raises(ImportError) as excinfo:
-        with _util.optional_import():
+        with _util.optional_import("foo"):
             from does_not_exist import module  # noqa: F401 # type: ignore
 
             assert False, "should not get here"
     assert "Package `does_not_exist` is required" in str(excinfo.value)
+    assert "foo" in str(excinfo.value)

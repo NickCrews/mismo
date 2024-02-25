@@ -18,7 +18,7 @@ _DATASETS_DIR = Path(__file__).parent / "_data/_datasets"
 
 
 def _wrap_febrl(loader_name: str) -> tuple[it.Table, it.Table]:
-    with _util.optional_import():
+    with _util.optional_import("recordlinkage"):
         from recordlinkage import datasets as rlds
 
     loader = getattr(rlds, loader_name)

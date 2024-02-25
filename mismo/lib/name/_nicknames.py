@@ -92,7 +92,7 @@ def _are_aliases(name1: it.StringValue, name2: it.StringValue) -> it.BooleanValu
 
 @functools.cache
 def _nicknames_table() -> it.Table:
-    with optional_import():
+    with optional_import("nicknames"):
         from nicknames import NickNamer
 
     nn = NickNamer()
