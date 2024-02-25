@@ -8,7 +8,7 @@ import ibis
 from ibis import _
 from ibis.common.deferred import Deferred
 from ibis.expr import types as it
-from ibis.expr.types.relations import bind
+from ibis.expr.types.relations import bind as bind
 
 
 def get_column(t: it.Table, ref: Any) -> it.Column:
@@ -19,7 +19,7 @@ def get_column(t: it.Table, ref: Any) -> it.Column:
     """
     cols = list(bind(t, ref))
     if len(cols) != 1:
-        return ibis.array(cols)
+        return ibis.struct({c.get_name(): c for c in cols})
     return cols[0]
 
 
