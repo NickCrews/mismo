@@ -11,6 +11,8 @@ from mismo import _util
     "x,expected",
     [
         pytest.param("a", "a", id="str"),
+        # TODO: could we submit a patch to ibis to make this look cleaner?
+        pytest.param(_.a[:2], "Item(_.a, slice(None, 2, None))", id="str"),
         pytest.param(("a", "b"), "(a, b)", id="str_tuple"),
         pytest.param(_.a, "_.a", id="deferred"),
         pytest.param((_.a, _.b), "(_.a, _.b)", id="deferred_tuple"),
