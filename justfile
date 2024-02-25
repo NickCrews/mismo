@@ -22,6 +22,19 @@ lint:
 test *FILES:
     pytest {{FILES}}
 
+# include --dev-addr localhost:8001 to avoid conflicts with other mkdocs instances
+# serve docs for live editing
+docs:
+    PYDEVD_DISABLE_FILE_VALIDATION=1 mkdocs serve --dev-addr localhost:8001
+
+# build docs to the site/ directory
+docs-build:
+    PYDEVD_DISABLE_FILE_VALIDATION=1 mkdocs build
+
+# publish docs
+docs-publish:
+    mkdocs gh-deploy --force
+
 # run the timing benchmark suite
 bench:
     pytest --benchmark-only --benchmark-enable --benchmark-autosave
@@ -29,19 +42,6 @@ bench:
 # run timing benchmarks and compare with a previous run
 benchcmp number *args:
     just bench --benchmark-compare {{ number }} {{ args }}
-
-# build docs to the site/ directory
-docs-build:
-    PYDEVD_DISABLE_FILE_VALIDATION=1 mkdocs build
-
-# include --dev-addr localhost:8001 to avoid conflicts with other mkdocs instances
-# serve docs for live editing
-docs-serve:
-    PYDEVD_DISABLE_FILE_VALIDATION=1 mkdocs serve --dev-addr localhost:8001
-
-# publish docs
-docs-publish:
-    mkdocs gh-deploy --force
 
 # update dependencies
 deps-update:
