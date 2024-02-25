@@ -45,10 +45,10 @@ def upset_chart(data: Any) -> alt.Chart:
     set_y = alt.Y(
         "set:O",
         sort=sets,
-        axis=alt.Axis(title=""),
+        axis=alt.Axis(title="Blocking Rule", labelLimit=500),
     )
-    p_matrix = _matrix_plot(base, sets, intersection_x, set_y)
     p_intersection = _intersection_plot(base, sets, intersection_x)
+    p_matrix = _matrix_plot(base, sets, intersection_x, set_y)
     p_sets = _set_plot(base, set_y)
     return alt.vconcat(
         p_intersection,
@@ -146,30 +146,6 @@ def _pivot_longer(df: pd.DataFrame) -> pd.DataFrame:
     return longer
 
 
-def _matrix_plot(base: alt.Chart, sets: Iterable[str], x, y) -> alt.Chart:
-    sets = list(sets)
-    matrix_circle_bg = base.mark_circle(size=100, color="lightgray", opacity=1).encode(
-        x=x, y=y
-    )
-    matrix_circle = matrix_circle_bg.mark_circle(
-        size=150, color="black", opacity=1
-    ).transform_filter(alt.datum.is_intersect)
-    matrix_connections = matrix_circle.mark_bar(size=4, color="black").encode(
-        y=alt.Y(
-            "set:O",
-            aggregate={"argmin": "set_order"},
-            scale=alt.Scale(domain=sets),
-        ),
-        y2=alt.Y2("set:O", aggregate={"argmax": "set_order"}),
-    )
-    layered = alt.layer(
-        matrix_circle_bg,
-        matrix_connections,
-        matrix_circle,
-    )
-    return layered
-
-
 def _intersection_plot(base: alt.Chart, sets: Iterable[str], x) -> alt.Chart:
     sets = list(sets)
     intersection_base = base.transform_filter(alt.datum.set == sets[0]).encode(
@@ -186,10 +162,25 @@ def _intersection_plot(base: alt.Chart, sets: Iterable[str], x) -> alt.Chart:
     return layered
 
 
+def _matrix_plot(base: alt.Chart, sets: Iterable[str], x, y) -> alt.Chart:
+    sets = list(sets)
+    matrix_circle_bg = base.mark_circle(size=100, color="lightgray", opacity=1).encode(
+        x=x,
+        y=y,
+        tooltip=["set:N"],
+    )
+    matrix_circle = matrix_circle_bg.mark_circle(
+        size=150, color="black", opacity=1
+    ).transform_filter(alt.datum.is_intersect)
+    layered = alt.layer(matrix_circle_bg, matrix_circle)
+    return layered
+
+
 def _set_plot(base: alt.Chart, y) -> alt.Chart:
     set_base = base.transform_filter(alt.datum.is_intersect).encode(
         x=alt.X("sum(intersection_size):Q", title="Number of Pairs"),
         y=y.axis(None),
+        tooltip=["set:N"],
     )
     set_bars = set_base.mark_bar().encode(color=alt.Color("set:N", legend=None))
     set_text = set_base.mark_text(dx=5, align="left").encode(
