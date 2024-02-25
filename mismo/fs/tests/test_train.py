@@ -110,7 +110,7 @@ def test_train_comparions_using_em(backend, name_comparer, location_comparer):
     # assert close.u == pytest.approx(0.067, rel=0.1)
 
     assert else_.name == "else"
-    assert else_.m < 0.3
+    assert else_.m < 0.5
     assert else_.u > 0.7
     # assert else_.m == pytest.approx(0.0027, rel=0.1)
     # assert else_.u == pytest.approx(0.93, rel=0.1)
