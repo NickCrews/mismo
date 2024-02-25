@@ -231,7 +231,7 @@ def block_many(
     │           … │           … │          … │          … │ …                            │ …                            │
     └─────────────┴─────────────┴────────────┴────────────┴──────────────────────────────┴──────────────────────────────┘
     """  # noqa: E501
-    conds = _util.promote_list(conditions)
+    conds = tuple(conditions)
     if not conds:
         raise ValueError("No conditions provided")
 
@@ -239,7 +239,7 @@ def block_many(
         j = join(left, right, rule, on_slow=on_slow, task=task, **kwargs)
         ids = _distinct_record_ids(j)
         if labels:
-            ids = ids.mutate(blocking_rule=rule)
+            ids = ids.mutate(blocking_rule=_util.get_name(rule))
         return ids
 
     sub_joined = [blk(rule) for rule in conds]

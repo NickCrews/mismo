@@ -7,6 +7,8 @@ to be compared, hopefully to a manageable level.
 """
 from __future__ import annotations
 
+from mismo.block._analyze import estimate_n_pairs as estimate_n_pairs
+from mismo.block._analyze import key_counts as key_counts
 from mismo.block._array import join_on_array as join_on_array
 from mismo.block._block import block_many as block_many
 from mismo.block._block import block_one as block_one

@@ -15,10 +15,11 @@ def get_column(t: it.Table, ref: Any) -> it.Column:
     """Get a column from a table using some sort of reference to the column.
 
     ref can be a string, a Deferred, a callable, an ibis selector, etc.
+    If ref returns multiple columns, they are joined into a single ArrayColumn
     """
     cols = list(bind(t, ref))
     if len(cols) != 1:
-        raise ValueError(f"Expected one column, got {len(cols)} for {ref}", ref)
+        return ibis.array(cols)
     return cols[0]
 
 
