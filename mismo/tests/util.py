@@ -6,8 +6,10 @@ import pandas._testing as tm
 
 def assert_tables_equal(left: it.Table, right: it.Table) -> None:
     assert left.schema() == right.schema()
-    left_df = left.order_by(left.columns).to_pandas()
-    right_df = right.order_by(left.columns).to_pandas()
+    # need to sort after converting to pandas to avoid
+    # https://github.com/ibis-project/ibis/issues/8442
+    left_df = left.to_pandas().sort_values(left.columns, ignore_index=True)
+    right_df = right.to_pandas().sort_values(right.columns, ignore_index=True)
     try:
         tm.assert_frame_equal(left_df, right_df)
     except AssertionError:
