@@ -42,6 +42,7 @@ test = [
   "pytest",
   "pytest-benchmark>=3.4.1",
   "nicknames",
+  "DoubleMetaphone",
   "pytest-cov",
   "recordlinkage",
 ]
