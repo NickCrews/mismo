@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Iterable, Iterator, overload
 
 import altair as alt
-from ibis.expr.types import FloatingValue, IntegerValue, StringValue, Table
+from ibis.expr import types as it
 
 from .._typing import Self
 from ._util import odds_to_log_odds, odds_to_prob
@@ -174,12 +174,12 @@ class ComparisonWeights:
         ...
 
     @overload
-    def odds(self, labels: StringValue | IntegerValue) -> FloatingValue:
+    def odds(self, labels: it.StringValue | it.IntegerValue) -> it.FloatingValue:
         ...
 
     def odds(
-        self, labels: str | int | StringValue | IntegerValue
-    ) -> float | FloatingValue:
+        self, labels: str | int | it.StringValue | it.IntegerValue
+    ) -> float | it.FloatingValue:
         """Calculate the odds for each record pair.
 
         If `labels` is a string or integer, then we calculate the odds for that
@@ -193,9 +193,9 @@ class ComparisonWeights:
         """
         if isinstance(labels, (int, str)):
             return self[labels].odds
-        if isinstance(labels, StringValue):
+        if isinstance(labels, it.StringValue):
             cases = [(lw.name, lw.odds) for lw in self]
-        elif isinstance(labels, IntegerValue):
+        elif isinstance(labels, it.IntegerValue):
             cases = [(i, lw.odds) for i, lw in enumerate(self)]  # type: ignore # noqa: E501
         else:
             raise TypeError(
@@ -208,12 +208,12 @@ class ComparisonWeights:
         ...
 
     @overload
-    def match_probability(self, labels: StringValue | IntegerValue) -> FloatingValue:
+    def match_probability(self, labels: it.StringValue | it.IntegerValue) -> it.FloatingValue:
         ...
 
     def match_probability(
-        self, labels: str | int | StringValue | IntegerValue
-    ) -> float | FloatingValue:
+        self, labels: str | int | it.StringValue | it.IntegerValue
+    ) -> float | it.FloatingValue:
         """Calculate the match probability for each record pair."""
         return odds_to_prob(self.odds(labels))
 
@@ -222,12 +222,12 @@ class ComparisonWeights:
         ...
 
     @overload
-    def log_odds(self, labels: StringValue | IntegerValue) -> FloatingValue:
+    def log_odds(self, labels: it.StringValue | it.IntegerValue) -> it.FloatingValue:
         ...
 
     def log_odds(
-        self, labels: str | int | StringValue | IntegerValue
-    ) -> float | FloatingValue:
+        self, labels: str | int | it.StringValue | it.IntegerValue
+    ) -> float | it.FloatingValue:
         """Calculate the log odds for each record pair."""
         return odds_to_log_odds(self.odds(labels))
 
@@ -263,7 +263,7 @@ class Weights:
         """The number of `ComparisonWeights`."""
         return len(self._lookup)
 
-    def score(self, compared: Table) -> Table:
+    def score(self, compared: it.Table) -> it.Table:
         """Score each already-compared record pair.
 
         For each Comparison, we add a column, `{comparison.name}_odds`.
