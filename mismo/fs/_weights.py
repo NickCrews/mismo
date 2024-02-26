@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Iterable, Iterator, overload
 
 import altair as alt
-import ibis
 from ibis.expr.types import FloatingValue, IntegerValue, StringValue, Table
 
 from .._typing import Self
@@ -193,18 +192,15 @@ class ComparisonWeights:
         except that we return an ibis FloatingValue instead of a python float.
         """
         if isinstance(labels, (int, str)):
-            # Check that this is a valid label
-            self[labels]
-            return self._odds(ibis.literal(labels)).execute()
-        else:
-            # No check is possible when using ibis :(
-            return self._odds(labels)
-
-    def _odds(self, labels: IntegerValue | StringValue) -> FloatingValue:
+            return self[labels].odds
         if isinstance(labels, StringValue):
             cases = [(lw.name, lw.odds) for lw in self]
-        else:
+        elif isinstance(labels, IntegerValue):
             cases = [(i, lw.odds) for i, lw in enumerate(self)]  # type: ignore # noqa: E501
+        else:
+            raise TypeError(
+                f"Expected int, str, StringValue, or IntegerValue, got {type(labels)}"
+            )
         return labels.cases(cases)
 
     @overload
