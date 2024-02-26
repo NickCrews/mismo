@@ -20,7 +20,6 @@ becomes intractable for datasets much larger than a few thousand.
 Estimate the number of record pairs that would be created from blocking.
 
 ::: mismo.block.key_counts
-::: mismo.block.estimate_n_pairs
 
 ## Analyze: Join Algorithm
 Analyze the actual algorithm that the SQL engine will use when

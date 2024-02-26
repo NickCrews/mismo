@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+from typing import Any
+
 import ibis
 from ibis import _
 from ibis.expr import types as it
 
 
-def key_counts(t: it.Table, key) -> it.Table:
-    """Count the number of occurrences of each join key in a table.
+def key_counts(left: it.Table, right_or_key: it.Table | Any, key=None, /) -> it.Table:
+    """Count the number of occurrences of each join key in a table or pair of tables.
+
+    Used as `key_counts(t, key)` or `key_counts(t1, t2, key)`.
 
     This is useful for analyzing the skew of the join keys. For example,
     if you are joining on (last_name, city), there might be only 4 values
@@ -23,8 +27,10 @@ def key_counts(t: it.Table, key) -> it.Table:
 
     Parameters
     ----------
-    t
-        The table to count the join keys in
+    left
+        The left table to count the join keys in
+    right_or_key
+        The right table to count the join keys in, or the join key(s) to count.
     key
         The join key(s) to count. This can be a string, a Deferred, or anything
         that can reference a column in a Table. Or an iterable of these.
@@ -63,78 +69,44 @@ def key_counts(t: it.Table, key) -> it.Table:
     │ a      │     1 │     1 │
     │ b      │     2 │     1 │
     └────────┴───────┴───────┘
-    """
-    t = t.select(key)
-    t = t.dropna(how="any")
-    gb = t.group_by(t.columns).agg(n=_.count()).order_by(_.n.desc())
-    return gb
 
+    If we joined t with itself using this blocker, these are the sizes of the
+    blocks we would get:
 
-def estimate_n_pairs(left: it.Table, right: it.Table, key) -> it.IntegerScalar:
-    """Estimate the number of pairs that would be created by blocking.
-
-    This uses `key_counts` to count the number of occurrences of each join key
-    in each table, joins them to estimate the number of pairs in each block,
-    then sums them up.
-
-    This will be a slight overestimate, because a record pair might be in multiple
-    blocks. That pair will be counted multiple times by this function,
-    even though if you actually blocked on that key, the results would be
-    de-duplicated.
-
-    Parameters
-    ----------
-    left
-        The left table
-    right
-        The right table
-    key
-        The join key(s) to count. This can be a string, a Deferred, or anything
-        that can reference a column in a Table. Or an iterable of these.
-
-    Returns
-    -------
-    The estimated number of pairs that would be created by blocking.
-
-    Examples
-    --------
-    >>> import ibis
-    >>> ibis.options.interactive = True
-    >>> from ibis import _
-    >>> import mismo
-    >>> records = [
-    ...     ("a", 1),
-    ...     ("b", 1),
-    ...     ("b", 1),
-    ...     ("c", 3),
-    ...     ("b", 2),
-    ...     ("c", 3),
-    ...     (None, 4),
-    ...     ("c", 3),
-    ... ]
-    >>> letters, nums = zip(*records)
-    >>> t = ibis.memtable({"letter": letters, "num": nums})
-    >>> mismo.block.key_counts(t, ("letter", _.num))
+    >>> counts = mismo.block.key_counts(t, t, ("letter", _.num))
+    >>> counts
     ┏━━━━━━━━┳━━━━━━━┳━━━━━━━┓
     ┃ letter ┃ num   ┃ n     ┃
     ┡━━━━━━━━╇━━━━━━━╇━━━━━━━┩
     │ string │ int64 │ int64 │
     ├────────┼───────┼───────┤
-    │ c      │     3 │     3 │
-    │ b      │     1 │     2 │
+    │ c      │     3 │     9 │
+    │ b      │     1 │     4 │
     │ a      │     1 │     1 │
     │ b      │     2 │     1 │
     └────────┴───────┴───────┘
 
-    If we joined this table with itself on this key, we would get
-    9 + 4 + 1 + 1 = 15 pairs:
+    The total number of pairs that would be generated is easy to find:
 
-    >>> mismo.block.estimate_n_pairs(t, t, ("letter", _.num))
+    >>> counts.n.sum()
     15
-
     """
-    kcl = key_counts(left, key)
-    kcr = key_counts(right, key)
-    k = [c for c in kcl.columns if c != "n"]
-    j = ibis.join(kcl, kcr, k)
-    return (j.n * j.n_right).sum()
+    if key is None:
+        key = right_or_key
+        return _key_counts(left, key)
+    else:
+        kcl = _key_counts(left, key)
+        kcr = _key_counts(right_or_key, key)
+        k = [c for c in kcl.columns if c != "n"]
+        j = ibis.join(kcl, kcr, k)
+        j = j.mutate(n=_.n * _.n_right).drop("n_right")
+        j = j.order_by(_.n.desc())
+        return j
+
+
+def _key_counts(t: it.Table, key) -> it.Table:
+    if key is None:
+        raise TypeError("key cannot be None")
+    t = t.select(key)
+    t = t.dropna(how="any")
+    return t.group_by(t.columns).agg(n=_.count()).order_by(_.n.desc())
