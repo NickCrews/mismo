@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Callable, Iterable, Iterator, NamedTuple, overload
 
-import ibis
 from ibis.common.deferred import Deferred
 from ibis.expr import types as it
 
@@ -45,6 +44,10 @@ class AgreementLevel(NamedTuple):
     - `lambda t: (t.cost_l - t.cost_r).abs() / t.cost_l < 0.1`
     - `True`
     """
+
+    def is_match(self, pairs: it.Table) -> it.BooleanColumn:
+        """Return a boolean column for if the record pair matches this level."""
+        return _util.get_column(pairs, self.condition)
 
 
 _ELSE_LEVEL = AgreementLevel("else", True)
@@ -128,14 +131,11 @@ class LevelComparer:
         labels : StringColumn
             The labels for each record pair.
         """
-        labels = ibis.case()
         # Skip the ELSE level, do that ourselves. This is to avoid if someone
         # mis-specifies the ELSE level condition so that it doesn't
         # match everything.
-        for level in self[:-1]:
-            labels = labels.when(_util.get_column(pairs, level.condition), level.name)
-        labels = labels.else_("else")
-        return labels.end().name(self.name)
+        cases = [(level.is_match(pairs), level.name) for level in self[:-1]]
+        return _util.cases(cases, "else").name(self.name)
 
     def __repr__(self) -> str:
         levels_str = ", ".join(repr(level) for level in self)

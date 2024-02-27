@@ -11,6 +11,17 @@ from ibis.expr import types as it
 from ibis.expr.types.relations import bind as bind
 
 
+def cases(
+    case_result_pairs: Iterable[tuple[it.BooleanValue, it.Value]],
+    default: it.Value | None = None,
+) -> it.Value:
+    """A more concise way to write a case statement."""
+    builder = ibis.case()
+    for case, result in case_result_pairs:
+        builder = builder.when(case, result)
+    return builder.else_(default).end()
+
+
 def get_column(t: it.Table, ref: Any) -> it.Column:
     """Get a column from a table using some sort of reference to the column.
 
