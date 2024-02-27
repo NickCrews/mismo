@@ -6,6 +6,9 @@ import ibis
 from ibis.expr import types as it
 import pytest
 
+# we want to have pytest assert introspection in the helpers
+pytest.register_assert_rewrite("mismo.tests.util")
+
 
 @pytest.fixture
 def backend() -> ibis.BaseBackend:

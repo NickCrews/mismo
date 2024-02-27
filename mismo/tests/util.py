@@ -5,7 +5,7 @@ import pandas._testing as tm
 
 
 def assert_tables_equal(left: it.Table, right: it.Table) -> None:
-    assert left.schema() == right.schema()
+    assert dict(left.schema()) == dict(right.schema())
     # need to sort after converting to pandas to avoid
     # https://github.com/ibis-project/ibis/issues/8442
     left_df = left.to_pandas().sort_values(left.columns, ignore_index=True)
