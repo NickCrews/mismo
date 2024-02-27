@@ -208,7 +208,9 @@ class ComparisonWeights:
         ...
 
     @overload
-    def match_probability(self, labels: it.StringValue | it.IntegerValue) -> it.FloatingValue:
+    def match_probability(
+        self, labels: it.StringValue | it.IntegerValue
+    ) -> it.FloatingValue:
         ...
 
     def match_probability(
