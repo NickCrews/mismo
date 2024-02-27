@@ -102,7 +102,7 @@ def _compared_chart(
         pct_pairs=_.n_pairs / _.n_pairs.sum(),
     )
     if weights is not None:
-        vector_counts = weights.score(vector_counts)
+        vector_counts = weights.score_compared(vector_counts)
         vector_counts = vector_counts.mutate(odds=_.odds.clip(upper=10**10))
         vector_counts = vector_counts.mutate(log_odds=odds_to_log_odds(_.odds))
         hist_color = alt.Color(
