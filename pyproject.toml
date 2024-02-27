@@ -39,6 +39,7 @@ Source = "https://github.com/NickCrews/mismo"
 [tool.pdm.dev-dependencies]
 lint = ["ruff", "mypy", "pre-commit"]
 test = [
+  "httpx",
   "pytest",
   "pytest-benchmark>=3.4.1",
   "nicknames",
