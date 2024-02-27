@@ -8,6 +8,9 @@ from typing import Iterable, Iterator, overload
 import altair as alt
 from ibis.expr import types as it
 
+from mismo import _util
+from mismo.compare import LevelComparer
+
 from .._typing import Self
 from ._util import odds_to_log_odds, odds_to_prob
 
@@ -123,7 +126,7 @@ class ComparisonWeights:
     @property
     def name(self) -> str:
         """
-        The name of the Comparison that these weights are for, eg "name" or "address".
+        The name of the LevelComparer these weights are for, eg 'name" or "address".
         """
         return self._name
 
@@ -241,6 +244,18 @@ class ComparisonWeights:
         return plot_weights(self)
 
 
+def compare_one(
+    t: it.Table, level_comparer: LevelComparer, comp_weights: ComparisonWeights
+) -> tuple[it.StringValue, it.FloatingValue]:
+    conditions = [level.is_match(t) for level in level_comparer]
+    labels = [level.name for level in level_comparer]
+    odds = [level_weights.odds for level_weights in comp_weights]
+    return (
+        _util.cases(zip(conditions, labels), "else").name(comp_weights.name),
+        _util.cases(zip(conditions, odds), 1).name(f"{comp_weights.name}_odds"),
+    )
+
+
 class Weights:
     """Weights for the Fellegi-Sunter model.
 
@@ -265,34 +280,60 @@ class Weights:
         """The number of `ComparisonWeights`."""
         return len(self._lookup)
 
-    def score(self, compared: it.Table) -> it.Table:
-        """Score each already-compared record pair.
+    def score_compared(self, compared: it.Table) -> it.Table:
+        """Score already-compared record pairs.
 
-        For each Comparison, we add a column, `{comparison.name}_odds`.
-        This is a number that describes how this comparison affects the likelihood
-        of a match. For example, an odds of 10 means that this comparison
+        This assumes that there is already a column one for each LevelComparer
+        that contains the labels for each record pair. For example, if we have
+        a LevelComparer called "address", then we should have a column called
+        "address" that contains labels like "exact", "one-letter-off", "same-city", etc.
+
+        For each LevelComparer, we add a column, `{comparer.name}_odds`.
+        This is a number that describes how this comparer affects the likelihood
+        of a match. For example, an odds of 10 means that this comparer
         increased the likelihood of a match by 10x as compared to if we hadn't
-        looked at this comparison.
+        looked at this comparer.
         For example, the column might be called "name_odds" and have values like
         10, 0.1, 1.
 
-        In addition to these per-Comparison columns, we also add a column called "odds"
-        which is the overall odds for each record pair. We calculate this by
-        starting with the odds of 1 and then multiplying by each Comparison's odds
-        to get the overall odds.
+        In addition to these per-LevelComparer columns, we also add a column
+        called "odds" which is the overall odds for each record pair.
+        We calculate this by starting with the odds of 1 and then multiplying
+        by each LevelComparer's odds to get the overall odds.
         """
-        total_odds = 1
-        m = {}
-        naming = {}
+        results = []
         for comparison_weights in self:
             name = comparison_weights.name
             labels = compared[name]
             odds = comparison_weights.odds(labels)
+            results.append((name, labels, odds))
+        return self._score(compared, results)
+
+    def compare_and_score(
+        self, t: it.Table, level_comparers: Iterable[LevelComparer]
+    ) -> it.Table:
+        """Compare and score record pairs.
+
+        Use the given `level_comparers` to label the record pairs, and then
+        score the results using `self.score_compared`.
+        """
+        results = []
+        for cmp, weights in zip(level_comparers, self):
+            label, odds = compare_one(t, cmp, weights)
+            results.append((cmp.name, label, odds))
+        return self._score(t, results)
+
+    def _score(self, t: it.Table, compare_results) -> it.Table:
+        total_odds = 1
+        m = {}
+        naming = {}
+        for name, label, odds in compare_results:
+            m[name] = label
             m[f"{name}_odds"] = odds
-            naming[f"{name}_odds"] = name
             total_odds *= odds
+            naming[f"{name}_odds"] = name
         m["odds"] = total_odds
-        result = compared.mutate(**m)
+        result = t.mutate(**m)
         # Don't do any of this relocation in terms of record_id, etc
         # because the passed in table doesn't need ot have these.
         # It only needs to have the labels for each comparison.
@@ -302,7 +343,7 @@ class Weights:
         return result
 
     def plot(self) -> alt.Chart:
-        """Plot the weights for all of the Comparisons."""
+        """Plot the weights for all of the LevelComparers."""
         from ._plot import plot_weights
 
         return plot_weights(self)

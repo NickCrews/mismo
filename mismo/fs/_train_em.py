@@ -32,7 +32,7 @@ def train_using_em(
     weights = _initial_weights(comparers, compared)
     for i in range(5):
         logger.info("EM iteration {i}, starting weights: {weights}", i, weights)
-        scored = weights.score(compared)
+        scored = weights.score_compared(compared)
         is_match = _.odds >= 10
         matches = scored.filter(is_match)
         nonmatches = scored.filter(~is_match)
