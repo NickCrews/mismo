@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import csv
 import io
+import logging
 from typing import TYPE_CHECKING, Iterable
 
 import ibis
@@ -13,12 +15,21 @@ if TYPE_CHECKING:
     import httpx
 
 # expose this here so we can monkeypatch it in tests
-# The API supports 10k addresses per request
-_CHUNK_SIZE = 10_000
+# The API supports 10k addresses per request, but
+# we'll use a smaller number to avoid timeouts, and for smaller
+# total sizes well get better parallelism (eg 10k rows will go
+# in 2 small chunks instead of 1)
+_CHUNK_SIZE = 5_000
+
+logger = logging.getLogger(__name__)
 
 
 def us_census_geocode(
-    t: it.Table, *, benchmark: str | None = None, vintage: str | None = None
+    t: it.Table,
+    *,
+    benchmark: str | None = None,
+    vintage: str | None = None,
+    chunk_size: int | None = None,
 ) -> it.Table:
     """Geocode US physical addresses using the US Census Bureau's geocoding service.
 
@@ -40,6 +51,8 @@ def us_census_geocode(
         The geocoding benchmark to use. Default is "Public_AR_Current".
     vintage:
         The geocoding vintage to use. Default is "Current_Current".
+    chunk_size:
+        The number of addresses to geocode in each request. Default is 5000.
 
     Returns
     -------
@@ -58,15 +71,19 @@ def us_census_geocode(
         Use the id column to join the results back to the input table.
 
     """
+    if chunk_size is None:
+        chunk_size = _CHUNK_SIZE
     id_type = t.id.type()
     t = _prep_address(t)
-    sub_tables = chunk_table(t, max_size=_CHUNK_SIZE)
+    sub_tables = chunk_table(t, max_size=chunk_size)
     byte_chunks = (_table_to_csv_bytes(sub) for sub in sub_tables)
     client = _make_client()
+    sem = asyncio.Semaphore(50)
     tasks = [
-        _make_request(client, b, benchmark=benchmark, vintage=vintage)
-        for b in byte_chunks
+        _make_request(client, b, sem, i, benchmark=benchmark, vintage=vintage)
+        for i, b in enumerate(byte_chunks)
     ]
+    logger.debug(f"Geocoding {len(tasks)} chunks of addresses of size {_CHUNK_SIZE}")
     text_responses = _aio.as_completed(tasks)
     tables = (_text_to_table(resp_text) for resp_text in text_responses)
     t = ibis.union(*tables)
@@ -102,14 +119,16 @@ def _table_to_csv_bytes(t: it.Table) -> bytes:
 def _make_client() -> httpx.AsyncClient:
     with _util.optional_import("httpx"):
         import httpx
-    timeout = httpx.Timeout(100.0, pool=20.0)
+    timeout = httpx.Timeout(5, read=100, pool=10000)
     limits = httpx.Limits(max_keepalive_connections=None, max_connections=1000)
-    return httpx.AsyncClient(timeout=timeout, limits=limits, follow_redirects=True)
+    return httpx.AsyncClient(timeout=timeout, limits=limits)
 
 
 async def _make_request(
     client: httpx.AsyncClient,
     b: bytes,
+    sem: asyncio.Semaphore,
+    chunk_id: int,
     *,
     benchmark: str | None = None,
     vintage: str | None = None,
@@ -120,12 +139,32 @@ async def _make_request(
         "vintage": vintage or "Current_Current",
     }
     files = {"addressFile": ("addresses.csv", b)}
-    try:
-        resp = await client.post(URL, data=data, files=files)
-        resp.raise_for_status()
-        return resp.text
-    except Exception as e:
-        raise RuntimeError(f"Failed to geocode addresses: {e!r}") from e
+
+    async def f():
+        async with sem:
+            logger.debug(f"Geocoding chunk {chunk_id}")
+            resp = await client.post(URL, data=data, files=files)
+            resp.raise_for_status()
+            logger.debug(f"Geocoded chunk {chunk_id}")
+            return resp.text
+
+    return await _with_retries(f, chunk_id=chunk_id, max_retries=3)
+
+
+async def _with_retries(f, *, chunk_id, max_retries: int):
+    for i in range(max_retries):
+        try:
+            return await f()
+        except Exception as e:
+            logger.info(
+                f"Retrying chunk {chunk_id} {i + 1}/{max_retries} after error: {e!r}"
+            )
+            if i == max_retries - 1:
+                raise RuntimeError(f"Failed to geocode chunk {chunk_id}: {e!r}") from e
+            else:
+                # exponential backoff
+                # 0.5, 1, 2, 4, 8
+                await asyncio.sleep(0.5 * 2**i)
 
 
 def _text_to_table(text: str) -> it.Table:
