@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from ibis.expr import types as it
-import pandas._testing as tm
 
 
 def assert_tables_equal(
@@ -17,9 +16,7 @@ def assert_tables_equal(
         order_by = left.columns
     left_df = left.to_pandas().sort_values(order_by, ignore_index=True)
     right_df = right.to_pandas().sort_values(order_by, ignore_index=True)
-    try:
-        tm.assert_frame_equal(left_df, right_df)
-    except AssertionError:
-        print(left_df)
-        print(right_df)
-        raise
+    left_records = left_df.to_dict(orient="records")
+    right_records = right_df.to_dict(orient="records")
+    for i, (le, ri) in enumerate(zip(left_records, right_records)):
+        assert le == ri, f"Row {i} does not match"
