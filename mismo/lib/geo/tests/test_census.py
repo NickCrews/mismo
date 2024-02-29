@@ -56,6 +56,16 @@ def test_us_census_geocode(table_factory, monkeypatch):
         "latitude": 47.659183,
         "longitude": -122.333537,
     }
+    CASKI = {
+        "is_match": True,
+        "match_type": "non_exact",
+        "street": "7258 CASKI CT",
+        "city": "WASILLA",
+        "state": "AK",
+        "zipcode": "99654",
+        "latitude": 61.5735,
+        "longitude": -149.4975,
+    }
     # not using pytest params because we want to make only one request
     # so the test is faster
     pairs = [
@@ -131,6 +141,53 @@ def test_us_census_geocode(table_factory, monkeypatch):
                 "city": "GIRDWOOD",  # no state or zip
             },
             GIRDWOOD,
+        ),
+        # The lesson in the cases below is that if you aren't getting matches,
+        # try REMOVING some info, because that info might be wrong.
+        (
+            {
+                "street": "7258 S CASKI CIR",  # Actually is 7258 CASKI CT
+                "city": "WASILLA",
+                "state": "AK",
+                "zipcode": "99623",  # wrong zip
+            },
+            {"is_match": False},
+        ),
+        (
+            {
+                "street": "7258 S CASKI",  # Without the street type it works!
+                "city": "WASILLA",
+                "state": "AK",
+                "zipcode": "99623",  # wrong zip
+            },
+            CASKI,
+        ),
+        (
+            {
+                "street": "7258 CASKI CIR",  # Without the directional it works!
+                "city": "WASILLA",
+                "state": "AK",
+                "zipcode": "99623",  # wrong zip
+            },
+            CASKI,
+        ),
+        (
+            {
+                "street": "7258 S CASKI CIR",
+                "city": "WASILLA",
+                "state": "AK",
+                "zipcode": "99654",  # with correct zip it works!
+            },
+            CASKI,
+        ),
+        (
+            {
+                "street": "7258 S CASKI CIR",
+                "city": "WASILLA",
+                "state": "AK",
+                "zipcode": None,  # without the wrong zip it works!
+            },
+            CASKI,
         ),
     ]
     ins, outs = zip(*pairs)
