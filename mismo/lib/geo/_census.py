@@ -44,6 +44,7 @@ logger = logging.getLogger(__name__)
 
 def us_census_geocode(
     t: it.Table,
+    format: str = "census_{name}",
     *,
     benchmark: str | None = None,
     vintage: str | None = None,
@@ -57,17 +58,22 @@ def us_census_geocode(
     "APT 123", "UNIT B", etc are not included in the results, so you will need
     to extract those before geocoding.
 
-    This took about 7 minutes to geocode 1M addresses in my tests.
+    Before geocoding, this function normalizes the input addresses and deduplicates
+    them, so if your input table has 1M rows, but only 100k unique addresses,
+    it will only send those 100k addresses to the API.
+
+    This took about 7 minutes to geocode 1M unique addresses in my tests.
 
     Parameters
     ----------
     t:
         A table of addresses to geocode. Must have the schema:
-        - id: string or int, anything unique
         - street: string, the street address.
         - city: string, the city name.
         - state: string, the state name.
         - zipcode: string, the ZIP code.
+    format:
+        The format to use for the output column names. See the Returns section.
     benchmark:
         The geocoding benchmark to use. Default is "Public_AR_Current".
     vintage:
@@ -83,26 +89,78 @@ def us_census_geocode(
     Returns
     -------
     geocoded:
-        A table with the following schema:
-        - id: same as input
-        - is_match: bool, whether the address was successfully matched
+        The input table, with the following additional columns:
+        - is_match: bool, whether the address was successfully matched.
+          If False, all the other columns will be NULL.
         - match_type: string, the type of match. eg "exact", "non_exact"
-        - street: string, the normalized street address (if matched)
-        - city: string, the normalized city name (if matched)
-        - state: string, the normalized 2 letter state code (if matched)
-        - zipcode: string, the 5 digit ZIP code (if matched)
+        - street: string, the normalized street address
+        - city: string, the normalized city name
+        - state: string, the normalized 2 letter state code
+        - zipcode: string, the 5 digit ZIP code
         - latitude: float64, the latitude of the matched address
         - longitude: float64, the longitude of the matched address
+        Each of these columns is named according to the `format` parameter.
+        For example, if `format` is "census_{name}", the columns will be named
+        "census_is_match", "census_match_type", "census_street", etc.
         The order of the results is not guaranteed to match the input order.
-        Use the id column to join the results back to the input table.
 
     """
     if chunk_size is None:
         chunk_size = _CHUNK_SIZE
+    if chunk_size > 10_000:
+        raise ValueError("chunk_size must be <= 10_000")
     if n_concurrent is None:
         n_concurrent = _N_CONCURRENT
-    id_type = t.id.type()
-    t = _prep_address(t)
+    t = t.mutate(__row_number=ibis.row_number())
+    normed = _normed_addresses(t)
+    deduped, restore = _dedupe(normed)
+    gc = _geocode(
+        deduped,
+        benchmark=benchmark,
+        vintage=vintage,
+        chunk_size=chunk_size,
+        n_concurrent=n_concurrent,
+    )
+    unduped = restore(gc)
+    unduped = unduped.rename(
+        {
+            format.format(name=col): col
+            for col in unduped.columns
+            if col != "__row_number"
+        }
+    )
+    re_joined = t.inner_join(unduped, "__row_number").drop("__row_number")
+    return re_joined
+
+
+def _dedupe(t: it.Table) -> tuple[it.Table, callable]:
+    keys = ["street", "city", "state", "zipcode"]
+    api_id = ibis.dense_rank().over(ibis.window(order_by=keys))
+    # same as pandas.DataFrame.groupby(keys).ngroup()
+    with_group_id = t.mutate(api_id=api_id)
+    deduped = with_group_id.select(
+        "api_id", "street", "city", "state", "zipcode"
+    ).distinct()
+    # need to cache this, otherwise if you look at deduped[:100], deduped[100:200],
+    # etc, it will recompute deduped each time, and since the order is not guaranteed,
+    # you might get api_id 1 both times!
+    deduped = deduped.cache()
+    restore_map = with_group_id.select("__row_number", "api_id")
+
+    def restore(ded: it.Table) -> it.Table:
+        return restore_map.left_join(ded, "api_id").drop("api_id", "api_id_right")
+
+    return deduped, restore
+
+
+def _geocode(
+    t: it.Table,
+    *,
+    benchmark,
+    vintage,
+    chunk_size: int,
+    n_concurrent: int,
+) -> it.Table:
     sub_tables = chunk_table(t, max_size=chunk_size)
     byte_chunks = (_table_to_csv_bytes(sub) for sub in sub_tables)
     client = _make_client()
@@ -111,27 +169,28 @@ def us_census_geocode(
         _make_request(client, b, sem, i, benchmark=benchmark, vintage=vintage)
         for i, b in enumerate(byte_chunks)
     ]
-    logger.debug(f"Geocoding {len(tasks)} chunks of addresses of size {_CHUNK_SIZE}")
-    text_responses = _aio.as_completed(tasks)
+    logger.debug(
+        f"Geocoding {t.count().execute()} addresses in {len(tasks)} chunks of size {chunk_size}"  # noqa
+    )
+    text_responses = list(_aio.as_completed(tasks))
     tables = (_text_to_table(resp_text) for resp_text in text_responses)
-    t = ibis.union(*tables)
-    t = _post_process_table(t, id_type)
-    return t
+    result = ibis.union(*tables)
+    result = _post_process_table(result)
+    return result
 
 
-def _prep_address(t: it.Table) -> it.Table:
+def _normed_addresses(t: it.Table) -> it.Table:
     t = t.select(
-        id=t.id.cast("string"),
-        street=t.street.strip(),
-        city=t.city.strip(),
-        state=t.state.strip(),
-        zipcode=t.zipcode.strip(),
+        "__row_number",
+        street=t.street.strip().upper(),
+        city=t.city.strip().upper(),
+        state=t.state.strip().upper(),
+        zipcode=t.zipcode.strip().upper(),
     )
     return t
 
 
 def chunk_table(t: it.Table, max_size: int) -> Iterable[it.Table]:
-    t = t.cache()
     n = t.count().execute()
     i = 0
     while i < n:
@@ -140,6 +199,7 @@ def chunk_table(t: it.Table, max_size: int) -> Iterable[it.Table]:
 
 
 def _table_to_csv_bytes(t: it.Table) -> bytes:
+    t = t.select("api_id", "street", "city", "state", "zipcode")
     df = t.to_pandas()
     return df.to_csv(index=False, header=False).encode("utf-8")
 
@@ -212,7 +272,7 @@ async def _with_retries(f, *, chunk_id, max_retries: int):
 def _text_to_table(text: str) -> it.Table:
     _RAW_SCHEMA = ibis.schema(
         {
-            "id": "string",
+            "api_id": "string",
             "address": "string",
             "match": "string",
             "matchtype": "string",
@@ -229,7 +289,7 @@ def _text_to_table(text: str) -> it.Table:
     return ibis.memtable(records, schema=_RAW_SCHEMA)
 
 
-def _post_process_table(t: it.Table, id_type) -> it.Table:
+def _post_process_table(t: it.Table) -> it.Table:
     lonlat = t.coordinate.split(",")
     lon, lat = lonlat[0].cast("float64"), lonlat[1].cast("float64")
     # pattern is r"(.*), (.*), (.*), (.*)" but splitting on ", " is (probably?) faster
@@ -239,7 +299,7 @@ def _post_process_table(t: it.Table, id_type) -> it.Table:
     state = parts[2].strip()
     zipcode = parts[3].strip()
     return t.select(
-        id=t.id.cast(id_type),
+        api_id=t.api_id.cast("int64"),
         is_match=t.match == "Match",
         match_type=t.matchtype.lower(),
         street=street,
