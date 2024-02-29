@@ -4,6 +4,7 @@ import asyncio
 import csv
 import io
 import logging
+import time
 from typing import TYPE_CHECKING, Iterable
 
 import ibis
@@ -15,11 +16,28 @@ if TYPE_CHECKING:
     import httpx
 
 # expose this here so we can monkeypatch it in tests
-# The API supports 10k addresses per request, but
-# we'll use a smaller number to avoid timeouts, and for smaller
-# total sizes well get better parallelism (eg 10k rows will go
-# in 2 small chunks instead of 1)
+# The API supports max 10k addresses per request
 _CHUNK_SIZE = 5_000
+_N_CONCURRENT = 16
+# If I use a chunk size of 2k,
+# with 50 concurrent connections, each request takes 20-30 seconds
+# with 100 concurrent connections, each request takes 60-8 seconds
+# This implies to me that there are limited resources on the server.
+# If you make more requests, the same number of cores are serving them,
+# so each request takes longer. But not just linearly,
+# probably because of the overhead of context switching.
+
+# results:
+# 2k chunk size, 25 concurrent requests: ~15s/req, 5.25 min for 500k rows
+# 4k chunk size, 25 concurrent requests: ~30s/req, 5 min for 500k rows
+# 4k chunk size, 15 concurrent requests: ~22s/req, 3.75 min for 500k rows
+# 5k chunk size, 15 concurrent requests: ~??s/req, 3.25 min for 500k rows
+# 5k chunk size, 15 concurrent requests: ~26s/req, 3.5 min for 500k rows
+# 10k chunk size, 15 concurrent requests: ~65s/req, 4 min for 500k rows
+# 5k chunk size, 10 concurrent requests: ~25s/req, 4.5 min for 500k rows
+# 5k chunk size, 20 concurrent requests: ~35s/req, 4.5 min for 500k rows
+# 5k chunk size, 16 concurrent requests: ~30s/req, 3.5 min for 500k rows
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +48,7 @@ def us_census_geocode(
     benchmark: str | None = None,
     vintage: str | None = None,
     chunk_size: int | None = None,
+    n_concurrent: int | None = None,
 ) -> it.Table:
     """Geocode US physical addresses using the US Census Bureau's geocoding service.
 
@@ -37,6 +56,8 @@ def us_census_geocode(
     This only works for US physical addresses. PO Boxes are not supported.
     "APT 123", "UNIT B", etc are not included in the results, so you will need
     to extract those before geocoding.
+
+    This took about 7 minutes to geocode 1M addresses in my tests.
 
     Parameters
     ----------
@@ -53,6 +74,11 @@ def us_census_geocode(
         The geocoding vintage to use. Default is "Current_Current".
     chunk_size:
         The number of addresses to geocode in each request. Default is 5000.
+        The maximum allowed by the API is 10_000.
+        This number was tuned experimentally, you probably don't need to change it.
+    n_concurrent:
+        The number of concurrent requests to make. Default is 16.
+        This number was tuned experimentally, you probably don't need to change it.
 
     Returns
     -------
@@ -73,12 +99,14 @@ def us_census_geocode(
     """
     if chunk_size is None:
         chunk_size = _CHUNK_SIZE
+    if n_concurrent is None:
+        n_concurrent = _N_CONCURRENT
     id_type = t.id.type()
     t = _prep_address(t)
     sub_tables = chunk_table(t, max_size=chunk_size)
     byte_chunks = (_table_to_csv_bytes(sub) for sub in sub_tables)
     client = _make_client()
-    sem = asyncio.Semaphore(50)
+    sem = asyncio.Semaphore(n_concurrent)
     tasks = [
         _make_request(client, b, sem, i, benchmark=benchmark, vintage=vintage)
         for i, b in enumerate(byte_chunks)
@@ -119,9 +147,8 @@ def _table_to_csv_bytes(t: it.Table) -> bytes:
 def _make_client() -> httpx.AsyncClient:
     with _util.optional_import("httpx"):
         import httpx
-    timeout = httpx.Timeout(5, read=100, pool=10000)
-    limits = httpx.Limits(max_keepalive_connections=None, max_connections=1000)
-    return httpx.AsyncClient(timeout=timeout, limits=limits)
+    timeout = httpx.Timeout(10, read=150, pool=10000)
+    return httpx.AsyncClient(timeout=timeout)
 
 
 async def _make_request(
@@ -140,12 +167,27 @@ async def _make_request(
     }
     files = {"addressFile": ("addresses.csv", b)}
 
+    # Sometimes I get a 502 error:
+    # While attempting to geocode your batch input, the Census Geocoder
+    # working as a gateway to get a response needed to handle the request,
+    # got an invalid response. This may be caused by the fact that the
+    # Census Geocoder is unable to connect to a service it is dependent
+    # response received was invalid. Please verify your batch file and
+    # resubmit your batch query again later.
+
+    # Then if I resubmit the same request, it works. So I don't think the issue
+    # is the format of the request. I think the Census Geocoder is just flaky.
+    # Nothing to do but retry.
+
     async def f():
         async with sem:
             logger.debug(f"Geocoding chunk {chunk_id}")
+            start = time.monotonic()
             resp = await client.post(URL, data=data, files=files)
-            resp.raise_for_status()
-            logger.debug(f"Geocoded chunk {chunk_id}")
+            if resp.status_code != 200:
+                raise RuntimeError(f"Failed to geocode chunk {chunk_id}: {resp.text}")
+            end = time.monotonic()
+            logger.debug(f"Geocoded chunk {chunk_id} in {end - start:.2f} seconds")
             return resp.text
 
     return await _with_retries(f, chunk_id=chunk_id, max_retries=3)
@@ -156,7 +198,7 @@ async def _with_retries(f, *, chunk_id, max_retries: int):
         try:
             return await f()
         except Exception as e:
-            logger.info(
+            logger.warn(
                 f"Retrying chunk {chunk_id} {i + 1}/{max_retries} after error: {e!r}"
             )
             if i == max_retries - 1:
