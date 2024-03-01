@@ -34,7 +34,14 @@ def _iter_over_async(ait: AsyncIterator, loop: asyncio.AbstractEventLoop | None 
             return DONE
 
     while True:
-        obj = loop.run_until_complete(get_next())
+        nxt = get_next()
+        try:
+            obj = loop.run_until_complete(nxt)
+        except RuntimeError:
+            import nest_asyncio
+
+            nest_asyncio.apply()
+            obj = loop.run_until_complete(nxt)
         if obj is DONE:
             break
         yield obj
