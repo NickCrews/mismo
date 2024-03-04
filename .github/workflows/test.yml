@@ -35,7 +35,7 @@ jobs:
       - name: Install PDM
         run: pip install --upgrade pdm
 
-      - uses: extractions/setup-just@v1
+      - uses: extractions/setup-just@v2
         with:
           just-version: "1.14" # optional semver specification, otherwise latest
 
@@ -58,7 +58,7 @@ jobs:
       - name: Install PDM
         run: pip install --upgrade pdm
 
-      - uses: extractions/setup-just@v1
+      - uses: extractions/setup-just@v2
         with:
           just-version: "1.14" # optional semver specification, otherwise latest
 
