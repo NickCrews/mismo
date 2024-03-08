@@ -166,15 +166,15 @@ class CoordinateBlocker:
     ]:
         if self.coord is not None:
             left
-            left_coord = _util.get_column(left, self.coord)
-            right_coord = _util.get_column(right, self.coord)
+            left_coord = _util.get_column(left, self.coord, on_many="struct")
+            right_coord = _util.get_column(right, self.coord, on_many="struct")
             return (left_coord.lat, left_coord.lon, right_coord.lat, right_coord.lon)
         if self.left_coord is not None:
-            left_coord = _util.get_column(left, self.left_coord)
+            left_coord = _util.get_column(left, self.left_coord, on_many="struct")
             left_lat = left_coord.lat
             left_lon = left_coord.lon
         if self.right_coord is not None:
-            right_coord = _util.get_column(right, self.right_coord)
+            right_coord = _util.get_column(right, self.right_coord, on_many="struct")
             right_lat = right_coord.lat
             right_lon = right_coord.lon
         if self.lat is not None:

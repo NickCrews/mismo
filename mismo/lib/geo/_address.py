@@ -53,8 +53,8 @@ class AddressLevelComparer:
         self.name = name
 
     def __call__(self, t: it.Table) -> it.Table:
-        al = _util.get_column(t, self.column_left)
-        ar = _util.get_column(t, self.column_right)
+        al = _util.get_column(t, self.column_left, on_many="struct")
+        ar = _util.get_column(t, self.column_right, on_many="struct")
         levels = [
             (
                 "null",

@@ -64,8 +64,6 @@ class NameBlocker:
     def __call__(
         self, left: it.Table, right: it.Table, **kwargs
     ) -> tuple[it.Table, it.Table]:
-        # nl: it.StructColumn = _util.get_column(left, self.column_left)
-        # nr: it.StructColumn = _util.get_column(right, self.column_right)
         nl: it.StructColumn = _util.get_column(_, self.column_left)
         tokensl = _oneline(nl).upper().re_split(r"\s+")
         return tokensl.unnest()

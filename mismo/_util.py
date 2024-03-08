@@ -22,15 +22,30 @@ def cases(
     return builder.else_(default).end()
 
 
-def get_column(t: it.Table, ref: Any) -> it.Column:
+def get_column(
+    t: it.Table, ref: Any, *, on_many: Literal["error", "struct"] = "error"
+) -> it.Column:
     """Get a column from a table using some sort of reference to the column.
 
     ref can be a string, a Deferred, a callable, an ibis selector, etc.
-    If ref returns multiple columns, they are joined into a single ArrayColumn
+
+    Parameters
+    ----------
+    t :
+        The table
+    ref :
+        The reference to the column
+    on_many :
+        What to do if ref returns multiple columns. If "error", raise an error.
+        If "struct", return a StructColumn containing all the columns.
     """
     cols = list(bind(t, ref))
     if len(cols) != 1:
-        return ibis.struct({c.get_name(): c for c in cols})
+        if on_many == "error":
+            raise ValueError(f"Expected 1 column, got {len(cols)}")
+        if on_many == "struct":
+            return ibis.struct({c.get_name(): c for c in cols})
+        raise ValueError(f"on_many must be 'error' or 'struct'. Got {on_many}")
     return cols[0]
 
 
