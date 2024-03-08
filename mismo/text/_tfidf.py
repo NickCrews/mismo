@@ -5,14 +5,19 @@ from ibis import _
 from ibis.expr import types as ir
 
 
-def term_frequency_table(terms: ir.ArrayColumn) -> ir.Table:
-    """Compute a lookup table for the document frequency of terms.
+def document_frequency_table(terms: ir.ArrayColumn) -> ir.Table:
+    """Create a lookup table for the document frequency of terms.
 
+    Given a term, how many records contain it?
     Based around https://en.wikipedia.org/wiki/Tf%E2%80%93idf.
 
     Parameters
     ----------
-        terms: Column of Arrays holding terms, one array per record.
+        terms: One row for each record. Each row is an array of terms in that record.
+        Each term could be a word, ngram, or other token from a string.
+        Or, it could also represent more generic data, such as a list of tags or
+        categories like ["red", "black"]. Each term can be any datatype,
+        not just strings.
 
     Returns
     -------
@@ -26,7 +31,7 @@ def term_frequency_table(terms: ir.ArrayColumn) -> ir.Table:
     Examples
     --------
     >>> import ibis
-    >>> from mismo import term_frequency_table
+    >>> from mismo.text import document_frequency_table
     ... >>> addresses = [
     ...     "12 main st",
     ...     "34 st john ave",
@@ -36,7 +41,7 @@ def term_frequency_table(terms: ir.ArrayColumn) -> ir.Table:
     >>> t = ibis.memtable({"address": addresses})
     >>> # split on whitespace
     >>> tokens = t.address.re_split(r"\s+")
-    >>> idf_table(tokens)
+    >>> document_frequency_table(tokens)
     ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━┓
     ┃ term    ┃ n_records ┃ frac_records ┃ idf      ┃
     ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━┩

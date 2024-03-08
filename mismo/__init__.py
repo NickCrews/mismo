@@ -8,4 +8,4 @@ from mismo import datasets as datasets
 from mismo import fs as fs
 from mismo import lib as lib
 from mismo import metrics as metrics
-from mismo._tfidf import term_frequency_table as term_frequency_table
+from mismo import text as text

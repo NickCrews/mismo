@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import ibis
 
-from mismo import term_frequency_table
 from mismo.tests.util import assert_tables_equal
+from mismo.text import document_frequency_table
 
 
-def test_term_frequency_table(table_factory):
+def test_document_frequency_table(table_factory):
     addresses = [
         "12 main st",
         "34 st john ave",
@@ -15,7 +15,7 @@ def test_term_frequency_table(table_factory):
     ]
     t = table_factory({"address": addresses})
     tokens = t.address.re_split(r"\s+")
-    result = term_frequency_table(tokens)
+    result = document_frequency_table(tokens)
     expected_records = [
         ("12", 2, 0.5, 0.6931471805599453),
         ("56", 1, 0.25, 1.3862943611198906),
