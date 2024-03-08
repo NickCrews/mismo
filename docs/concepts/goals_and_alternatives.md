@@ -103,6 +103,22 @@ an object to perform most tasks. These objects are also mutable, which makes
 it hard to keep track of their state. Whenever possible, I tried to use
 pure functions and immutable data structuress.
 
+### [PyJedAi](https://github.com/AI-team-UoA/pyJedAI)
+
+I don't know about this much. It looks similar to RLTK, except it implements
+many more algorithms, and looks more actively maintained. It is maintained
+by a group of researchers at University of Athens, so a lot of the algorithms
+are state of the art, and documented in related research papers.
+
+I hope to port many of the algorithms over from it, and take inspiration from their API.
+
+It's API is a bit "heavy" though, with a lot of classes, I'm guessing because it is
+a port from the [original Java implementation](https://github.com/scify/JedAIToolkit).
+I want to make mismo's API more functional and lightweight.
+
+It also suffers from being based around pandas, so it inherintly isn't going to scale
+as well as using duckdb and ibis.
+
 ### [DBLink](https://github.com/cleanzr/dblink)
 
 Bayesian, unsupervised record linkage on structured data using Apache Spark.
