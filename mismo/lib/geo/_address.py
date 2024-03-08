@@ -9,6 +9,7 @@ from ibis.expr import types as it
 
 from mismo import _util
 from mismo.compare import LevelComparer, compare
+from mismo.lib.geo._latlon import distance_km
 
 
 @dataclasses.dataclass
@@ -37,7 +38,7 @@ class AddressLevelComparer:
             street2: string,  # eg "Apt 3"
             city: string,
             state: string,
-            postcode: string,  # zipcode in the US
+            postal_code: string,  # zipcode in the US
             country: string,
         >`.
 
@@ -55,6 +56,21 @@ class AddressLevelComparer:
     def __call__(self, t: it.Table) -> it.Table:
         al = _util.get_column(t, self.column_left, on_many="struct")
         ar = _util.get_column(t, self.column_right, on_many="struct")
+        if "latitude" in al.type().names:
+            within_100km_levels = [
+                (
+                    "within_100km",
+                    distance_km(
+                        lat1=al.latitude,
+                        lon1=al.longitude,
+                        lat2=ar.latitude,
+                        lon2=ar.longitude,
+                    )
+                    <= 100,
+                ),
+            ]
+        else:
+            within_100km_levels = []
         levels = [
             (
                 "null",
@@ -69,6 +85,7 @@ class AddressLevelComparer:
             ),
             ("street1_and_city_or_postal_code", same_address_for_mailing(al, ar)),
             ("same_region", same_region(al, ar)),
+            *within_100km_levels,
             ("same_state", al.state == ar.state),
         ]
         return compare(t, LevelComparer(self.name, levels))
