@@ -9,3 +9,4 @@ from mismo import fs as fs
 from mismo import lib as lib
 from mismo import metrics as metrics
 from mismo import text as text
+from mismo import vector as vector

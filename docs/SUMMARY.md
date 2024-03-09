@@ -12,6 +12,7 @@
         * [Fellegi-Sunter](reference/fs.md)
     * [Clustering](reference/cluster.md)
     * [Metrics](reference/metrics.md)
+    * [Vector Utils](reference/vectors.md)
     * [Datasets](reference/datasets.md)
     * [Library](reference/lib/index.md)
         * [Geospatial](reference/lib/geo.md)
