@@ -6,7 +6,7 @@ from ibis.expr import types as ir
 
 
 def document_frequency_table(terms: ir.ArrayColumn) -> ir.Table:
-    """Create a lookup table for the document frequency of terms.
+    r"""Create a lookup table for the document frequency of terms.
 
     Given a term, how many records contain it?
     Based around https://en.wikipedia.org/wiki/Tf%E2%80%93idf.
