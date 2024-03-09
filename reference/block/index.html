@@ -1,0 +1,2483 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://nickcrews.github.io/mismo/reference/block/">
+      
+      
+        <link rel="prev" href="../clean/">
+      
+      
+        <link rel="next" href="../compare/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.11">
+    
+    
+      
+        <title>Blocking - Mismo</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.7e359304.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#blocking-api" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Mismo" class="md-header__button md-logo" aria-label="Mismo" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Mismo
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Blocking
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/nickcrews/mismo/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../concepts/goals_and_alternatives/" class="md-tabs__link">
+          
+  
+    
+  
+  Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../examples/patent_deduplication/" class="md-tabs__link">
+          
+  
+    
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../clean/" class="md-tabs__link">
+          
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+    
+  
+  Contribute
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Mismo" class="md-nav__button md-logo" aria-label="Mismo" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    Mismo
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/nickcrews/mismo/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Concepts
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Concepts
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/goals_and_alternatives/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Goals and Alternatives
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/fs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Fellegi-Sunter Model
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/versioning/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Versioning Policy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Examples
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Examples
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/patent_deduplication/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Patent Deduplication
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Reference
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../clean/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cleaning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Blocking
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Blocking
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#main" class="md-nav__link">
+    <span class="md-ellipsis">
+      Main
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Main">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.block_one" class="md-nav__link">
+    <span class="md-ellipsis">
+      block_one
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.block_many" class="md-nav__link">
+    <span class="md-ellipsis">
+      block_many
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.BlockingRule" class="md-nav__link">
+    <span class="md-ellipsis">
+      BlockingRule
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="BlockingRule">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.BlockingRule.condition" class="md-nav__link">
+    <span class="md-ellipsis">
+      condition
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.BlockingRule.__init__" class="md-nav__link">
+    <span class="md-ellipsis">
+      __init__
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.BlockingRule.get_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_name
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.join" class="md-nav__link">
+    <span class="md-ellipsis">
+      join
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plotting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Plotting
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Plotting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.upset_chart" class="md-nav__link">
+    <span class="md-ellipsis">
+      upset_chart
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#analyze-cardinality" class="md-nav__link">
+    <span class="md-ellipsis">
+      Analyze: Cardinality
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Analyze: Cardinality">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.key_counts" class="md-nav__link">
+    <span class="md-ellipsis">
+      key_counts
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#analyze-join-algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      Analyze: Join Algorithm
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Analyze: Join Algorithm">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.get_join_algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_join_algorithm
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.check_join_algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      check_join_algorithm
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.JOIN_ALGORITHMS" class="md-nav__link">
+    <span class="md-ellipsis">
+      JOIN_ALGORITHMS
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.SLOW_JOIN_ALGORITHMS" class="md-nav__link">
+    <span class="md-ellipsis">
+      SLOW_JOIN_ALGORITHMS
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.SlowJoinError" class="md-nav__link">
+    <span class="md-ellipsis">
+      SlowJoinError
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.SlowJoinWarning" class="md-nav__link">
+    <span class="md-ellipsis">
+      SlowJoinWarning
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Comparing
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            Comparing
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compare/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Comparing API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../fs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Fellegi-Sunter
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cluster/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Clustering
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Metrics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vectors/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Vector Utils
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../datasets/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Datasets
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_8" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../lib/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Library
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_8" id="__nav_4_8_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_8">
+            <span class="md-nav__icon md-icon"></span>
+            Library
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lib/geo/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Geospatial
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lib/name/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Human Names
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contribute
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#main" class="md-nav__link">
+    <span class="md-ellipsis">
+      Main
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Main">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.block_one" class="md-nav__link">
+    <span class="md-ellipsis">
+      block_one
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.block_many" class="md-nav__link">
+    <span class="md-ellipsis">
+      block_many
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.BlockingRule" class="md-nav__link">
+    <span class="md-ellipsis">
+      BlockingRule
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="BlockingRule">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.BlockingRule.condition" class="md-nav__link">
+    <span class="md-ellipsis">
+      condition
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.BlockingRule.__init__" class="md-nav__link">
+    <span class="md-ellipsis">
+      __init__
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.BlockingRule.get_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_name
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.join" class="md-nav__link">
+    <span class="md-ellipsis">
+      join
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plotting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Plotting
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Plotting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.upset_chart" class="md-nav__link">
+    <span class="md-ellipsis">
+      upset_chart
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#analyze-cardinality" class="md-nav__link">
+    <span class="md-ellipsis">
+      Analyze: Cardinality
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Analyze: Cardinality">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.key_counts" class="md-nav__link">
+    <span class="md-ellipsis">
+      key_counts
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#analyze-join-algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      Analyze: Join Algorithm
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Analyze: Join Algorithm">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.get_join_algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_join_algorithm
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.check_join_algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      check_join_algorithm
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.JOIN_ALGORITHMS" class="md-nav__link">
+    <span class="md-ellipsis">
+      JOIN_ALGORITHMS
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.SLOW_JOIN_ALGORITHMS" class="md-nav__link">
+    <span class="md-ellipsis">
+      SLOW_JOIN_ALGORITHMS
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.SlowJoinError" class="md-nav__link">
+    <span class="md-ellipsis">
+      SlowJoinError
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mismo.block.SlowJoinWarning" class="md-nav__link">
+    <span class="md-ellipsis">
+      SlowJoinWarning
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="blocking-api">Blocking API</h1>
+<p>Utilities and classes for the blocking phase of record linkage, where
+we choose pairs of records to compare.</p>
+<p>Without blocking, we would have to compare N*M records, which
+becomes intractable for datasets much larger than a few thousand.</p>
+<h2 id="main">Main</h2>
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h3 id="mismo.block.block_one" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">mismo</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">block_one</span><span class="p">(</span><span class="n">left</span><span class="p">:</span> <span class="n">it</span><span class="o">.</span><span class="n">Table</span><span class="p">,</span> <span class="n">right</span><span class="p">:</span> <span class="n">it</span><span class="o">.</span><span class="n">Table</span><span class="p">,</span> <span class="n">condition</span><span class="p">:</span> <span class="n">_Condition</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">on_slow</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;warn&#39;</span><span class="p">,</span> <span class="s1">&#39;ignore&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;dedupe&#39;</span><span class="p">,</span> <span class="s1">&#39;link&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">it</span><span class="o">.</span><span class="n">Table</span></code>
+
+</h3>
+
+
+  <div class="doc doc-contents first">
+  
+      <p>Block two tables together using the given condition.</p>
+
+
+
+  <table>
+    <thead>
+      <tr>
+        <th><b>PARAMETER</b></th>
+        <th><b> DESCRIPTION</b></th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>left</code></td>
+          <td class="doc-param-details">
+            <div class="doc-md-description">
+              <p>The left table to block</p>
+            </div>
+            <p>
+                <span class="doc-param-annotation">
+                  <b>TYPE:</b>
+                    <code><span title="ibis.expr.types.Table">Table</span></code>
+                </span>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td><code>right</code></td>
+          <td class="doc-param-details">
+            <div class="doc-md-description">
+              <p>The right table to block</p>
+            </div>
+            <p>
+                <span class="doc-param-annotation">
+                  <b>TYPE:</b>
+                    <code><span title="ibis.expr.types.Table">Table</span></code>
+                </span>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td><code>condition</code></td>
+          <td class="doc-param-details">
+            <div class="doc-md-description">
+              <p>The condition that determine if two records should be blocked together.</p>
+<p><code>conditions</code> can be any of the following:</p>
+<ul>
+<li>A string, which is interpreted as the name of a column in both tables.
+  eg "price" is equivalent to <code>left.price == right.price</code></li>
+<li>A Deferred, which is used to reference a column in a table
+  eg "_.price.fillna(0)" is equivalent to <code>left.price.fillna(0) == right.price.fillna(0)</code></li>
+<li>An iterable of the above, which is interpreted as a tuple of conditions.
+  eg <code>("age", _.first_name.upper()")</code> is equivalent to
+  <code>(left.age == right.age) &amp; (left.first_name.upper() == right.first_name.upper())</code></li>
+<li>A literal <code>True</code>, which results in a cross join.</li>
+<li>A literal <code>False</code>, which results in an empty table.</li>
+<li>A Table in the expected output schema, which is assumed to be
+  the result of blocking, and will be used as-is.</li>
+<li>A callable with the signature
+    def block(
+        left: Table,
+        right: Table,
+        <em>,
+        on_slow: Literal["error", "warn", "ignore"] = "error",
+        dedupe: bool | None = None,
+        </em>*kwargs,
+    ) -&gt; BooleanColumn of the join condition, or one of the above.</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can't reference the input tables directly in the conditions.
+eg <code>block_one(left, right, left.name == right.name)</code> will raise an error.
+This is because mismo might be modifying the tables before the
+actual join takes place, which would lead to the condition referencing
+stale tables that don't exist anymore.
+Instead, use a lambda or Deferreds.</p>
+</div>
+            </div>
+            <p>
+                <span class="doc-param-annotation">
+                  <b>TYPE:</b>
+                    <code><span title="mismo.block._block._Condition">_Condition</span></code>
+                </span>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td><code>on_slow</code></td>
+          <td class="doc-param-details">
+            <div class="doc-md-description">
+              <p>What to do if the join condition causes a slow O(n*m) join algorithm.
+If "error", raise a SlowJoinError.
+If "warn", issue a SlowJoinWarning.
+If "ignore", do nothing.
+See <a class="autorefs autorefs-internal" href="#mismo.block.check_join_algorithm">check_join_algorithm()</a> for more information.</p>
+            </div>
+            <p>
+                <span class="doc-param-annotation">
+                  <b>TYPE:</b>
+                    <code><a class="autorefs autorefs-external" title="typing.Literal" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[&#39;error&#39;, &#39;warn&#39;, &#39;ignore&#39;]</code>
+                </span>
+                <span class="doc-param-default">
+                  <b>DEFAULT:</b> 
+                    <code>&#39;error&#39;</code>
+                </span>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td><code>task</code></td>
+          <td class="doc-param-details">
+            <div class="doc-md-description">
+              <p>If "dedupe", the resulting pairs will have the additional restriction that
+<code>record_id_l &lt; record_id_r</code>.
+If "link", no additional restriction is added.
+If None, will be assumed to be "dedupe" if <code>left</code> and <code>right</code>
+are the same table.</p>
+            </div>
+            <p>
+                <span class="doc-param-annotation">
+                  <b>TYPE:</b>
+                    <code><a class="autorefs autorefs-external" title="typing.Literal" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[&#39;dedupe&#39;, &#39;link&#39;] | None</code>
+                </span>
+                <span class="doc-param-default">
+                  <b>DEFAULT:</b> 
+                    <code>None</code>
+                </span>
+            </p>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ibis</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">ibis</span> <span class="kn">import</span> <span class="n">_</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">mismo</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ibis</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">interactive</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">mismo</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">load_patents</span><span class="p">()[</span><span class="s2">&quot;record_id&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;latitude&quot;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+<span class="go">┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┓</span>
+<span class="go">┃ record_id ┃ name                         ┃ latitude ┃</span>
+<span class="go">┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━┩</span>
+<span class="go">│ int64     │ string                       │ float64  │</span>
+<span class="go">├───────────┼──────────────────────────────┼──────────┤</span>
+<span class="go">│      2909 │ * AGILENT TECHNOLOGIES, INC. │     0.00 │</span>
+<span class="go">│      3574 │ * AKZO NOBEL N.V.            │     0.00 │</span>
+<span class="go">│      3575 │ * AKZO NOBEL NV              │     0.00 │</span>
+<span class="go">│      3779 │ * ALCATEL N.V.               │    52.35 │</span>
+<span class="go">│      3780 │ * ALCATEL N.V.               │    52.35 │</span>
+<span class="go">└───────────┴──────────────────────────────┴──────────┘</span>
+</code></pre></div>
+    <p>Block the table with itself wherever the names match:</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">mismo</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">block_one</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+<span class="go">┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓</span>
+<span class="go">┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l               ┃ name_r               ┃</span>
+<span class="go">┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩</span>
+<span class="go">│ int64       │ int64       │ float64    │ float64    │ string               │ string               │</span>
+<span class="go">├─────────────┼─────────────┼────────────┼────────────┼──────────────────────┼──────────────────────┤</span>
+<span class="go">│      665768 │      665769 │  51.683333 │        0.0 │ ALCOA NEDERLAND B.V. │ ALCOA NEDERLAND B.V. │</span>
+<span class="go">│     1598894 │     1598895 │  51.416667 │        0.0 │ ASML NETHERLAND B.V. │ ASML NETHERLAND B.V. │</span>
+<span class="go">│     4332214 │     4332215 │  52.350000 │        0.0 │ Canon Europa N.V.    │ Canon Europa N.V.    │</span>
+<span class="go">│     7651166 │     7651167 │  50.900000 │        0.0 │ DSM B.V.             │ DSM B.V.             │</span>
+<span class="go">│     7651339 │     7651340 │  50.900000 │       50.9 │ DSM I.P. Assets B.V. │ DSM I.P. Assets B.V. │</span>
+<span class="go">└─────────────┴─────────────┴────────────┴────────────┴──────────────────────┴──────────────────────┘</span>
+</code></pre></div>
+    <p>Arbitrary blocking keys are supported. Example: block the table wherever
+- the first 5 characters of the name in uppercase, are the same
+AND
+- the latitudes, rounded to 1 decimal place, are the same</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">mismo</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">block_one</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="p">(</span><span class="n">_</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">][:</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="n">_</span><span class="o">.</span><span class="n">latitude</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">1</span><span class="p">)))</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+<span class="go">┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓</span>
+<span class="go">┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l                ┃ name_r                     ┃</span>
+<span class="go">┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩</span>
+<span class="go">│ int64       │ int64       │ float64    │ float64    │ string                │ string                     │</span>
+<span class="go">├─────────────┼─────────────┼────────────┼────────────┼───────────────────────┼────────────────────────────┤</span>
+<span class="go">│        3574 │        3575 │   0.000000 │   0.000000 │ * AKZO NOBEL N.V.     │ * AKZO NOBEL NV            │</span>
+<span class="go">│      663246 │      663255 │  52.016667 │  52.025498 │ Alcatel NV            │ ALCATEL N.V., RIJSWIJK, NL │</span>
+<span class="go">│      665768 │      665773 │  51.683333 │  51.683333 │ ALCOA NEDERLAND B.V.  │ Alcoa Nederland B.V.       │</span>
+<span class="go">│     1598972 │     1598988 │  51.416667 │  51.416667 │ Asml Netherlands B.V. │ ASML Netherlands-B.V.      │</span>
+<span class="go">│     7651427 │     7651428 │  50.900000 │  50.900000 │ DSM IP assets B.V.    │ DSM Ip Assets B.V.         │</span>
+<span class="go">└─────────────┴─────────────┴────────────┴────────────┴───────────────────────┴────────────────────────────┘</span>
+</code></pre></div>
+    <p>We can even block on arrays! For example, first let's split each name into
+significant tokens:</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">tokens</span> <span class="o">=</span> <span class="n">_</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">length</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">tokens</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+<span class="go">┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓</span>
+<span class="go">┃ ArrayFilter(StringSplit(Uppercase(name), &#39; &#39;), Greater(StringLength(x), 4)) ┃</span>
+<span class="go">┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩</span>
+<span class="go">│ array&lt;string&gt;                                                               │</span>
+<span class="go">├─────────────────────────────────────────────────────────────────────────────┤</span>
+<span class="go">│ [&#39;AGILENT&#39;, &#39;TECHNOLOGIES,&#39;]                                                │</span>
+<span class="go">│ [&#39;NOBEL&#39;]                                                                   │</span>
+<span class="go">│ [&#39;NOBEL&#39;]                                                                   │</span>
+<span class="go">│ [&#39;ALCATEL&#39;]                                                                 │</span>
+<span class="go">│ [&#39;ALCATEL&#39;]                                                                 │</span>
+<span class="go">│ [&#39;ALCATEL&#39;]                                                                 │</span>
+<span class="go">│ [&#39;CANON&#39;, &#39;EUROPA&#39;]                                                         │</span>
+<span class="go">│ [&#39;CANON&#39;, &#39;EUROPA&#39;]                                                         │</span>
+<span class="go">│ [&#39;CANON&#39;, &#39;EUROPA&#39;]                                                         │</span>
+<span class="go">│ []                                                                          │</span>
+<span class="go">│ …                                                                           │</span>
+<span class="go">└─────────────────────────────────────────────────────────────────────────────┘</span>
+</code></pre></div>
+    <p>Now, block the tables together wherever two records share a token.
+Note that this blocked <code>* SCHLUMBERGER LIMITED</code> with <code>* SCHLUMBERGER TECHNOLOGY BV</code>.</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">mismo</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">block_one</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">tokens</span><span class="o">.</span><span class="n">unnest</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span><span class="p">[</span><span class="n">_</span><span class="o">.</span><span class="n">name_l</span> <span class="o">!=</span> <span class="n">_</span><span class="o">.</span><span class="n">name_r</span><span class="p">]</span>
+<span class="go">┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓</span>
+<span class="go">┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l                                            ┃ name_r                                            ┃</span>
+<span class="go">┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩</span>
+<span class="go">│ int64       │ int64       │ float64    │ float64    │ string                                            │ string                                            │</span>
+<span class="go">├─────────────┼─────────────┼────────────┼────────────┼───────────────────────────────────────────────────┼───────────────────────────────────────────────────┤</span>
+<span class="go">│        3574 │        3575 │   0.000000 │   0.000000 │ * AKZO NOBEL N.V.                                 │ * AKZO NOBEL NV                                   │</span>
+<span class="go">│       62445 │       66329 │   0.000000 │   0.000000 │ * N V PHILIPS&#39; GLOEILAMPENFABRIEKEN               │ * N.V. PHILIPS&#39; GLOEILAMPENFABRIEKEN              │</span>
+<span class="go">│       79860 │       79872 │  52.500000 │   0.000000 │ * SCHLUMBERGER LIMITED                            │ * SCHLUMBERGER TECHNOLOGY BV                      │</span>
+<span class="go">│       81613 │       81633 │  52.083333 │  52.083333 │ * SHELL INTERNATIONAL RESEARCH MAATSCHHAPPIJ B.V. │ * SHELL INTERNATIONALE RESEARCH MAATSCHAPPIJ B.V. │</span>
+<span class="go">│       81631 │       81641 │  52.500000 │  52.083333 │ * SHELL INTERNATIONALE RESEARCH MAATSCHAPPIJ B.V. │ * SHELL INTERNATIONALE RESEARCH MAATSCHAPPIJ BV   │</span>
+<span class="go">│       81614 │      317966 │   0.000000 │  52.350000 │ * SHELL INTERNATIONAL RESEARCH MAATSCHHAPPIJ B.V. │ Adidas International Marketing B.V.               │</span>
+<span class="go">│       81614 │      317969 │   0.000000 │  52.350000 │ * SHELL INTERNATIONAL RESEARCH MAATSCHHAPPIJ B.V. │ adidas International Marketing B.V,               │</span>
+<span class="go">│      317969 │      317971 │  52.350000 │  52.500000 │ adidas International Marketing B.V,               │ adidas International Marketing B.V.               │</span>
+<span class="go">│      317967 │      317971 │   0.000000 │  52.500000 │ Adidas International Marketing B.V.               │ adidas International Marketing B.V.               │</span>
+<span class="go">│      317968 │      317971 │  52.350000 │  52.500000 │ adidas International Marketing, B.V.              │ adidas International Marketing B.V.               │</span>
+<span class="go">│           … │           … │          … │          … │ …                                                 │ …                                                 │</span>
+<span class="go">└─────────────┴─────────────┴────────────┴────────────┴───────────────────────────────────────────────────┴───────────────────────────────────────────────────┘</span>
+</code></pre></div>
+
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h3 id="mismo.block.block_many" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">mismo</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">block_many</span><span class="p">(</span><span class="n">left</span><span class="p">:</span> <span class="n">it</span><span class="o">.</span><span class="n">Table</span><span class="p">,</span> <span class="n">right</span><span class="p">:</span> <span class="n">it</span><span class="o">.</span><span class="n">Table</span><span class="p">,</span> <span class="n">conditions</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">_Condition</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">on_slow</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;warn&#39;</span><span class="p">,</span> <span class="s1">&#39;ignore&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;dedupe&#39;</span><span class="p">,</span> <span class="s1">&#39;link&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">it</span><span class="o">.</span><span class="n">Table</span></code>
+
+</h3>
+
+
+  <div class="doc doc-contents first">
+  
+      <p>Block two tables using each of the given conditions, then union the results.</p>
+
+
+
+  <table>
+    <thead>
+      <tr>
+        <th><b>PARAMETER</b></th>
+        <th><b> DESCRIPTION</b></th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>left</code></td>
+          <td class="doc-param-details">
+            <div class="doc-md-description">
+              <p>The left table to block</p>
+            </div>
+            <p>
+                <span class="doc-param-annotation">
+                  <b>TYPE:</b>
+                    <code><span title="ibis.expr.types.Table">Table</span></code>
+                </span>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td><code>right</code></td>
+          <td class="doc-param-details">
+            <div class="doc-md-description">
+              <p>The right table to block</p>
+            </div>
+            <p>
+                <span class="doc-param-annotation">
+                  <b>TYPE:</b>
+                    <code><span title="ibis.expr.types.Table">Table</span></code>
+                </span>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td><code>conditions</code></td>
+          <td class="doc-param-details">
+            <div class="doc-md-description">
+              <p>The conditions that determine if two records should be blocked together.
+Each condition is used to join the tables together using <code>block_one</code>,
+and then the results are unioned together.</p>
+            </div>
+            <p>
+                <span class="doc-param-annotation">
+                  <b>TYPE:</b>
+                    <code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<span title="mismo.block._block._Condition">_Condition</span>]</code>
+                </span>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td><code>on_slow</code></td>
+          <td class="doc-param-details">
+            <div class="doc-md-description">
+              <p>What to do if the join condition causes a slow O(n*m) join algorithm.
+If "error", raise a SlowJoinError.
+If "warn", issue a SlowJoinWarning.
+If "ignore", do nothing.
+See <a class="autorefs autorefs-internal" href="#mismo.block.check_join_algorithm">check_join_algorithm()</a>
+for more information.</p>
+            </div>
+            <p>
+                <span class="doc-param-annotation">
+                  <b>TYPE:</b>
+                    <code><a class="autorefs autorefs-external" title="typing.Literal" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[&#39;error&#39;, &#39;warn&#39;, &#39;ignore&#39;]</code>
+                </span>
+                <span class="doc-param-default">
+                  <b>DEFAULT:</b> 
+                    <code>&#39;error&#39;</code>
+                </span>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td><code>task</code></td>
+          <td class="doc-param-details">
+            <div class="doc-md-description">
+              <p>If "dedupe", the resulting pairs will have the additional restriction that
+<code>record_id_l &lt; record_id_r</code>.
+If "link", no additional restriction is added.
+If None, will be assumed to be "dedupe" if <code>left</code> and <code>right</code>
+are the same table.</p>
+            </div>
+            <p>
+                <span class="doc-param-annotation">
+                  <b>TYPE:</b>
+                    <code><a class="autorefs autorefs-external" title="typing.Literal" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[&#39;dedupe&#39;, &#39;link&#39;] | None</code>
+                </span>
+                <span class="doc-param-default">
+                  <b>DEFAULT:</b> 
+                    <code>None</code>
+                </span>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td><code>labels</code></td>
+          <td class="doc-param-details">
+            <div class="doc-md-description">
+              <p>If True, a column of type <code>array&lt;string&gt;</code> will be added to the
+resulting table indicating which
+rules caused each record pair to be blocked.
+If False, the resulting table will only contain the columns of left and
+right.</p>
+            </div>
+            <p>
+                <span class="doc-param-annotation">
+                  <b>TYPE:</b>
+                    <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+                </span>
+                <span class="doc-param-default">
+                  <b>DEFAULT:</b> 
+                    <code>False</code>
+                </span>
+            </p>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="mismo.block.BlockingRule" class="doc doc-heading">
+          <code>mismo.block.BlockingRule</code>
+
+
+</h3>
+
+
+  <div class="doc doc-contents first">
+
+  
+      <p>A rule for blocking two tables together.</p>
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="mismo.block.BlockingRule.condition" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">condition</span><span class="p">:</span> <span class="n">_Condition</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+</h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>The condition that determines if two records should be blocked together.</p>
+  </div>
+
+</div>
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="mismo.block.BlockingRule.__init__" class="doc doc-heading">
+          <code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="n">condition</span><span class="p">:</span> <span class="n">_Condition</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+
+</h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Create a new blocking rule.</p>
+
+
+
+  <table>
+    <thead>
+      <tr>
+        <th><b>PARAMETER</b></th>
+        <th><b> DESCRIPTION</b></th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>condition</code></td>
+          <td class="doc-param-details">
+            <div class="doc-md-description">
+              <p>The condition that determines if two records should be blocked together.
+This can be any of the following:</p>
+<ul>
+<li>anything that ibis accepts as a join predicate</li>
+<li>A callable that takes two tables and returns any of the above</li>
+</ul>
+            </div>
+            <p>
+                <span class="doc-param-annotation">
+                  <b>TYPE:</b>
+                    <code><span title="mismo.block._blocking_rule._Condition">_Condition</span></code>
+                </span>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td><code>name</code></td>
+          <td class="doc-param-details">
+            <div class="doc-md-description">
+              <p>The name of the rule. If not provided, a name will be generated based on
+the condition.</p>
+            </div>
+            <p>
+                <span class="doc-param-annotation">
+                  <b>TYPE:</b>
+                    <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>
+                </span>
+                <span class="doc-param-default">
+                  <b>DEFAULT:</b> 
+                    <code>None</code>
+                </span>
+            </p>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h4 id="mismo.block.BlockingRule.get_name" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">get_name</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span></code>
+
+</h4>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>The name of the rule.</p>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h3 id="mismo.block.join" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">mismo</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">left</span><span class="p">:</span> <span class="n">it</span><span class="o">.</span><span class="n">Table</span><span class="p">,</span> <span class="n">right</span><span class="p">:</span> <span class="n">it</span><span class="o">.</span><span class="n">Table</span><span class="p">,</span> <span class="n">condition</span><span class="p">:</span> <span class="n">_Condition</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">on_slow</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;warn&#39;</span><span class="p">,</span> <span class="s1">&#39;ignore&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;dedupe&#39;</span><span class="p">,</span> <span class="s1">&#39;link&#39;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">it</span><span class="o">.</span><span class="n">Table</span></code>
+
+</h3>
+
+
+  <div class="doc doc-contents first">
+  
+      <p>A lower-level version of <code>block_one</code> that doesn't do any deduplication.</p>
+<p><code>block_one()</code> calls this function, and then adds a deduplication step
+to ensure that there is only one row for every (record_id_l, record_id_r) pair.</p>
+<p>So this has the same behavior as <code>block_one</code>,
+but without the final deduplication step.</p>
+
+  </div>
+
+</div><h2 id="plotting">Plotting</h2>
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h3 id="mismo.block.upset_chart" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">mismo</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">upset_chart</span><span class="p">(</span><span class="n">blocked</span><span class="p">:</span> <span class="n">it</span><span class="o">.</span><span class="n">Table</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">alt</span><span class="o">.</span><span class="n">Chart</span></code>
+
+</h3>
+
+
+  <div class="doc doc-contents first">
+  
+      <p>Generate an Altair-based UpSet plot for a blocked table.</p>
+<p>An <a href="https://en.wikipedia.org/wiki/UpSet_Plot">UpSet plot</a>
+is useful to visualize the overlap between blocking rules.
+For example, how many pairs are blocked by the "first name" rule,
+how many pairs are blocked by the "last name" rule, and how many pairs
+are blocked by both rules together.</p>
+<p>For example, if there is one group that generates a lot of pairs,
+that could be an opportunity to make those rules more restrictive,
+so that they generate fewer pairs.</p>
+
+
+
+  <table>
+    <thead>
+      <tr>
+        <th><b>PARAMETER</b></th>
+        <th><b> DESCRIPTION</b></th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>blocked</code></td>
+          <td class="doc-param-details">
+            <div class="doc-md-description">
+              <p>The blocked table to plot.</p>
+            </div>
+            <p>
+                <span class="doc-param-annotation">
+                  <b>TYPE:</b>
+                    <code><span title="ibis.expr.types.Table">Table</span></code>
+                </span>
+            </p>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+  <table>
+    <thead>
+      <tr>
+        <th><b>RETURNS</b></th>
+        <th><b>DESCRIPTION</b></th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+              <span class="doc-returns-annotation">
+                  <code>Chart</code>
+              </span>
+          </td>
+          <td class="doc-returns-details">
+            <div class="doc-md-description">
+              <p>An Altair chart.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div><h2 id="analyze-cardinality">Analyze: Cardinality</h2>
+<p>Estimate the number of record pairs that would be created from blocking.</p>
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h3 id="mismo.block.key_counts" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">mismo</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">key_counts</span><span class="p">(</span><span class="n">left</span><span class="p">:</span> <span class="n">it</span><span class="o">.</span><span class="n">Table</span><span class="p">,</span> <span class="n">right_or_key</span><span class="p">:</span> <span class="n">it</span><span class="o">.</span><span class="n">Table</span> <span class="o">|</span> <span class="n">Any</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">it</span><span class="o">.</span><span class="n">Table</span></code>
+
+</h3>
+
+
+  <div class="doc doc-contents first">
+  
+      <p>Count the number of occurrences of each join key in a table or pair of tables.</p>
+<p>Used as <code>key_counts(t, key)</code> or <code>key_counts(t1, t2, key)</code>.</p>
+<p>This is useful for analyzing the skew of the join keys. For example,
+if you are joining on (last_name, city), there might be only 4 values
+for (hoessle, tinytown), but 10_000 values for (smith, new york city).
+If you blocked on this key, then the (smith, new york city) block
+would be on the order of 10_000 * 10_000 = 100_000_000 record pairs,
+which is likely too many for you to be able to compare.</p>
+<p>Returns a table with a column for each value in <code>key</code> and a column
+<code>n</code> with the count.</p>
+<p>This is slightly different from <code>t.group_by(key).count()</code>,
+because when joining, NULLs are <em>not</em> counted as a match.</p>
+
+
+
+  <table>
+    <thead>
+      <tr>
+        <th><b>PARAMETER</b></th>
+        <th><b> DESCRIPTION</b></th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>left</code></td>
+          <td class="doc-param-details">
+            <div class="doc-md-description">
+              <p>The left table to count the join keys in</p>
+            </div>
+            <p>
+                <span class="doc-param-annotation">
+                  <b>TYPE:</b>
+                    <code><span title="ibis.expr.types.Table">Table</span></code>
+                </span>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td><code>right_or_key</code></td>
+          <td class="doc-param-details">
+            <div class="doc-md-description">
+              <p>The right table to count the join keys in, or the join key(s) to count.</p>
+            </div>
+            <p>
+                <span class="doc-param-annotation">
+                  <b>TYPE:</b>
+                    <code><span title="ibis.expr.types.Table">Table</span> | <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+                </span>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td><code>key</code></td>
+          <td class="doc-param-details">
+            <div class="doc-md-description">
+              <p>The join key(s) to count. This can be a string, a Deferred, or anything
+that can reference a column in a Table. Or an iterable of these.</p>
+            </div>
+            <p>
+                <span class="doc-param-default">
+                  <b>DEFAULT:</b> 
+                    <code>None</code>
+                </span>
+            </p>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+  <table>
+    <thead>
+      <tr>
+        <th><b>RETURNS</b></th>
+        <th><b>DESCRIPTION</b></th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+              <span class="doc-returns-annotation">
+                  <code><span title="ibis.expr.types.Table">Table</span></code>
+              </span>
+          </td>
+          <td class="doc-returns-details">
+            <div class="doc-md-description">
+              <p>A table with a column for each value in <code>key</code> and a column <code>n</code> with the count.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+<p><strong>Examples:</strong></p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ibis</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ibis</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">interactive</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">ibis</span> <span class="kn">import</span> <span class="n">_</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">mismo</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">records</span> <span class="o">=</span> <span class="p">[</span>
+<span class="gp">... </span>    <span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="p">(</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="p">(</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="p">(</span><span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="p">(</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="p">(</span><span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="p">(</span><span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+<span class="gp">... </span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">letters</span><span class="p">,</span> <span class="n">nums</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">records</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">ibis</span><span class="o">.</span><span class="n">memtable</span><span class="p">({</span><span class="s2">&quot;letter&quot;</span><span class="p">:</span> <span class="n">letters</span><span class="p">,</span> <span class="s2">&quot;num&quot;</span><span class="p">:</span> <span class="n">nums</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mismo</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">key_counts</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;letter&quot;</span><span class="p">,</span> <span class="n">_</span><span class="o">.</span><span class="n">num</span><span class="p">))</span>
+<span class="go">┏━━━━━━━━┳━━━━━━━┳━━━━━━━┓</span>
+<span class="go">┃ letter ┃ num   ┃ n     ┃</span>
+<span class="go">┡━━━━━━━━╇━━━━━━━╇━━━━━━━┩</span>
+<span class="go">│ string │ int64 │ int64 │</span>
+<span class="go">├────────┼───────┼───────┤</span>
+<span class="go">│ c      │     3 │     3 │</span>
+<span class="go">│ b      │     1 │     2 │</span>
+<span class="go">│ a      │     1 │     1 │</span>
+<span class="go">│ b      │     2 │     1 │</span>
+<span class="go">└────────┴───────┴───────┘</span>
+</code></pre></div>
+    <p>If we joined t with itself using this blocker, these are the sizes of the
+blocks we would get:</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">counts</span> <span class="o">=</span> <span class="n">mismo</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">key_counts</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;letter&quot;</span><span class="p">,</span> <span class="n">_</span><span class="o">.</span><span class="n">num</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">counts</span>
+<span class="go">┏━━━━━━━━┳━━━━━━━┳━━━━━━━┓</span>
+<span class="go">┃ letter ┃ num   ┃ n     ┃</span>
+<span class="go">┡━━━━━━━━╇━━━━━━━╇━━━━━━━┩</span>
+<span class="go">│ string │ int64 │ int64 │</span>
+<span class="go">├────────┼───────┼───────┤</span>
+<span class="go">│ c      │     3 │     9 │</span>
+<span class="go">│ b      │     1 │     4 │</span>
+<span class="go">│ a      │     1 │     1 │</span>
+<span class="go">│ b      │     2 │     1 │</span>
+<span class="go">└────────┴───────┴───────┘</span>
+</code></pre></div>
+    <p>The total number of pairs that would be generated is easy to find:</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">counts</span><span class="o">.</span><span class="n">n</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+<span class="go">15</span>
+</code></pre></div>
+
+  </div>
+
+</div><h2 id="analyze-join-algorithm">Analyze: Join Algorithm</h2>
+<p>Analyze the actual algorithm that the SQL engine will use when
+pairing up records during the join.
+In particular, check for slow <code>O(n*m)</code> nested loop joins.</p>
+<p>See <a href="">https://duckdb.org/2022/05/27/iejoin.html</a> for a very good
+explanation of how SQL engines (or at least duckdb) chooses
+a join algorithm.</p>
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h3 id="mismo.block.get_join_algorithm" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">mismo</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">get_join_algorithm</span><span class="p">(</span><span class="n">left</span><span class="p">:</span> <span class="n">it</span><span class="o">.</span><span class="n">Table</span><span class="p">,</span> <span class="n">right</span><span class="p">:</span> <span class="n">it</span><span class="o">.</span><span class="n">Table</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span></code>
+
+</h3>
+
+
+  <div class="doc doc-contents first">
+  
+      <p>Return one of the JOIN_ALGORITHMS for the outermost join in the expression.</p>
+<p>If there are multiple joins in the query, this will return the top (outermost) one.
+This only works with expressions bound to a DuckDB backend.
+Other kinds of expressions will raise NotImplementedError.</p>
+
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h3 id="mismo.block.check_join_algorithm" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">mismo</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">check_join_algorithm</span><span class="p">(</span><span class="n">left</span><span class="p">:</span> <span class="n">it</span><span class="o">.</span><span class="n">Table</span><span class="p">,</span> <span class="n">right</span><span class="p">:</span> <span class="n">it</span><span class="o">.</span><span class="n">Table</span><span class="p">,</span> <span class="n">condition</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">on_slow</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="s1">&#39;warn&#39;</span><span class="p">,</span> <span class="s1">&#39;ignore&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;error&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span></code>
+
+</h3>
+
+
+  <div class="doc doc-contents first">
+  
+      <p>Error or warn if the join in the expression is likely to be slow.</p>
+<p>Issues a SlowJoinWarning or raises a SlowJoinError.</p>
+<p>By "slow", we mean that the join algorithm is one of:</p>
+<ul>
+<li>"NESTED_LOOP_JOIN" O(n*m)</li>
+<li>"BLOCKWISE_NL_JOIN" O(n*m)</li>
+<li>"CROSS_PRODUCT" O(n*m)</li>
+</ul>
+<p>and not one of the fast join algorithms:</p>
+<ul>
+<li>"EMPTY_RESULT" O(1)</li>
+<li>"POSITIONAL_JOIN" O(n)</li>
+<li>"HASH_JOIN" O(n)</li>
+<li>"PIECEWISE_MERGE_JOIN" O(m*log(n))</li>
+<li>"IE_JOIN" O(n*log(n))</li>
+<li>"ASOF_JOIN" O(n*log(n))</li>
+</ul>
+<p>This is done by using the EXPLAIN command to generate the
+query plan, and checking the join algorithm.</p>
+<p>See <a href="">https://duckdb.org/2022/05/27/iejoin.html</a> for a very good explanation
+of these join algorithms.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="mismo.block.JOIN_ALGORITHMS" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">mismo</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">JOIN_ALGORITHMS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s1">&#39;EMPTY_RESULT&#39;</span><span class="p">,</span> <span class="s1">&#39;LEFT_DELIM_JOIN&#39;</span><span class="p">,</span> <span class="s1">&#39;RIGHT_DELIM_JOIN&#39;</span><span class="p">,</span> <span class="s1">&#39;BLOCKWISE_NL_JOIN&#39;</span><span class="p">,</span> <span class="s1">&#39;NESTED_LOOP_JOIN&#39;</span><span class="p">,</span> <span class="s1">&#39;HASH_JOIN&#39;</span><span class="p">,</span> <span class="s1">&#39;PIECEWISE_MERGE_JOIN&#39;</span><span class="p">,</span> <span class="s1">&#39;IE_JOIN&#39;</span><span class="p">,</span> <span class="s1">&#39;ASOF_JOIN&#39;</span><span class="p">,</span> <span class="s1">&#39;CROSS_PRODUCT&#39;</span><span class="p">,</span> <span class="s1">&#39;POSITIONAL_JOIN&#39;</span><span class="p">})</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+</h3>
+
+
+  <div class="doc doc-contents first">
+  
+      <p>Based on all the JOIN operators in
+<a href="">https://github.com/duckdb/duckdb/blob/b0b1562e293718ee9279c9621cefe4cb5dc01ef9/src/common/enums/physical_operator_type.cpp#L56</a>
+(very good) explanation of these at <a href="">https://duckdb.org/2022/05/27/iejoin.html</a></p>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="mismo.block.SLOW_JOIN_ALGORITHMS" class="doc doc-heading">
+          <code class="highlight language-python"><span class="n">mismo</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">SLOW_JOIN_ALGORITHMS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s1">&#39;NESTED_LOOP_JOIN&#39;</span><span class="p">,</span> <span class="s1">&#39;BLOCKWISE_NL_JOIN&#39;</span><span class="p">,</span> <span class="s1">&#39;CROSS_PRODUCT&#39;</span><span class="p">})</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+</h3>
+
+
+  <div class="doc doc-contents first">
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="mismo.block.SlowJoinError" class="doc doc-heading">
+          <code>mismo.block.SlowJoinError</code>
+
+
+</h3>
+
+
+  <div class="doc doc-contents first">
+          <p class="doc doc-class-bases">
+            Bases: <code><span title="mismo.block._sql_analyze._SlowJoinMixin">_SlowJoinMixin</span></code>, <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#ValueError">ValueError</a></code></p>
+
+  
+      <p>Error for slow join algorithms.</p>
+
+
+  </div>
+
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="mismo.block.SlowJoinWarning" class="doc doc-heading">
+          <code>mismo.block.SlowJoinWarning</code>
+
+
+</h3>
+
+
+  <div class="doc doc-contents first">
+          <p class="doc doc-class-bases">
+            Bases: <code><span title="mismo.block._sql_analyze._SlowJoinMixin">_SlowJoinMixin</span></code>, <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#UserWarning">UserWarning</a></code></p>
+
+  
+      <p>Warning for slow join algorithms.</p>
+
+
+  </div>
+
+
+</div>
+
+
+
+
+
+
+
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1-2.1-2M12.5 7v5.2l4 2.4-1 1L11 13V7h1.5M11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2v1.8Z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">March 9, 2024</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.annotate", "content.code.copy", "content.tabs.link", "header.autohide", "navigation.indexes", "navigation.instant", "navigation.tabs", "navigation.tabs.sticky", "navigation.tracking", "search.highlight", "search.share", "search.suggest"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.8fd75fb4.min.js"></script>
+      
+    
+  </body>
+</html>
