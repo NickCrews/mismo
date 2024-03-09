@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ibis
 from ibis import _
+from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 
 
@@ -78,3 +79,57 @@ def document_frequency_table(terms: ir.ArrayColumn) -> ir.Table:
         idf=(n_total_records / by_term.n_records).log(),
     )
     return by_term
+
+
+def term_counts(terms: ir.ArrayValue) -> ir.MapValue:
+    r"""Given an Array of terms, create MapValue for term -> number of appearances.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> from mismo.text import term_counts
+    >>> ibis.options.interactive = True
+    >>> terms_table = ibis.memtable(
+    ...     {
+    ...         "terms": [
+    ...             ["a", "b", "a"],
+    ...             ["c", "d"],
+    ...             [None, "e"],
+    ...             [None],
+    ...             None,
+    ...         ]
+    ...     }
+    ... )
+    >>> terms_table.mutate(counts=term_counts(terms_table.terms))
+    ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
+    ┃ terms              ┃ counts             ┃
+    ┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
+    │ array<string>      │ map<string, int64> │
+    ├────────────────────┼────────────────────┤
+    │ ['a', 'b', ... +1] │ {'b': 1, 'a': 2}   │
+    │ ['c', 'd']         │ {'d': 1, 'c': 1}   │
+    │ [None, 'e']        │ {'e': 1}           │
+    │ []                 │ {}                 │
+    │ NULL               │ NULL               │
+    └────────────────────┴────────────────────┘
+    """
+    as_table = terms.name("terms").as_table()
+    normalized = as_table.select(
+        "terms",
+        term=_.terms.filter(lambda t: t.notnull()).unnest(),
+    )
+    counts = normalized.group_by(["terms", "term"]).agg(n=_.count())
+    by_terms = counts.group_by("terms").agg(
+        counts=ibis.map(keys=_.term.collect(), values=_.n.collect())
+    )
+    terms_to_counts = ibis.map(
+        by_terms.terms.collect(),
+        by_terms.counts.collect(),
+    ).as_scalar()
+
+    # annoying logic to deal with the edge case of an empty array
+    term_type = terms.type().value_type
+    counts_type = dt.Map(key_type=term_type, value_type=dt.int64)
+    default = ibis.literal({}, counts_type)
+
+    return terms.isnull().ifelse(None, terms_to_counts.get(terms, default))
