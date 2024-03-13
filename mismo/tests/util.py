@@ -42,6 +42,10 @@ def make_record_approx(record: dict) -> dict:
 
 
 def make_float_comparable(val):
+    if isinstance(val, dict):
+        return {k: make_float_comparable(v) for k, v in val.items()}
+    if isinstance(val, (list, tuple)):
+        return [make_float_comparable(v) for v in val]
     if pd.isna(val):
         return None
     if isinstance(val, float) and not pd.isna(val):
