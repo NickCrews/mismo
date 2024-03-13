@@ -25,12 +25,12 @@ def assert_tables_equal(
 
     if order_by is None:
         order_by = left.columns
-    # need to sort after converting to pandas to avoid
+    # need to cache before ordering to avoid
     # https://github.com/ibis-project/ibis/issues/8442
-    left_df = left.to_pandas().sort_values(order_by, ignore_index=True)
-    right_df = right.to_pandas().sort_values(order_by, ignore_index=True)
-    left_records = left_df.to_dict(orient="records")
-    right_records = right_df.to_dict(orient="records")
+    left = left.cache().order_by(order_by)
+    right = right.cache().order_by(order_by)
+    left_records = left.to_pandas().to_dict(orient="records")
+    right_records = right.to_pandas().to_dict(orient="records")
     left_records = [make_record_approx(record) for record in left_records]
     right_records = [make_record_approx(record) for record in right_records]
     for i, (le, ri) in enumerate(zip(left_records, right_records)):
