@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Literal, TypeVar
 
 import ibis
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 
 
@@ -57,7 +58,7 @@ def dot(a: T, b: T) -> ir.FloatingValue:
         a_vals = a
         b_vals = b
     elif isinstance(a, ir.MapValue) and isinstance(b, ir.MapValue):
-        keys = a.keys().intersect(b.keys())
+        keys = _shared_keys(a, b)
         a_vals = keys.map(lambda k: a[k])
         b_vals = keys.map(lambda k: b[k])
     else:
@@ -65,7 +66,22 @@ def dot(a: T, b: T) -> ir.FloatingValue:
     return _array_dot_product(a_vals, b_vals)
 
 
-def norm(arr: T, metric: Literal["l1", "l2"] = "l2") -> T:
+def mul(a: T, b: T) -> T:
+    """Element-wise multiplication of two vectors"""
+    if isinstance(a, ir.ArrayValue) and isinstance(b, ir.ArrayValue):
+        # workaround for https://github.com/ibis-project/ibis/issues/8650
+        return array_zip(a, b).map(lambda struct: struct.f1 * struct.f2)
+    elif isinstance(a, ir.MapValue) and isinstance(b, ir.MapValue):
+        keys = _shared_keys(a, b)
+        vals = keys.map(lambda k: a[k] * b[k])
+        is_null = vals.isnull()
+        result = map_(keys.fillna([]), vals.fillna([]))
+        return is_null.ifelse(ibis.null(), result)
+    else:
+        raise ValueError(f"Unsupported types {type(a)} and {type(b)}")
+
+
+def normalize(vec: T, metric: Literal["l1", "l2"] = "l2") -> T:
     """Normalize a vector to have unit length.
 
     The vector can either be a dense vector, represented as array<numeric>,
@@ -74,7 +90,7 @@ def norm(arr: T, metric: Literal["l1", "l2"] = "l2") -> T:
 
     Parameters
     ----------
-    arr :
+    vec :
         The vector to normalize.
     metric : {"l1", "l2"}, default "l2"
         The metric to use. "l1" for Manhattan distance, "l2" for Euclidean distance.
@@ -96,12 +112,12 @@ def norm(arr: T, metric: Literal["l1", "l2"] = "l2") -> T:
     >>> norm(ibis.map({"a": 1, "b": 2}))
     {"a": 0.4472135954999579, "b": 0.8944271909999159}
     """
-    if isinstance(arr, ir.ArrayValue):
-        vals = arr
-    elif isinstance(arr, ir.MapValue):
-        vals = arr.values()
+    if isinstance(vec, ir.ArrayValue):
+        vals = vec
+    elif isinstance(vec, ir.MapValue):
+        vals = map_values(vec)
     else:
-        raise ValueError(f"Unsupported type {type(arr)}")
+        raise ValueError(f"Unsupported type {type(vec)}")
 
     if metric == "l1":
         denom = _array_sum(vals)
@@ -111,7 +127,48 @@ def norm(arr: T, metric: Literal["l1", "l2"] = "l2") -> T:
         raise ValueError(f"Unsupported norm {metric}")
     normed_vals = vals.map(lambda x: x / denom)
 
-    if isinstance(arr, ir.ArrayValue):
+    if isinstance(vec, ir.ArrayValue):
         return normed_vals
     else:
-        return ibis.map(arr.keys(), normed_vals)
+        return map_(map_keys(vec), normed_vals)
+
+
+def _shared_keys(a: ir.MapValue, b: ir.MapValue) -> ir.ArrayValue:
+    regular = map_keys(a).filter(lambda k: b.contains(k))
+    null = ibis.literal(None, type=dt.Array(value_type=a.type().key_type))
+    return b.isnull().ifelse(null, regular)
+
+
+def map_keys(m: ir.MapValue) -> ir.ArrayValue:
+    """workaround for https://github.com/duckdb/duckdb/issues/11116"""
+    normal = m.keys()
+    null = ibis.literal(None, type=dt.Array(value_type=m.type().key_type))
+    return m.isnull().ifelse(null, normal)
+
+
+def map_values(m: ir.MapValue) -> ir.ArrayValue:
+    """workaround for https://github.com/duckdb/duckdb/issues/11116"""
+    normal = m.values()
+    null = ibis.literal(None, type=dt.Array(value_type=m.type().value_type))
+    return m.isnull().ifelse(null, normal)
+
+
+def map_(keys: ir.ArrayValue, values: ir.ArrayValue) -> ir.MapValue:
+    """workaround for https://github.com/duckdb/duckdb/issues/11115"""
+    either_null = keys.isnull() | values.isnull()
+    regular = ibis.map(keys, values)
+    null = ibis.literal(
+        None,
+        type=dt.Map(
+            key_type=keys.type().value_type, value_type=values.type().value_type
+        ),
+    )
+    return either_null.ifelse(null, regular)
+
+
+def array_zip(a: ir.ArrayValue, *rest: ir.ArrayValue) -> ir.ArrayValue:
+    """workaround for https://github.com/ibis-project/ibis/issues/8650"""
+    regular = a.zip(*rest)
+    any_null = ibis.or_(a.isnull(), *[x.isnull() for x in rest])
+    null = ibis.literal(None, type=regular.type())
+    return any_null.ifelse(null, regular)

@@ -5,12 +5,11 @@ from ibis import _
 from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 
+from mismo import vector
 
-def document_frequency_table(terms: ir.ArrayColumn) -> ir.Table:
-    r"""Create a lookup table for the document frequency of terms.
 
-    Given a term, how many records contain it?
-    Based around https://en.wikipedia.org/wiki/Tf%E2%80%93idf.
+def document_counts(terms: ir.ArrayColumn) -> ir.Table:
+    r"""Create a lookup Table from term to number of records containing the term.
 
     Parameters
     ----------
@@ -22,43 +21,42 @@ def document_frequency_table(terms: ir.ArrayColumn) -> ir.Table:
 
     Returns
     -------
-        A Table with a single row for every unique term in the input, with columns:
-        - term: the term
-        - n_records: the number of records containing the term
-        - frac_records: the fraction of records containing the term
-        - idf: the inverse document frequency of the term
-            (0 means the term is in every record, large numbers mean the term is rare)
+        A Table with columns `term` and `n_records`. The `term` column contains
+        each unique term from the input `terms` array. The `n_records` column
+        contains the number of records in the input `terms` array that contain
 
     Examples
     --------
     >>> import ibis
-    >>> from mismo.text import document_frequency_table
-    ... >>> addresses = [
+    >>> from mismo.text import document_counts
+    >>> ibis.options.repr.interactive.max_length = 20
+    >>> addresses = [
     ...     "12 main st",
-    ...     "34 st john ave",
-    ...     "56 oak st",
+    ...     "99 main ave",
+    ...     "56 st joseph st",
+    ...     "21 glacier st",
     ...     "12 glacier st",
     ... ]
     >>> t = ibis.memtable({"address": addresses})
     >>> # split on whitespace
-    >>> tokens = t.address.re_split(r"\s+")
-    >>> document_frequency_table(tokens)
-    ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━┓
-    ┃ term    ┃ n_records ┃ frac_records ┃ idf      ┃
-    ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━┩
-    │ string  │ int64     │ float64      │ float64  │
-    ├─────────┼───────────┼──────────────┼──────────┤
-    │ 12      │         2 │         0.50 │ 0.693147 │
-    │ 56      │         1 │         0.25 │ 1.386294 │
-    │ john    │         1 │         0.25 │ 1.386294 │
-    │ 34      │         1 │         0.25 │ 1.386294 │
-    │ main    │         1 │         0.25 │ 1.386294 │
-    │ oak     │         1 │         0.25 │ 1.386294 │
-    │ glacier │         1 │         0.25 │ 1.386294 │
-    │ st      │         4 │         1.00 │ 0.000000 │
-    │ ave     │         1 │         0.25 │ 1.386294 │
-    └─────────┴───────────┴──────────────┴──────────┘
-    """
+    >>> t = t.mutate(terms=t.address.re_split(r"\s+"))
+    >>> document_counts(t.terms)
+    ┏━━━━━━━━━┳━━━━━━━━━━━┓
+    ┃ term    ┃ n_records ┃
+    ┡━━━━━━━━━╇━━━━━━━━━━━┩
+    │ string  │ int64     │
+    ├─────────┼───────────┤
+    │ 12      │         2 │
+    │ 56      │         1 │
+    │ main    │         2 │
+    │ st      │         4 │
+    │ ave     │         1 │
+    │ glacier │         2 │
+    │ 99      │         1 │
+    │ 21      │         1 │
+    │ joseph  │         1 │
+    └─────────┴───────────┘
+    """  # noqa: E501
     if not isinstance(terms, ir.ArrayValue):
         raise ValueError(f"Unsupported type {type(terms)}")
     terms_table = (
@@ -69,67 +67,184 @@ def document_frequency_table(terms: ir.ArrayColumn) -> ir.Table:
             terms=_.terms,
         )
     )
-    n_total_records = terms_table.view().record_id.nunique()
     flat = terms_table.select("record_id", term=_.terms.unnest())
     by_term = flat.group_by("term").agg(n_records=_.record_id.nunique())
-    by_term = by_term.select(
-        "term",
-        "n_records",
-        frac_records=by_term.n_records / n_total_records,
-        idf=(n_total_records / by_term.n_records).log(),
-    )
     return by_term
 
 
-def term_counts(terms: ir.ArrayValue) -> ir.MapValue:
-    r"""Given an Array of terms, create MapValue for term -> number of appearances.
+def term_idf(terms: ir.ArrayValue) -> ir.Table:
+    r"""Create a lookup Table from term to IDF.
 
     Examples
     --------
     >>> import ibis
-    >>> from mismo.text import term_counts
+    >>> from mismo.text import term_idf
     >>> ibis.options.interactive = True
-    >>> terms_table = ibis.memtable(
-    ...     {
-    ...         "terms": [
-    ...             ["a", "b", "a"],
-    ...             ["c", "d"],
-    ...             [None, "e"],
-    ...             [None],
-    ...             None,
-    ...         ]
-    ...     }
-    ... )
-    >>> terms_table.mutate(counts=term_counts(terms_table.terms))
-    ┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
-    ┃ terms              ┃ counts             ┃
-    ┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
-    │ array<string>      │ map<string, int64> │
-    ├────────────────────┼────────────────────┤
-    │ ['a', 'b', ... +1] │ {'b': 1, 'a': 2}   │
-    │ ['c', 'd']         │ {'d': 1, 'c': 1}   │
-    │ [None, 'e']        │ {'e': 1}           │
-    │ []                 │ {}                 │
-    │ NULL               │ NULL               │
-    └────────────────────┴────────────────────┘
+    >>> addresses = [
+    ...     "12 main st",
+    ...     "99 main ave",
+    ...     "56 st joseph st",
+    ...     "21 glacier st",
+    ...     "12 glacier st",
+    ... ]
+    >>> t = ibis.memtable({"address": addresses})
+    >>> # split on whitespace
+    >>> t = t.mutate(terms=t.address.re_split(r"\s+"))
+    >>> term_idf(t.address)
+    ┏━━━━━━━━━┳━━━━━━━━━━┓
+    ┃ term    ┃ idf      ┃
+    ┡━━━━━━━━━╇━━━━━━━━━━┩
+    │ string  │ float64  │
+    ├─────────┼──────────┤
+    │ 12      │ 0.916291 │
+    │ 56      │ 1.609438 │
+    │ main    │ 0.916291 │
+    │ st      │ 0.223144 │
+    │ ave     │ 1.609438 │
+    │ glacier │ 0.916291 │
+    │ 99      │ 1.609438 │
+    │ joseph  │ 1.609438 │
+    │ 21      │ 1.609438 │
+    └─────────┴──────────┘
     """
-    as_table = terms.name("terms").as_table()
-    normalized = as_table.select(
-        "terms",
-        term=_.terms.filter(lambda t: t.notnull()).unnest(),
+    dc = document_counts(terms)
+    n_total_records = terms.count()
+    idf = dc.select(
+        "term",
+        idf=(n_total_records / dc.n_records).log(),
     )
-    counts = normalized.group_by(["terms", "term"]).agg(n=_.count())
-    by_terms = counts.group_by("terms").agg(
-        counts=ibis.map(keys=_.term.collect(), values=_.n.collect())
+    return idf
+
+
+# TODO: if https://github.com/ibis-project/ibis/issues/8614
+# is fixed, this API can improve to be (ArrayValue) -> MapValue
+def add_array_value_counts(
+    t: ir.Table, column: str, *, result_name: str = "{name}_counts"
+) -> ir.Table:
+    r"""value_counts() for ArrayColumns.
+
+    Parameters
+    ----------
+    t : Table
+        The input table.
+    column : str
+        The name of the array column to analyze.
+    result_name : str, optional
+        The name of the resulting column. The default is "{name}_counts".
+
+    Examples
+    --------
+    >>> import ibis
+    >>> from mismo.text import add_array_value_counts
+    >>> ibis.options.interactive = True
+    >>> terms = [
+    ...     None,
+    ...     ["st"],
+    ...     ["st"],
+    ...     ["12", "main", "st"],
+    ...     ["99", "main", "ave"],
+    ...     ["56", "st", "joseph", "st"],
+    ...     ["21", "glacier", "st"],
+    ...     ["12", "glacier", "st"],
+    ... ]
+    t = ibis.memtable({"terms": terms})
+    >>> add_array_value_counts(t, "terms")
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ terms                        ┃ terms_counts                     ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ array<string>                │ map<string, int64>               │
+    ├──────────────────────────────┼──────────────────────────────────┤
+    │ ['st']                       │ {'st': 1}                        │
+    │ ['st']                       │ {'st': 1}                        │
+    │ ['12', 'main', 'st']         │ {'st': 1, '12': 1, 'main': 1}    │
+    │ ['99', 'main', 'ave']        │ {'ave': 1, '99': 1, 'main': 1}   │
+    │ ['56', 'st', 'joseph', 'st'] │ {'56': 1, 'joseph': 1, 'st': 2}  │
+    │ ['21', 'glacier', 'st']      │ {'glacier': 1, 'st': 1, '21': 1} │
+    │ ['12', 'glacier', 'st']      │ {'glacier': 1, 'st': 1, '12': 1} │
+    │ NULL                         │ NULL                             │
+    └──────────────────────────────┴──────────────────────────────────┘
+    """  # noqa: E501
+    terms = t[column]
+    # Add id before unnesting so we always get an id per row
+    t = t.mutate(__id=ibis.row_number())
+    normalized = t.mutate(
+        __term=terms.filter(lambda t: t.notnull()).unnest(),
     )
-    terms_to_counts = ibis.map(
-        by_terms.terms.collect(),
-        by_terms.counts.collect(),
-    ).as_scalar()
+    counts = normalized.group_by(["__id", "__term"]).agg(
+        __n=_.count(),
+    )
+    by_terms = counts.group_by("__id").agg(
+        __result=ibis.map(keys=_.__term.collect(), values=_.__n.collect()),
+    )
+    result = t.left_join(by_terms, "__id").drop("__id", "__id_right")
 
     # annoying logic to deal with the edge case of an empty array
     term_type = terms.type().value_type
     counts_type = dt.Map(key_type=term_type, value_type=dt.int64)
-    default = ibis.literal({}, counts_type)
+    empty = ibis.literal({}, counts_type)
+    result = result.mutate(__result=(_[column].length() == 0).ifelse(empty, _.__result))
+    return result.rename({result_name.format(name=column): "__result"})
 
-    return terms.isnull().ifelse(None, terms_to_counts.get(terms, default))
+
+def add_tfidf(
+    t,
+    column: str,
+    *,
+    result_name: str = "{name}_tfidf",
+    normalize: bool = True,
+):
+    r"""Vectorize terms using TF-IDF.
+
+    Adds a column to the input table that contains the TF-IDF vector for the
+    terms in the input column.
+
+    Parameters
+    ----------
+    t : Table
+        The input table.
+    column : str
+        The name of the array column to analyze.
+    result_name : str, optional
+        The name of the resulting column. The default is "{name}_tfidf".
+    normalize : bool, optional
+        Whether to normalize the resulting vector to unit length. The default is True.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> from mismo.text import add_tfidf
+    >>> ibis.options.interactive = True
+    >>> terms = [
+    ...     None,
+    ...     ["st"],
+    ...     ["st"],
+    ...     ["12", "main", "st"],
+    ...     ["99", "main", "ave"],
+    ...     ["56", "st", "joseph", "st"],
+    ...     ["21", "glacier", "st"],
+    ...     ["12", "glacier", "st"],
+    ... ]
+    t = ibis.memtable({"terms": terms})
+    >>> add_tfidf(t, "terms")
+    ┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ address         ┃ terms                        ┃ terms_tfidf                                                                         ┃
+    ┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ string          │ array<string>                │ map<string, float64>                                                                │
+    ├─────────────────┼──────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┤
+    │ 12 main st      │ ['12', 'main', 'st']         │ {'main': 0.6968503263117379, 'st': 0.1697034043219193, '12': 0.6968503263117379}    │
+    │ 56 st joseph st │ ['56', 'st', 'joseph', 'st'] │ {'joseph': 0.6938938856579954, '56': 0.6938938856579954, 'st': 0.19241244994255877} │
+    │ 99 main ave     │ ['99', 'main', 'ave']        │ {'99': 0.6559486886294514, 'ave': 0.6559486886294514, 'main': 0.37344696513776354}  │
+    │ 21 glacier st   │ ['21', 'glacier', 'st']      │ {'21': 0.8627899233289343, 'glacier': 0.4912065288092223, 'st': 0.1196231342895101} │
+    │ 12 glacier st   │ ['12', 'glacier', 'st']      │ {'12': 0.6968503263117379, 'st': 0.1697034043219193, 'glacier': 0.6968503263117379} │
+    └─────────────────┴──────────────────────────────┴─────────────────────────────────────────────────────────────────────────────────────┘
+    """  # noqa: E501
+    with_counts = add_array_value_counts(t, column, result_name="__term_counts")
+    idf = term_idf(t[column])
+    idf_m = ibis.map(idf.term.collect(), idf.idf.collect()).name("__idf_map")
+    cj = with_counts.cross_join(idf_m.as_table())
+    r = result_name.format(name=column)
+    cj = cj.mutate(vector.mul(cj.__term_counts, cj.__idf_map).name(r))
+    result = cj.drop("__term_counts", "__idf_map")
+    if normalize:
+        result = result.mutate(vector.normalize(result[r]).name(r))
+    return result

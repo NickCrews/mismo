@@ -1,16 +1,18 @@
 from __future__ import annotations
 
 import ibis
+import pandas as pd
 import pytest
 
-from mismo.vector import dot, norm
+from mismo import vector
 
 
 def _to_vector(x):
     if isinstance(x, dict):
         return ibis.literal(x, type="map<string, int64>")
     if isinstance(x, list):
-        return ibis.literal(x, type="array<int64>")
+        # no-op lambda is workaround: https://github.com/ibis-project/ibis/issues/8641
+        return ibis.literal(x, type="array<int64>").map(lambda x: x)
     return x
 
 
@@ -22,6 +24,7 @@ def _to_vector(x):
         pytest.param({"a": 1, "b": 2}, {"b": 3, "c": 4}, 6.0, id="map"),
         pytest.param([], [], 0, id="empty_arrays"),
         pytest.param({}, {}, 0, id="empty_maps"),
+        pytest.param({}, {"a": 5}, 0, id="one_empty_map"),
         pytest.param(
             [1],
             [4, 5],
@@ -29,11 +32,43 @@ def _to_vector(x):
             id="array_length_mismatch",
             marks=pytest.mark.xfail(reason="fails at execution time"),
         ),
+        pytest.param(
+            ibis.literal(None, "map<string, int64>"),
+            {"a": 5},
+            None,
+            id="null_nonull_map",
+        ),
+        pytest.param(
+            {"a": 5},
+            ibis.literal(None, "map<string, int64>"),
+            None,
+            id="nonnull_null_map",
+        ),
+        pytest.param(
+            ibis.literal(None, "array<int64>"),
+            [5, 3],
+            None,
+            id="one_null_array",
+        ),
+        pytest.param(
+            ibis.literal(None, "array<int64>"),
+            ibis.literal(None, "array<int64>"),
+            None,
+            id="both_null_array",
+        ),
+        pytest.param(
+            ibis.literal(None, "map<string, int64>"),
+            ibis.literal(None, "map<string, int64>"),
+            None,
+            id="both_null_map",
+        ),
     ],
 )
 def test_dot(a, b, expected):
-    result = dot(_to_vector(a), _to_vector(b))
-    assert result.execute() == expected
+    result = vector.dot(_to_vector(a), _to_vector(b)).execute()
+    if pd.isna(result):
+        result = None
+    assert result == expected
 
 
 @pytest.mark.parametrize(
@@ -59,8 +94,80 @@ def test_dot(a, b, expected):
         ),
         pytest.param([], "l2", [], id="array_empty"),
         pytest.param({}, "l2", {}, id="map_empty"),
+        pytest.param(ibis.literal(None, "array<int64>"), "l2", None, id="null_array"),
+        pytest.param(
+            ibis.literal(None, "map<string, int64>"), "l1", None, id="null_map_l1"
+        ),
+        pytest.param(
+            ibis.literal(None, "map<string, int64>"), "l2", None, id="null_map_l2"
+        ),
     ],
 )
-def test_norm(a, metric, expected):
-    result = norm(_to_vector(a), metric)
+def test_normalize(a, metric, expected):
+    result = vector.normalize(_to_vector(a), metric)
     assert result.execute() == expected
+
+
+@pytest.mark.parametrize(
+    "a,b,expected",
+    [
+        pytest.param([1, 2], [4, 5], [4, 10], id="array_int"),
+        pytest.param([1.0, 2.0], [4, 5], [4.0, 10.0], id="array_float"),
+        pytest.param([], [], [], id="array_empty"),
+        pytest.param(
+            [1],
+            [4, 5],
+            9999,
+            id="array_length_mismatch",
+            marks=pytest.mark.xfail(reason="fails at execution time"),
+        ),
+        pytest.param(
+            ibis.literal(None, "array<int64>"),
+            [5, 3],
+            None,
+            id="array_nonnull_null",
+        ),
+        pytest.param(
+            [5, 3],
+            ibis.literal(None, "array<int64>"),
+            None,
+            id="array_null_nonnull",
+        ),
+        pytest.param(
+            ibis.literal(None, "array<int64>"),
+            ibis.literal(None, "array<int64>"),
+            None,
+            id="array_both_null",
+        ),
+        pytest.param({"a": 1, "b": 2}, {"b": 3, "c": 4}, {"b": 6}, id="map_int"),
+        pytest.param(
+            {"a": 1.0, "b": 2.0}, {"b": 3.0, "c": 4.0}, {"b": 6.0}, id="map_float"
+        ),
+        pytest.param({}, {}, {}, id="map_empty"),
+        pytest.param({}, {"a": 5}, {}, id="map_empty_nonempty"),
+        pytest.param(
+            ibis.literal(None, "map<string, int64>"),
+            {"a": 5},
+            None,
+            id="map_null_nonull",
+        ),
+        pytest.param(
+            {"a": 5},
+            ibis.literal(None, "map<string, int64>"),
+            None,
+            id="map_nonnull_null",
+        ),
+        pytest.param(
+            ibis.literal(None, "map<string, int64>"),
+            ibis.literal(None, "map<string, int64>"),
+            None,
+            id="map_both_null",
+        ),
+    ],
+)
+def test_mul(a, b, expected):
+    result = vector.mul(_to_vector(a), _to_vector(b)).execute()
+    if expected is None:
+        assert pd.isna(result)
+    else:
+        assert result == expected
