@@ -99,26 +99,17 @@ class AddressesDimension:
     This operates on columns of type `array<address>`. In other words,
     it is useful for comparing eg people, who might have multiple addresses,
     and they are the same person if any of their addresses match.
-
-    Parameters
-    ----------
-    column_left:
-        The column in the left table containing the name struct.
-    column_right:
-        The column in the right table containing the name struct.
     """
 
     def __init__(
         self,
         column: str,
         *,
-        name: str = "addresses",
         column_normed: str = "{column}_normed",
         column_tokens: str = "{column}_tokens",
         column_keywords: str = "{column}_keywords",
     ):
         self.column = column
-        self.name = name
         self.column_normed = column_normed.format(column=column)
         self.column_tokens = column_tokens.format(column=column)
         self.column_keywords = column_keywords.format(column=column)
@@ -181,7 +172,8 @@ class AddressesDimension:
             *within_100km_levels,
             ("same_state", al.state == ar.state),
         ]
-        return compare(t, LevelComparer(self.name, levels))
+        name = type(self).__name__
+        return compare(t, LevelComparer(name, levels))
 
 
 def address_tokens(address: it.StructValue) -> it.ArrayColumn:
