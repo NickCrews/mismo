@@ -5,7 +5,7 @@ from ibis import _
 from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 
-from mismo import vector
+from mismo import _util, vector
 
 
 def document_counts(terms: ir.ArrayColumn) -> ir.Table:
@@ -164,22 +164,24 @@ def add_array_value_counts(
     │ NULL                         │ NULL                             │
     └──────────────────────────────┴──────────────────────────────────┘
     """  # noqa: E501
-    terms = t[column]
-    # Add id before unnesting so we always get an id per row
-    t = t.mutate(__id=ibis.row_number())
-    normalized = t.mutate(
-        __term=terms.filter(lambda t: t.notnull()).unnest(),
+    t = t.mutate(__terms=_util.get_column(t, column))
+    normalized = (
+        t.select("__terms")
+        .distinct()
+        .mutate(
+            __term=_.__terms.filter(lambda t: t.notnull()).unnest(),
+        )
     )
-    counts = normalized.group_by(["__id", "__term"]).agg(
+    counts = normalized.group_by(["__terms", "__term"]).agg(
         __n=_.count(),
     )
-    by_terms = counts.group_by("__id").agg(
+    by_terms = counts.group_by("__terms").agg(
         __result=ibis.map(keys=_.__term.collect(), values=_.__n.collect()),
     )
-    result = t.left_join(by_terms, "__id").drop("__id", "__id_right")
+    result = t.left_join(by_terms, "__terms").drop("__terms", "__terms_right")
 
     # annoying logic to deal with the edge case of an empty array
-    term_type = terms.type().value_type
+    term_type = t.__terms.type().value_type
     counts_type = dt.Map(key_type=term_type, value_type=dt.int64)
     empty = ibis.literal({}, counts_type)
     result = result.mutate(__result=(_[column].length() == 0).ifelse(empty, _.__result))
@@ -206,8 +208,10 @@ def add_tfidf(
         The name of the array column to analyze.
     result_name : str, optional
         The name of the resulting column. The default is "{name}_tfidf".
-    normalize : bool, optional
-        Whether to normalize the resulting vector to unit length. The default is True.
+    normalize :
+        Whether to normalize the TF-vector before multiplying by the IDF.
+        The default is True.
+        This makes it so that vectors of different lengths can be compared fairly.
 
     Examples
     --------
@@ -239,12 +243,37 @@ def add_tfidf(
     └─────────────────┴──────────────────────────────┴─────────────────────────────────────────────────────────────────────────────────────┘
     """  # noqa: E501
     with_counts = add_array_value_counts(t, column, result_name="__term_counts")
+    if normalize:
+        with_counts = with_counts.mutate(
+            __term_counts=vector.normalize(with_counts.__term_counts)
+        )
     idf = term_idf(t[column])
     idf_m = ibis.map(idf.term.collect(), idf.idf.collect()).name("__idf_map")
-    cj = with_counts.cross_join(idf_m.as_table())
+    idf_table = idf_m.as_table()
+    idf_table = idf_table.cache()
+    cj = with_counts.cross_join(idf_table)
     r = result_name.format(name=column)
     cj = cj.mutate(vector.mul(cj.__term_counts, cj.__idf_map).name(r))
     result = cj.drop("__term_counts", "__idf_map")
-    if normalize:
-        result = result.mutate(vector.normalize(result[r]).name(r))
     return result
+
+
+def rare_terms(
+    terms: ir.ArrayColumn,
+    *,
+    max_records_n: int | None = None,
+    max_records_frac: float | None = None,
+) -> ir.Column:
+    """Get the terms that appear in few records."""
+    if max_records_n is not None and max_records_frac is not None:
+        raise ValueError("Only one of max_records_n or max_records_frac can be set")
+    if max_records_n is None and max_records_frac is None:
+        raise ValueError("One of max_records_n or max_records_frac must be set")
+    dc = document_counts(terms)
+    if max_records_n is not None:
+        rare = dc.filter(_.n_records <= max_records_n).select("term")
+    else:
+        n_total_records = terms.count()
+        dc = dc.mutate(frac=_.n_records / n_total_records)
+        rare = dc.filter(_.frac <= max_records_frac).select("term")
+    return rare
