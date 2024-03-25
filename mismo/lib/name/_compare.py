@@ -1,83 +1,9 @@
 from __future__ import annotations
 
-from typing import Callable
-
 import ibis
-from ibis.common.deferred import Deferred
 from ibis.expr import types as it
 
-from mismo import _util
-from mismo.compare import LevelComparer, compare
 from mismo.lib.name._nicknames import are_aliases
-
-
-class NameLevelComparer:
-    """An opinionated [LevelComparer][mismo.compare.LevelComparer] for Human Names.
-
-    This labels record pairs with a level of similarity based on how well
-    their names match.
-    """
-
-    def __init__(
-        self,
-        column_left: str | Deferred | Callable[[it.Table], it.StructColumn],
-        column_right: str | Deferred | Callable[[it.Table], it.StructColumn],
-        name: str = "name_agreement",
-        levels: list[
-            dict[str, str | Deferred | Callable[[it.Table], it.BooleanValue]]
-        ] = None,
-    ):
-        """Compare two tables on the specified name columns.
-
-        A name column is expected to be a Struct of the type
-        `struct<
-            prefix: string,
-            first: string,
-            middle: string,
-            last: string,
-            suffix: string,
-            nickname: string,
-        >`.
-
-        Parameters
-        ----------
-        column_left:
-            The column in the left table containing the name struct.
-        column_right:
-            The column in the right table containing the name struct.
-        """
-        self.column_left = column_left
-        self.column_right = column_right
-        self.name = name
-        self.levels = levels or self.default_levels(column_left, column_right)
-
-    @staticmethod
-    def default_levels(left: it.StructColumn, right: it.StructColumn):
-        return (
-            (
-                "null",
-                lambda t: ibis.or_(
-                    _util.struct_isnull(t[left], how="any", fields=["first", "last"]),
-                    _util.struct_isnull(t[right], how="any", fields=["first", "last"]),
-                ),
-            ),
-            ("exact", lambda t: _util.struct_equal(t[left], t[right])),
-            (
-                "first_last",
-                lambda t: _util.struct_equal(
-                    t[left], t[right], fields=["first", "last"]
-                ),
-            ),
-            ("nicknames", lambda t: are_match_with_nicknames(t[left], t[right])),
-            (
-                "initials",
-                lambda t: initials_equal(t[left]["first"], t[right]["first"])
-                & (t[left]["last"] == t[right]["last"]),
-            ),
-        )
-
-    def __call__(self, t: it.Table) -> it.BooleanColumn:
-        return compare(t, LevelComparer(self.name, self.levels))
 
 
 def are_match_with_nicknames(
