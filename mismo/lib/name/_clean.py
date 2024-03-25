@@ -3,6 +3,8 @@ from __future__ import annotations
 import ibis
 from ibis.expr import types as ir
 
+from mismo import _util
+
 
 def normalize_name_field(field: ir.StringValue) -> ir.StringValue:
     """Convert to uppercase, normalize whitespace, and remove non-alphanumeric.
@@ -49,19 +51,6 @@ def normalize_name(name: ir.StructValue) -> ir.StructValue:
     )
 
 
-def name_tokens(name: ir.StructValue) -> ir.ArrayValue:
+def name_tokens(name: ir.StructValue, *, unique: bool = True) -> ir.ArrayValue:
     """Get all the tokens from a name."""
-    return (
-        ibis.array(
-            [
-                name["prefix"].re_split(r"\s+"),
-                name["first"].re_split(r"\s+"),
-                name["middle"].re_split(r"\s+"),
-                name["last"].re_split(r"\s+"),
-                name["suffix"].re_split(r"\s+"),
-                name["nickname"].re_split(r"\s+"),
-            ]
-        )
-        .flatten()
-        .unique()
-    )
+    return _util.struct_tokens(name, unique=unique)

@@ -272,3 +272,18 @@ def struct_isnull(
         return struct.isnull() | ibis.and_(*vals)
     else:
         raise ValueError(f"how must be 'any' or 'all'. Got {how}")
+
+
+def struct_join(struct: it.StructValue, sep: str) -> it.StringValue:
+    """Join all the fields in a struct with a separator."""
+    return ibis.literal(sep).join([struct[f].fillna("") for f in struct.type().names])
+
+
+def struct_tokens(struct: it.StructValue, *, unique: bool = True) -> it.ArrayValue:
+    """Get all the tokens from a struct."""
+    oneline = struct_join(struct, " ")
+    result = oneline.re_split(r"\s+")
+    if unique:
+        result = result.unique()
+    result = struct.isnull().ifelse(ibis.null(), result)
+    return result

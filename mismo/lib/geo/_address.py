@@ -176,7 +176,7 @@ class AddressesDimension:
         return compare(t, LevelComparer(name, levels))
 
 
-def address_tokens(address: it.StructValue) -> it.ArrayColumn:
+def address_tokens(address: it.StructValue, *, unique: bool = True) -> it.ArrayColumn:
     """Extract keywords from an address.
 
     Parameters
@@ -189,21 +189,4 @@ def address_tokens(address: it.StructValue) -> it.ArrayColumn:
     keywords : it.ArrayColumn
         The keywords in the address.
     """
-
-    def tokens(s: it.StringValue) -> it.ArrayColumn:
-        return s.re_split(r"\s+")
-
-    return (
-        ibis.array(
-            [
-                tokens(address.street1),
-                tokens(address.street2),
-                tokens(address.city),
-                tokens(address.state),
-                tokens(address.postal_code),
-                tokens(address.country),
-            ]
-        )
-        .flatten()
-        .unique()
-    )
+    return _util.struct_tokens(address, unique=unique)
