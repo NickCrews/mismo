@@ -74,12 +74,8 @@ def _is_nickname_for(
 ) -> it.BooleanValue:
     nickname = nickname.lower().strip()
     canonical = canonical.lower().strip()
-    NICKNAMES = _nicknames_table()
-    haystack = ibis.struct(
-        {"canonical": NICKNAMES.canonical, "nickname": NICKNAMES.nickname}
-    )
     needle = ibis.struct({"canonical": canonical, "nickname": nickname})
-    result = needle.isin(haystack) | (canonical == nickname)
+    result = needle.isin(_nicknames_column()) | (canonical == nickname)
     # workaround for https://github.com/ibis-project/ibis/issues/8361
     if isinstance(needle, it.Scalar):
         return result.as_scalar()
@@ -87,11 +83,18 @@ def _is_nickname_for(
 
 
 def _are_aliases(name1: it.StringValue, name2: it.StringValue) -> it.BooleanValue:
-    return is_nickname_for(name1, name2) | is_nickname_for(name2, name1)
+    name1 = name1.lower().strip()
+    name2 = name2.lower().strip()
+    needle = ibis.struct({"name1": name1, "name2": name2})
+    result = needle.isin(_aliases_column()) | (name1 == name2)
+    # workaround for https://github.com/ibis-project/ibis/issues/8361
+    if isinstance(needle, it.Scalar):
+        return result.as_scalar()
+    return result
 
 
 @functools.cache
-def _nicknames_table() -> it.Table:
+def _nicknames_column() -> it.StructColumn:
     with optional_import("nicknames"):
         from nicknames import NickNamer
 
@@ -100,4 +103,19 @@ def _nicknames_table() -> it.Table:
     for canonical, nicknames in nn._nickname_lookup.items():
         for nickname in nicknames:
             pairs.append((canonical, nickname))
-    return ibis.memtable(pairs, columns=["canonical", "nickname"])
+    t = ibis.memtable(pairs, columns=["canonical", "nickname"])
+    s = ibis.struct({"canonical": t.canonical, "nickname": t.nickname})
+    s = s.name("nicknames").as_table().cache().nicknames
+    return s
+
+
+@functools.cache
+def _aliases_column() -> it.StructColumn:
+    nn = _nicknames_column()
+    a1 = ibis.struct({"name1": nn.canonical, "name2": nn.nickname})
+    a2 = ibis.struct({"name1": nn.nickname, "name2": nn.canonical})
+    a1 = a1.name("aliases").as_table()
+    a2 = a2.name("aliases").as_table()
+    t = ibis.union(a1, a2).distinct()
+    t = t.cache()
+    return t.aliases
