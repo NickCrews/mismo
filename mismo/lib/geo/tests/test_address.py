@@ -31,6 +31,17 @@ from mismo.lib.geo import _address
             },
             {"123", "Main", "St", "IL", "62701", "US"},
         ),
+        (
+            {
+                "street1": None,
+                "street2": None,
+                "city": None,
+                "state": None,
+                "postal_code": None,
+                "country": None,
+            },
+            set(),
+        ),
         (None, None),
     ],
 )

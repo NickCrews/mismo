@@ -276,14 +276,17 @@ def struct_isnull(
 
 def struct_join(struct: ir.StructValue, sep: str) -> ir.StringValue:
     """Join all the fields in a struct with a separator."""
-    return ibis.literal(sep).join([struct[f].fillna("") for f in struct.type().names])
+    regular = ibis.literal(sep).join(
+        [struct[f].fillna("") for f in struct.type().names]
+    )
+    return struct.isnull().ifelse(None, regular)
 
 
 def struct_tokens(struct: ir.StructValue, *, unique: bool = True) -> ir.ArrayValue:
     """Get all the tokens from a struct."""
     oneline = struct_join(struct, " ")
-    result = oneline.re_split(r"\s+")
+    tokens = oneline.re_split(r"\s+")
+    tokens = tokens.filter(lambda x: x != "")
     if unique:
-        result = result.unique()
-    result = struct.isnull().ifelse(ibis.null(), result)
-    return result
+        tokens = tokens.unique()
+    return tokens
