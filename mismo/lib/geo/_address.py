@@ -117,24 +117,23 @@ class AddressesDimension:
     def prep(self, t: ir.Table) -> ir.Table:
         """Prepares the table for blocking, adding normalized and tokenized columns."""
         addrs = t[self.column]
-        addrs_normed = addrs.map(normalize_address)
-        t = t.mutate({self.column_normed: addrs_normed})
-        tokens = (
+        t = t.mutate(addrs.map(normalize_address).name(self.column_normed))
+        tokens_nonunique = (
             t[self.column_normed]
-            .map(lambda address: address_tokens(address))
+            .map(lambda address: address_tokens(address, unique=False))
             .flatten()
-            .unique()
         )
-        t = t.mutate({self.column_tokens: tokens})
-        # since we need the .execute below, might as well .cache()
-        # here to avoid re-execution
+        t = t.mutate(_tokens_nonunique=tokens_nonunique)
+        # Array.unique() results in 4 duplications of the input, so .cache it so
+        # we only execute it once. See https://github.com/ibis-project/ibis/issues/8770
         t = t.cache()
+        t = t.mutate(t._tokens_nonunique.unique().name(self.column_tokens)).drop(
+            "_tokens_nonunique"
+        )
         rt = rare_terms(t[self.column_tokens], max_records_frac=0.01).term
-        # need this to avoid https://stackoverflow.com/questions/77559936/how-to-implementlist-filterarray-elem-elem-in-column-in-other-table
-        # see https://github.com/NickCrews/mismo/issues/32
-        rt = rt.execute()
-        keywords = t[self.column_tokens].filter(lambda tok: tok.isin(rt))
-        t = t.mutate({self.column_keywords: keywords})
+        t = _util.array_filter_isin_other(
+            t, self.column_tokens, rt, result_format=self.column_keywords
+        )
         return t
 
     def compare(self, t: ir.Table) -> ir.Table:
