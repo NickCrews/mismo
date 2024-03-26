@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import ibis
-from ibis.expr import types as it
+from ibis.expr import types as ir
 
 from mismo import _util
 
@@ -17,7 +17,7 @@ __all__ = [
 _DATASETS_DIR = Path(__file__).parent / "_data/_datasets"
 
 
-def _wrap_febrl(loader_name: str) -> tuple[it.Table, it.Table]:
+def _wrap_febrl(loader_name: str) -> tuple[ir.Table, ir.Table]:
     with _util.optional_import("recordlinkage"):
         from recordlinkage import datasets as rlds
 
@@ -52,15 +52,15 @@ def _wrap_febrl(loader_name: str) -> tuple[it.Table, it.Table]:
     return (t, links)
 
 
-def load_febrl1() -> tuple[it.Table, it.Table]:
+def load_febrl1() -> tuple[ir.Table, ir.Table]:
     return _wrap_febrl("load_febrl1")
 
 
-def load_febrl2() -> tuple[it.Table, it.Table]:
+def load_febrl2() -> tuple[ir.Table, ir.Table]:
     return _wrap_febrl("load_febrl2")
 
 
-def load_febrl3() -> tuple[it.Table, it.Table]:
+def load_febrl3() -> tuple[ir.Table, ir.Table]:
     return _wrap_febrl("load_febrl3")
 
 
@@ -68,7 +68,7 @@ def load_febrl3() -> tuple[it.Table, it.Table]:
 # could add that later if it's needed.
 
 
-def load_patents(backend: ibis.BaseBackend | None = None) -> it.Table:
+def load_patents(backend: ibis.BaseBackend | None = None) -> ir.Table:
     """Load the PATSTAT dataset
 
     This represents a dataset of patents, and the task is to determine which

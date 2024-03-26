@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Callable
 
 from ibis import _
-from ibis.expr import types as it
+from ibis.expr import types as ir
 import ipywidgets
 import rich
 
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     import ipycytoscape  # type: ignore
 
 
-def cluster_widget(records: it.Table, links: it.Table) -> ipycytoscape.CytoscapeWidget:
+def cluster_widget(records: ir.Table, links: ir.Table) -> ipycytoscape.CytoscapeWidget:
     """Make a Widget that shows a cluster of records and the links between them.
 
     Uses ipycytoscape to make an interactive widget.
@@ -108,8 +108,8 @@ def display_edge(
 
 
 def cluster_dashboard(
-    records: it.Table,
-    links: it.Table,
+    records: ir.Table,
+    links: ir.Table,
     *,
     display_record: Callable | None = display_record,
     display_edge: Callable | None = display_edge,
@@ -118,7 +118,7 @@ def cluster_dashboard(
     cyto = cluster_widget(records, links)
     info = ipywidgets.Output(layout={"height": "500px"})
 
-    def _to_dict(t: it.Table, filter):
+    def _to_dict(t: ir.Table, filter):
         one_row = t[filter]
         return one_row.execute().to_dict("records")[0]
 
@@ -145,7 +145,7 @@ def cluster_dashboard(
     return ipywidgets.VBox([cyto, info])
 
 
-def _ensure_has_width(links: it.Table) -> it.Table:
+def _ensure_has_width(links: ir.Table) -> ir.Table:
     if "width" in links.columns:
         return links
     if "odds" not in links.columns:
@@ -156,7 +156,7 @@ def _ensure_has_width(links: it.Table) -> it.Table:
     return links.mutate(width=width)
 
 
-def _ensure_has_opacity(links: it.Table) -> it.Table:
+def _ensure_has_opacity(links: ir.Table) -> ir.Table:
     if "opacity" in links.columns:
         return links
     return links.mutate(opacity=0.5)

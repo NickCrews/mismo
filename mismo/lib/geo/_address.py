@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import ibis
-from ibis.expr import types as it
+from ibis.expr import types as ir
 
 from mismo import _util
 from mismo.compare import LevelComparer, compare
@@ -10,21 +10,21 @@ from mismo.text import rare_terms
 
 
 def same_region(
-    address1: it.StructColumn,
-    address2: it.StructColumn,
-) -> it.BooleanColumn:
+    address1: ir.StructColumn,
+    address2: ir.StructColumn,
+) -> ir.BooleanColumn:
     """Exact match on postal code, or city and state.
 
     Parameters
     ----------
-    address1 : it.StringColumn
+    address1 : ir.StringColumn
         The first address.
-    address2 : it.StringColumn
+    address2 : ir.StringColumn
         The second address.
 
     Returns
     -------
-    same : it.BooleanColumn
+    same : ir.BooleanColumn
         Whether the two addresses are in the same region.
     """
     return ibis.or_(
@@ -34,21 +34,21 @@ def same_region(
 
 
 def same_address_for_mailing(
-    address1: it.StructColumn,
-    address2: it.StructColumn,
-) -> it.BooleanColumn:
+    address1: ir.StructColumn,
+    address2: ir.StructColumn,
+) -> ir.BooleanColumn:
     """Exact match on street1, and either city or postal code.
 
     Parameters
     ----------
-    address1 : it.StringColumn
+    address1 : ir.StringColumn
         The first address.
-    address2 : it.StringColumn
+    address2 : ir.StringColumn
         The second address.
 
     Returns
     -------
-    same : it.BooleanColumn
+    same : ir.BooleanColumn
         Whether the two addresses are the same.
     """
     return ibis.and_(
@@ -59,17 +59,17 @@ def same_address_for_mailing(
     )
 
 
-def normalize_address(address: it.StructValue) -> it.StructValue:
+def normalize_address(address: ir.StructValue) -> ir.StructValue:
     """Normalize an address to uppercase, and remove leading and trailing whitespace.
 
     Parameters
     ----------
-    address : it.StructValue
+    address : ir.StructValue
         The address.
 
     Returns
     -------
-    normalized : it.StructValue
+    normalized : ir.StructValue
         The normalized address.
     """
     return ibis.struct(
@@ -114,7 +114,7 @@ class AddressesDimension:
         self.column_tokens = column_tokens.format(column=column)
         self.column_keywords = column_keywords.format(column=column)
 
-    def prep(self, t: it.Table) -> it.Table:
+    def prep(self, t: ir.Table) -> ir.Table:
         """Prepares the table for blocking, adding normalized and tokenized columns."""
         addrs = t[self.column]
         addrs_normed = addrs.map(normalize_address)
@@ -137,7 +137,7 @@ class AddressesDimension:
         t = t.mutate({self.column_keywords: keywords})
         return t
 
-    def compare(self, t: it.Table) -> it.Table:
+    def compare(self, t: ir.Table) -> ir.Table:
         al = t[self.column_normed + "_l"]
         ar = t[self.column_normed + "_r"]
         if "latitude" in al.type().names:
@@ -176,17 +176,17 @@ class AddressesDimension:
         return compare(t, LevelComparer(name, levels))
 
 
-def address_tokens(address: it.StructValue, *, unique: bool = True) -> it.ArrayColumn:
+def address_tokens(address: ir.StructValue, *, unique: bool = True) -> ir.ArrayColumn:
     """Extract keywords from an address.
 
     Parameters
     ----------
-    address : it.StructValue
+    address :
         The address.
 
     Returns
     -------
-    keywords : it.ArrayColumn
+    keywords :
         The keywords in the address.
     """
     return _util.struct_tokens(address, unique=unique)

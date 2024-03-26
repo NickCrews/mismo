@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import ibis
 from ibis.common.deferred import Deferred
-from ibis.expr import types as it
+from ibis.expr import types as ir
 
 
-def norm_whitespace(texts: it.StringValue) -> it.StringValue:
+def norm_whitespace(texts: ir.StringValue) -> ir.StringValue:
     """
     Strip leading/trailing whitespace, replace multiple whitespace with a single space.
     """
@@ -20,7 +20,7 @@ def _re_extract_all(string, pattern):
 
 
 # from https://www.imperva.com/blog/fast-n-grams-extraction-and-analysis-with-sql/
-def ngrams(string: it.StringValue, n: int) -> it.ArrayValue:
+def ngrams(string: ir.StringValue, n: int) -> ir.ArrayValue:
     """
     Character n-grams from a string. The order of the n-grams is not guaranteed.
 
@@ -53,13 +53,13 @@ def ngrams(string: it.StringValue, n: int) -> it.ArrayValue:
     >>> ngrams("abcdef", 3).execute()
     ["abc", "def", "bcd", "cde"]
     """
-    if not isinstance(string, it.Expr) and not isinstance(string, Deferred):
+    if not isinstance(string, ir.Expr) and not isinstance(string, Deferred):
         string = ibis.literal(string, type="string")
     pattern = "." * n
     # if you just do _re_extract_all("abcdef", "..."), you get ["abc", "def"].
     # So to get the "bcd" and the "cde", we need to offset the string
     # by one and two (in general up to n-1) characters.
-    result: it.ArrayValue = None
+    result: ir.ArrayValue = None
     for i in range(0, n):
         this = _re_extract_all(string[i:], pattern)
         if result is None:

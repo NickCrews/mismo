@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import ibis
-from ibis.expr import types as it
+from ibis.expr import types as ir
 
 from mismo.lib.name._nicknames import are_aliases
 
 
 def are_match_with_nicknames(
-    left: it.StructValue, right: it.StructValue
-) -> it.BooleanValue:
+    left: ir.StructValue, right: ir.StructValue
+) -> ir.BooleanValue:
     """The first names match via nickname or alias, and the last names match."""
     return ibis.and_(
         are_aliases(left["first"], right["first"]),
@@ -16,7 +16,7 @@ def are_match_with_nicknames(
     )
 
 
-def initials_equal(left: it.StringValue, right: it.StringValue) -> it.BooleanValue:
+def initials_equal(left: ir.StringValue, right: ir.StringValue) -> ir.BooleanValue:
     """The first letter matches, and at least one is a single letter."""
     return ibis.and_(
         left[0] == right[0],
@@ -30,9 +30,9 @@ def damerau_levenshtein(left: str, right: str) -> int:
 
 
 def are_spelling_error(
-    left: it.StringValue,
-    right: it.StringValue,
-) -> it.BooleanValue:
+    left: ir.StringValue,
+    right: ir.StringValue,
+) -> ir.BooleanValue:
     edit_distance = damerau_levenshtein(left, right)
     return ibis.or_(
         edit_distance <= 1,
@@ -42,8 +42,8 @@ def are_spelling_error(
 
 
 def substring_match(
-    left: it.StringValue, right: it.StringValue, *, min_len: int = 3
-) -> it.BooleanValue:
+    left: ir.StringValue, right: ir.StringValue, *, min_len: int = 3
+) -> ir.BooleanValue:
     """The shorter string is a substring of the longer string, and at least min_len."""
     return ibis.or_(
         ibis.and_(left.contains(right), right.length() >= min_len),

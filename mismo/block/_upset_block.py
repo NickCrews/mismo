@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import altair as alt
 from ibis import _
-from ibis.expr import types as it
+from ibis.expr import types as ir
 
 from mismo.block import _upset
 
 
-def upset_chart(blocked: it.Table) -> alt.Chart:
+def upset_chart(blocked: ir.Table) -> alt.Chart:
     """Generate an Altair-based UpSet plot for a blocked table.
 
     An [UpSet plot](https://en.wikipedia.org/wiki/UpSet_Plot)

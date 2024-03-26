@@ -6,7 +6,7 @@ import warnings
 
 import ibis
 from ibis.backends.duckdb import Backend as DuckDBBackend
-from ibis.expr import types as it
+from ibis.expr import types as ir
 
 from mismo import _util
 
@@ -57,7 +57,7 @@ class SlowJoinError(_SlowJoinMixin, ValueError):
     """Error for slow join algorithms."""
 
 
-def get_join_algorithm(left: it.Table, right: it.Table, condition) -> str:
+def get_join_algorithm(left: ir.Table, right: ir.Table, condition) -> str:
     """Return one of the JOIN_ALGORITHMS for the outermost join in the expression.
 
     If there are multiple joins in the query, this will return the top (outermost) one.
@@ -70,8 +70,8 @@ def get_join_algorithm(left: it.Table, right: it.Table, condition) -> str:
 
 
 def check_join_algorithm(
-    left: it.Table,
-    right: it.Table,
+    left: ir.Table,
+    right: ir.Table,
     condition,
     *,
     on_slow: Literal["error", "warn", "ignore"] = "error",
@@ -111,7 +111,7 @@ def check_join_algorithm(
             warnings.warn(SlowJoinWarning(condition, alg), stacklevel=2)
 
 
-def _explain_str(duckdb_expr: it.Expr | str, *, analyze: bool = False) -> str:
+def _explain_str(duckdb_expr: ir.Expr | str, *, analyze: bool = False) -> str:
     # we can't use a separate backend eg from ibis.duckdb.connect()
     # or it might not be able to find the tables/data referenced
     sql, con = _to_sql_and_backend(duckdb_expr)
@@ -123,7 +123,7 @@ def _explain_str(duckdb_expr: it.Expr | str, *, analyze: bool = False) -> str:
     return cursor.fetchall()[0][1]
 
 
-def _to_sql_and_backend(duckdb_expr: it.Expr | str) -> tuple[str, DuckDBBackend]:
+def _to_sql_and_backend(duckdb_expr: ir.Expr | str) -> tuple[str, DuckDBBackend]:
     if isinstance(duckdb_expr, str):
         sql = duckdb_expr
         con = ibis.duckdb.connect()

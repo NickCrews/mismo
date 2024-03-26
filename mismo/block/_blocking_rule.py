@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Callable, Iterable, Literal, Union
 
 from ibis.common.deferred import Deferred
-from ibis.expr import types as it
+from ibis.expr import types as ir
 
 from mismo import _util
 
@@ -11,11 +11,11 @@ from mismo import _util
 _ColumnReferenceLike = Union[
     str,
     Deferred,
-    Callable[[it.Table], it.Column],
+    Callable[[ir.Table], ir.Column],
 ]
 # Something that can be used as a condition in a join between two tables
 _ConditionAtom = Union[
-    it.BooleanValue,
+    ir.BooleanValue,
     Literal[True],
     tuple[_ColumnReferenceLike, _ColumnReferenceLike],
 ]
@@ -25,7 +25,7 @@ _ConditionOrConditions = Union[
 ]
 _Condition = Union[
     _ConditionOrConditions,
-    Callable[[it.Table, it.Table], _ConditionOrConditions],
+    Callable[[ir.Table, ir.Table], _ConditionOrConditions],
 ]
 
 
@@ -61,10 +61,10 @@ class BlockingRule:
 
     def __call__(
         self,
-        left: it.Table,
-        right: it.Table,
+        left: ir.Table,
+        right: ir.Table,
         **kwargs,
-    ) -> it.Table:
+    ) -> ir.Table:
         return self.condition
 
     def __repr__(self) -> str:

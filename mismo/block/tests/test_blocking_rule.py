@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from ibis import _
-from ibis.expr import types as it
+from ibis.expr import types as ir
 import pytest
 
 from mismo.block import BlockingRule, block_one
@@ -19,7 +19,7 @@ from .common import letter_blocked_ids
     ],
 )
 def test_blocking_rule(
-    table_factory, t1: it.Table, t2: it.Table, condition, name, expected_name
+    table_factory, t1: ir.Table, t2: ir.Table, condition, name, expected_name
 ):
     rule = BlockingRule(condition, name=name)
     assert rule.get_name() == expected_name

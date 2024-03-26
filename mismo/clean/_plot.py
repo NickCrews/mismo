@@ -3,11 +3,11 @@ from __future__ import annotations
 import altair as alt
 import ibis
 from ibis import _
-from ibis.expr import types as it
+from ibis.expr import types as ir
 import ipywidgets
 
 
-def distribution_chart(vals: it.Column, *, limit: int | None = None) -> alt.Chart:
+def distribution_chart(vals: ir.Column, *, limit: int | None = None) -> alt.Chart:
     """Make a Altair histogram of values.
 
     Useful as an exploratory tool to look at what values are present in a column.
@@ -94,7 +94,7 @@ def distribution_chart(vals: it.Column, *, limit: int | None = None) -> alt.Char
 
 
 def distribution_dashboard(
-    records: it.Table,
+    records: ir.Table,
     *,
     column: str | None = None,
     limit: int | None = None,
@@ -149,7 +149,7 @@ def distribution_dashboard(
     return layout
 
 
-def _make_counts(vals: it.Column) -> it.Table:
+def _make_counts(vals: ir.Column) -> ir.Table:
     vals = vals.name("value")
     counts = vals.value_counts().rename(n="value_count")
     sort_keys = [_.n.desc(), _.value.asc()]

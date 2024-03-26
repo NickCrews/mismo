@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import ibis
-from ibis.expr import types as it
+from ibis.expr import types as ir
 
 from mismo import _util
 
 
-def double_metaphone(s: it.StringValue) -> it.ArrayValue[it.StringValue]:
+def double_metaphone(s: ir.StringValue) -> ir.ArrayValue[ir.StringValue]:
     """Double Metaphone phonetic encoding
 
     This requires the [doublemetaphone](https://github.com/dedupeio/doublemetaphone)

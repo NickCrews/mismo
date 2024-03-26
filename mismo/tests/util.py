@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from typing import Literal
 
-from ibis.expr import types as it
+from ibis.expr import types as ir
 import pandas as pd
 import pytest
 
 
 def assert_tables_equal(
-    left: it.Table,
-    right: it.Table,
+    left: ir.Table,
+    right: ir.Table,
     *,
     column_order: Literal["ignore", "exact"] = "exact",
     order_by=None,

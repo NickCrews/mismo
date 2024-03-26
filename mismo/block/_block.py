@@ -6,7 +6,7 @@ import ibis
 from ibis import _
 from ibis import selectors as s
 from ibis.common.deferred import Deferred
-from ibis.expr import types as it
+from ibis.expr import types as ir
 
 from mismo import _util
 
@@ -14,29 +14,29 @@ from mismo import _util
 _ColumnReferenceLike = Union[
     str,
     Deferred,
-    Callable[[it.Table], it.Column],
+    Callable[[ir.Table], ir.Column],
 ]
 # Something that can be used as a condition in a join between two tables
 _ConditionAtom = Union[
-    it.BooleanValue,
+    ir.BooleanValue,
     Literal[True],
     tuple[_ColumnReferenceLike, _ColumnReferenceLike],
 ]
 _Condition = Union[
     _ConditionAtom,
-    Callable[[it.Table, it.Table], _ConditionAtom],
+    Callable[[ir.Table, ir.Table], _ConditionAtom],
 ]
 
 
 def block_one(
-    left: it.Table,
-    right: it.Table,
+    left: ir.Table,
+    right: ir.Table,
     condition: _Condition,
     *,
     on_slow: Literal["error", "warn", "ignore"] = "error",
     task: Literal["dedupe", "link"] | None = None,
     **kwargs,
-) -> it.Table:
+) -> ir.Table:
     """Block two tables together using the given condition.
 
     Parameters
@@ -196,15 +196,15 @@ def block_one(
 
 
 def block_many(
-    left: it.Table,
-    right: it.Table,
+    left: ir.Table,
+    right: ir.Table,
     conditions: Iterable[_Condition],
     *,
     on_slow: Literal["error", "warn", "ignore"] = "error",
     task: Literal["dedupe", "link"] | None = None,
     labels: bool = False,
     **kwargs,
-) -> it.Table:
+) -> ir.Table:
     """Block two tables using each of the given conditions, then union the results.
 
     Parameters
@@ -261,14 +261,14 @@ def block_many(
 
 
 def join(
-    left: it.Table,
-    right: it.Table,
+    left: ir.Table,
+    right: ir.Table,
     condition: _Condition,
     *,
     on_slow: Literal["error", "warn", "ignore"] = "error",
     task: Literal["dedupe", "link"] | None = None,
     **kwargs,
-) -> it.Table:
+) -> ir.Table:
     """A lower-level version of `block_one` that doesn't do any deduplication.
 
     `block_one()` calls this function, and then adds a deduplication step
@@ -286,7 +286,7 @@ def join(
     resolved = _resolve_predicate(
         left, right, condition, on_slow=on_slow, task=task, **kwargs
     )
-    if isinstance(resolved, it.Table):
+    if isinstance(resolved, ir.Table):
         return resolved
     left, right, pred = resolved
     if (
@@ -303,11 +303,11 @@ def join(
     return j
 
 
-def _distinct_record_ids(t: it.Table) -> it.Table:
+def _distinct_record_ids(t: ir.Table) -> ir.Table:
     return t["record_id_l", "record_id_r"].distinct()
 
 
-def _join_on_id_pairs(left: it.Table, right: it.Table, id_pairs: it.Table) -> it.Table:
+def _join_on_id_pairs(left: ir.Table, right: ir.Table, id_pairs: ir.Table) -> ir.Table:
     left = left.rename("{name}_l")
     right = right.rename("{name}_r")
     j = id_pairs
@@ -317,7 +317,7 @@ def _join_on_id_pairs(left: it.Table, right: it.Table, id_pairs: it.Table) -> it
     return j
 
 
-def _move_record_id_cols_first(t: it.Table) -> it.Table:
+def _move_record_id_cols_first(t: ir.Table) -> ir.Table:
     if "record_id_l" not in t.columns or "record_id_r" not in t.columns:
         return t
     cols = set(t.columns) - {"record_id_l", "record_id_r"}
@@ -326,8 +326,8 @@ def _move_record_id_cols_first(t: it.Table) -> it.Table:
 
 
 def _ensure_suffixed(
-    original_left_cols: Iterable[str], original_right_cols: Iterable[str], t: it.Table
-) -> it.Table:
+    original_left_cols: Iterable[str], original_right_cols: Iterable[str], t: ir.Table
+) -> ir.Table:
     """Ensure that all columns in `t` have a "_l" or "_r" suffix."""
     lc = set(original_left_cols)
     rc = set(original_right_cols)
@@ -348,11 +348,11 @@ def _ensure_suffixed(
 
 
 def _resolve_predicate(
-    left: it.Table, right: it.Table, raw, **kwargs
-) -> tuple[it.Table, it.Table, bool | it.BooleanColumn] | it.Table:
-    if isinstance(raw, it.Table):
+    left: ir.Table, right: ir.Table, raw, **kwargs
+) -> tuple[ir.Table, ir.Table, bool | ir.BooleanColumn] | ir.Table:
+    if isinstance(raw, ir.Table):
         return raw
-    if isinstance(raw, (it.BooleanColumn, bool)):
+    if isinstance(raw, (ir.BooleanColumn, bool)):
         return left, right, raw
     # Deferred is callable, so guard against that
     if callable(raw) and not isinstance(raw, Deferred):

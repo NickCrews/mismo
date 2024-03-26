@@ -6,18 +6,18 @@ from typing import Callable
 
 import ibis
 from ibis.common.deferred import Deferred
-from ibis.expr import types as it
+from ibis.expr import types as ir
 
 from mismo import _util
 
 
 def distance_km(
     *,
-    lat1: it.FloatingValue,
-    lon1: it.FloatingValue,
-    lat2: it.FloatingValue,
-    lon2: it.FloatingValue,
-) -> it.FloatingValue:
+    lat1: ir.FloatingValue,
+    lon1: ir.FloatingValue,
+    lat2: ir.FloatingValue,
+    lon2: ir.FloatingValue,
+) -> ir.FloatingValue:
     """The distance between two points on the Earth's surface, in kilometers.
 
     Parameters
@@ -46,7 +46,7 @@ def distance_km(
     lat2 = radians(lat2)
     lon2 = radians(lon2)
 
-    def haversine(theta: it.FloatingValue) -> it.FloatingValue:
+    def haversine(theta: ir.FloatingValue) -> ir.FloatingValue:
         return (theta / 2).sin() ** 2
 
     a = haversine(lat2 - lat1) + lat1.cos() * lat2.cos() * haversine(lon2 - lon1)
@@ -109,23 +109,23 @@ class CoordinateBlocker:
     """
     name: str | None = None
     """The name of the blocker."""
-    coord: str | Deferred | Callable[[it.Table], it.StructColumn] | None = None
+    coord: str | Deferred | Callable[[ir.Table], ir.StructColumn] | None = None
     """The column in both tables containing the `struct<lat: float, lon: float>` coordinates."""  # noqa: E501
-    lat: str | Deferred | Callable[[it.Table], it.FloatingColumn] | None = None
+    lat: str | Deferred | Callable[[ir.Table], ir.FloatingColumn] | None = None
     """The column in both tables containing the latitude coordinates."""
-    lon: str | Deferred | Callable[[it.Table], it.FloatingColumn] | None = None
+    lon: str | Deferred | Callable[[ir.Table], ir.FloatingColumn] | None = None
     """The column in both tables containing the longitude coordinates."""
-    left_coord: str | Deferred | Callable[[it.Table], it.StructColumn] | None = None
+    left_coord: str | Deferred | Callable[[ir.Table], ir.StructColumn] | None = None
     """The column in the left tables containing the `struct<lat: float, lon: float>` coordinates."""  # noqa: E501
-    right_coord: str | Deferred | Callable[[it.Table], it.StructColumn] | None = None
+    right_coord: str | Deferred | Callable[[ir.Table], ir.StructColumn] | None = None
     """The column in the right tables containing the `struct<lat: float, lon: float>` coordinates."""  # noqa: E501
-    left_lat: str | Deferred | Callable[[it.Table], it.FloatingColumn] | None = None
+    left_lat: str | Deferred | Callable[[ir.Table], ir.FloatingColumn] | None = None
     """The column in the left tables containing the latitude coordinates."""
-    left_lon: str | Deferred | Callable[[it.Table], it.FloatingColumn] | None = None
+    left_lon: str | Deferred | Callable[[ir.Table], ir.FloatingColumn] | None = None
     """The column in the left tables containing the longitude coordinates."""
-    right_lat: str | Deferred | Callable[[it.Table], it.FloatingColumn] | None = None
+    right_lat: str | Deferred | Callable[[ir.Table], ir.FloatingColumn] | None = None
     """The column in the right tables containing the latitude coordinates."""
-    right_lon: str | Deferred | Callable[[it.Table], it.FloatingColumn] | None = None
+    right_lon: str | Deferred | Callable[[ir.Table], ir.FloatingColumn] | None = None
     """The column in the right tables containing the longitude coordinates."""
 
     def __post_init__(self):
@@ -160,9 +160,9 @@ class CoordinateBlocker:
             )
 
     def _get_cols(
-        self, left: it.Table, right: it.Table
+        self, left: ir.Table, right: ir.Table
     ) -> tuple[
-        it.FloatingColumn, it.FloatingColumn, it.FloatingColumn, it.FloatingColumn
+        ir.FloatingColumn, ir.FloatingColumn, ir.FloatingColumn, ir.FloatingColumn
     ]:
         if self.coord is not None:
             left
@@ -196,10 +196,10 @@ class CoordinateBlocker:
 
     def __call__(
         self,
-        left: it.Table,
-        right: it.Table,
+        left: ir.Table,
+        right: ir.Table,
         **kwargs,
-    ) -> it.Table:
+    ) -> ir.Table:
         """Return a hash value for the two coordinates."""
         left_lat, left_lon, right_lat, right_lon = self._get_cols(left, right)
         # We have to use a grid size of ~3x the precision to avoid
@@ -211,8 +211,8 @@ class CoordinateBlocker:
 
 
 def _bin_lat_lon(
-    lat: it.FloatingValue, lon: it.FloatingValue, grid_size_km: float | int
-) -> it.StructValue:
+    lat: ir.FloatingValue, lon: ir.FloatingValue, grid_size_km: float | int
+) -> ir.StructValue:
     """Bin a latitude or longitude to a grid of a given precision.
 
     Say you have two coordinates, (lat1, lon1) and (lat2, lon2), and you
@@ -235,7 +235,7 @@ def _bin_lat_lon(
     return both_null.ifelse(ibis.null(), result)
 
 
-def _km_per_degree(lat: it.FloatingValue) -> tuple[it.FloatingValue, float]:
+def _km_per_degree(lat: ir.FloatingValue) -> tuple[ir.FloatingValue, float]:
     # Radius of the Earth in kilometers
     R = 6371.0
     lat_rad = lat * (math.pi / 180)

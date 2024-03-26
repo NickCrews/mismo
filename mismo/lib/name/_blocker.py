@@ -4,7 +4,7 @@ from typing import Callable
 
 from ibis import _
 from ibis.common.deferred import Deferred
-from ibis.expr import types as it
+from ibis.expr import types as ir
 
 from mismo import _util
 
@@ -13,14 +13,14 @@ class NameBlocker:
     def __init__(
         self,
         *,
-        column: str | Deferred | Callable[[it.Table], it.StructColumn] | None = None,
+        column: str | Deferred | Callable[[ir.Table], ir.StructColumn] | None = None,
         column_left: str
         | Deferred
-        | Callable[[it.Table], it.StructColumn]
+        | Callable[[ir.Table], ir.StructColumn]
         | None = None,
         column_right: str
         | Deferred
-        | Callable[[it.Table], it.StructColumn]
+        | Callable[[ir.Table], ir.StructColumn]
         | None = None,
     ):
         """Block two tables on the specified name columns.
@@ -62,14 +62,14 @@ class NameBlocker:
             self.column_right = column_right
 
     def __call__(
-        self, left: it.Table, right: it.Table, **kwargs
-    ) -> tuple[it.Table, it.Table]:
-        nl: it.StructColumn = _util.get_column(_, self.column_left)
+        self, left: ir.Table, right: ir.Table, **kwargs
+    ) -> tuple[ir.Table, ir.Table]:
+        nl: ir.StructColumn = _util.get_column(_, self.column_left)
         tokensl = _oneline(nl).upper().re_split(r"\s+")
         return tokensl.unnest()
 
 
-def _oneline(name: it.StructValue) -> it.StringValue:
+def _oneline(name: ir.StructValue) -> ir.StringValue:
     return (
         name["prefix"].fillna("")
         + " "

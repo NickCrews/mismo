@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import Sized, Union
 
 from ibis.common.exceptions import ExpressionError
-from ibis.expr import types as it
+from ibis.expr import types as ir
 
-Sizable = Union[int, Sized, it.Table]
+Sizable = Union[int, Sized, ir.Table]
 
 
 def _get_len(x: Sizable) -> int:

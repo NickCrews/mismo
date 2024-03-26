@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Iterable, Iterator, overload
 
 import altair as alt
-from ibis.expr import types as it
+from ibis.expr import types as ir
 
 from mismo import _util
 from mismo.compare import LevelComparer
@@ -177,12 +177,12 @@ class ComparisonWeights:
         ...
 
     @overload
-    def odds(self, labels: it.StringValue | it.IntegerValue) -> it.FloatingValue:
+    def odds(self, labels: ir.StringValue | ir.IntegerValue) -> ir.FloatingValue:
         ...
 
     def odds(
-        self, labels: str | int | it.StringValue | it.IntegerValue
-    ) -> float | it.FloatingValue:
+        self, labels: str | int | ir.StringValue | ir.IntegerValue
+    ) -> float | ir.FloatingValue:
         """Calculate the odds for each record pair.
 
         If `labels` is a string or integer, then we calculate the odds for that
@@ -196,9 +196,9 @@ class ComparisonWeights:
         """
         if isinstance(labels, (int, str)):
             return self[labels].odds
-        if isinstance(labels, it.StringValue):
+        if isinstance(labels, ir.StringValue):
             cases = [(lw.name, lw.odds) for lw in self]
-        elif isinstance(labels, it.IntegerValue):
+        elif isinstance(labels, ir.IntegerValue):
             cases = [(i, lw.odds) for i, lw in enumerate(self)]  # type: ignore # noqa: E501
         else:
             raise TypeError(
@@ -212,13 +212,13 @@ class ComparisonWeights:
 
     @overload
     def match_probability(
-        self, labels: it.StringValue | it.IntegerValue
-    ) -> it.FloatingValue:
+        self, labels: ir.StringValue | ir.IntegerValue
+    ) -> ir.FloatingValue:
         ...
 
     def match_probability(
-        self, labels: str | int | it.StringValue | it.IntegerValue
-    ) -> float | it.FloatingValue:
+        self, labels: str | int | ir.StringValue | ir.IntegerValue
+    ) -> float | ir.FloatingValue:
         """Calculate the match probability for each record pair."""
         return odds_to_prob(self.odds(labels))
 
@@ -227,12 +227,12 @@ class ComparisonWeights:
         ...
 
     @overload
-    def log_odds(self, labels: it.StringValue | it.IntegerValue) -> it.FloatingValue:
+    def log_odds(self, labels: ir.StringValue | ir.IntegerValue) -> ir.FloatingValue:
         ...
 
     def log_odds(
-        self, labels: str | int | it.StringValue | it.IntegerValue
-    ) -> float | it.FloatingValue:
+        self, labels: str | int | ir.StringValue | ir.IntegerValue
+    ) -> float | ir.FloatingValue:
         """Calculate the log odds for each record pair."""
         return odds_to_log_odds(self.odds(labels))
 
@@ -245,8 +245,8 @@ class ComparisonWeights:
 
 
 def compare_one(
-    t: it.Table, level_comparer: LevelComparer, comp_weights: ComparisonWeights
-) -> tuple[it.StringValue, it.FloatingValue]:
+    t: ir.Table, level_comparer: LevelComparer, comp_weights: ComparisonWeights
+) -> tuple[ir.StringValue, ir.FloatingValue]:
     conditions = [level.is_match(t) for level in level_comparer]
     labels = [level.name for level in level_comparer]
     odds = [level_weights.odds for level_weights in comp_weights]
@@ -280,7 +280,7 @@ class Weights:
         """The number of `ComparisonWeights`."""
         return len(self._lookup)
 
-    def score_compared(self, compared: it.Table) -> it.Table:
+    def score_compared(self, compared: ir.Table) -> ir.Table:
         """Score already-compared record pairs.
 
         This assumes that there is already a column one for each LevelComparer
@@ -310,8 +310,8 @@ class Weights:
         return self._score(compared, results)
 
     def compare_and_score(
-        self, t: it.Table, level_comparers: Iterable[LevelComparer]
-    ) -> it.Table:
+        self, t: ir.Table, level_comparers: Iterable[LevelComparer]
+    ) -> ir.Table:
         """Compare and score record pairs.
 
         Use the given `level_comparers` to label the record pairs, and then
@@ -323,7 +323,7 @@ class Weights:
             results.append((cmp.name, label, odds))
         return self._score(t, results)
 
-    def _score(self, t: it.Table, compare_results) -> it.Table:
+    def _score(self, t: ir.Table, compare_results) -> ir.Table:
         total_odds = 1
         m = {}
         naming = {}

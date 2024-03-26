@@ -3,12 +3,12 @@ from __future__ import annotations
 import altair as alt
 import ibis
 from ibis import _
-from ibis.expr import types as it
+from ibis.expr import types as ir
 import numpy as np
 import pandas as pd
 
 
-def cluster_chart(nodes: it.Table, edges: it.Table) -> alt.Chart:
+def cluster_chart(nodes: ir.Table, edges: ir.Table) -> alt.Chart:
     """Plot a cluster of records and the links between them as an altair chart.
 
     Parameters
@@ -32,7 +32,7 @@ def cluster_chart(nodes: it.Table, edges: it.Table) -> alt.Chart:
     return _plot_cluster(nodes_with_coords, edges)
 
 
-def drop_orphaned(nodes: it.Table, edges: it.Table):
+def drop_orphaned(nodes: ir.Table, edges: ir.Table):
     nodes = nodes[
         _.record_id.isin(edges.record_id_l) | _.record_id.isin(edges.record_id_r)
     ]
@@ -42,7 +42,7 @@ def drop_orphaned(nodes: it.Table, edges: it.Table):
     return nodes, edges
 
 
-def _layout_nodes(nodes: it.Table, edges: it.Table) -> it.Table:
+def _layout_nodes(nodes: ir.Table, edges: ir.Table) -> ir.Table:
     """Add columns x and y to nodes table that are the coordinates of the nodes"""
     # import here to speed up the import of this module
     from sklearn.manifold import MDS
@@ -92,7 +92,7 @@ def _edges_to_dissimilarity_matrix(nodes, edges):
     return matrix
 
 
-def _reindex_from_0(nodes: it.Table, edges: it.Table):
+def _reindex_from_0(nodes: ir.Table, edges: ir.Table):
     nodes = nodes.mutate(id_in_cluster=ibis.row_number())
     m = nodes["record_id", "id_in_cluster"]
     ml = m.rename("{name}_l")
@@ -102,7 +102,7 @@ def _reindex_from_0(nodes: it.Table, edges: it.Table):
     return nodes, edges
 
 
-def _plot_cluster(nodes_chart: it.Table, edges_chart: it.Table) -> alt.Chart:
+def _plot_cluster(nodes_chart: ir.Table, edges_chart: ir.Table) -> alt.Chart:
     alt.data_transformers.disable_max_rows()
 
     nodes_df: pd.DataFrame = nodes_chart.execute()

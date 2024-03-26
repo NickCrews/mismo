@@ -4,13 +4,13 @@ from collections.abc import Mapping
 from typing import Any
 
 from ibis.common.deferred import Deferred
-from ibis.expr import types as it
+from ibis.expr import types as ir
 from ibis.expr.types.relations import bind
 
 from mismo import _util
 
 
-def compare(t: it.Table, *comparers: Any) -> it.Table:
+def compare(t: ir.Table, *comparers: Any) -> ir.Table:
     """Apply the supplied comparers in order to the table.
 
     Parameters
@@ -36,18 +36,18 @@ def compare(t: it.Table, *comparers: Any) -> it.Table:
     return t
 
 
-def _compare_one(t: it.Table, comparer) -> it.Table:
-    if isinstance(comparer, it.Table):
+def _compare_one(t: ir.Table, comparer) -> ir.Table:
+    if isinstance(comparer, ir.Table):
         return comparer
     if isinstance(comparer, Mapping):
         return t.mutate(**comparer)
     name = _util.get_name(comparer)
     if isinstance(comparer, Deferred):
         return t.mutate(name=bind(t, comparer))
-    if isinstance(comparer, it.Expr):
+    if isinstance(comparer, ir.Expr):
         return t.mutate(name=comparer)
     results = comparer(t)
-    if isinstance(results, it.Table):
+    if isinstance(results, ir.Table):
         return results
     results = {name: results}
     return compare(t, results)

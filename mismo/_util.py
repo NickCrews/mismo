@@ -7,14 +7,14 @@ from typing import Any, Callable, Iterable, Literal, TypeVar
 import ibis
 from ibis import _
 from ibis.common.deferred import Deferred
-from ibis.expr import types as it
+from ibis.expr import types as ir
 from ibis.expr.types.relations import bind as bind
 
 
 def cases(
-    case_result_pairs: Iterable[tuple[it.BooleanValue, it.Value]],
-    default: it.Value | None = None,
-) -> it.Value:
+    case_result_pairs: Iterable[tuple[ir.BooleanValue, ir.Value]],
+    default: ir.Value | None = None,
+) -> ir.Value:
     """A more concise way to write a case statement."""
     builder = ibis.case()
     for case, result in case_result_pairs:
@@ -23,8 +23,8 @@ def cases(
 
 
 def get_column(
-    t: it.Table, ref: Any, *, on_many: Literal["error", "struct"] = "error"
-) -> it.Column:
+    t: ir.Table, ref: Any, *, on_many: Literal["error", "struct"] = "error"
+) -> ir.Column:
     """Get a column from a table using some sort of reference to the column.
 
     ref can be a string, a Deferred, a callable, an ibis selector, etc.
@@ -71,12 +71,12 @@ def get_name(x) -> str:
 
 
 def sample_table(
-    table: it.Table,
+    table: ir.Table,
     n_approx: int,
     *,
     method: Literal["row", "block"] | None = None,
     seed: int | None = None,
-) -> it.Table:
+) -> ir.Table:
     """Sample a table to approximately n rows.
 
     Due to the way ibis does sampling, this is not guaranteed to be exactly n rows.
@@ -116,7 +116,7 @@ def sample_table(
     return table.sample(fraction, method=method, seed=seed)
 
 
-def group_id(keys: str | it.Column | Iterable[str | it.Column]) -> it.IntegerColumn:
+def group_id(keys: str | ir.Column | Iterable[str | ir.Column]) -> ir.IntegerColumn:
     """Number each group from 0 to "number of groups - 1".
 
     This is equivalent to pandas.DataFrame.groupby(keys).ngroup().
@@ -124,7 +124,7 @@ def group_id(keys: str | it.Column | Iterable[str | it.Column]) -> it.IntegerCol
     return ibis.dense_rank().over(ibis.window(order_by=keys)).cast("uint64")
 
 
-def unique_column_name(t: it.Table) -> str:
+def unique_column_name(t: ir.Table) -> str:
     """Return a column name that is not already in the table"""
     i = 0
     while True:
@@ -135,8 +135,8 @@ def unique_column_name(t: it.Table) -> str:
 
 
 def intify_column(
-    t: it.Table, column: str
-) -> tuple[it.Table, Callable[[it.Table], it.Table]]:
+    t: ir.Table, column: str
+) -> tuple[ir.Table, Callable[[ir.Table], ir.Table]]:
     """
     Translate column to integer, and return a restoring function.
 
@@ -151,7 +151,7 @@ def intify_column(
     mapping = augmented.select(int_col_name, column).distinct()
     augmented = augmented.mutate(**{column: _[int_col_name]}).drop(int_col_name)
 
-    def restore(with_int_labels: it.Table) -> it.Table:
+    def restore(with_int_labels: ir.Table) -> ir.Table:
         return ibis.join(
             with_int_labels,
             mapping,
@@ -247,8 +247,8 @@ def is_iterable(o: Any) -> bool:
 
 
 def struct_equal(
-    left: it.StructValue, right: it.StructValue, *, fields: Iterable[str] | None = None
-) -> it.BooleanValue:
+    left: ir.StructValue, right: ir.StructValue, *, fields: Iterable[str] | None = None
+) -> ir.BooleanValue:
     """
     The specified fields match exactly. If fields is None, all fields are compared.
     """
@@ -258,8 +258,8 @@ def struct_equal(
 
 
 def struct_isnull(
-    struct: it.StructValue, *, how: Literal["any", "all"], fields: Iterable[str] | None
-) -> it.BooleanValue:
+    struct: ir.StructValue, *, how: Literal["any", "all"], fields: Iterable[str] | None
+) -> ir.BooleanValue:
     """Are any/all of the specified fields null (or the struct itself is null)?
 
     If fields is None, all fields are compared."""
@@ -274,12 +274,12 @@ def struct_isnull(
         raise ValueError(f"how must be 'any' or 'all'. Got {how}")
 
 
-def struct_join(struct: it.StructValue, sep: str) -> it.StringValue:
+def struct_join(struct: ir.StructValue, sep: str) -> ir.StringValue:
     """Join all the fields in a struct with a separator."""
     return ibis.literal(sep).join([struct[f].fillna("") for f in struct.type().names])
 
 
-def struct_tokens(struct: it.StructValue, *, unique: bool = True) -> it.ArrayValue:
+def struct_tokens(struct: ir.StructValue, *, unique: bool = True) -> ir.ArrayValue:
     """Get all the tokens from a struct."""
     oneline = struct_join(struct, " ")
     result = oneline.re_split(r"\s+")

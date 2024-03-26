@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Callable, Iterable, Iterator, NamedTuple, overload
 
 from ibis.common.deferred import Deferred
-from ibis.expr import types as it
+from ibis.expr import types as ir
 
 from mismo import _util
 
@@ -27,7 +27,7 @@ class AgreementLevel(NamedTuple):
     - "within_1_km"
     - "within_10_percent"
     """
-    condition: bool | Deferred | Callable[[it.Table], it.BooleanValue]
+    condition: bool | Deferred | Callable[[ir.Table], ir.BooleanValue]
     """
     A condition that determines whether a record pair matches this level.
 
@@ -45,7 +45,7 @@ class AgreementLevel(NamedTuple):
     - `True`
     """
 
-    def is_match(self, pairs: it.Table) -> it.BooleanColumn:
+    def is_match(self, pairs: ir.Table) -> ir.BooleanColumn:
         """Return a boolean column for if the record pair matches this level."""
         return _util.get_column(pairs, self.condition)
 
@@ -69,7 +69,7 @@ class LevelComparer:
         name: str,
         levels: Iterable[
             AgreementLevel
-            | tuple[str, bool | Deferred | Callable[[it.Table], it.BooleanValue]]
+            | tuple[str, bool | Deferred | Callable[[ir.Table], ir.BooleanValue]]
         ],
     ):
         """Create a LevelComparer.
@@ -116,10 +116,10 @@ class LevelComparer:
         """The number of levels, including the ELSE level."""
         return len(self._levels)
 
-    def __call__(self, pairs: it.Table) -> it.StringColumn:
+    def __call__(self, pairs: ir.Table) -> ir.StringColumn:
         """Label each record pair with the level that it matches.
 
-        Go through the levels in order. If a record pair matches a level, label it.
+        Go through the levels in order. If a record pair matches a level, label ir.
         If none of the levels match a pair, it labeled as "else".
 
         Parameters

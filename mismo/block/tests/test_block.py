@@ -4,7 +4,7 @@ import warnings
 
 import ibis
 from ibis import _
-from ibis.expr import types as it
+from ibis.expr import types as ir
 import pytest
 
 import mismo
@@ -52,14 +52,14 @@ def blocked_on_letter_int(t1, t2, **kwargs):
         ),
     ],
 )
-def test_block(t1: it.Table, t2: it.Table, condition, expected_maker):
+def test_block(t1: ir.Table, t2: ir.Table, condition, expected_maker):
     blocked_table = block_one(t1, t2, condition)
     blocked_ids = blocked_table["record_id_l", "record_id_r"]
     expected = expected_maker(t1, t2)
     assert_tables_equal(blocked_ids, expected)
 
 
-def test_cross_block(table_factory, t1: it.Table, t2: it.Table):
+def test_cross_block(table_factory, t1: ir.Table, t2: ir.Table):
     blocked_table = block_one(t1, t2, True, on_slow="ignore")
     blocked_ids = blocked_table["record_id_l", "record_id_r"]
     expected = table_factory(
@@ -71,7 +71,7 @@ def test_cross_block(table_factory, t1: it.Table, t2: it.Table):
     assert_tables_equal(expected, blocked_ids)
 
 
-def test_empty_block(t1: it.Table, t2: it.Table):
+def test_empty_block(t1: ir.Table, t2: ir.Table):
     blocked = block_one(t1, t2, False)
     assert "record_id_l" in blocked.columns
     assert "record_id_r" in blocked.columns
@@ -79,7 +79,7 @@ def test_empty_block(t1: it.Table, t2: it.Table):
     assert n == 0
 
 
-def test_block_unnest(table_factory, t1: it.Table, t2: it.Table):
+def test_block_unnest(table_factory, t1: ir.Table, t2: ir.Table):
     # If you do a ibis.join(l, r, _.array.unnest()), that will fail because
     # you can't use unnest in a join condition.
     # But we want to support this case, so test our workaround.
@@ -128,7 +128,7 @@ def test_patents_unnest():
     ],
 )
 def test_warn_slow_join(
-    t1: it.Table, t2: it.Table, condition, is_slow, on_slow, result
+    t1: ir.Table, t2: ir.Table, condition, is_slow, on_slow, result
 ):
     def f():
         block_one(t1, t2, condition, on_slow=on_slow)

@@ -8,7 +8,7 @@ import time
 from typing import TYPE_CHECKING, Iterable
 
 import ibis
-from ibis.expr import types as it
+from ibis.expr import types as ir
 
 from mismo import _aio, _util
 
@@ -43,14 +43,14 @@ logger = logging.getLogger(__name__)
 
 
 def us_census_geocode(
-    t: it.Table,
+    t: ir.Table,
     format: str = "census_{name}",
     *,
     benchmark: str | None = None,
     vintage: str | None = None,
     chunk_size: int | None = None,
     n_concurrent: int | None = None,
-) -> it.Table:
+) -> ir.Table:
     """Geocode US physical addresses using the US Census Bureau's geocoding service.
 
     Uses the batch geocoding API from https://geocoding.geo.census.gov/geocoder.
@@ -81,10 +81,10 @@ def us_census_geocode(
     chunk_size:
         The number of addresses to geocode in each request. Default is 5000.
         The maximum allowed by the API is 10_000.
-        This number was tuned experimentally, you probably don't need to change it.
+        This number was tuned experimentally, you probably don't need to change ir.
     n_concurrent:
         The number of concurrent requests to make. Default is 16.
-        This number was tuned experimentally, you probably don't need to change it.
+        This number was tuned experimentally, you probably don't need to change ir.
 
     Returns
     -------
@@ -133,7 +133,7 @@ def us_census_geocode(
     return re_joined
 
 
-def _dedupe(t: it.Table) -> tuple[it.Table, callable]:
+def _dedupe(t: ir.Table) -> tuple[ir.Table, callable]:
     keys = ["street", "city", "state", "zipcode"]
     api_id = ibis.dense_rank().over(ibis.window(order_by=keys))
     # same as pandas.DataFrame.groupby(keys).ngroup()
@@ -147,20 +147,20 @@ def _dedupe(t: it.Table) -> tuple[it.Table, callable]:
     deduped = deduped.cache()
     restore_map = with_group_id.select("__row_number", "api_id")
 
-    def restore(ded: it.Table) -> it.Table:
+    def restore(ded: ir.Table) -> ir.Table:
         return restore_map.left_join(ded, "api_id").drop("api_id", "api_id_right")
 
     return deduped, restore
 
 
 def _geocode(
-    t: it.Table,
+    t: ir.Table,
     *,
     benchmark,
     vintage,
     chunk_size: int,
     n_concurrent: int,
-) -> it.Table:
+) -> ir.Table:
     sub_tables = chunk_table(t, max_size=chunk_size)
     byte_chunks = (_table_to_csv_bytes(sub) for sub in sub_tables)
     client = _make_client()
@@ -179,7 +179,7 @@ def _geocode(
     return result
 
 
-def _normed_addresses(t: it.Table) -> it.Table:
+def _normed_addresses(t: ir.Table) -> ir.Table:
     t = t.select(
         "__row_number",
         street=t.street.strip().upper(),
@@ -190,7 +190,7 @@ def _normed_addresses(t: it.Table) -> it.Table:
     return t
 
 
-def chunk_table(t: it.Table, max_size: int) -> Iterable[it.Table]:
+def chunk_table(t: ir.Table, max_size: int) -> Iterable[ir.Table]:
     n = t.count().execute()
     i = 0
     while i < n:
@@ -198,7 +198,7 @@ def chunk_table(t: it.Table, max_size: int) -> Iterable[it.Table]:
         i += max_size
 
 
-def _table_to_csv_bytes(t: it.Table) -> bytes:
+def _table_to_csv_bytes(t: ir.Table) -> bytes:
     t = t.select("api_id", "street", "city", "state", "zipcode")
     df = t.to_pandas()
     return df.to_csv(index=False, header=False).encode("utf-8")
@@ -269,7 +269,7 @@ async def _with_retries(f, *, chunk_id, max_retries: int):
                 await asyncio.sleep(0.5 * 2**i)
 
 
-def _text_to_table(text: str) -> it.Table:
+def _text_to_table(text: str) -> ir.Table:
     _RAW_SCHEMA = ibis.schema(
         {
             "api_id": "string",
@@ -289,11 +289,11 @@ def _text_to_table(text: str) -> it.Table:
     return ibis.memtable(records, schema=_RAW_SCHEMA)
 
 
-def _post_process_table(t: it.Table) -> it.Table:
+def _post_process_table(t: ir.Table) -> ir.Table:
     lonlat = t.coordinate.split(",")
     lon, lat = lonlat[0].cast("float64"), lonlat[1].cast("float64")
     # pattern is r"(.*), (.*), (.*), (.*)" but splitting on ", " is (probably?) faster
-    parts: it.ArrayColumn = t.parsed.split(", ")
+    parts: ir.ArrayColumn = t.parsed.split(", ")
     street = parts[0].strip()
     city = parts[1].strip()
     state = parts[2].strip()

@@ -4,10 +4,10 @@ from typing import Any
 
 import ibis
 from ibis import _
-from ibis.expr import types as it
+from ibis.expr import types as ir
 
 
-def key_counts(left: it.Table, right_or_key: it.Table | Any, key=None, /) -> it.Table:
+def key_counts(left: ir.Table, right_or_key: ir.Table | Any, key=None, /) -> ir.Table:
     """Count the number of occurrences of each join key in a table or pair of tables.
 
     Used as `key_counts(t, key)` or `key_counts(t1, t2, key)`.
@@ -37,7 +37,7 @@ def key_counts(left: it.Table, right_or_key: it.Table | Any, key=None, /) -> it.
 
     Returns
     -------
-    it.Table
+    ir.Table
         A table with a column for each value in `key` and a column `n` with the count.
 
     Examples
@@ -104,7 +104,7 @@ def key_counts(left: it.Table, right_or_key: it.Table | Any, key=None, /) -> it.
         return j
 
 
-def _key_counts(t: it.Table, key) -> it.Table:
+def _key_counts(t: ir.Table, key) -> ir.Table:
     if key is None:
         raise TypeError("key cannot be None")
     t = t.select(key)

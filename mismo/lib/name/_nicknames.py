@@ -4,13 +4,13 @@ import functools
 from typing import overload
 
 import ibis
-from ibis.expr import types as it
+from ibis.expr import types as ir
 
 from mismo._util import optional_import
 
 
 @overload
-def are_aliases(name1: it.StringValue, name2: it.StringValue) -> it.BooleanValue:
+def are_aliases(name1: ir.StringValue, name2: ir.StringValue) -> ir.BooleanValue:
     ...
 
 
@@ -40,8 +40,8 @@ def are_aliases(name1, name2):
 
 @overload
 def is_nickname_for(
-    nickname: it.StringValue, canonical: it.StringValue
-) -> it.BooleanValue:
+    nickname: ir.StringValue, canonical: ir.StringValue
+) -> ir.BooleanValue:
     ...
 
 
@@ -59,9 +59,9 @@ def is_nickname_for(nickname, canonical):
     is_string = False
     if isinstance(nickname, str) and isinstance(canonical, str):
         is_string = True
-    if not isinstance(nickname, it.StringValue):
+    if not isinstance(nickname, ir.StringValue):
         nickname = ibis.literal(nickname)
-    if not isinstance(canonical, it.StringValue):
+    if not isinstance(canonical, ir.StringValue):
         canonical = ibis.literal(canonical)
     result = _is_nickname_for(nickname, canonical)
     if is_string:
@@ -70,31 +70,31 @@ def is_nickname_for(nickname, canonical):
 
 
 def _is_nickname_for(
-    nickname: it.StringValue, canonical: it.StringValue
-) -> it.BooleanValue:
+    nickname: ir.StringValue, canonical: ir.StringValue
+) -> ir.BooleanValue:
     nickname = nickname.lower().strip()
     canonical = canonical.lower().strip()
     needle = ibis.struct({"canonical": canonical, "nickname": nickname})
     result = needle.isin(_nicknames_column()) | (canonical == nickname)
     # workaround for https://github.com/ibis-project/ibis/issues/8361
-    if isinstance(needle, it.Scalar):
+    if isinstance(needle, ir.Scalar):
         return result.as_scalar()
     return result
 
 
-def _are_aliases(name1: it.StringValue, name2: it.StringValue) -> it.BooleanValue:
+def _are_aliases(name1: ir.StringValue, name2: ir.StringValue) -> ir.BooleanValue:
     name1 = name1.lower().strip()
     name2 = name2.lower().strip()
     needle = ibis.struct({"name1": name1, "name2": name2})
     result = needle.isin(_aliases_column()) | (name1 == name2)
     # workaround for https://github.com/ibis-project/ibis/issues/8361
-    if isinstance(needle, it.Scalar):
+    if isinstance(needle, ir.Scalar):
         return result.as_scalar()
     return result
 
 
 @functools.cache
-def _nicknames_column() -> it.StructColumn:
+def _nicknames_column() -> ir.StructColumn:
     with optional_import("nicknames"):
         from nicknames import NickNamer
 
@@ -110,7 +110,7 @@ def _nicknames_column() -> it.StructColumn:
 
 
 @functools.cache
-def _aliases_column() -> it.StructColumn:
+def _aliases_column() -> ir.StructColumn:
     nn = _nicknames_column()
     a1 = ibis.struct({"name1": nn.canonical, "name2": nn.nickname})
     a2 = ibis.struct({"name1": nn.nickname, "name2": nn.canonical})
