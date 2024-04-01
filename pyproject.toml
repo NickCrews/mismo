@@ -64,6 +64,10 @@ addopts = [
   "--benchmark-group-by=name",
   "--benchmark-sort=name",
 ]
+filterwarnings = [
+  # fail on any warnings that are not explicitly matched below
+  "error",
+]
 
 [tool.coverage.run]
 branch = true
