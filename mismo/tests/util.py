@@ -33,8 +33,7 @@ def assert_tables_equal(
     right_records = right.to_pandas().to_dict(orient="records")
     left_records = [make_record_approx(record) for record in left_records]
     right_records = [make_record_approx(record) for record in right_records]
-    for i, (le, ri) in enumerate(zip(left_records, right_records)):
-        assert le == ri, f"Row {i} does not match"
+    assert left_records == right_records
 
 
 def make_record_approx(record: dict) -> dict:
