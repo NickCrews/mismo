@@ -139,15 +139,20 @@ class AddressesDimension:
     def compare(self, t: ir.Table) -> ir.Table:
         al = t[self.column_normed + "_l"]
         ar = t[self.column_normed + "_r"]
-        if "latitude" in al.type().names:
+        combos = _array.array_combinations(al, ar)
+        if "latitude" in al.type().value_type.names:
             within_100km_levels = [
                 (
                     "within_100km",
-                    distance_km(
-                        lat1=al.latitude,
-                        lon1=al.longitude,
-                        lat2=ar.latitude,
-                        lon2=ar.longitude,
+                    _array.array_min(
+                        combos.map(
+                            lambda pair: distance_km(
+                                lat1=pair.l.latitude,
+                                lon1=pair.l.longitude,
+                                lat2=pair.r.latitude,
+                                lon2=pair.r.longitude,
+                            )
+                        )
                     )
                     <= 100,
                 ),
@@ -157,19 +162,32 @@ class AddressesDimension:
         levels = [
             (
                 "null",
-                ibis.or_(
-                    _util.struct_isnull(
-                        al, how="any", fields=["street1", "city", "state"]
-                    ),
-                    _util.struct_isnull(
-                        ar, how="any", fields=["street1", "city", "state"]
-                    ),
+                _array.array_all(
+                    combos.map(
+                        lambda pair: _util.struct_isnull(
+                            pair.l, how="any", fields=["street1", "city", "state"]
+                        )
+                        | _util.struct_isnull(
+                            pair.r, how="any", fields=["street1", "city", "state"]
+                        )
+                    )
                 ),
             ),
-            ("street1_and_city_or_postal_code", same_address_for_mailing(al, ar)),
-            ("same_region", same_region(al, ar)),
+            (
+                "street1_and_city_or_postal_code",
+                _array.array_any(
+                    combos.map(lambda pair: same_address_for_mailing(pair.l, pair.r))
+                ),
+            ),
+            (
+                "same_region",
+                _array.array_any(combos.map(lambda pair: same_region(pair.l, pair.r))),
+            ),
             *within_100km_levels,
-            ("same_state", al.state == ar.state),
+            (
+                "same_state",
+                _array.array_any(combos.map(lambda pair: pair.l.state == pair.r.state)),
+            ),
         ]
         name = type(self).__name__
         return compare(t, LevelComparer(name, levels))
