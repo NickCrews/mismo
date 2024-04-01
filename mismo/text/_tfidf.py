@@ -13,7 +13,8 @@ def document_counts(terms: ir.ArrayColumn) -> ir.Table:
 
     Parameters
     ----------
-        terms: One row for each record. Each row is an array of terms in that record.
+    terms:
+        One row for each record. Each row is an array of terms in that record.
         Each term could be a word, ngram, or other token from a string.
         Or, it could also represent more generic data, such as a list of tags or
         categories like ["red", "black"]. Each term can be any datatype,
