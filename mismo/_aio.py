@@ -1,27 +1,16 @@
 from __future__ import annotations
 
 import asyncio
-from typing import (
-    Any,
-    AsyncIterator,
-    Coroutine,
-    Iterable,
-)
+from typing import AsyncIterator, Iterable, TypeVar
+
+T = TypeVar("T")
 
 
-def as_completed(
-    coroutines: Iterable[Coroutine], *, loop: asyncio.AbstractEventLoop | None = None
-) -> Iterable[Any]:
-    """Run coroutines concurrently and yield results as they come in."""
-
-    async def loop():
-        for result in asyncio.as_completed(coroutines):
-            yield await result
-
-    yield from _iter_over_async(loop())
-
-
-def _iter_over_async(ait: AsyncIterator, loop: asyncio.AbstractEventLoop | None = None):
+def iter_over_async(
+    ait: AsyncIterator[T], loop: asyncio.AbstractEventLoop | None = None
+) -> Iterable[T]:
+    """Iterate over an async iterator in a synchronous manner."""
+    # copied from https://stackoverflow.com/a/63595496/5156887
     if loop is None:
         loop = asyncio.get_event_loop()
     ait = ait.__aiter__()

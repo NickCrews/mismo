@@ -5,7 +5,7 @@ import csv
 import io
 import logging
 import time
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, AsyncIterable, Iterable
 
 import ibis
 from ibis.expr import types as ir
@@ -165,17 +165,14 @@ def _geocode(
     byte_chunks = (_table_to_csv_bytes(sub) for sub in sub_tables)
     client = _make_client()
     sem = asyncio.Semaphore(n_concurrent)
-    tasks = [
-        _make_request(
-            client, sem, chunk_id=i, bytes=b, benchmark=benchmark, vintage=vintage
-        )
-        for i, b in enumerate(byte_chunks)
+    requests = [
+        dict(bytes=b, benchmark=benchmark, vintage=vintage) for b in byte_chunks
     ]
     logger.debug(
-        f"Geocoding {t.count().execute()} addresses in {len(tasks)} chunks of size {chunk_size}"  # noqa
+        f"Geocoding {t.count().execute()} addresses in {len(requests)} chunks of size {chunk_size}"  # noqa
     )
-    text_responses = list(_aio.as_completed(tasks))
-    tables = (_text_to_table(resp_text) for resp_text in text_responses)
+    responses = _make_requests(requests, client=client, sem=sem)
+    tables = (_text_to_table(resp_text) for resp_text in responses)
     result = ibis.union(*tables)
     result = _post_process_table(result)
     return result
@@ -211,6 +208,29 @@ def _make_client() -> httpx.AsyncClient:
         import httpx
     timeout = httpx.Timeout(10, read=150, pool=10000)
     return httpx.AsyncClient(timeout=timeout)
+
+
+def _make_requests(
+    requests: Iterable[dict],
+    *,
+    client: httpx.AsyncClient | None = None,
+    sem: asyncio.Semaphore | None = None,
+):
+    if client is None:
+        client = _make_client()
+    if sem is None:
+        sem = asyncio.Semaphore(_N_CONCURRENT)
+
+    async def _async_make_requests() -> AsyncIterable[str]:
+        async with client:
+            responses = [
+                _make_request(client, sem, chunk_id=i, **req)
+                for i, req in enumerate(requests)
+            ]
+            for resp in asyncio.as_completed(responses):
+                yield await resp
+
+    return _aio.iter_over_async(_async_make_requests())
 
 
 async def _make_request(
