@@ -3,7 +3,7 @@ from __future__ import annotations
 import ibis
 from ibis.expr import types as ir
 
-from mismo import _util
+from mismo import _array, _util
 from mismo.compare import LevelComparer, compare
 from mismo.lib.geo._latlon import distance_km
 from mismo.text import rare_terms
@@ -131,7 +131,7 @@ class AddressesDimension:
             "_tokens_nonunique"
         )
         rt = rare_terms(t[self.column_tokens], max_records_frac=0.01).term
-        t = _util.array_filter_isin_other(
+        t = _array.array_filter_isin_other(
             t, self.column_tokens, rt, result_format=self.column_keywords
         )
         return t
