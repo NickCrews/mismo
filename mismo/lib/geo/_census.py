@@ -166,7 +166,9 @@ def _geocode(
     client = _make_client()
     sem = asyncio.Semaphore(n_concurrent)
     tasks = [
-        _make_request(client, b, sem, i, benchmark=benchmark, vintage=vintage)
+        _make_request(
+            client, sem, chunk_id=i, bytes=b, benchmark=benchmark, vintage=vintage
+        )
         for i, b in enumerate(byte_chunks)
     ]
     logger.debug(
@@ -213,10 +215,10 @@ def _make_client() -> httpx.AsyncClient:
 
 async def _make_request(
     client: httpx.AsyncClient,
-    b: bytes,
     sem: asyncio.Semaphore,
-    chunk_id: int,
     *,
+    chunk_id: int,
+    bytes: bytes,
     benchmark: str | None = None,
     vintage: str | None = None,
 ) -> str:
@@ -225,7 +227,7 @@ async def _make_request(
         "benchmark": benchmark or "Public_AR_Current",
         "vintage": vintage or "Current_Current",
     }
-    files = {"addressFile": ("addresses.csv", b)}
+    files = {"addressFile": ("addresses.csv", bytes)}
 
     # Sometimes I get a 502 error:
     # While attempting to geocode your batch input, the Census Geocoder
