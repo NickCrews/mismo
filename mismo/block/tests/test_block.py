@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import warnings
-
 import ibis
 from ibis import _
 from ibis.expr import types as ir
@@ -136,10 +134,8 @@ def test_warn_slow_join(
     if result is None:
         f()
     elif is_slow and result is SlowJoinWarning:
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(SlowJoinWarning):
             f()
-            assert len(w) == 1
-            assert issubclass(w[0].category, SlowJoinWarning)
     elif is_slow and result is SlowJoinError:
         with pytest.raises(SlowJoinError):
             f()
