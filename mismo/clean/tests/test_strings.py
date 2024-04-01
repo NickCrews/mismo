@@ -13,6 +13,7 @@ from mismo import clean
         ("Ross' house  ", "Ross' house"),
         ("a", "a"),
         ("", ""),
+        (" ", ""),
         (None, None),
         ("bees\tall cook", "bees all cook"),
     ],
