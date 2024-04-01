@@ -23,7 +23,7 @@ def test_name_dimension(name_table):
         ),
     )
     compared = dim.compare(blocked)
-    compared = compared.order_by("record_id_l", "record_id_r")
+    compared = compared.order_by(["record_id_l", "record_id_r"])
     assert compared.execute().NameDimension.to_list() == [
         "initials",
         "else",
