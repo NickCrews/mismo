@@ -23,6 +23,12 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.9", "3.10", "3.11"]
+        # Workaround for
+        # https://github.com/actions/setup-python/issues/696#issuecomment-2072959905
+        # ideally we can remove this later.
+        exclude:
+          - os: macos-14
+            python-version: '3.9'
 
     steps:
       - uses: actions/checkout@v4
