@@ -10,12 +10,12 @@ install:
 
 # format code
 fmt:
-    ruff --fix mismo docs
+    ruff check --fix mismo docs
     ruff format mismo docs
 
 # lint code
 lint:
-    ruff mismo docs
+    ruff check mismo docs
     ruff format --check mismo docs
 
 # run tests

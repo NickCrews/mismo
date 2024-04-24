@@ -1,4 +1,5 @@
 """Vector operations"""
+
 from __future__ import annotations
 
 from typing import Literal, TypeVar
@@ -9,14 +10,12 @@ import ibis.expr.types as ir
 
 
 @ibis.udf.scalar.builtin(name="array_sum")
-def _array_sum(a) -> float:
-    ...
+def _array_sum(a) -> float: ...
 
 
 # for duckdb
 @ibis.udf.scalar.builtin(name="list_dot_product")
-def _array_dot_product(a, b) -> float:
-    ...
+def _array_dot_product(a, b) -> float: ...
 
 
 T = TypeVar("T", ir.MapValue, ir.ArrayValue)

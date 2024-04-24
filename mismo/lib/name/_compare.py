@@ -25,8 +25,7 @@ def initials_equal(left: ir.StringValue, right: ir.StringValue) -> ir.BooleanVal
 
 
 @ibis.udf.scalar.builtin
-def damerau_levenshtein(left: str, right: str) -> int:
-    ...
+def damerau_levenshtein(left: str, right: str) -> int: ...
 
 
 def are_spelling_error(

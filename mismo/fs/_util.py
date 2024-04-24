@@ -11,13 +11,11 @@ _IbisIsh = Union[Deferred, NumericValue]
 
 
 @overload
-def prob_to_odds(prob: float) -> float:
-    ...
+def prob_to_odds(prob: float) -> float: ...
 
 
 @overload
-def prob_to_odds(prob: _IbisIsh) -> _IbisIsh:
-    ...
+def prob_to_odds(prob: _IbisIsh) -> _IbisIsh: ...
 
 
 def prob_to_odds(prob):
@@ -29,13 +27,11 @@ def prob_to_odds(prob):
 
 
 @overload
-def odds_to_prob(odds: float) -> float:
-    ...
+def odds_to_prob(odds: float) -> float: ...
 
 
 @overload
-def odds_to_prob(odds: _IbisIsh) -> _IbisIsh:
-    ...
+def odds_to_prob(odds: _IbisIsh) -> _IbisIsh: ...
 
 
 def odds_to_prob(odds):
@@ -47,13 +43,11 @@ def odds_to_prob(odds):
 
 
 @overload
-def odds_to_log_odds(odds: float) -> float:
-    ...
+def odds_to_log_odds(odds: float) -> float: ...
 
 
 @overload
-def odds_to_log_odds(odds: _IbisIsh) -> _IbisIsh:
-    ...
+def odds_to_log_odds(odds: _IbisIsh) -> _IbisIsh: ...
 
 
 def odds_to_log_odds(odds):

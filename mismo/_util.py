@@ -8,7 +8,7 @@ import ibis
 from ibis import _
 from ibis.common.deferred import Deferred
 from ibis.expr import types as ir
-from ibis.expr.types.relations import bind as bind
+from ibis.expr.types.relations import bind as _bind
 
 
 def cases(
@@ -20,6 +20,14 @@ def cases(
     for case, result in case_result_pairs:
         builder = builder.when(case, result)
     return builder.else_(default).end()
+
+
+def bind(t: ir.Table, ref: Any) -> tuple[ir.Value]:
+    """Reference into a table to get Columns and Scalars."""
+    # ibis's bind() can't handle bind(_, "column_name")
+    if isinstance(ref, str):
+        return (t[ref],)
+    return tuple(_bind(t, ref))
 
 
 def get_column(
@@ -39,7 +47,7 @@ def get_column(
         What to do if ref returns multiple columns. If "error", raise an error.
         If "struct", return a StructColumn containing all the columns.
     """
-    cols = list(bind(t, ref))
+    cols = bind(t, ref)
     if len(cols) != 1:
         if on_many == "error":
             raise ValueError(f"Expected 1 column, got {len(cols)}")

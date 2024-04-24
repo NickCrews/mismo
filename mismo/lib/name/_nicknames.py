@@ -10,13 +10,11 @@ from mismo._util import optional_import
 
 
 @overload
-def are_aliases(name1: ir.StringValue, name2: ir.StringValue) -> ir.BooleanValue:
-    ...
+def are_aliases(name1: ir.StringValue, name2: ir.StringValue) -> ir.BooleanValue: ...
 
 
 @overload
-def are_aliases(name1: str, name2: str) -> bool:
-    ...
+def are_aliases(name1: str, name2: str) -> bool: ...
 
 
 def are_aliases(name1, name2):
@@ -41,13 +39,11 @@ def are_aliases(name1, name2):
 @overload
 def is_nickname_for(
     nickname: ir.StringValue, canonical: ir.StringValue
-) -> ir.BooleanValue:
-    ...
+) -> ir.BooleanValue: ...
 
 
 @overload
-def is_nickname_for(nickname: str, canonical: str) -> bool:
-    ...
+def is_nickname_for(nickname: str, canonical: str) -> bool: ...
 
 
 def is_nickname_for(nickname, canonical):

@@ -15,8 +15,7 @@ def norm_whitespace(texts: ir.StringValue) -> ir.StringValue:
 @ibis.udf.scalar.builtin(
     name="regexp_extract_all", signature=(("string", "string"), "array<string>")
 )
-def _re_extract_all(string, pattern):
-    ...
+def _re_extract_all(string, pattern): ...
 
 
 # from https://www.imperva.com/blog/fast-n-grams-extraction-and-analysis-with-sql/

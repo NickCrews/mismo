@@ -8,28 +8,23 @@ from mismo import _util
 
 
 @ibis.udf.scalar.builtin(name="list_min")
-def array_min(array) -> float:
-    ...
+def array_min(array) -> float: ...
 
 
 @ibis.udf.scalar.builtin(name="list_max")
-def array_max(array) -> float:
-    ...
+def array_max(array) -> float: ...
 
 
 @ibis.udf.scalar.builtin(name="list_product")
-def array_product(array) -> bool:
-    ...
+def array_product(array) -> bool: ...
 
 
 @ibis.udf.scalar.builtin(name="list_bool_or")
-def array_any(array) -> bool:
-    ...
+def array_any(array) -> bool: ...
 
 
 @ibis.udf.scalar.builtin(name="list_bool_and")
-def array_all(array) -> bool:
-    ...
+def array_all(array) -> bool: ...
 
 
 def array_combinations(left: ir.ArrayValue, right: ir.ArrayValue) -> ir.ArrayValue:

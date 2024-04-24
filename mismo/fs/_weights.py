@@ -131,12 +131,10 @@ class ComparisonWeights:
         return self._name
 
     @overload
-    def __getitem__(self, name_or_index: str | int) -> LevelWeights:
-        ...
+    def __getitem__(self, name_or_index: str | int) -> LevelWeights: ...
 
     @overload
-    def __getitem__(self, name_or_index: slice) -> tuple[LevelWeights, ...]:
-        ...
+    def __getitem__(self, name_or_index: slice) -> tuple[LevelWeights, ...]: ...
 
     def __getitem__(
         self, name_or_index: str | int | slice
@@ -173,12 +171,10 @@ class ComparisonWeights:
         return self.name == other.name and self._level_weights == other._level_weights
 
     @overload
-    def odds(self, labels: str | int) -> float:
-        ...
+    def odds(self, labels: str | int) -> float: ...
 
     @overload
-    def odds(self, labels: ir.StringValue | ir.IntegerValue) -> ir.FloatingValue:
-        ...
+    def odds(self, labels: ir.StringValue | ir.IntegerValue) -> ir.FloatingValue: ...
 
     def odds(
         self, labels: str | int | ir.StringValue | ir.IntegerValue
@@ -207,14 +203,12 @@ class ComparisonWeights:
         return labels.cases(cases)
 
     @overload
-    def match_probability(self, labels: str | int) -> float:
-        ...
+    def match_probability(self, labels: str | int) -> float: ...
 
     @overload
     def match_probability(
         self, labels: ir.StringValue | ir.IntegerValue
-    ) -> ir.FloatingValue:
-        ...
+    ) -> ir.FloatingValue: ...
 
     def match_probability(
         self, labels: str | int | ir.StringValue | ir.IntegerValue
@@ -223,12 +217,12 @@ class ComparisonWeights:
         return odds_to_prob(self.odds(labels))
 
     @overload
-    def log_odds(self, labels: str | int) -> float:
-        ...
+    def log_odds(self, labels: str | int) -> float: ...
 
     @overload
-    def log_odds(self, labels: ir.StringValue | ir.IntegerValue) -> ir.FloatingValue:
-        ...
+    def log_odds(
+        self, labels: ir.StringValue | ir.IntegerValue
+    ) -> ir.FloatingValue: ...
 
     def log_odds(
         self, labels: str | int | ir.StringValue | ir.IntegerValue

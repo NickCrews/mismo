@@ -23,7 +23,9 @@ classifiers = [
 dependencies = [
   "altair>=5.0.0",
   "anywidget",
-  "duckdb>=0.8.0",
+  # I am running into https://github.com/duckdb/duckdb/issues/11542
+  # on duckdb 0.10.1 and 0.10.2 in the vector tests, so I am excluding those versions
+  "duckdb>=0.8.0,!=0.10.1,!=0.10.2",
   "ibis-framework[duckdb]>=9.0.0.dev272",
   # "ibis-framework[duckdb] @ git+https://github.com/ibis-project/ibis.git@42f45fe59da492897f0449468a3036384be34214",
   "ipywidgets",

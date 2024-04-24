@@ -95,12 +95,10 @@ class LevelComparer:
         return self._name
 
     @overload
-    def __getitem__(self, name_or_index: str | int) -> AgreementLevel:
-        ...
+    def __getitem__(self, name_or_index: str | int) -> AgreementLevel: ...
 
     @overload
-    def __getitem__(self, name_or_index: slice) -> tuple[AgreementLevel, ...]:
-        ...
+    def __getitem__(self, name_or_index: slice) -> tuple[AgreementLevel, ...]: ...
 
     def __getitem__(self, name_or_index):
         """Get a level by name or index."""
