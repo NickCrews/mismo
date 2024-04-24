@@ -80,6 +80,9 @@ def check_join_algorithm(
 
     Issues a SlowJoinWarning or raises a SlowJoinError.
 
+    This is only implemented for the duckdb backend. All other backends will
+    issue a warning and skip the check.
+
     By "slow", we mean that the join algorithm is one of:
 
     - "NESTED_LOOP_JOIN" O(n*m)
@@ -103,7 +106,17 @@ def check_join_algorithm(
     """
     if on_slow == "ignore":
         return
-    alg = get_join_algorithm(left, right, condition)
+    try:
+        alg = get_join_algorithm(left, right, condition)
+    except _UnsupportedBackendError as e:
+        warnings.warn(
+            "We can only check the join algorithm for DuckDB backends. You passed"
+            f" an expression with a {type(e.args[0])} backend."
+            " To continue using a non-DuckDB backend, you should pass"
+            " `on_slow='ignore'` to acknowledge that the join algorithm"
+            " won't be checked."
+        )
+        return
     if alg in SLOW_JOIN_ALGORITHMS:
         if on_slow == "error":
             raise SlowJoinError(condition, alg)
@@ -133,9 +146,7 @@ def _to_sql_and_backend(duckdb_expr: ir.Expr | str) -> tuple[str, DuckDBBackend]
         except AttributeError:
             raise NotImplementedError("The given expression must have a backend.")
         if not isinstance(con, DuckDBBackend):
-            raise NotImplementedError(
-                "The given expression must be a DuckDB expression."
-            )
+            raise _UnsupportedBackendError(con)
         sql = ibis.to_sql(duckdb_expr, dialect="duckdb")
     return sql, con
 
@@ -181,3 +192,7 @@ def _extract_top_join_alg(explain_str: str) -> str:
             f"Could not find a join algorithm in the explain string: {explain_str}"
         )
     return match.group(1)
+
+
+class _UnsupportedBackendError(ValueError):
+    pass
