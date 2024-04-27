@@ -11,6 +11,7 @@ becomes intractable for datasets much larger than a few thousand.
 ::: mismo.block.block_many
 ::: mismo.block.BlockingRule
 ::: mismo.block.join
+::: mismo.block.sample_all_pairs
 
 ## Plotting
 

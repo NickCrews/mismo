@@ -64,7 +64,7 @@ def test_train_comparison_from_labels(backend, name_comparer):
     """Test that finding the weights for a Comparison works."""
     patents = datasets.load_patents(backend)
     (weights,) = fs.train_using_labels(
-        [name_comparer], patents, patents, max_pairs=100_000, seed=42
+        [name_comparer], patents, patents, max_pairs=100_000
     )
     assert weights.name == "name"
     assert len(weights) == 3  # 2 levels + 1 ELSE
@@ -96,7 +96,6 @@ def test_train_comparions_using_em(backend, name_comparer, location_comparer):
         patents,
         patents,
         max_pairs=100_000,
-        seed=42,
     )
     assert len(weights) == 2
     exact, close, else_ = weights["name"]

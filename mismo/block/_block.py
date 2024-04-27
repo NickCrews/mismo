@@ -299,7 +299,7 @@ def join(
     _sql_analyze.check_join_algorithm(left, right, pred, on_slow=on_slow)
     j = ibis.join(left, right, pred, lname="{name}_l", rname="{name}_r")
     j = _ensure_suffixed(left.columns, right.columns, j)
-    j = _move_record_id_cols_first(j)
+    j = fix_blocked_column_order(j)
     return j
 
 
@@ -313,11 +313,12 @@ def _join_on_id_pairs(left: ir.Table, right: ir.Table, id_pairs: ir.Table) -> ir
     j = id_pairs
     j = j.inner_join(right, "record_id_r")
     j = j.inner_join(left, "record_id_l")
-    j = _move_record_id_cols_first(j)
+    j = fix_blocked_column_order(j)
     return j
 
 
-def _move_record_id_cols_first(t: ir.Table) -> ir.Table:
+def fix_blocked_column_order(t: ir.Table) -> ir.Table:
+    """Ensure that the columns in the blocked table are in the expected order."""
     if "record_id_l" not in t.columns or "record_id_r" not in t.columns:
         return t
     cols = set(t.columns) - {"record_id_l", "record_id_r"}

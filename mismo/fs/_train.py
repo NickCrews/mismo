@@ -40,7 +40,6 @@ def train_us_using_sampling(
     right: ir.Table,
     *,
     max_pairs: int | None = None,
-    seed: int | None = None,
 ) -> list[float]:
     """Estimate the u weight using random sampling.
 
@@ -71,7 +70,7 @@ def train_us_using_sampling(
     """
     if max_pairs is None:
         max_pairs = 1_000_000_000
-    sample = sample_all_pairs(left, right, max_pairs=max_pairs, seed=seed)
+    sample = sample_all_pairs(left, right, max_pairs=max_pairs)
     labels = compare(sample, comparer)[comparer.name]
     return level_proportions(comparer, labels)
 
@@ -129,10 +128,9 @@ def _train_using_labels(
     right: ir.Table,
     *,
     max_pairs: int | None = None,
-    seed: int | None = None,
 ) -> ComparisonWeights:
-    ms = train_ms_from_labels(comparer, left, right, max_pairs=max_pairs, seed=seed)
-    us = train_us_using_sampling(comparer, left, right, max_pairs=max_pairs, seed=seed)
+    ms = train_ms_from_labels(comparer, left, right, max_pairs=max_pairs)
+    us = train_us_using_sampling(comparer, left, right, max_pairs=max_pairs)
     return make_weights(comparer, ms, us)
 
 
@@ -142,14 +140,10 @@ def train_using_labels(
     right: ir.Table,
     *,
     max_pairs: int | None = None,
-    seed: int | None = None,
 ) -> Weights:
     """Estimate all Weights for a set of LevelComparers using labeled data."""
     return Weights(
-        [
-            _train_using_labels(c, left, right, max_pairs=max_pairs, seed=seed)
-            for c in comparers
-        ]
+        [_train_using_labels(c, left, right, max_pairs=max_pairs) for c in comparers]
     )
 
 

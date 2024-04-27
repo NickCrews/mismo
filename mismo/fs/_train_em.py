@@ -20,12 +20,9 @@ def train_using_em(
     right: ir.Table,
     *,
     max_pairs: int | None = None,
-    seed: int | None = None,
 ) -> Weights:
     """Train weights on unlabeled data using an expectation maximization algorithm."""
-    initial_blocking = _train.sample_all_pairs(
-        left, right, max_pairs=max_pairs, seed=seed
-    )
+    initial_blocking = _train.sample_all_pairs(left, right, max_pairs=max_pairs)
     compared = compare(initial_blocking, *comparers)
     compared = compared[[c.name for c in comparers]]
     compared = compared.cache()
