@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from ibis import _
-from ibis.expr.types import Table
+from ibis.expr import types as ir
 import pytest
 
 from mismo.compare import LevelComparer, compare
 
 
 @pytest.fixture()
-def blocked(table_factory) -> Table:
+def blocked(table_factory) -> ir.Table:
     return table_factory(
         {
             "cost_l": [1, 1, 99],
@@ -128,7 +128,7 @@ def test_comparer_basic(cost_comparer: LevelComparer, large_level, exact_level):
         cost_comparer[3]
 
 
-def test_comparison_label(blocked: Table, cost_comparer):
+def test_comparison_label(blocked: ir.Table, cost_comparer):
     t = compare(blocked, cost_comparer)
     assert (t.cost == t.cost_label_expected).all().execute()
 

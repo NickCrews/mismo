@@ -4,7 +4,7 @@ import logging
 from typing import Iterable
 
 from ibis import _
-from ibis.expr.types import IntegerColumn, StringColumn, Table
+from ibis.expr import types as ir
 
 from mismo.compare import LevelComparer, compare
 
@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 def train_using_em(
     comparers: Iterable[LevelComparer],
-    left: Table,
-    right: Table,
+    left: ir.Table,
+    right: ir.Table,
     *,
     max_pairs: int | None = None,
     seed: int | None = None,
@@ -40,12 +40,12 @@ def train_using_em(
     return weights
 
 
-def _initial_weights(comparisons: Iterable[LevelComparer], labels: Table) -> Weights:
+def _initial_weights(comparisons: Iterable[LevelComparer], labels: ir.Table) -> Weights:
     return Weights(_initial_comparison_weights(c, labels[c.name]) for c in comparisons)
 
 
 def _initial_comparison_weights(
-    comparison: LevelComparer, labels: IntegerColumn
+    comparison: LevelComparer, labels: ir.IntegerColumn
 ) -> ComparisonWeights:
     n_levels = len(comparison)
     ms = [1 / n_levels] * n_levels
@@ -54,7 +54,7 @@ def _initial_comparison_weights(
 
 
 def _weights_from_matches_nonmatches(
-    comparisons: Iterable[LevelComparer], matches: Table, nonmatches: Table
+    comparisons: Iterable[LevelComparer], matches: ir.Table, nonmatches: ir.Table
 ) -> Weights:
     return Weights(
         [
@@ -68,8 +68,8 @@ def _weights_from_matches_nonmatches(
 
 def _comparison_weights_from_matches_nonmatches(
     comparison: LevelComparer,
-    match_labels: IntegerColumn | StringColumn,
-    nonmatch_labels: IntegerColumn | StringColumn,
+    match_labels: ir.IntegerColumn | ir.StringColumn,
+    nonmatch_labels: ir.IntegerColumn | ir.StringColumn,
 ) -> ComparisonWeights:
     ms = _train.level_proportions(comparison, match_labels)
     us = _train.level_proportions(comparison, nonmatch_labels)

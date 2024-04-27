@@ -7,7 +7,7 @@ from typing import Iterable
 import altair as alt
 import ibis
 from ibis import _
-from ibis.expr.types import Table
+from ibis.expr import types as ir
 import ipywidgets
 import pandas as pd
 
@@ -18,7 +18,7 @@ from mismo.fs._weights import Weights
 
 
 def compared_dashboard(
-    compared: Table,
+    compared: ir.Table,
     comparisons: Iterable[LevelComparer],
     weights: Weights | None = None,
     *,
@@ -61,7 +61,7 @@ def compared_dashboard(
     vector_title_widget = ipywidgets.HTML()
     table_widget = ipywidgets.HTML()
 
-    def set_table(data: Table):
+    def set_table(data: ir.Table):
         df = data.limit(limiter_widget.value).to_pandas()
         table_widget.value = df.to_html(index=False, render_links=True)
 
@@ -89,7 +89,7 @@ def compared_dashboard(
 
 
 def _compared_chart(
-    compared: Table,
+    compared: ir.Table,
     comparisons: Iterable[LevelComparer],
     weights: Weights | None = None,
     *,
@@ -270,7 +270,7 @@ def _level_uid(comparison: LevelComparer, level: AgreementLevel) -> str:
 
 
 # TODO: make this work as a filter for the above histogram
-def _make_legend_plot(longer: Table, color_map):
+def _make_legend_plot(longer: ir.Table, color_map):
     levels = longer.group_by(["comparison", "level"]).agg(
         id=_.id.first(),
         level_idx=_.level_idx.first(),

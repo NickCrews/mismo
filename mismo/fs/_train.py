@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Iterable
 
-from ibis.expr.types import IntegerColumn, StringColumn, Table
+from ibis.expr import types as ir
 
 from mismo._util import sample_table
 from mismo.block import block_one
@@ -12,19 +12,19 @@ from ._weights import ComparisonWeights, LevelWeights, Weights
 
 
 def all_possible_pairs(
-    left: Table,
-    right: Table,
+    left: ir.Table,
+    right: ir.Table,
     *,
     max_pairs: int | None = None,
     seed: int | None = None,
-) -> Table:
+) -> ir.Table:
     """Blocks together all possible pairs of records."""
     pairs = block_one(left, right, True, on_slow="ignore")
     n_pairs = _min_ignore_None(pairs.count().execute(), max_pairs)
     return sample_table(pairs, n_pairs, seed=seed)
 
 
-def true_pairs_from_labels(left: Table, right: Table) -> Table:
+def true_pairs_from_labels(left: ir.Table, right: ir.Table) -> ir.Table:
     if "label_true" not in left.columns:
         raise ValueError(
             "Left dataset must have a label_true column. Found: {left.columns}"
@@ -37,7 +37,7 @@ def true_pairs_from_labels(left: Table, right: Table) -> Table:
 
 
 def level_proportions(
-    comparer: LevelComparer, labels: IntegerColumn | StringColumn
+    comparer: LevelComparer, labels: ir.IntegerColumn | ir.StringColumn
 ) -> list[float]:
     """
     Return the proportion of labels that fall into each Comparison level.
@@ -53,7 +53,7 @@ def level_proportions(
     vc_df = vc_df.reindex([lev.name for lev in comparer], fill_value=1)
     vc_df["pct"] = vc_df["n"] / vc_df["n"].sum()
     vc_dict = vc_df["pct"].to_dict()
-    if isinstance(labels, StringColumn):
+    if isinstance(labels, ir.StringColumn):
         name_to_i = {lev.name: i for i, lev in enumerate(comparer)}
         vc_dict = {name_to_i[name]: v for name, v in vc_dict.items()}
     return [vc_dict[i] for i in range(len(comparer))]
@@ -61,8 +61,8 @@ def level_proportions(
 
 def train_us_using_sampling(
     comparer: LevelComparer,
-    left: Table,
-    right: Table,
+    left: ir.Table,
+    right: ir.Table,
     *,
     max_pairs: int | None = None,
     seed: int | None = None,
@@ -103,8 +103,8 @@ def train_us_using_sampling(
 
 def train_ms_from_labels(
     comparer: LevelComparer,
-    left: Table,
-    right: Table,
+    left: ir.Table,
+    right: ir.Table,
     *,
     max_pairs: int | None = None,
     seed: int | None = None,
@@ -138,8 +138,8 @@ def train_ms_from_labels(
 
 def _train_using_labels(
     comparer: LevelComparer,
-    left: Table,
-    right: Table,
+    left: ir.Table,
+    right: ir.Table,
     *,
     max_pairs: int | None = None,
     seed: int | None = None,
@@ -151,8 +151,8 @@ def _train_using_labels(
 
 def train_using_labels(
     comparers: Iterable[LevelComparer],
-    left: Table,
-    right: Table,
+    left: ir.Table,
+    right: ir.Table,
     *,
     max_pairs: int | None = None,
     seed: int | None = None,
