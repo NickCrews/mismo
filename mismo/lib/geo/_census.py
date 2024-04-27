@@ -230,7 +230,8 @@ def _make_requests(
             for resp in asyncio.as_completed(responses):
                 yield await resp
 
-    return _aio.iter_over_async(_async_make_requests())
+    with asyncio.Runner():
+        yield from _aio.iter_over_async(_async_make_requests())
 
 
 async def _make_request(

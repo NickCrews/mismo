@@ -9,7 +9,11 @@ T = TypeVar("T")
 def iter_over_async(
     ait: AsyncIterator[T], loop: asyncio.AbstractEventLoop | None = None
 ) -> Iterable[T]:
-    """Iterate over an async iterator in a synchronous manner."""
+    """Iterate over an async iterator in a synchronous manner.
+
+    Either pass in a loop, or make sure there is an event loop running when
+    calling this function.
+    """
     # copied from https://stackoverflow.com/a/63595496/5156887
     if loop is None:
         loop = asyncio.get_event_loop()
