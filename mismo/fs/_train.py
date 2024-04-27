@@ -5,35 +5,10 @@ from typing import Iterable
 from ibis.expr import types as ir
 
 from mismo._util import sample_table
-from mismo.block import block_one
+from mismo.block import block_one, sample_all_pairs
 from mismo.compare import LevelComparer, compare
 
 from ._weights import ComparisonWeights, LevelWeights, Weights
-
-
-def all_possible_pairs(
-    left: ir.Table,
-    right: ir.Table,
-    *,
-    max_pairs: int | None = None,
-    seed: int | None = None,
-) -> ir.Table:
-    """Blocks together all possible pairs of records."""
-    pairs = block_one(left, right, True, on_slow="ignore")
-    n_pairs = _min_ignore_None(pairs.count().execute(), max_pairs)
-    return sample_table(pairs, n_pairs, seed=seed)
-
-
-def true_pairs_from_labels(left: ir.Table, right: ir.Table) -> ir.Table:
-    if "label_true" not in left.columns:
-        raise ValueError(
-            "Left dataset must have a label_true column. Found: {left.columns}"
-        )
-    if "label_true" not in right.columns:
-        raise ValueError(
-            "Right dataset must have a label_true column. Found: {right.columns}"
-        )
-    return block_one(left, right, "label_true")
 
 
 def level_proportions(
@@ -96,7 +71,7 @@ def train_us_using_sampling(
     """
     if max_pairs is None:
         max_pairs = 1_000_000_000
-    sample = all_possible_pairs(left, right, max_pairs=max_pairs, seed=seed)
+    sample = sample_all_pairs(left, right, max_pairs=max_pairs, seed=seed)
     labels = compare(sample, comparer)[comparer.name]
     return level_proportions(comparer, labels)
 
@@ -127,13 +102,25 @@ def train_ms_from_labels(
     When NULL values are encountered in the ground truth column,
     that record is simply ignored.
     """
-    pairs = true_pairs_from_labels(left, right)
+    pairs = _true_pairs_from_labels(left, right)
     if max_pairs is None:
         max_pairs = 1_000_000_000
     n_pairs = min(pairs.count().execute(), max_pairs)
     sample = sample_table(pairs, n_pairs, seed=seed)
     labels = compare(sample, comparer)[comparer.name]
     return level_proportions(comparer, labels)
+
+
+def _true_pairs_from_labels(left: ir.Table, right: ir.Table) -> ir.Table:
+    if "label_true" not in left.columns:
+        raise ValueError(
+            "Left dataset must have a label_true column. Found: {left.columns}"
+        )
+    if "label_true" not in right.columns:
+        raise ValueError(
+            "Right dataset must have a label_true column. Found: {right.columns}"
+        )
+    return block_one(left, right, "label_true")
 
 
 def _train_using_labels(
@@ -173,7 +160,3 @@ def make_weights(comparer: LevelComparer, ms: list[float], us: list[float]):
     ]
     level_weights = [lw for lw in level_weights if lw.name != "else"]
     return ComparisonWeights(comparer.name, level_weights)
-
-
-def _min_ignore_None(*args):
-    return min(*(a for a in args if a is not None))

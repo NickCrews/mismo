@@ -23,7 +23,7 @@ def train_using_em(
     seed: int | None = None,
 ) -> Weights:
     """Train weights on unlabeled data using an expectation maximization algorithm."""
-    initial_blocking = _train.all_possible_pairs(
+    initial_blocking = _train.sample_all_pairs(
         left, right, max_pairs=max_pairs, seed=seed
     )
     compared = compare(initial_blocking, *comparers)

@@ -20,3 +20,4 @@ from mismo.block._sql_analyze import SlowJoinWarning as SlowJoinWarning
 from mismo.block._sql_analyze import check_join_algorithm as check_join_algorithm
 from mismo.block._sql_analyze import get_join_algorithm as get_join_algorithm
 from mismo.block._upset_block import upset_chart as upset_chart
+from mismo.block._util import sample_all_pairs as sample_all_pairs
