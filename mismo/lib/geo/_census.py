@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import closing
 import csv
 import io
 import logging
@@ -230,8 +231,8 @@ def _make_requests(
             for resp in asyncio.as_completed(responses):
                 yield await resp
 
-    with asyncio.Runner():
-        yield from _aio.iter_over_async(_async_make_requests())
+    with closing(asyncio.new_event_loop()) as loop:
+        yield from _aio.iter_over_async(_async_make_requests(), loop=loop)
 
 
 async def _make_request(
