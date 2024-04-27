@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+
 import ibis
 from ibis import _
 import pytest
@@ -12,7 +14,17 @@ from mismo import _util
     [
         pytest.param("a", "a", id="str"),
         # TODO: could we submit a patch to ibis to make this look cleaner?
-        pytest.param(_.a[:2], "Item(_.a, slice(None, 2, None))", id="str"),
+        pytest.param(
+            _.a[:2],
+            # Before 3.12, slice objects weren't hashable. 3.12+, they are.
+            # This affects how ibis reprs the deferred object. An annoying
+            # implementation detail, it would be great to backport the 3.12
+            # behavior to earlier versions by improving ibis's repr.
+            "_.a[slice(None, 2, None)]"
+            if sys.version_info >= (3, 12)
+            else "Item(_.a, slice(None, 2, None))",
+            id="getitem",
+        ),
         pytest.param(("a", "b"), "(a, b)", id="str_tuple"),
         pytest.param(_.a, "_.a", id="deferred"),
         pytest.param((_.a, _.b), "(_.a, _.b)", id="deferred_tuple"),
