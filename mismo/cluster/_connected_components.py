@@ -252,7 +252,7 @@ def _add_labels_for_missing_nodes(
     """
     Add labels for nodes not in the original edgelist (and thus not in the labels)
     """
-    additional_labels = _get_additional_labels(labels, nodes)
+    additional_labels = _get_additional_labels(labels, nodes).cast(labels.schema())
     return labels.union(additional_labels)
 
 
