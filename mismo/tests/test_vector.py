@@ -11,8 +11,7 @@ def _to_vector(x):
     if isinstance(x, dict):
         return ibis.literal(x, type="map<string, int64>")
     if isinstance(x, list):
-        # no-op lambda is workaround: https://github.com/ibis-project/ibis/issues/8641
-        return ibis.literal(x, type="array<int64>").map(lambda x: x)
+        return ibis.literal(x, type="array<int64>")
     return x
 
 

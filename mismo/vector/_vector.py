@@ -68,8 +68,7 @@ def dot(a: T, b: T) -> ir.FloatingValue:
 def mul(a: T, b: T) -> T:
     """Element-wise multiplication of two vectors"""
     if isinstance(a, ir.ArrayValue) and isinstance(b, ir.ArrayValue):
-        # workaround for https://github.com/ibis-project/ibis/issues/8650
-        return array_zip(a, b).map(lambda struct: struct.f1 * struct.f2)
+        return a.zip(b).map(lambda struct: struct.f1 * struct.f2)
     elif isinstance(a, ir.MapValue) and isinstance(b, ir.MapValue):
         keys = _shared_keys(a, b)
         vals = keys.map(lambda k: a[k] * b[k])
@@ -163,11 +162,3 @@ def map_(keys: ir.ArrayValue, values: ir.ArrayValue) -> ir.MapValue:
         ),
     )
     return either_null.ifelse(null, regular)
-
-
-def array_zip(a: ir.ArrayValue, *rest: ir.ArrayValue) -> ir.ArrayValue:
-    """workaround for https://github.com/ibis-project/ibis/issues/8650"""
-    regular = a.zip(*rest)
-    any_null = ibis.or_(a.isnull(), *[x.isnull() for x in rest])
-    null = ibis.literal(None, type=regular.type())
-    return any_null.ifelse(null, regular)

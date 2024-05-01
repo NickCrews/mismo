@@ -72,9 +72,6 @@ def _is_nickname_for(
     canonical = canonical.lower().strip()
     needle = ibis.struct({"canonical": canonical, "nickname": nickname})
     result = needle.isin(_nicknames_column()) | (canonical == nickname)
-    # workaround for https://github.com/ibis-project/ibis/issues/8361
-    if isinstance(needle, ir.Scalar):
-        return result.as_scalar()
     return result
 
 
@@ -83,9 +80,6 @@ def _are_aliases(name1: ir.StringValue, name2: ir.StringValue) -> ir.BooleanValu
     name2 = name2.lower().strip()
     needle = ibis.struct({"name1": name1, "name2": name2})
     result = needle.isin(_aliases_column()) | (name1 == name2)
-    # workaround for https://github.com/ibis-project/ibis/issues/8361
-    if isinstance(needle, ir.Scalar):
-        return result.as_scalar()
     return result
 
 

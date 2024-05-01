@@ -8,7 +8,6 @@ import ibis
 from ibis import _
 from ibis.common.deferred import Deferred
 from ibis.expr import types as ir
-from ibis.expr.types.relations import bind as _bind
 
 
 def cases(
@@ -27,7 +26,7 @@ def bind(t: ir.Table, ref: Any) -> tuple[ir.Value]:
     # ibis's bind() can't handle bind(_, "column_name")
     if isinstance(ref, str):
         return (t[ref],)
-    return tuple(_bind(t, ref))
+    return t.bind(ref)
 
 
 def get_column(
