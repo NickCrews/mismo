@@ -39,7 +39,7 @@ match weights to be added together rather than being multiplied (as Odds are).
 This is useful so we can visualize comparisons between records using a waterfall chart.
 
 For example, with the odds of 100 and 1/10, if we combined these two,
-we would get a total odds of `100 * (1/10) = 1/10`.
+we would get a total odds of `100 * (1/10) = 10`.
 If we instead combined them using log odds:
 The individual log odds would be 2 and -1, and the combined match weight would be
 `2 + (-1) = 1`, which corresponds to a `Log Odds` of 1, as expected.
