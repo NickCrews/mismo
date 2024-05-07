@@ -130,9 +130,11 @@ class AddressesDimension:
         t = t.mutate(t._tokens_nonunique.unique().name(self.column_tokens)).drop(
             "_tokens_nonunique"
         )
-        rt = rare_terms(t[self.column_tokens], max_records_frac=0.01).term
         t = _array.array_filter_isin_other(
-            t, self.column_tokens, rt, result_format=self.column_keywords
+            t,
+            self.column_tokens,
+            rare_terms(t[self.column_tokens], max_records_frac=0.01),
+            result_format=self.column_keywords,
         )
         return t
 

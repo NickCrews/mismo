@@ -265,16 +265,36 @@ def rare_terms(
     max_records_n: int | None = None,
     max_records_frac: float | None = None,
 ) -> ir.Column:
-    """Get the terms that appear in few records."""
+    """Get the terms that appear in few records.
+
+    The returned Column is flattened. Eg if you supply a column of `array<string>`,
+    the result will be of type `string`.
+
+    Exactly one of `max_records_n` or `max_records_frac` must be set.
+
+    Parameters
+    ----------
+    terms : ArrayColumn
+        A column of Arrays, where each array contains the terms for a record.
+    max_records_n : int, optional
+        The maximum number of records a term can appear in. The default is None.
+    max_records_frac : float, optional
+        The maximum fraction of records a term can appear in. The default is None.
+
+    Returns
+    -------
+    Column
+        The terms that appear in few records.
+    """
     if max_records_n is not None and max_records_frac is not None:
         raise ValueError("Only one of max_records_n or max_records_frac can be set")
     if max_records_n is None and max_records_frac is None:
         raise ValueError("One of max_records_n or max_records_frac must be set")
     dc = document_counts(terms)
     if max_records_n is not None:
-        rare = dc.filter(_.n_records <= max_records_n).select("term")
+        rare = dc.filter(_.n_records <= max_records_n)
     else:
         n_total_records = terms.count()
         dc = dc.mutate(frac=_.n_records / n_total_records)
-        rare = dc.filter(_.frac <= max_records_frac).select("term")
-    return rare
+        rare = dc.filter(_.frac <= max_records_frac)
+    return rare["term"]
