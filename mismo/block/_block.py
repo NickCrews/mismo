@@ -5,7 +5,6 @@ from typing import Callable, Iterable, Literal, Union
 import ibis
 from ibis import _
 from ibis import selectors as s
-from ibis.common.deferred import Deferred
 from ibis.expr import types as ir
 
 from mismo import _util
@@ -13,7 +12,7 @@ from mismo import _util
 # Something that can be used to reference a column in a table
 _ColumnReferenceLike = Union[
     str,
-    Deferred,
+    ibis.Deferred,
     Callable[[ir.Table], ir.Column],
 ]
 # Something that can be used as a condition in a join between two tables
@@ -358,7 +357,7 @@ def _resolve_predicate(
     if isinstance(raw, (ir.BooleanColumn, bool)):
         return left, right, raw
     # Deferred is callable, so guard against that
-    if callable(raw) and not isinstance(raw, Deferred):
+    if callable(raw) and not isinstance(raw, ibis.Deferred):
         return _resolve_predicate(left, right, raw(left, right, **kwargs))
     keys_l = list(_util.bind(left, raw))
     keys_r = list(_util.bind(right, raw))

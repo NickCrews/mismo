@@ -4,7 +4,7 @@ import math
 from typing import Union, overload
 
 import ibis
-from ibis.common.deferred import Deferred
+from ibis import Deferred
 from ibis.expr import types as ir
 
 _IbisIsh = Union[Deferred, ir.NumericValue]

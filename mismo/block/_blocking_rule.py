@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Callable, Iterable, Literal, Union
 
-from ibis.common.deferred import Deferred
+import ibis
 from ibis.expr import types as ir
 
 from mismo import _util
@@ -10,7 +10,7 @@ from mismo import _util
 # Something that can be used to reference a column in a table
 _ColumnReferenceLike = Union[
     str,
-    Deferred,
+    ibis.Deferred,
     Callable[[ir.Table], ir.Column],
 ]
 # Something that can be used as a condition in a join between two tables

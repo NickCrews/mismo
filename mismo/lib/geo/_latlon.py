@@ -5,7 +5,7 @@ import math
 from typing import Callable
 
 import ibis
-from ibis.common.deferred import Deferred
+from ibis import Deferred
 from ibis.expr import types as ir
 
 from mismo import _util
