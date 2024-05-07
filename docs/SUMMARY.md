@@ -1,10 +1,12 @@
 * [Home](index.md)
+* Examples
+    * [Patent Deduplication](examples/patent_deduplication.ipynb)
+* How-To
+    * [Block using MinHash LSH](howto/lsh.ipynb)
 * Concepts
     * [Goals and Alternatives](concepts/goals_and_alternatives.md)
     * [Fellegi-Sunter Model](concepts/fs.md)
     * [Versioning Policy](concepts/versioning.md)
-* Examples
-    * [Patent Deduplication](examples/patent_deduplication.ipynb)
 * Reference
     * [Cleaning](reference/clean.md)
     * [Blocking](reference/block.md)

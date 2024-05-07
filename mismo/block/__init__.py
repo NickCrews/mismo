@@ -13,6 +13,9 @@ from mismo.block._block import block_many as block_many
 from mismo.block._block import block_one as block_one
 from mismo.block._block import join as join
 from mismo.block._blocking_rule import BlockingRule as BlockingRule
+from mismo.block._lsh import MinhashLshBlocker as MinhashLshBlocker
+from mismo.block._lsh import minhash_lsh_keys as minhash_lsh_keys
+from mismo.block._lsh import plot_lsh_curves as plot_lsh_curves
 from mismo.block._sql_analyze import JOIN_ALGORITHMS as JOIN_ALGORITHMS
 from mismo.block._sql_analyze import SLOW_JOIN_ALGORITHMS as SLOW_JOIN_ALGORITHMS
 from mismo.block._sql_analyze import SlowJoinError as SlowJoinError

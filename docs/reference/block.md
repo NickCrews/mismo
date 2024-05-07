@@ -13,6 +13,13 @@ becomes intractable for datasets much larger than a few thousand.
 ::: mismo.block.join
 ::: mismo.block.sample_all_pairs
 
+
+## MinHash LSH
+
+::: mismo.block.MinhashLshBlocker
+::: mismo.block.minhash_lsh_keys
+::: mismo.block.plot_lsh_curves
+
 ## Plotting
 
 ::: mismo.block.upset_chart
