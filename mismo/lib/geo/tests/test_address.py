@@ -55,3 +55,12 @@ def test_address_tokens(address, expected):
         assert result is None
     else:
         assert set(result) == expected
+
+@pytest.mark.parametrize("address, expected",
+                         [
+                             ( "123 Main St, Springfield, IL, 62701, US",
+                              {"street1": "123", "street2": "main st", "city": "springfield", "state": "il", "postal_code": "62701", "country": "us"})
+                         ])
+def test_parse_address(address, expected):
+    result = _address.parse_address(address).execute()
+    assert result == expected
