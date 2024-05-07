@@ -80,6 +80,7 @@ def plot_lsh_curves(
     will be blocked is a function of their jaccard similarity `J`.
     It is in a shape like a logistic curve, a rounded step function:
 
+    ```
         ---------------------------------
     1.0 |                         x x x |
         |                       x       |
@@ -91,13 +92,14 @@ def plot_lsh_curves(
     0.0 | x x x x x x x x x x           |
         ---------------------------------
          0.0         Jaccard         1.0
+    ```
 
     The shape of this curve is determined by the band size and number of bands.
     Use this function to choose the best band size and number of bands for your
     use case.
 
-    Based on https://youtu.be/n3dCcwWV4_k?si=Q9f4EuGtRE0xSyEg&t=1582
-    and https://github.com/mattilyra/LSH/blob/a57069bfb70f4b620d47931f81966b5a73c1b480/examples/Introduction.ipynb
+    Based on [this PyData talk](https://youtu.be/n3dCcwWV4_k?si=Q9f4EuGtRE0xSyEg&t=1582)
+    and the [accompanying code](https://github.com/mattilyra/LSH/blob/a57069bfb70f4b620d47931f81966b5a73c1b480/examples/Introduction.ipynb)
 
     Parameters
     ----------
