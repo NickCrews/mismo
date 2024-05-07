@@ -76,3 +76,48 @@ def test_address_tokens(address, expected):
 def test_parse_address(address, expected):
     result = _address.parse_address(address).execute()
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    "address1, address2, expected",
+    [
+        (
+            {
+                "street1": "one hundred twenty three",
+                "street2": "main st",
+                "city": "springfield",
+                "state": "il",
+                "postal_code": "62701",
+                "country": "us",
+            },
+            {
+                "street1": "123",
+                "street2": "main road",
+                "city": "springfield",
+                "state": "wi",
+                "postal_code": "62701",
+                "country": "us",
+            },
+            {
+                "street1": "EXACT_DUPLICATE",
+                "street2": "NEEDS_REVIEW",
+                "city": "EXACT_DUPLICATE",
+                "state": "NON_DUPLICATE",
+                "postal_code": "EXACT_DUPLICATE",
+                "country": "EXACT_DUPLICATE",
+            },
+        )
+    ],
+)
+def test_compare_addresses(address1, address2, expected):
+    a = ibis.literal(
+        address1,
+        type="struct<street1: string, street2: string, city: string, state: string, postal_code: string, country: string>",  # noqa
+    )
+    b = ibis.literal(
+        address2,
+        type="struct<street1: string, street2: string, city: string, state: string, postal_code: string, country: string>",  # noqa
+    )
+    result = _address.compare_addresses(a, b).execute()
+
+    assert result == expected

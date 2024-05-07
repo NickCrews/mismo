@@ -1,12 +1,24 @@
 from __future__ import annotations
 
 import ibis
+from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 
 from mismo import _array, _util
 from mismo.compare import LevelComparer, compare
 from mismo.lib.geo._latlon import distance_km
 from mismo.text import rare_terms
+
+ADDRESS = dt.Struct(
+    dict(
+        street1="string",
+        street2="string",
+        city="string",
+        state="string",
+        postal_code="string",
+        country="string",
+    )
+)
 
 
 def same_region(
@@ -209,7 +221,8 @@ def address_tokens(address: ir.StructValue, *, unique: bool = True) -> ir.ArrayC
     return _util.struct_tokens(address, unique=unique)
 
 
-def parse_address(address_string: ir.StringValue) -> ir.StructValue:
+@ibis.udf.scalar.python
+def parse_address(address_string: str) -> ADDRESS:
     """Parse individual fields from an address string.
     This uses the optional `postal` library to extract individual fields
     from the string using the following mapping:
@@ -239,13 +252,57 @@ def parse_address(address_string: ir.StringValue) -> ir.StructValue:
 
     parsed_fields = _parse_address(address_string)
     address_dict = dict([(v, k) for k, v in parsed_fields])
-    return ibis.struct(
-        {
-            "street1": address_dict.get("house_number", ""),
-            "street2": address_dict.get("road", ""),
-            "city": address_dict.get("city", ""),
-            "state": address_dict.get("state", ""),
-            "postal_code": address_dict.get("postcode", ""),
-            "country": address_dict.get("country", ""),
-        }
-    )
+    return {
+        "street1": address_dict.get("house_number", ""),
+        "street2": address_dict.get("road", ""),
+        "city": address_dict.get("city", ""),
+        "state": address_dict.get("state", ""),
+        "postal_code": address_dict.get("postcode", ""),
+        "country": address_dict.get("country", ""),
+    }
+
+
+@ibis.udf.scalar.python
+def compare_addresses(address1: ADDRESS, address2: ADDRESS) -> ADDRESS:
+    """Compare individual address fields using `postal.dedupe`
+
+    This uses a statistical model to estimate if each field is a duplicate.
+    The following values are output:
+
+    - EXACT_DUPLICATE
+    - NEEDS_REVIEW
+    - NON_DUPLICATE
+
+    Parameters
+    ----------
+
+    address1 :
+        The first address
+
+    address2:
+        The second address
+
+    Returns
+    -------
+    address_comparison:
+        A struct that contains the duplicate level for each field
+    """
+    with _util.optional_import("postal"):
+        from postal import dedupe
+
+    return {
+        "street1": dedupe.is_house_number_duplicate(
+            address1["street1"], address2["street1"]
+        ).name,
+        "street2": dedupe.is_street_duplicate(
+            address1["street2"], address2["street2"]
+        ).name,
+        "city": dedupe.is_name_duplicate(address1["city"], address2["city"]).name,
+        "state": dedupe.is_name_duplicate(address1["state"], address2["state"]).name,
+        "postal_code": dedupe.is_postal_code_duplicate(
+            address1["postal_code"], address2["postal_code"]
+        ).name,
+        "country": dedupe.is_name_duplicate(
+            address1["country"], address2["country"]
+        ).name,
+    }
