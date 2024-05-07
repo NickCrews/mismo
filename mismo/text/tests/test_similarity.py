@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from mismo.clean import double_metaphone
+from mismo.text import double_metaphone
 
 
 @pytest.mark.parametrize(

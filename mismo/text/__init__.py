@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from mismo.text._tfidf import add_array_value_counts as add_array_value_counts
-from mismo.text._tfidf import add_tfidf as add_tfidf
-from mismo.text._tfidf import document_counts as document_counts
-from mismo.text._tfidf import rare_terms as rare_terms
-from mismo.text._tfidf import term_idf as term_idf
+from mismo.text._similarity import damerau_levenshtein as damerau_levenshtein
+from mismo.text._similarity import double_metaphone as double_metaphone
+from mismo.text._strings import ngrams as ngrams
+from mismo.text._strings import norm_whitespace as norm_whitespace
