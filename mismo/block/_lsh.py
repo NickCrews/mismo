@@ -9,7 +9,7 @@ from ibis.expr import types as ir
 
 from mismo._array import array_choice
 from mismo._util import get_column
-from mismo.block import block_one
+from mismo.block._key_blocker import KeyBlocker
 
 
 def minhash_lsh_keys(
@@ -66,7 +66,8 @@ class MinhashLshBlocker:
         )
         left = left.cache()
         right = right.cache()
-        return block_one(left, right, _[keys_name].unnest().hash(), task=task)
+        kb = KeyBlocker(_[keys_name].unnest().hash())
+        return kb(left, right, task=task)
 
 
 def plot_lsh_curves(

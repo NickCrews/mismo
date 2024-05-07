@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import ibis
+from ibis import _
 
-from mismo.block import block_one
+from mismo.block import CrossBlocker
 from mismo.lib.name import NameDimension
 
 
@@ -15,12 +16,8 @@ def test_name_dimension(name_table):
         (3, 4),
         (5, 6),
     ]
-    blocked = block_one(
-        name_table,
-        name_table,
-        lambda left, right, **_: ibis.array([left.record_id, right.record_id]).isin(
-            real_pairs
-        ),
+    blocked = CrossBlocker()(name_table, name_table).filter(
+        ibis.array([_.record_id_l, _.record_id_r]).isin(real_pairs)
     )
     compared = dim.compare(blocked)
     compared = compared.order_by(["record_id_l", "record_id_r"])

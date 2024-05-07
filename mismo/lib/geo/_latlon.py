@@ -9,6 +9,7 @@ from ibis import Deferred
 from ibis.expr import types as ir
 
 from mismo import _util
+from mismo.block import join
 
 
 def distance_km(
@@ -201,13 +202,17 @@ class CoordinateBlocker:
         **kwargs,
     ) -> ir.Table:
         """Return a hash value for the two coordinates."""
-        left_lat, left_lon, right_lat, right_lon = self._get_cols(left, right)
-        # We have to use a grid size of ~3x the precision to avoid
-        # two points falling right on either side of a grid cell boundary
-        grid_size = self.distance_km * 3
-        left_hashed = _bin_lat_lon(left_lat, left_lon, grid_size)
-        right_hashed = _bin_lat_lon(right_lat, right_lon, grid_size)
-        return left_hashed == right_hashed
+
+        def pred(left, right, **kwargs):
+            left_lat, left_lon, right_lat, right_lon = self._get_cols(left, right)
+            # We have to use a grid size of ~3x the precision to avoid
+            # two points falling right on either side of a grid cell boundary
+            grid_size = self.distance_km * 3
+            left_hashed = _bin_lat_lon(left_lat, left_lon, grid_size)
+            right_hashed = _bin_lat_lon(right_lat, right_lon, grid_size)
+            return left_hashed == right_hashed
+
+        return join(left, right, pred, **kwargs)
 
 
 def _bin_lat_lon(

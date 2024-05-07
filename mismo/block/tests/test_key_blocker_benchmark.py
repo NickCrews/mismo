@@ -4,7 +4,7 @@ import ibis
 from ibis import _
 import pytest
 
-from mismo.block import block_one
+from mismo.block import KeyBlocker
 
 
 def _n_pairs(n: int, k: int) -> int:
@@ -36,11 +36,7 @@ def test_benchmark_block_array(backend, benchmark, nk):
     i = 0
 
     def f():
-        b = block_one(
-            t,
-            t,
-            _.vals.unnest(),
-        )
+        b = KeyBlocker(_.vals.unnest())(t, t)
         # do this to prevent caching
         nonlocal i
         b = backend.create_table(f"b{i}", b)

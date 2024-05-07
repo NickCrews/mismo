@@ -5,8 +5,8 @@ import warnings
 import ibis
 from ibis.expr import types as ir
 
-from mismo.block import block_one
-from mismo.block._block import fix_blocked_column_order
+from mismo.block._blocker import CrossBlocker
+from mismo.block._core import fix_blocked_column_order
 
 
 # TODO: could we come up with an algorithm that would allow for a random seed?
@@ -80,11 +80,11 @@ def sample_all_pairs(
         )
 
     if max_pairs is None:
-        return block_one(left, right, True, on_slow="ignore")
+        return CrossBlocker()(left, right)
 
     # ibis can't handle ibis.range(0), that's a bug with them
     if n_pairs == 0:
-        return block_one(left, right, True, on_slow="ignore").limit(0)
+        return CrossBlocker()(left, right).limit(0)
 
     def make_pair_ids():
         pair_ids = ibis.range(n_pairs).unnest().as_table()

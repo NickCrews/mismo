@@ -9,10 +9,13 @@ to be compared, hopefully to a manageable level.
 from __future__ import annotations
 
 from mismo.block._analyze import key_counts as key_counts
-from mismo.block._block import block_many as block_many
-from mismo.block._block import block_one as block_one
-from mismo.block._block import join as join
-from mismo.block._blocking_rule import BlockingRule as BlockingRule
+from mismo.block._blocker import ConditionBlocker as ConditionBlocker
+from mismo.block._blocker import CrossBlocker as CrossBlocker
+from mismo.block._blocker import EmptyBlocker as EmptyBlocker
+from mismo.block._blocker import PBlocker as PBlocker
+from mismo.block._core import join as join
+from mismo.block._ensemble import UnionBlocker as UnionBlocker
+from mismo.block._key_blocker import KeyBlocker as KeyBlocker
 from mismo.block._lsh import MinhashLshBlocker as MinhashLshBlocker
 from mismo.block._lsh import minhash_lsh_keys as minhash_lsh_keys
 from mismo.block._lsh import plot_lsh_curves as plot_lsh_curves

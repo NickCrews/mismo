@@ -5,29 +5,34 @@ we choose pairs of records to compare.
 Without blocking, we would have to compare N*M records, which
 becomes intractable for datasets much larger than a few thousand.
 
-## Main
+## Blockers
+::: mismo.block.PBlocker
+::: mismo.block.CrossBlocker
+::: mismo.block.EmptyBlocker
+::: mismo.block.ConditionBlocker
 
-::: mismo.block.block_one
-::: mismo.block.block_many
-::: mismo.block.BlockingRule
-::: mismo.block.join
+## Utils
 ::: mismo.block.sample_all_pairs
+::: mismo.block.join
 
+## Key-Based Blockers
+Generate pairs wherever the records share a single key.
 
-## MinHash LSH
+::: mismo.block.KeyBlocker
+::: mismo.block.key_counts
+
+## Set-Based Blockers
+Generate pairs where there is a high degree of term overlap.
 
 ::: mismo.block.MinhashLshBlocker
 ::: mismo.block.minhash_lsh_keys
 ::: mismo.block.plot_lsh_curves
 
-## Plotting
+## Ensemble Blockers
+Blockers that use other Blockers
 
+::: mismo.block.UnionBlocker
 ::: mismo.block.upset_chart
-
-## Analyze: Cardinality
-Estimate the number of record pairs that would be created from blocking.
-
-::: mismo.block.key_counts
 
 ## Analyze: Join Algorithm
 Analyze the actual algorithm that the SQL engine will use when
