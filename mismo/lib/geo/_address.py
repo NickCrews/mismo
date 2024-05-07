@@ -208,9 +208,11 @@ def address_tokens(address: ir.StructValue, *, unique: bool = True) -> ir.ArrayC
     """
     return _util.struct_tokens(address, unique=unique)
 
+
 def parse_address(address_string: ir.StringValue) -> ir.StructValue:
     """Parse individual fields from an address string.
-    This uses the optional `postal` library to extract individual fields from the string using the following mapping:
+    This uses the optional `postal` library to extract individual fields
+    from the string using the following mapping:
 
     - house_number -> street1
     - road -> street2
@@ -220,16 +222,16 @@ def parse_address(address_string: ir.StringValue) -> ir.StructValue:
     - country -> country
 
     Any additional fields parsed by postal will not be included
-    
+
     Parameters
     ----------
     address_string :
         The address as a single string
-        
+
     Returns
     -------
     address :
-        The address. 
+        The address.
     """
 
     with _util.optional_import("postal"):
@@ -237,13 +239,13 @@ def parse_address(address_string: ir.StringValue) -> ir.StructValue:
 
     parsed_fields = _parse_address(address_string)
     address_dict = dict([(v, k) for k, v in parsed_fields])
-    return ibis.struct({
-        "street1": address_dict.get("house_number", ""),
-        "street2": address_dict.get("road", ""),
-        "city": address_dict.get("city", ""),
-        "state": address_dict.get("state", ""),
-        "postal_code": address_dict.get("postcode", ""),
-        "country": address_dict.get("country", ""),
-    })
-    
-
+    return ibis.struct(
+        {
+            "street1": address_dict.get("house_number", ""),
+            "street2": address_dict.get("road", ""),
+            "city": address_dict.get("city", ""),
+            "state": address_dict.get("state", ""),
+            "postal_code": address_dict.get("postcode", ""),
+            "country": address_dict.get("country", ""),
+        }
+    )
