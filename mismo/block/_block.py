@@ -279,7 +279,9 @@ def join(
     """
     from mismo.block import _sql_analyze
 
-    if id(left) == id(right):
+    # if you do block(t.drop("col"), t.drop("col")), you probably want to be doing
+    # deduplication. So if tables are *structurally* the same, assume dedupe.
+    if id(left) == id(right) or left.equals(right):
         right = right.view()
         if task is None:
             task = "dedupe"
