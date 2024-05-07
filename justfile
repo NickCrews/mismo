@@ -46,3 +46,9 @@ benchcmp number *args:
 # update dependencies
 deps-update:
     pdm update -dG :all --update-all
+
+#install the dependencies for postal
+install-postal data:
+    git clone https://github.com/openvenues/libpostal
+    cd libpostal && ./bootstrap.sh && ./configure --datadir={{ data }} && make -j4 && sudo make install
+    sudo ldconfig

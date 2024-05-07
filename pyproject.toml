@@ -38,6 +38,10 @@ Documentation = "https://nickcrews.github.io/mismo"
 Issues = "https://github.com/NickCrews/mismo/issues"
 Source = "https://github.com/NickCrews/mismo"
 
+[project.optional-dependencies]
+postal = [
+    "postal>=1.1.10",
+]
 [tool.pdm.dev-dependencies]
 lint = ["ruff", "mypy", "pre-commit"]
 test = [
