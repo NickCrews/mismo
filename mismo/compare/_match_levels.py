@@ -64,10 +64,75 @@ class _LevelsMeta(ABCMeta):
         return f"{self.__name__}({', '.join(pairs)})"
 
 
-class MatchLevel(metaclass=_LevelsMeta):
-    """An enum-like class for match levels."""
+class MatchLevels(metaclass=_LevelsMeta):
+    """An enum-like class for match levels.
 
-    def __init__(self, value: ir.StringValue | ir.IntegerValue):
+    This class is used to define the levels of agreement between two records.
+
+    Examples
+    --------
+    >>> from mismo.compare import MatchLevels
+    >>> class NameMatchLevels(MatchLevels):
+    ...     EXACT = 0
+    ...     NEAR = 1
+    ...     ELSE = 2
+    ...
+    >>> NameMatchLevels.EXACT
+    EXACT
+    >>> NameMatchLevels.EXACT.as_string()
+    'EXACT'
+    >>> NameMatchLevels.EXACT.as_integer()
+    0
+    >>> len(NameMatchLevels)
+    3
+    >>> 2 in NameMatchLevels
+    True
+    >>> NameMatchLevels[1]
+    'NEAR'
+
+    You can construct your own values:
+
+    >>> NameMatchLevels("NEAR").as_integer()
+    1
+    >>> NameMatchLevels(2).as_string()
+    'ELSE'
+    >>> NameMatchLevels(3) # doctest: +IGNORE_EXCEPTION_DETAIL
+    Traceback (most recent call last):
+        ...
+    ValueError: Invalid value: 3. Must be one of {0, 1, 2}
+
+    The powerful thing is it can be used to convert between string and integer
+    ibis expressions:
+
+    >>> import ibis
+    >>> levels_raw = ibis.array([0, 2, 1, 99]).unnest()
+    >>> levels = NameMatchLevels(levels_raw)
+    >>> levels.as_string().execute()
+    0    EXACT
+    1     ELSE
+    2     NEAR
+    3     None
+    Name: NameMatchLevels, dtype: object
+    >>> levels.as_integer().execute()
+    0     0
+    1     2
+    2     1
+    3    99
+    Name: Array(), dtype: int8
+    """
+
+    def __init__(self, value: int | str | ir.StringValue | ir.IntegerValue):
+        """Create a new match level value.
+
+        If the given value is a python int or str, it is checked against the
+        valid values for this class. If it is an ibis expression,
+        we do no such check.
+
+        Parameters
+        ----------
+        value :
+            The value of the match level.
+        """
         if not isinstance(value, (ir.StringValue, ir.IntegerValue, int, str)):
             raise TypeError(f"Invalid value: {value}")
         valid_ints = set(self.__i2s__.keys())
@@ -79,6 +144,7 @@ class MatchLevel(metaclass=_LevelsMeta):
         self._value = value
 
     def as_integer(self) -> int | ir.IntegerValue:
+        """Convert to a python int or ibis integer, depending on the original type."""
         v = self._value
         if isinstance(v, (int, ir.IntegerValue)):
             return v
@@ -92,6 +158,7 @@ class MatchLevel(metaclass=_LevelsMeta):
             raise TypeError(f"Invalid value: {v}")
 
     def as_string(self) -> str | ir.StringValue:
+        """Convert to a python str or ibis string, depending on the original type."""
         v = self._value
         if isinstance(v, (str, ir.StringValue)):
             return v
