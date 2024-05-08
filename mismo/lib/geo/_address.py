@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import ibis
-from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 
 from mismo import _array, _util
@@ -9,16 +8,12 @@ from mismo.compare import LevelComparer, compare
 from mismo.lib.geo._latlon import distance_km
 from mismo.sets import rare_terms
 
-ADDRESS = dt.Struct(
-    dict(
-        street1="string",
-        street2="string",
-        city="string",
-        state="string",
-        postal_code="string",
-        country="string",
-    )
-)
+ADDRESS_SCHEMA = """struct<street1:string, 
+                           street2:string, 
+                           city:string, 
+                           state:string, 
+                           postal_code:string, 
+                           country:string>"""
 
 
 def same_region(
@@ -223,8 +218,8 @@ def address_tokens(address: ir.StructValue, *, unique: bool = True) -> ir.ArrayC
     return _util.struct_tokens(address, unique=unique)
 
 
-@ibis.udf.scalar.python
-def parse_address(address_string: str) -> ADDRESS:
+@ibis.udf.scalar.python(signature=(("str",), ADDRESS_SCHEMA))
+def parse_address(address_string: str):
     """Parse individual fields from an address string.
     This uses the optional `postal` library to extract individual fields
     from the string using the following mapping:
@@ -264,8 +259,8 @@ def parse_address(address_string: str) -> ADDRESS:
     }
 
 
-@ibis.udf.scalar.python
-def compare_addresses(address1: ADDRESS, address2: ADDRESS) -> ADDRESS:
+@ibis.udf.scalar.python(signature=((ADDRESS_SCHEMA, ADDRESS_SCHEMA), ADDRESS_SCHEMA))
+def compare_addresses(address1: dict, address2: dict) -> dict:
     """Compare individual address fields using `postal.dedupe`
 
     This uses a statistical model to estimate if each field is a duplicate.

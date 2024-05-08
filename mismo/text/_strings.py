@@ -72,7 +72,7 @@ def levenshtein_ratio(s1: ir.StringColumn, s2: ir.StringColumn) -> ir.FloatingCo
     using the Levenshtein distance.
 
     This is defined as `(lensum - ldist)/lensum` where `lensum` is the
-    maximum length of the two strings and ldist is the number of edits required 
+    maximum length of the two strings and ldist is the number of edits required
     to transform one string into the other
 
     Parameters
@@ -90,4 +90,4 @@ def levenshtein_ratio(s1: ir.StringColumn, s2: ir.StringColumn) -> ir.FloatingCo
     """
     lensum = ibis.greatest(s1.length(), s2.length())
     ldist = s1.levenshtein(s2)
-    return (lensum - ldist)/lensum
+    return (lensum - ldist) / lensum

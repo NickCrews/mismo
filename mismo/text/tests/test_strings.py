@@ -57,6 +57,8 @@ def test_levenshtein_ratio(table_factory, column_factory):
         "baz",
         "def",
     ]
-    t = table_factory({"string1": string_1, "string2": string_2, "expected": [1, 2 / 3, 0]})
+    t = table_factory(
+        {"string1": string_1, "string2": string_2, "expected": [1, 2 / 3, 0]}
+    )
     t = t.mutate(result=text.levenshtein_ratio(t.string1, t.string2))
     assert_columns_equal(t.result, t.expected, tol=1e-6)
