@@ -1,4 +1,5 @@
 from __future__ import annotations
+from collections import defaultdict
 
 import ibis
 from ibis.expr import types as ir
@@ -248,7 +249,10 @@ def parse_address(address_string: str):
         from postal.parser import parse_address as _parse_address
 
     parsed_fields = _parse_address(address_string)
-    address_dict = dict([(v, k) for k, v in parsed_fields])
+    address_dict = defaultdict(list)
+    for k,v in parsed_fields:
+        address_dict[v].append(k)
+    address_dict = {k:" ".join(v) for k,v in address_dict.items()}
     return {
         "street1": (address_dict.get("house_number", "") + " " + address_dict.get("road", "")).strip(),
         "street2": address_dict.get("unit", ""),
