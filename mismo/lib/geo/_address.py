@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from collections import defaultdict
 
 import ibis
@@ -250,17 +251,50 @@ def parse_address(address_string: str):
 
     parsed_fields = _parse_address(address_string)
     address_dict = defaultdict(list)
-    for k,v in parsed_fields:
+    for k, v in parsed_fields:
         address_dict[v].append(k)
-    address_dict = {k:" ".join(v) for k,v in address_dict.items()}
+    address_dict = {k: " ".join(v) for k, v in address_dict.items()}
     return {
-        "street1": (address_dict.get("house_number", "") + " " + address_dict.get("road", "")).strip(),
+        "street1": (
+            address_dict.get("house_number", "") + " " + address_dict.get("road", "")
+        ).strip(),
         "street2": address_dict.get("unit", ""),
         "city": address_dict.get("city", ""),
         "state": address_dict.get("state", ""),
         "postal_code": address_dict.get("postcode", ""),
         "country": address_dict.get("country", ""),
     }
+
+
+@ibis.udf.scalar.python
+def hash_address(address: str, address_only_keys: bool = True) -> list[str]:
+    """Hash an address string using `postal.near_dupe_hashes`.
+    This returns a list of normalized tokens that represent the minimum
+    required information to represent the given address.
+
+    Near-dupe hashes can be used as keys when blocking,
+    to generate pairs of potential duplicates.
+
+    Parameters
+    ----------
+    address :
+        The address as a single string
+    address_only_keys :
+        If True, only the address fields are used to generate the hash.
+
+    Returns
+    -------
+    hash :
+        The hash of the address.
+    """
+
+    with _util.optional_import("postal"):
+        from postal.near_dupe import near_dupe_hashes as _hash
+        from postal.parser import parse_address as _parse_address
+    parsed = dict(_parse_address(address))
+    return _hash(
+        list(parsed.values()), list(parsed.keys()), address_only_keys=address_only_keys
+    )
 
 
 @ibis.udf.scalar.python(signature=((ADDRESS_SCHEMA, ADDRESS_SCHEMA), ADDRESS_SCHEMA))
@@ -271,8 +305,10 @@ def compare_addresses(address1: dict, address2: dict) -> dict:
     The following values are output:
 
     - EXACT_DUPLICATE
+    - LIKELY_DUPLICATE
     - NEEDS_REVIEW
     - NON_DUPLICATE
+    - NULL_DUPLICATE
 
     Parameters
     ----------
@@ -292,10 +328,10 @@ def compare_addresses(address1: dict, address2: dict) -> dict:
         from postal import dedupe
 
     return {
-        "street1": dedupe.is_house_number_duplicate(
+        "street1": dedupe.is_street_duplicate(
             address1["street1"], address2["street1"]
         ).name,
-        "street2": dedupe.is_street_duplicate(
+        "street2": dedupe.is_unit_duplicate(
             address1["street2"], address2["street2"]
         ).name,
         "city": dedupe.is_name_duplicate(address1["city"], address2["city"]).name,

@@ -80,7 +80,7 @@ def test_address_tokens(address, expected):
                 "state": "il",
                 "postal_code": "62701",
                 "country": "us",
-            }
+            },
         ),
         (
             "Main St, Springfield, IL, 62701, US",
@@ -91,12 +91,33 @@ def test_address_tokens(address, expected):
                 "state": "il",
                 "postal_code": "62701",
                 "country": "us",
-            }
-        )
+            },
+        ),
     ],
 )
 def test_parse_address(address, expected):
     result = _address.parse_address(address).execute()
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "address, expected",
+    [
+        (
+            "123 Main St, Springfield, IL, 62701, US",
+            [
+                "act|main saint|123|springfield",
+                "act|main street|123|springfield",
+                "act|main|123|springfield",
+                "apc|main saint|123|62701",
+                "apc|main street|123|62701",
+                "apc|main|123|62701",
+            ],
+        )
+    ],
+)
+def test_hash_address(address, expected):
+    result = _address.hash_address(address).execute()
     assert result == expected
 
 
