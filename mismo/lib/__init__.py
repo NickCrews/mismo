@@ -2,5 +2,5 @@
 
 from __future__ import annotations
 
-from . import geo as geo
-from . import name as name
+from mismo.lib import geo as geo
+from mismo.lib import name as name
