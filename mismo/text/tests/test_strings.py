@@ -4,6 +4,7 @@ import ibis
 import pytest
 
 from mismo import text
+from mismo.tests.util import assert_columns_equal
 
 
 @pytest.mark.parametrize(
@@ -47,3 +48,15 @@ def test_ngrams(inp, n, exp):
         assert result is None
     else:
         assert set(result) == set(exp)
+
+
+def test_levenshtein_ratio(table_factory, column_factory):
+    string_1 = ["foo", "bar", "baz"]
+    string_2 = [
+        "foo",
+        "baz",
+        "def",
+    ]
+    t = table_factory({"string1": string_1, "string2": string_2, "expected": [1, 2 / 3, 0]})
+    t = t.mutate(result=text.levenshtein_ratio(t.string1, t.string2))
+    assert_columns_equal(t.result, t.expected, tol=1e-6)

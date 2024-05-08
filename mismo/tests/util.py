@@ -15,9 +15,9 @@ def assert_columns_equal(
 ) -> None:
     assert type(left) == type(right)
     if tol is not None:
-        assert all((left - right).abs() <= tol)
+        assert ((left - right).abs() <= tol).all().to_pandas()
     else:
-        assert all(left == right)
+        assert (left == right).all().to_pandas()
 
 
 def assert_tables_equal(
