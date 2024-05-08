@@ -5,7 +5,6 @@ from ibis import _
 import numpy as np
 import pytest
 
-from mismo.block import block_one
 from mismo.lib.geo import CoordinateBlocker, distance_km
 
 
@@ -78,7 +77,7 @@ def test_coordinate_blocker(table_factory, coord1, coord2, km, expected, kwargs)
         }
     )
     blocker = CoordinateBlocker(distance_km=km, **kwargs)
-    blocked = block_one(t1, t2, blocker)
+    blocked = blocker(t1, t2)
     n_blocked = blocked.count().execute()
     if expected:
         assert n_blocked == 1

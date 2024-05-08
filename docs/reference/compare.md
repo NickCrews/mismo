@@ -19,6 +19,7 @@ such as *exact*, *misspelling*, *within_1_km*, etc.
 
 ::: mismo.compare.LevelComparer
 ::: mismo.compare.AgreementLevel
+::: mismo.compare.MatchLevels
 
 ## Comparison Functions
 

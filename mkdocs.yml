@@ -10,6 +10,7 @@ theme:
     - header.autohide
     - navigation.indexes
     - navigation.instant
+    - navigation.sections
     - navigation.tabs
     - navigation.tabs.sticky
     - navigation.tracking
@@ -41,8 +42,11 @@ plugins:
             show_signature_annotations: true
             show_root_full_path: true
             show_root_heading: true
+            show_root_members_full_path: true
             show_root_toc_entry: true
             show_source: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
   - search
 markdown_extensions:
   - admonition

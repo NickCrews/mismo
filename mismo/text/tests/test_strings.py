@@ -3,7 +3,7 @@ from __future__ import annotations
 import ibis
 import pytest
 
-from mismo import clean
+from mismo import text
 
 
 @pytest.mark.parametrize(
@@ -20,7 +20,7 @@ from mismo import clean
 )
 def test_norm_whitespace(inp, exp):
     inp = ibis.literal(inp, type="string")
-    result = clean.norm_whitespace(inp).execute()
+    result = text.norm_whitespace(inp).execute()
     assert result == exp
 
 
@@ -42,7 +42,7 @@ def test_norm_whitespace(inp, exp):
     ],
 )
 def test_ngrams(inp, n, exp):
-    result = clean.ngrams(inp, n).execute()
+    result = text.ngrams(inp, n).execute()
     if exp is None:
         assert result is None
     else:

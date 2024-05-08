@@ -2,11 +2,10 @@ from __future__ import annotations
 
 from typing import Callable
 
-from ibis import _
-from ibis.common.deferred import Deferred
+from ibis import Deferred, _
 from ibis.expr import types as ir
 
-from mismo import _util
+from mismo import _util, block
 
 
 class NameBlocker:
@@ -64,9 +63,12 @@ class NameBlocker:
     def __call__(
         self, left: ir.Table, right: ir.Table, **kwargs
     ) -> tuple[ir.Table, ir.Table]:
-        nl: ir.StructColumn = _util.get_column(_, self.column_left)
-        tokensl = _oneline(nl).upper().re_split(r"\s+")
-        return tokensl.unnest()
+        def predicate(left, right, **_kwargs):
+            nl: ir.StructColumn = _util.get_column(_, self.column_left)
+            tokensl = _oneline(nl).upper().re_split(r"\s+")
+            return tokensl.unnest()
+
+        return block.KeyBlocker(predicate)(left, right, **kwargs)
 
 
 def _oneline(name: ir.StructValue) -> ir.StringValue:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Callable, Iterable, Iterator, NamedTuple, overload
 
-from ibis.common.deferred import Deferred
+from ibis import Deferred
 from ibis.expr import types as ir
 
 from mismo import _util

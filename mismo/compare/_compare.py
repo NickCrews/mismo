@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from ibis.common.deferred import Deferred
+from ibis import Deferred
 from ibis.expr import types as ir
 from ibis.expr.types.relations import bind
 

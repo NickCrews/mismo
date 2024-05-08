@@ -92,3 +92,30 @@ def array_filter_isin_other(
     re_joined = t.join(re_agged, "__id").drop(["__id", "__array"])
     result_name = result_format.format(name=array_col.get_name())
     return re_joined.rename({result_name: "__filtered"})
+
+
+@ibis.udf.scalar.builtin(
+    name="list_select",
+    signature=(("array<string>", "array<int64>"), "array<string>"),
+)
+def _list_select(x: list, indexes: list) -> list:
+    """Selects elements from a list by index."""
+
+
+@ibis.udf.scalar.builtin(
+    name="list_grade_up",
+    signature=(("array<float64>",), "array<int64>"),
+)
+def _list_grade_up(x):
+    """Works like sort, but returns the indexes instead of the actual values."""
+
+
+def array_shuffle(a: ir.ArrayValue) -> ir.ArrayValue:
+    """Shuffle an array."""
+    idxs = a.map(lambda x: ibis.random())
+    return _list_select(a, _list_grade_up(idxs))
+
+
+def array_choice(a: ir.ArrayValue, n: int) -> ir.ArrayValue:
+    """Randomly select `n` elements from an array."""
+    return array_shuffle(a)[:n]

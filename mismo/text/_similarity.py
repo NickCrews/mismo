@@ -33,3 +33,14 @@ def _dm_udf(s):
         from doublemetaphone import doublemetaphone
 
     return doublemetaphone(s)
+
+
+# TODO: this isn't portable between backends
+@ibis.udf.scalar.builtin
+def damerau_levenshtein(a: str, b: str) -> int:
+    """
+    The number of adds, deletes, substitutions, and transposes to get from `a` to `b`.
+
+    This is the levenstein distance with the addition of transpositions as
+    a possible operation.
+    """

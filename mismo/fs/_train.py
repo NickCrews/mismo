@@ -5,7 +5,7 @@ from typing import Iterable
 from ibis.expr import types as ir
 
 from mismo._util import sample_table
-from mismo.block import block_one, sample_all_pairs
+from mismo.block import KeyBlocker, sample_all_pairs
 from mismo.compare import LevelComparer, compare
 
 from ._weights import ComparisonWeights, LevelWeights, Weights
@@ -119,7 +119,7 @@ def _true_pairs_from_labels(left: ir.Table, right: ir.Table) -> ir.Table:
         raise ValueError(
             "Right dataset must have a label_true column. Found: {right.columns}"
         )
-    return block_one(left, right, "label_true")
+    return KeyBlocker("label_true")(left, right)
 
 
 def _train_using_labels(
