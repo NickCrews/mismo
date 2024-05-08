@@ -6,7 +6,7 @@ from ibis.expr import types as ir
 from mismo import _array, _util
 from mismo.compare import LevelComparer, compare
 from mismo.lib.geo._latlon import distance_km
-from mismo.text import rare_terms
+from mismo.sets import rare_terms
 
 
 def same_region(
