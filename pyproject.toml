@@ -31,6 +31,7 @@ dependencies = [
     "ipywidgets",
     "scikit-learn",
     "typing-extensions ; python_version < \"3.11\"", # needed for Self
+    "postal>=1.1.7",
 ]
 
 [project.urls]
@@ -40,7 +41,7 @@ Source = "https://github.com/NickCrews/mismo"
 
 [project.optional-dependencies]
 postal = [
-    "postal>=1.1.10",
+    "postal>=1.1.7",
 ]
 [tool.pdm.dev-dependencies]
 lint = ["ruff", "mypy", "pre-commit"]

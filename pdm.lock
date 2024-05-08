@@ -5,7 +5,7 @@
 groups = ["default", "docs", "lint", "test", "postal"]
 strategy = ["cross_platform"]
 lock_version = "4.4.1"
-content_hash = "sha256:fe6c7460346d9c737841e8d956c0fe76b3eb9fa6349dad1cba70e4ef3f8dcbf9"
+content_hash = "sha256:29ab634fca1e34f220492aff79e6487eaf04946801204aef5b01338bebb7ca08"
 
 [[package]]
 name = "altair"
