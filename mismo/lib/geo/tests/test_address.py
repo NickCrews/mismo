@@ -63,13 +63,35 @@ def test_address_tokens(address, expected):
         (
             "123 Main St, Springfield, IL, 62701, US",
             {
-                "street1": "123",
-                "street2": "main st",
+                "street1": "123 main st",
+                "street2": "",
                 "city": "springfield",
                 "state": "il",
                 "postal_code": "62701",
                 "country": "us",
             },
+        ),
+        (
+            "Apt. A, 123 Main St, Springfield, IL, 62701, US",
+            {
+                "street1": "123 main st",
+                "street2": "apt. a",
+                "city": "springfield",
+                "state": "il",
+                "postal_code": "62701",
+                "country": "us",
+            }
+        ),
+        (
+            "Main St, Springfield, IL, 62701, US",
+            {
+                "street1": "main st",
+                "street2": "",
+                "city": "springfield",
+                "state": "il",
+                "postal_code": "62701",
+                "country": "us",
+            }
         )
     ],
 )

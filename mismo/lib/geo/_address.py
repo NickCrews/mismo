@@ -224,8 +224,8 @@ def parse_address(address_string: str):
     This uses the optional `postal` library to extract individual fields
     from the string using the following mapping:
 
-    - house_number -> street1
-    - road -> street2
+    - house_number + road -> street1
+    - unit -> street2
     - city -> city
     - state -> state
     - postcode -> postal_code
@@ -250,8 +250,8 @@ def parse_address(address_string: str):
     parsed_fields = _parse_address(address_string)
     address_dict = dict([(v, k) for k, v in parsed_fields])
     return {
-        "street1": address_dict.get("house_number", ""),
-        "street2": address_dict.get("road", ""),
+        "street1": (address_dict.get("house_number", "") + " " + address_dict.get("road", "")).strip(),
+        "street2": address_dict.get("unit", ""),
         "city": address_dict.get("city", ""),
         "state": address_dict.get("state", ""),
         "postal_code": address_dict.get("postcode", ""),
