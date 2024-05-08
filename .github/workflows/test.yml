@@ -45,6 +45,9 @@ jobs:
         with:
           just-version: "1.14" # optional semver specification, otherwise latest
 
+      - name: Install postal for testing
+        run: just install-postal /tmp/postal
+
       - name: Install dev environment
         run: just install
 

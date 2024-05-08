@@ -52,3 +52,4 @@ install-postal data:
     git clone https://github.com/openvenues/libpostal
     cd libpostal && ./bootstrap.sh && ./configure --datadir={{ data }} && make -j4 && sudo make install
     sudo ldconfig
+    rm -rf libpostal
