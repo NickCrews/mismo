@@ -18,6 +18,25 @@ ADDRESS_SCHEMA = """struct<street1:string,
                            country:string>"""
 
 
+def _create_expand_schema():
+    """Creates the schema used to store expanded address components."""
+    components = [
+        "house_number",
+        "street",
+        "unit",
+        "city",
+        "state",
+        "postcode",
+        "country",
+    ]
+    c_struct = "struct<component:array<string>, root:array<string>>"
+    struct_list = ", ".join([f"{c}:{c_struct}" for c in components])
+    return f"struct<{struct_list}>"
+
+
+EXPAND_SCHEMA = _create_expand_schema()
+
+
 def same_region(
     address1: ir.StructColumn,
     address2: ir.StructColumn,
@@ -220,7 +239,7 @@ def address_tokens(address: ir.StructValue, *, unique: bool = True) -> ir.ArrayC
     return _util.struct_tokens(address, unique=unique)
 
 
-@ibis.udf.scalar.python(signature=(("str",), ADDRESS_SCHEMA))
+@ibis.udf.scalar.python(signature=(("string",), ADDRESS_SCHEMA))
 def parse_address(address_string: str):
     """Parse individual fields from an address string.
     This uses the optional `postal` library to extract individual fields
@@ -267,7 +286,7 @@ def parse_address(address_string: str):
 
 
 @ibis.udf.scalar.python
-def hash_address(address: str, address_only_keys: bool = True) -> list[str]:
+def hash_address(address_string: str, address_only_keys: bool = True) -> list[str]:
     """Hash an address string using `postal.near_dupe_hashes`.
     This returns a list of normalized tokens that represent the minimum
     required information to represent the given address.
@@ -277,7 +296,7 @@ def hash_address(address: str, address_only_keys: bool = True) -> list[str]:
 
     Parameters
     ----------
-    address :
+    address_string :
         The address as a single string
     address_only_keys :
         If True, only the address fields are used to generate the hash.
@@ -291,55 +310,212 @@ def hash_address(address: str, address_only_keys: bool = True) -> list[str]:
     with _util.optional_import("postal"):
         from postal.near_dupe import near_dupe_hashes as _hash
         from postal.parser import parse_address as _parse_address
-    parsed = dict(_parse_address(address))
+    parsed = dict(_parse_address(address_string))
     return _hash(
         list(parsed.values()), list(parsed.keys()), address_only_keys=address_only_keys
     )
 
 
-@ibis.udf.scalar.python(signature=((ADDRESS_SCHEMA, ADDRESS_SCHEMA), ADDRESS_SCHEMA))
-def compare_addresses(address1: dict, address2: dict) -> dict:
-    """Compare individual address fields using `postal.dedupe`
+@ibis.udf.scalar.python(signature=(("string",), EXPAND_SCHEMA))
+def expand_address_components(address_string: str) -> dict:
+    """Parse an address string and expand the components along with their roots
+    for subsequent comparison.
 
-    This uses a statistical model to estimate if each field is a duplicate.
-    The following values are output:
+    This uses the `postal` library to parse the address string and expand the components
 
-    - EXACT_DUPLICATE
-    - LIKELY_DUPLICATE
-    - NEEDS_REVIEW
-    - NON_DUPLICATE
-    - NULL_DUPLICATE
+    After parsing the address, each component is expanded into normalized forms,
+    along with their roots for the following fields:
+
+    - house_number
+    - road (renamed to street)
+    - unit
+    - city
+    - state
+    - postcode
+    - country
+
+    These expanded components are used by `compare_addresses`
+    to evaluate the similarity between two addresses.
+
+    In contrast to the functions within `postal.dedupe`, expanding first and then
+    comparing the components and roots is more efficient when applied to
+    vectors of addresses.
+
+    This enables the comparison to be performed in O(n+m) time,
+    rather than O(n*m) time using the `postal.dedupe`
+
+    Parameters
+    ----------
+    address_string :
+        The address as a single string
+
+    Returns
+    -------
+    address_components :
+        The expanded components and roots for each field.
+    """
+    with _util.optional_import("postal"):
+        from postal.expand import (
+            ADDRESS_ANY,
+            ADDRESS_HOUSE_NUMBER,
+            ADDRESS_NAME,
+            ADDRESS_POSTAL_CODE,
+            ADDRESS_STREET,
+            ADDRESS_UNIT,
+            expand_address,
+            expand_address_root,
+        )
+        from postal.parser import parse_address as _parse_address
+    parsed = {v: k for k, v in dict(_parse_address(address_string)).items()}
+    component_mapping = {
+        "house_number": ADDRESS_HOUSE_NUMBER | ADDRESS_ANY,
+        "road": ADDRESS_STREET | ADDRESS_ANY,
+        "unit": ADDRESS_UNIT | ADDRESS_ANY,
+        "city": ADDRESS_NAME | ADDRESS_ANY,
+        "state": ADDRESS_NAME | ADDRESS_ANY,
+        "postcode": ADDRESS_POSTAL_CODE | ADDRESS_ANY,
+        "country": ADDRESS_NAME | ADDRESS_ANY,
+    }
+    level_rename = {"road": "street"}
+    result = {}
+    for level, address_components in component_mapping.items():
+        component = parsed.get(level, "")
+        expanded = expand_address(component, address_components=address_components)
+        expanded_root = expand_address_root(
+            component, address_components=address_components
+        )
+        name = level_rename.get(level, level)
+        result[name] = {"component": expanded, "root": expanded_root}
+    return result
+
+
+def _is_duplicate(
+    value1: ir.StructColumn,
+    value2: ir.StructColumn,
+    root_comparison_first: bool = True,
+    root_comparison_status: str = "EXACT_DUPLICATE",
+) -> ir.StringColumn:
+    """A helper function to determine if two values are duplicates.
+
+    If `root_comparison_first` is True, return `root_comparison_status` if the root of
+    the two values intersect.
+    If they don't, check the components and return 'EXACT_DUPLICATE' if they intersect
+
+    Otherwise, return 'EXACT_DUPLICATE' if the components intersect or return
+    `root_comparison_status` if the roots intersect.
+
+    'NON_DUPLICATE' is returned if no intersections exist unless both components are
+    empty arrays, in which case 'NULL_DUPLICATE' is returned.
+    """
+    root_match = value1.root.intersect(value2.root).length() > 0
+    component_match = value1.component.intersect(value2.component).length() > 0
+    null_match = (value1.component.length() == 0) & (value2.component.length() == 0)
+    root_comparison = (
+        ibis.case().when(root_match, root_comparison_status).else_(None).end()
+    )
+    component_comparison = (
+        ibis.case().when(component_match, "EXACT_DUPLICATE").else_(None).end()
+    )
+    null_comparison = ibis.case().when(null_match, "NULL_DUPLICATE").else_(None).end()
+    if root_comparison_first:
+        return ibis.coalesce(
+            root_comparison, component_comparison, null_comparison, "NON_DUPLICATE"
+        )
+    else:
+        return ibis.coalesce(
+            component_comparison, root_comparison, null_comparison, "NON_DUPLICATE"
+        )
+
+
+def compare_addresses(
+    address_components1: ir.StructColumn, address_components2: ir.StructColumn
+) -> ir.StructColumn:
+    """Compare individual address fields to evaluate their similarity.
+
+    This follows the algorithm used in `postal.dedupe` library to determine
+    the match level.
+
+    It is re-implemented here so that it can be efficiently applied to vectors of
+    expanded address components
+
+    - house_number/unit/ postcode:
+        Compare roots first, return EXACT_DUPLICATE if a match exists
+    - street/city/state:
+        Compare components first, return NEEDS_REVIEW if only a root match exists
+
+    If no match is found, return NULL_DUPLICATE if both components are null
 
     Parameters
     ----------
 
-    address1 :
-        The first address
+    address_components1 :
+        The expanded components and roots of each field for the first address
 
     address2:
-        The second address
+        The expanded components and roots of each field for the second address
 
     Returns
     -------
     address_comparison:
         A struct that contains the duplicate level for each field
     """
-    with _util.optional_import("postal"):
-        from postal import dedupe
+    house_number_match = _is_duplicate(
+        address_components1.house_number,
+        address_components2.house_number,
+        root_comparison_first=True,
+        root_comparison_status="EXACT_DUPLICATE",
+    )
 
-    return {
-        "street1": dedupe.is_street_duplicate(
-            address1["street1"], address2["street1"]
-        ).name,
-        "street2": dedupe.is_unit_duplicate(
-            address1["street2"], address2["street2"]
-        ).name,
-        "city": dedupe.is_name_duplicate(address1["city"], address2["city"]).name,
-        "state": dedupe.is_name_duplicate(address1["state"], address2["state"]).name,
-        "postal_code": dedupe.is_postal_code_duplicate(
-            address1["postal_code"], address2["postal_code"]
-        ).name,
-        "country": dedupe.is_name_duplicate(
-            address1["country"], address2["country"]
-        ).name,
-    }
+    street_match = _is_duplicate(
+        address_components1.street,
+        address_components2.street,
+        root_comparison_first=False,
+        root_comparison_status="NEEDS_REVIEW",
+    )
+
+    unit_match = _is_duplicate(
+        address_components1.unit,
+        address_components2.unit,
+        root_comparison_first=True,
+        root_comparison_status="EXACT_DUPLICATE",
+    )
+
+    city_match = _is_duplicate(
+        address_components1.city,
+        address_components2.city,
+        root_comparison_first=False,
+        root_comparison_status="NEEDS_REVIEW",
+    )
+
+    state_match = _is_duplicate(
+        address_components1.state,
+        address_components2.state,
+        root_comparison_first=False,
+        root_comparison_status="NEEDS_REVIEW",
+    )
+
+    postal_code_match = _is_duplicate(
+        address_components1.postcode,
+        address_components2.postcode,
+        root_comparison_first=True,
+        root_comparison_status="EXACT_DUPLICATE",
+    )
+
+    country_match = _is_duplicate(
+        address_components1.country,
+        address_components2.country,
+        root_comparison_first=False,
+        root_comparison_status="NEEDS_REVIEW",
+    )
+
+    return ibis.struct(
+        {
+            "house_number": house_number_match,
+            "street": street_match,
+            "unit": unit_match,
+            "city": city_match,
+            "state": state_match,
+            "postcode": postal_code_match,
+            "country": country_match,
+        }
+    )

@@ -125,42 +125,23 @@ def test_hash_address(address, expected):
     "address1, address2, expected",
     [
         (
+            "123 main st, springfield, il, 62701, us",
+            "123 main road, springfield, wi, 62701, us",
             {
-                "street1": "one hundred twenty three",
-                "street2": "main st",
-                "city": "springfield",
-                "state": "il",
-                "postal_code": "62701",
-                "country": "us",
-            },
-            {
-                "street1": "123",
-                "street2": "main road",
-                "city": "springfield",
-                "state": "wi",
-                "postal_code": "62701",
-                "country": "us",
-            },
-            {
-                "street1": "EXACT_DUPLICATE",
-                "street2": "NEEDS_REVIEW",
+                "house_number": "EXACT_DUPLICATE",
+                "street": "NEEDS_REVIEW",
+                "unit": "NULL_DUPLICATE",
                 "city": "EXACT_DUPLICATE",
                 "state": "NON_DUPLICATE",
-                "postal_code": "EXACT_DUPLICATE",
+                "postcode": "EXACT_DUPLICATE",
                 "country": "EXACT_DUPLICATE",
             },
         )
     ],
 )
 def test_compare_addresses(address1, address2, expected):
-    a = ibis.literal(
-        address1,
-        type="struct<street1: string, street2: string, city: string, state: string, postal_code: string, country: string>",  # noqa
-    )
-    b = ibis.literal(
-        address2,
-        type="struct<street1: string, street2: string, city: string, state: string, postal_code: string, country: string>",  # noqa
-    )
+    a = _address.expand_address_components(address1)
+    b = _address.expand_address_components(address2)
     result = _address.compare_addresses(a, b).execute()
 
     assert result == expected
