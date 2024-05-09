@@ -16,7 +16,7 @@ def double_metaphone(s: ir.StringValue) -> ir.ArrayValue[ir.StringValue]:
 
     Examples
     --------
-    >>> from mismo.clean import double_metaphone
+    >>> from mismo.text import double_metaphone
     >>> double_metaphone("catherine").execute()
     ['K0RN', 'KTRN']
     >>> double_metaphone("").execute()
