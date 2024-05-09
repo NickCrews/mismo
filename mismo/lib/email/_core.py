@@ -143,7 +143,7 @@ class EmailsDimension:
         pairs = array_combinations(le, ri)
         min_level = array_min(
             pairs.map(lambda pair: match_level(pair.l, pair.r).as_integer())
-        )
+        ).fillna(EmailMatchLevel.ELSE.as_integer())
         return t.mutate(
             EmailMatchLevel(min_level).as_string().name(self.column_compared)
         )

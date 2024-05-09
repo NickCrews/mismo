@@ -166,11 +166,13 @@ class AddressesDimension:
                 "null",
                 _array.array_all(
                     combos.map(
-                        lambda pair: _util.struct_isnull(
-                            pair.l, how="any", fields=["street1", "city", "state"]
-                        )
-                        | _util.struct_isnull(
-                            pair.r, how="any", fields=["street1", "city", "state"]
+                        lambda pair: ibis.or_(
+                            _util.struct_isnull(
+                                pair.l, how="any", fields=["street1", "city", "state"]
+                            ),
+                            _util.struct_isnull(
+                                pair.r, how="any", fields=["street1", "city", "state"]
+                            ),
                         )
                     )
                 ),
