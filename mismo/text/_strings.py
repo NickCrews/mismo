@@ -36,7 +36,7 @@ def ngrams(string: ir.StringValue, n: int) -> ir.ArrayValue:
     Examples
     --------
     >>> import ibis
-    >>> from mismo.clean import ngrams
+    >>> from mismo.text import ngrams
     >>> ngrams("abc", 2).execute()
     ["ab", "bc"]
     >>> ngrams("", 2).execute()

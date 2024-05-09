@@ -3,7 +3,7 @@ from __future__ import annotations
 import ibis
 import pytest
 
-from mismo.lib.email import EmailMatchLevel, match_level, parse_and_normalize_email
+from mismo.lib.email import EmailMatchLevels, match_level, parse_and_normalize_email
 
 
 @pytest.mark.parametrize(
@@ -54,4 +54,4 @@ def test_parse_and_normalize_email(input, expfull, expuser, expdomain):
 def test_match_level(a, b, level_str):
     ml = match_level(ibis.literal(a), ibis.literal(b))
     assert ml.as_string().execute() == level_str
-    assert ml.as_integer().execute() == EmailMatchLevel[level_str]
+    assert ml.as_integer().execute() == EmailMatchLevels[level_str]

@@ -6,17 +6,33 @@ from ibis.expr import types as ir
 
 from mismo import _util
 
-
-@ibis.udf.scalar.builtin(name="list_min")
-def array_min(array) -> float: ...
+_ARRAY_AGGS = {}
 
 
-@ibis.udf.scalar.builtin(name="list_max")
-def array_max(array) -> float: ...
+def _get_array_agg(array: ir.ArrayValue, name: str) -> ir.Column:
+    t = array.type()
+    if not isinstance(array, ir.ArrayValue):
+        raise ValueError(f"Expected an array, got {t}")
+
+    key = (t, name)
+    if key not in _ARRAY_AGGS:
+
+        @ibis.udf.scalar.builtin(name=name, signature=((t,), t.value_type()))
+        def f(array): ...
+
+        _ARRAY_AGGS[key] = f
+
+    return _ARRAY_AGGS[key](array)
 
 
-@ibis.udf.scalar.builtin(name="list_product")
-def array_product(array) -> bool: ...
+def array_min(array: ir.ArrayValue) -> ir.NumericValue:
+    """Get the minimum value of an array."""
+    return _get_array_agg(array, "list_min")
+
+
+def array_max(array: ir.ArrayValue) -> ir.NumericValue:
+    """Get the maximum value of an array."""
+    return _get_array_agg(array, "list_max")
 
 
 @ibis.udf.scalar.builtin(name="list_bool_or")
@@ -42,7 +58,7 @@ def array_combinations(left: ir.ArrayValue, right: ir.ArrayValue) -> ir.ArrayVal
     Returns
     -------
     combinations : ArrayValue
-        An `array<struct<a1: T, a2: U>>` where `T` is the type of the
+        An `array<struct<l: T, r: U>>` where `T` is the type of the
         elements in `array1` and `U` is the type of the elements in `array2`.
     """
     return left.map(
