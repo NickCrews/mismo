@@ -42,7 +42,7 @@ def array_combinations(left: ir.ArrayValue, right: ir.ArrayValue) -> ir.ArrayVal
     Returns
     -------
     combinations : ArrayValue
-        An `array<struct<a1: T, a2: U>>` where `T` is the type of the
+        An `array<struct<l: T, r: U>>` where `T` is the type of the
         elements in `array1` and `U` is the type of the elements in `array2`.
     """
     return left.map(
