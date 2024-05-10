@@ -128,8 +128,7 @@ def test_connected_components_max_iterations(table_factory):
 
 def _labels_to_clusters(labels: ir.Table) -> set[frozenset[Any]]:
     df = labels.to_pandas()
-    component_ids = set(df.component)
-    cid_to_rid = {component_id: set() for component_id in component_ids}
+    cid_to_rid = {c: set() for c in set(df.component)}
     for row in df.itertuples():
         record_id = row.record_id
         if isinstance(record_id, dict):

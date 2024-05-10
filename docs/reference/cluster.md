@@ -4,11 +4,13 @@ After we have compared pairs of records, we need to somehow resolve these links
 into groups of records that are all the same entity. This is done with various
 graph algorithms, which are implemented in this module.
 
-## Cluster
+## Algorithms
 
+::: mismo.Datasets
 ::: mismo.cluster.connected_components
+::: mismo.cluster.add_degree
 
 ## Plot
 
-::: mismo.cluster.cluster_chart
+::: mismo.cluster.degree_dashboard
 ::: mismo.cluster.cluster_dashboard

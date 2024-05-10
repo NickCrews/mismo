@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from itertools import count
 import logging
-from typing import Callable
+from typing import Any, Callable, Iterable
 
 import ibis
 from ibis import _
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 def connected_components(
     edges: ir.Table,
     *,
-    nodes: ir.Table | ir.Column | None = None,
+    nodes: ir.Table | ir.Column | Iterable[Any] | None = None,
     max_iter: int | None = None,
 ) -> ir.Table:
     """Compute the connected components of a graph.
@@ -103,18 +103,18 @@ def connected_components(
     edges :
         A table with the columns (record_id_l, record_id_r).
         The datatypes can be anything, but they must be the same.
-    nodes : Table | Value, optional
+    nodes :
         A table with the column record_id, or the record_id column itself.
         If provided, the output will include labels for all nodes in this table,
         even if they are not in the edges.
         If not provided, the output will only include labels for nodes that
         appear in the edges.
-    max_iter : int, optional
+    max_iter :
         The maximum number of iterations to run. If None, run until convergence.
 
     Returns
     -------
-    labels : Table
+    labels :
         Labeling for left records. Has columns (record_id, component: uint64).
 
     Examples
@@ -226,8 +226,8 @@ def _intify_edges(
             "edges must contain the columns `record_id_l` and `record_id_r`, "
             f"but it contains {raw_edges.columns}"
         )
-
-    swapped = raw_edges.rename(record_id_r="record_id_l", record_id_l="record_id_r")
+    raw_edges = raw_edges.select("record_id_l", "record_id_r")
+    swapped = raw_edges.select(record_id_r=_.record_id_l, record_id_l=_.record_id_r)
     all_node_ids = raw_edges.union(swapped).select("record_id_l")
 
     f = Factorizer(all_node_ids, "record_id_l")
@@ -247,7 +247,7 @@ def _get_initial_labels(edges: ir.Table) -> ir.Table:
 
 
 def _add_labels_for_missing_nodes(
-    labels: ir.Table, nodes: ir.Table | ir.Column
+    labels: ir.Table, nodes: ir.Table | ir.Column | Iterable[Any]
 ) -> ir.Table:
     """
     Add labels for nodes not in the original edgelist (and thus not in the labels)
@@ -256,7 +256,11 @@ def _add_labels_for_missing_nodes(
     return labels.union(additional_labels)
 
 
-def _get_additional_labels(labels: ir.Table, nodes: ir.Table | ir.Column) -> ir.Table:
+def _get_additional_labels(
+    labels: ir.Table, nodes: ir.Table | ir.Column | Iterable[Any]
+) -> ir.Table:
+    if not isinstance(nodes, ir.Expr):
+        nodes = ibis.memtable({"record_id": nodes})
     if not isinstance(nodes, ir.Table):
         nodes = nodes.name("record_id").as_table()
     nodes = nodes.select("record_id")

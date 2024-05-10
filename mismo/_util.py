@@ -131,6 +131,17 @@ def group_id(keys: str | ir.Column | Iterable[str | ir.Column]) -> ir.IntegerCol
     return ibis.dense_rank().over(ibis.window(order_by=keys)).cast("uint64")
 
 
+_i = 0
+
+
+def unique_name(prefix: str | None = None) -> str:
+    """Find a universally unique name"""
+    global _i
+    if prefix is None:
+        prefix = "__temp_"
+    return f"{prefix}{_i}"
+
+
 def unique_column_name(t: ir.Table) -> str:
     """Return a column name that is not already in the table"""
     i = 0

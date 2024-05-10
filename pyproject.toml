@@ -31,6 +31,7 @@ dependencies = [
     "ipywidgets",
     "scikit-learn",
     "typing-extensions ; python_version < \"3.11\"", # needed for Self
+    "solara>=1.32.1",
 ]
 
 [project.urls]

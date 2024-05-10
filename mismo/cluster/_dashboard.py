@@ -1,27 +1,36 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable
+import json
+from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 from ibis import _
 from ibis.expr import types as ir
+from IPython.display import display
 import ipywidgets
 import rich
+import solara
 
 from mismo import _util
+from mismo._datasets import Datasets
+from mismo.cluster._connected_components import connected_components
 
 if TYPE_CHECKING:
     import ipycytoscape  # type: ignore
 
 
-def cluster_widget(records: ir.Table, links: ir.Table) -> ipycytoscape.CytoscapeWidget:
-    """Make a Widget that shows a cluster of records and the links between them.
+def cytoscape_widget(
+    tables: Datasets | ir.Table | Iterable[ir.Table] | Mapping[str, ir.Table],
+    links: ir.Table,
+) -> ipycytoscape.CytoscapeWidget:
+    """Make a ipycytoscape.CytoscapeWidget that shows records and links.
 
-    Uses ipycytoscape to make an interactive widget.
+    This shows ALL the supplied records and links, so be careful,
+    you probably want to filter them down first.
 
     Parameters
     ----------
-    records :
-        A table of records with at least the column (record_id).
+    tables :
+        Table(s) of records with at least the column `record_id`.
     links :
         A table of edges with at least columns
         (record_id_l, record_id_r) and optionally other columns.
@@ -34,37 +43,17 @@ def cluster_widget(records: ir.Table, links: ir.Table) -> ipycytoscape.Cytoscape
     with _util.optional_import("ipycytoscape"):
         import ipycytoscape  # type: ignore
 
-    links = links[_.record_id_l != _.record_id_r]
-    links = links[
-        (_.record_id_l.isin(records.record_id))
-        & (_.record_id_r.isin(records.record_id))
-    ]
-    links = _ensure_has_width(links)
-    links = _ensure_has_opacity(links)
-    if "record_id" not in records.columns:
-        raise ValueError("records must have a record_id column")
-    if "id" in records.columns:
-        raise ValueError("records must not have an id column")
-    if "record_id_l" not in links.columns:
-        raise ValueError("links must have a record_id_l column")
-    if "record_id_r" not in links.columns:
-        raise ValueError("links must have a record_id_r column")
-    if "source" in links.columns:
-        raise ValueError("links must not have a source column")
-    if "target" in links.columns:
-        raise ValueError("links must not have a target column")
-    graph = {
-        "nodes": records.rename(id="record_id").to_pandas().to_dict("records"),
-        "edges": links.rename(source="record_id_l", target="record_id_r")
-        .to_pandas()
-        .to_dict("records"),
-    }
+    ds = Datasets(tables)
+    links = _filter_links(links, ds)
+    graph = {"nodes": _nodes_to_json(*ds), "edges": _edges_to_json(links)}
     cyto = ipycytoscape.CytoscapeWidget(graph, layout={"name": "fcose"})
     style = [
         *cyto.get_style(),
         {
             "selector": "node",
             "css": {
+                "label": "data(label)",
+                "font-size": 8,
                 "color": "black",
                 "width": 15,
                 "height": 15,
@@ -74,19 +63,8 @@ def cluster_widget(records: ir.Table, links: ir.Table) -> ipycytoscape.Cytoscape
             "selector": "edge",
             "css": {
                 "curve-style": "straight",
-                # "line-color": "data(odds)",
                 "width": "data(width)",
                 "opacity": "data(opacity)",
-            },
-        },
-        {
-            "selector": ":active",
-            # "selector": ":hover",
-            # "selector": ":mouseover",
-            "css": {
-                "content": "data(name)",
-                "text-valign": "center",
-                "color": "black",
             },
         },
     ]
@@ -94,55 +72,182 @@ def cluster_widget(records: ir.Table, links: ir.Table) -> ipycytoscape.Cytoscape
     return cyto
 
 
-def display_record(record: dict[str, Any]):
-    rich.print(record)
+def _filter_links(links: ir.Table, ds: Datasets) -> ir.Table:
+    if "record_id_l" not in links.columns:
+        raise ValueError("links must have a record_id_l column")
+    if "record_id_r" not in links.columns:
+        raise ValueError("links must have a record_id_r column")
+    links = links.filter(
+        _.record_id_l.isin(ds.all_record_ids()),
+        _.record_id_r.isin(ds.all_record_ids()),
+    )
+    return links
 
 
-def display_edge(
-    record_l: dict[str, Any], record_r: dict[str, Any], edge: dict[str, Any]
-):
-    rich.print("Left:")
-    rich.print(record_l)
-    rich.print("Right:")
-    rich.print(record_r)
+def _nodes_to_json(*tables: ir.Table) -> list[dict[str, Any]]:
+    tables = [_ensure_label(t) for t in tables]
+    tables = [t.mutate(id=_.record_id) for t in tables]
+    return _to_json(*tables)
 
 
+def _edges_to_json(links: ir.Table) -> list[dict[str, Any]]:
+    if "source" in links.columns:
+        raise ValueError("links must not have a source column")
+    if "target" in links.columns:
+        raise ValueError("links must not have a target column")
+    links = links.mutate(source="record_id_l", target="record_id_r")
+    links = _ensure_has_width(links)
+    links = _ensure_has_opacity(links)
+    return _to_json(links)
+
+
+def _to_json(*tables: ir.Table) -> list[dict[str, Any]]:
+    records = []
+    for t in tables:
+        # include default_handler to avoid https://stackoverflow.com/a/60492211/5156887
+        json_str = t.to_pandas().to_json(
+            orient="records", default_handler=str, date_format="iso"
+        )
+        records.extend(json.loads(json_str))
+    return records
+
+
+def _render_to_html(obj) -> str:
+    console = rich.console.Console(record=True)
+    with console.capture():
+        console.print(obj)
+    template = """
+    <pre style="font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace; line-height: 1.2em">
+        <code style="font-family:inherit">{code}</code>
+    </pre>
+    """  # noqa: E501
+    return console.export_html(code_format=template, inline_styles=True)
+
+
+@solara.component
 def cluster_dashboard(
-    records: ir.Table,
+    ds: Datasets | ir.Table | Iterable[ir.Table] | Mapping[str, ir.Table],
     links: ir.Table,
-    *,
-    display_record: Callable | None = display_record,
-    display_edge: Callable | None = display_edge,
-) -> ipywidgets.VBox:
-    """Make a dashboard for exploring different clusters of records."""
-    cyto = cluster_widget(records, links)
-    info = ipywidgets.Output(layout={"height": "500px"})
+) -> solara.Column:
+    """A Solara component for that shows a cluster of records and links.
 
-    def _to_dict(t: ir.Table, filter):
-        one_row = t[filter]
-        return one_row.execute().to_dict("records")[0]
+    This shows *ALL* the supplied records and links, so be careful,
+    you probably want to filter them down first.
+    You can use the `clusters_dashboard` component for that.
 
-    def on_record(node):
-        node_dict = _to_dict(records, _.record_id == int(node["data"]["id"]))
-        info.clear_output()
-        with info:
-            display_record(node_dict)
+    This is like `cytoscape_widget`, but with a status bar that shows
+    information about the selected node or edge.
 
-    def on_edge(edge):
-        s = int(edge["data"]["source"])
-        t = int(edge["data"]["target"])
-        record_l = _to_dict(records, _.record_id == s)
-        record_r = _to_dict(records, _.record_id == t)
-        edge = _to_dict(links, (_.record_id_l == s) & (_.record_id_r == t))
-        info.clear_output()
-        with info:
-            display_edge(record_l, record_r, edge)
+    Parameters
+    ----------
+    ds :
+        Table(s) of records with at least the column `record_id`.
+    links :
+        A table of edges with at least columns
+        (record_id_l, record_id_r) and optionally other columns.
+        The column `width` is used to set the width of the edges.
+        If not given, it is determined from the column `odds`, if
+        present, or set to 5 otherwise.
+        The column `opacity` is used to set the opacity of the edges.
+        If not given, it is set to 0.5.
+    """
+    ds = Datasets(ds)
 
-    if display_record is not None:
-        cyto.on("node", "mouseover", on_record)
-    if display_edge is not None:
-        cyto.on("edge", "mouseover", on_edge)
-    return ipywidgets.VBox([cyto, info])
+    def get_output():
+        out = ipywidgets.Output()
+        out.append_display_data(ipywidgets.HTML("Select a node or edge..."))
+        return out
+
+    info = solara.use_memo(get_output)
+
+    def make_cyto() -> tuple[Any, dict[Any, dict]]:
+        cyto = cytoscape_widget(ds, links)
+        lookup = {r["record_id"]: r for r in _nodes_to_json(*ds.values())}
+
+        def on_record(node: dict[str, Any]):
+            info.clear_output()
+            html_widget = ipywidgets.HTML(_render_to_html(node["data"]))
+            with info:
+                display(html_widget)
+
+        def on_edge(edge: dict[str, Any]):
+            s = edge["data"]["record_id_l"]
+            t = edge["data"]["record_id_r"]
+            record_l = lookup[s]
+            record_r = lookup[t]
+            box = ipywidgets.HBox(
+                [
+                    ipywidgets.HTML(_render_to_html(record_l)),
+                    ipywidgets.HTML(_render_to_html(record_r)),
+                ]
+            )
+            info.clear_output()
+            with info:
+                display(box)
+
+        cyto.on("node", "click", on_record)
+        cyto.on("edge", "click", on_edge)
+        return cyto
+
+    cyto = solara.use_memo(make_cyto, [ds, links])
+
+    return solara.Column([cyto, info])
+
+
+@solara.component
+def clusters_dashboard(
+    tables: Datasets | ir.Table | Iterable[ir.Table] | Mapping[str, ir.Table],
+    links: ir.Table,
+) -> solara.Column:
+    """Make a dashboard for exploring different clusters of records.
+
+    Pass the entire dataset and the links between records,
+    and use this to filter down to a particular cluster.
+    """
+
+    def get_ds():
+        ds = Datasets(tables)
+        li = _filter_links(links, ds)
+        ds = _add_component(ds, li)
+        ds = ds.cache()
+        return ds
+
+    ds = solara.use_memo(get_ds, [tables, links])
+
+    def get_components():
+        return (
+            ds.unioned()
+            .select("component")
+            .distinct()
+            .order_by("component")
+            .component.execute()
+            .to_list()
+        )
+
+    all_components = solara.use_memo(get_components, [ds])
+
+    component = solara.use_reactive(0)
+    component_selector = solara.Select(
+        "Component", values=all_components, value=component
+    )
+
+    def get_subgraph():
+        return ds.map(lambda name, t: t.filter(_.component == component.value))
+
+    subgraph = solara.use_memo(get_subgraph, [ds, component.value])
+    return solara.Column([component_selector, cluster_dashboard(subgraph, links)])
+
+
+def _add_component(ds: Datasets, links: ir.Table) -> Datasets:
+    cc = connected_components(links, nodes=ds.all_record_ids())
+    n = _util.unique_name()
+    return ds.map(lambda name, t: t.left_join(cc, "record_id", rname=n).drop(n))
+
+
+def _ensure_label(t: ir.Table) -> ir.Table:
+    if "label" in t.columns:
+        return t
+    return t.mutate(label=_.record_id)
 
 
 def _ensure_has_width(links: ir.Table) -> ir.Table:
