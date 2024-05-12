@@ -48,8 +48,10 @@ class Datasets:
         """The number of tables."""
         return len(self._tables)
 
-    def __getitem__(self, key: str) -> ir.Table:
-        """Get a table by name."""
+    def __getitem__(self, key: str | int) -> ir.Table:
+        """Get a table by name or index."""
+        if isinstance(key, int):
+            return tuple(self)[key]
         return self._tables[key]
 
     def __iter__(self) -> Iterable[ir.Table]:
