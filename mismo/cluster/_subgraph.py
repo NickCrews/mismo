@@ -6,7 +6,7 @@ from ibis import _
 from ibis.expr import types as ir
 import solara
 
-from mismo.cluster import add_degree
+from mismo.cluster import degree
 
 
 @solara.component
@@ -21,7 +21,7 @@ def degree_dashboard(
     Pass the entire dataset and the links between records,
     and use this to explore the distribution of degrees.
     """
-    with_degree = add_degree(tables, links)
+    with_degree = degree(tables, links)
 
     def degree_hist(links_by_record):
         return (

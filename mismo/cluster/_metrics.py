@@ -9,13 +9,12 @@ from ibis.expr import types as ir
 from mismo._datasets import Datasets
 
 
-# TODO: need to change this API to be more generic so it can deal with
-# dedupe (only one table) as well as linkage (left and right) (and other numbers??)
-def add_degree(
-    tables: ir.Table | Iterable[ir.Table] | Mapping[str, ir.Table],
+def degree(
+    *,
     links: ir.Table,
+    records: ir.Table | Iterable[ir.Table] | Mapping[str, ir.Table] | None = None,
 ) -> Datasets:
-    """Add the degree of each record in the left and/or right tables.
+    """Label records with their degree (number of links to other records).
 
     This is the graph theory definition of degree, i.e. the number of vertices
     coming into or out of a vertex. In this case, the number of links coming
@@ -23,22 +22,31 @@ def add_degree(
 
     Parameters
     ----------
-    tables :
-        table(s) of records with at least the column `record_id`.
     links :
-        A table of edges with at least columns (record_id_l, record_id_r)
+        A table of edges with at least columns (record_id_l, record_id_r).
+    records :
+        Table(s) of records with at least the column `record_id`, or None.
 
     Returns
     -------
-    A new Datasets with the degree of each record in the left and/or right tables.
+    If `records` is None, a Table will be returned with columns
+    `record_id` and `degree:uint64` that maps record_id to a degree.
+    If `records` is a single Table, that table will be returned
+    with a `degree:uint64` column added.
+    If an iterable/mapping of Tables is given, a `Datasets` will be returned, with
+    a `component` column added to each contained Table.
     """
-    ds = Datasets(tables)
     l1 = links.select(record_id="record_id_l", other="record_id_r")
     l2 = links.select(record_id="record_id_r", other="record_id_l")
     u = ibis.union(l1, l2, distinct=True)
     lookup = u.group_by("record_id").agg(degree=_.count())
-    return ds.map(
-        lambda name, t: t.left_join(lookup, "record_id").mutate(
+    if records is None:
+        return lookup
+    ds = Datasets(records).map(
+        lambda _name, t: t.left_join(lookup, "record_id").mutate(
             degree=_.degree.fillna(0)
         )
     )
+    if len(ds) == 1:
+        return ds[0]
+    return ds

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from itertools import count
 import logging
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Mapping
 
 import ibis
 from ibis import _
@@ -18,12 +18,11 @@ logger = logging.getLogger(__name__)
 # See https://arxiv.org/pdf/1802.09478.pdf
 def connected_components(
     *,
-    records: ir.Table | Iterable[ir.Table] = None,
+    records: ir.Table | Iterable[ir.Table] | Mapping[str, ir.Table] = None,
     links: ir.Table,
     max_iter: int | None = None,
 ) -> Datasets:
-    """
-    Add a `component` column using connected components, based on the given links.
+    """Label records using connected components, based on the given links.
 
     This uses [an iterative algorithm](https://www.drmaciver.com/2008/11/computing-connected-graph-components-via-sql/)
     that is linear in terms of the diameter of the largest component.
@@ -32,27 +31,28 @@ def connected_components(
 
     Parameters
     ----------
+    links :
+        A table with the columns (record_id_l, record_id_r), corresponding
+        to the `record_id`s in `records`.
     records :
-        A Table with the column record_id, or an iterable of these.
+        Table(s) of records with at least the column `record_id`, or None.
 
         !!! note
 
             If you supply multiple Tables, the record_ids must be the same type
             across all tables, and **universally** unique across all tables
 
-    links :
-        A table with the columns (record_id_l, record_id_r), corresponding
-        to the `record_id`s in `records`.
     max_iter :
         The maximum number of iterations to run. If None, run until convergence.
 
     Returns
     -------
-    labeled :
-        If `records` is a single Table, a single Table will be returned
-        with a `component:uint64` column added.
-        If an iterable is given, a `Datasets` will be returned, with
-        a `component:uint64` column added to each contained Table.
+    If `records` is None, a Table will be returned with columns
+    `record_id` and `component:uint64` that maps record_id to component.
+    If `records` is a single Table, that table will be returned
+    with a `component:uint64` column added.
+    If an iterable/mapping of Tables is given, a `Datasets` will be returned, with
+    a `component:uint64` column added to each contained Table.
 
     Examples
     --------

@@ -8,7 +8,7 @@ graph algorithms, which are implemented in this module.
 
 ::: mismo.Datasets
 ::: mismo.cluster.connected_components
-::: mismo.cluster.add_degree
+::: mismo.cluster.degree
 
 ## Plot
 
