@@ -208,7 +208,7 @@ def clusters_dashboard(
     def get_ds():
         ds = Datasets(tables)
         li = _filter_links(links, ds)
-        ds = _add_component(ds, li)
+        ds = connected_components(records=ds, links=li)
         ds = ds.cache()
         return ds
 
@@ -236,12 +236,6 @@ def clusters_dashboard(
 
     subgraph = solara.use_memo(get_subgraph, [ds, component.value])
     return solara.Column([component_selector, cluster_dashboard(subgraph, links)])
-
-
-def _add_component(ds: Datasets, links: ir.Table) -> Datasets:
-    cc = connected_components(links, nodes=ds.all_record_ids())
-    n = _util.unique_name()
-    return ds.map(lambda name, t: t.left_join(cc, "record_id", rname=n).drop(n))
 
 
 def _ensure_label(t: ir.Table) -> ir.Table:

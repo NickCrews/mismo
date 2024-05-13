@@ -20,11 +20,11 @@ _count = 0
 
 @pytest.fixture
 def table_factory(backend: ibis.BaseBackend) -> Callable[..., ir.Table]:
-    def factory(data, schema=None, **kwargs):
+    def factory(data, schema=None, columns=None, **kwargs):
         global _count
         name = f"__mismo_test{_count}"
         _count += 1
-        mt = ibis.memtable(data, schema=schema)
+        mt = ibis.memtable(data, schema=schema, columns=columns)
         result = backend.create_table(name, mt, **kwargs)
         return result
 

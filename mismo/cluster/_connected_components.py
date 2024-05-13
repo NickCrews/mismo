@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from itertools import count
 import logging
-from typing import Any, Callable, Iterable
+from typing import Callable, Iterable
 
 import ibis
 from ibis import _
 from ibis.expr import types as ir
 
+from mismo._datasets import Datasets
 from mismo._factorizer import Factorizer
 
 logger = logging.getLogger(__name__)
@@ -16,141 +17,151 @@ logger = logging.getLogger(__name__)
 # I think more performant algorithms exist, but they are more complicated.
 # See https://arxiv.org/pdf/1802.09478.pdf
 def connected_components(
-    edges: ir.Table,
     *,
-    nodes: ir.Table | ir.Column | Iterable[Any] | None = None,
+    records: ir.Table | Iterable[ir.Table] = None,
+    links: ir.Table,
     max_iter: int | None = None,
-) -> ir.Table:
-    """Compute the connected components of a graph.
+) -> Datasets:
+    """
+    Add a `component` column using connected components, based on the given links.
 
     This uses [an iterative algorithm](https://www.drmaciver.com/2008/11/computing-connected-graph-components-via-sql/)
-    that is linear in terms of the size of the largest component. This is usually
-    acceptable for our use case, because we expect the components to be small.
-
-    !!! note
-
-        The record_ids are assumed to refer to the same universe of records:
-        If you have a left dataset and right dataset and they both have a
-        record with id `5`, then this algorithm assumes that those two records
-        are the same, which is probably not what you want.
-
-        To fix this scenario, you should make the record ids be a composite keys
-        of type `struct<dataset: string, record_id: uint64>`:
-
-            ```python
-            >>> edges = ibis.memtable(
-            ...     {
-            ...         "record_id_l": [0, 0, 2],
-            ...         "record_id_r": [1, 2, 4],
-            ...     }
-            ... )
-            >>> connected_components(edges)
-            ┏━━━━━━━━━━━┳━━━━━━━━━━━┓
-            ┃ record_id ┃ component ┃
-            ┡━━━━━━━━━━━╇━━━━━━━━━━━┩
-            │ int64     │ int64     │
-            ├───────────┼───────────┤
-            │         3 │         0 │
-            │         0 │         0 │
-            │         1 │         0 │
-            │         8 │         8 │
-            │         2 │         0 │
-            │         9 │         8 │
-            └───────────┴───────────┘
-            >>> edges_fixed = edges.mutate(
-            ...     record_id_l=ibis.struct(
-            ...         {
-            ...             "dataset": "left",
-            ...             "record_id": edges.record_id_l,
-            ...         }
-            ...     ),
-            ...     record_id_r=ibis.struct(
-            ...         {
-            ...             "dataset": "right",
-            ...             "record_id": edges.record_id_r,
-            ...         }
-            ...     ),
-            ... )
-            >>> edges_fixed
-            ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-            ┃ record_id_l                               ┃ record_id_r                               ┃
-            ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-            │ struct<dataset: string, record_id: int64> │ struct<dataset: string, record_id: int64> │
-            ├───────────────────────────────────────────┼───────────────────────────────────────────┤
-            │ {'dataset': 'left', 'record_id': 0}       │ {'dataset': 'right', 'record_id': 1}      │
-            │ {'dataset': 'left', 'record_id': 0}       │ {'dataset': 'right', 'record_id': 2}      │
-            │ {'dataset': 'left', 'record_id': 2}       │ {'dataset': 'right', 'record_id': 3}      │
-            │ {'dataset': 'left', 'record_id': 8}       │ {'dataset': 'right', 'record_id': 9}      │
-            └───────────────────────────────────────────┴───────────────────────────────────────────┘
-            >>> connected_components(edges_fixed)
-            ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┓
-            ┃ record_id                                 ┃ component ┃
-            ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━┩
-            │ struct<dataset: string, record_id: int64> │ uint64    │
-            ├───────────────────────────────────────────┼───────────┤
-            │ {'dataset': 'right', 'record_id': 9}      │         2 │
-            │ {'dataset': 'left', 'record_id': 0}       │         0 │
-            │ {'dataset': 'left', 'record_id': 2}       │         1 │
-            │ {'dataset': 'right', 'record_id': 3}      │         1 │
-            │ {'dataset': 'left', 'record_id': 8}       │         2 │
-            │ {'dataset': 'right', 'record_id': 2}      │         0 │
-            │ {'dataset': 'right', 'record_id': 1}      │         0 │
-            └───────────────────────────────────────────┴───────────┘
-            ```
+    that is linear in terms of the diameter of the largest component.
+    This is usually acceptable for our use case,
+    because we expect the components to be small.
 
     Parameters
     ----------
-    edges :
-        A table with the columns (record_id_l, record_id_r).
-        The datatypes can be anything, but they must be the same.
-    nodes :
-        A table with the column record_id, or the record_id column itself.
-        If provided, the output will include labels for all nodes in this table,
-        even if they are not in the edges.
-        If not provided, the output will only include labels for nodes that
-        appear in the edges.
+    records :
+        A Table with the column record_id, or an iterable of these.
+
+        !!! note
+
+            If you supply multiple Tables, the record_ids must be the same type
+            across all tables, and **universally** unique across all tables
+
+    links :
+        A table with the columns (record_id_l, record_id_r), corresponding
+        to the `record_id`s in `records`.
     max_iter :
         The maximum number of iterations to run. If None, run until convergence.
 
     Returns
     -------
-    labels :
-        Labeling for left records. Has columns (record_id, component: uint64).
+    labeled :
+        If `records` is a single Table, a single Table will be returned
+        with a `component:uint64` column added.
+        If an iterable is given, a `Datasets` will be returned, with
+        a `component:uint64` column added to each contained Table.
 
     Examples
     --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
     >>> from mismo.cluster import connected_components
-    >>> edges_list = [
-    ...     ("a", "x"),
-    ...     ("b", "x"),
-    ...     ("b", "y"),
-    ...     ("c", "y"),
-    ...     ("c", "z"),
-    ...     ("g", "h"),
-    ... ]
-    >>> edges_df = pd.DataFrame(edges_list, columns=["record_id_l", "record_id_r"])
-    >>> edges = ibis.memtable(edges_df)
-    >>> connected_components(edges)
+    >>> records1 = ibis.memtable(
+    ...     [
+    ...         ("a", 0),
+    ...         ("b", 1),
+    ...         ("c", 2),
+    ...         ("d", 3),
+    ...         ("g", 6),
+    ...     ],
+    ...     columns=["record_id", "other"]
+    ... )
+    >>> records2 = ibis.memtable(
+    ...     [
+    ...         ("h", 7),
+    ...         ("x", 23),
+    ...         ("y", 24),
+    ...         ("z", 25),
+    ...     ],
+    ...     columns=["record_id", "other"]
+    ... )
+    >>> links = ibis.memtable(
+    ...     [
+    ...         ("a", "x"),
+    ...         ("b", "x"),
+    ...         ("b", "y"),
+    ...         ("c", "y"),
+    ...         ("c", "z"),
+    ...         ("g", "h"),
+    ...     ],
+    ...     columns=["record_id_l", "record_id_r"])
+
+    If you don't supply the records, then you just get a labeling map
+    from record_id -> component. Note how only the record_ids that are
+    present in `links` are returned, eg there is no record_id `"d"` present:
+
+    >>> connected_components(links=links)
     ┏━━━━━━━━━━━┳━━━━━━━━━━━┓
     ┃ record_id ┃ component ┃
     ┡━━━━━━━━━━━╇━━━━━━━━━━━┩
     │ string    │ uint64    │
     ├───────────┼───────────┤
-    │ x         │         0 │
-    │ y         │         0 │
-    │ z         │         0 │
-    │ h         │         3 │
-    │ a         │         0 │
     │ b         │         0 │
+    │ a         │         0 │
     │ c         │         0 │
+    │ y         │         0 │
+    │ x         │         0 │
+    │ z         │         0 │
     │ g         │         3 │
+    │ h         │         3 │
     └───────────┴───────────┘
+
+    If you supply records, then the records are labeled with the component:
+
+    >>> connected_components(records=records1, links=links)
+    ┏━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┓
+    ┃ record_id ┃ other ┃ component ┃
+    ┡━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━┩
+    │ string    │ int64 │ uint64    │
+    ├───────────┼───────┼───────────┤
+    │ b         │     1 │         0 │
+    │ a         │     0 │         0 │
+    │ c         │     2 │         0 │
+    │ g         │     6 │         3 │
+    │ d         │     3 │         4 │
+    └───────────┴───────┴───────────┘
+
+    You can supply multiple sets of records, which are coerced to a `Datasets`,
+    and returned as a `Datasets`, with each table of records labeled
+    individually.
+
+    >>> a, b = connected_components(records=(records1, records2), links=links)
+    >>> a
+    ┏━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┓
+    ┃ record_id ┃ other ┃ component ┃
+    ┡━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━┩
+    │ string    │ int64 │ uint64    │
+    ├───────────┼───────┼───────────┤
+    │ g         │     6 │         3 │
+    │ c         │     2 │         0 │
+    │ b         │     1 │         0 │
+    │ a         │     0 │         0 │
+    │ d         │     3 │         4 │
+    └───────────┴───────┴───────────┘
+    >>> b
+    ┏━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┓
+    ┃ record_id ┃ other ┃ component ┃
+    ┡━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━┩
+    │ string    │ int64 │ uint64    │
+    ├───────────┼───────┼───────────┤
+    │ x         │    23 │         0 │
+    │ h         │     7 │         3 │
+    │ y         │    24 │         0 │
+    │ z         │    25 │         0 │
+    └───────────┴───────┴───────────┘
     """  # noqa: E501
-    int_edges, restore = _intify_edges(edges)
+    int_edges, restore = _intify_edges(links)
     int_labels = _connected_components_ints(int_edges, max_iter=max_iter)
-    result = restore(int_labels)
-    if nodes is not None:
-        result = _add_labels_for_missing_nodes(result, nodes)
+    labels = restore(int_labels)
+    if records is None:
+        return labels
+    ds = Datasets(records)
+    result = _label_datasets(ds, labels)
+    if isinstance(records, ir.Table):
+        return result[0]
     return result
 
 
@@ -246,27 +257,22 @@ def _get_initial_labels(edges: ir.Table) -> ir.Table:
     return ibis.union(labels_left, labels_right, distinct=True)
 
 
-def _add_labels_for_missing_nodes(
-    labels: ir.Table, nodes: ir.Table | ir.Column | Iterable[Any]
-) -> ir.Table:
-    """
-    Add labels for nodes not in the original edgelist (and thus not in the labels)
-    """
-    additional_labels = _get_additional_labels(labels, nodes).cast(labels.schema())
-    return labels.union(additional_labels)
+def _label_datasets(ds: Datasets, labels: ir.Table) -> Datasets:
+    additional_labels = _get_additional_labels(labels, ds.all_record_ids())
+    labels = labels.union(additional_labels)
+    return ds.map(
+        lambda name, t: t.left_join(labels, "record_id", rname="{name}_ibis_tmp").drop(
+            "record_id_ibis_tmp"
+        )
+    )
 
 
-def _get_additional_labels(
-    labels: ir.Table, nodes: ir.Table | ir.Column | Iterable[Any]
-) -> ir.Table:
-    if not isinstance(nodes, ir.Expr):
-        nodes = ibis.memtable({"record_id": nodes})
-    if not isinstance(nodes, ir.Table):
-        nodes = nodes.name("record_id").as_table()
-    nodes = nodes.select("record_id")
+def _get_additional_labels(labels: ir.Table, record_ids: ir.Column) -> ir.Table:
+    nodes = record_ids.name("record_id").as_table()
     is_missing_label = nodes.record_id.notin(labels.record_id)
-    max_existing_label = labels.component.max().execute()
+    max_existing_label = labels.component.max()
     additional_labels = nodes[is_missing_label].select(
-        "record_id", component=ibis.row_number() + (1 + max_existing_label)
+        "record_id",
+        component=(ibis.row_number() + max_existing_label + 1).cast("uint64"),
     )
     return additional_labels
