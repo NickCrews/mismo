@@ -313,6 +313,9 @@ def hash_address(address_string: str, address_only_keys: bool = True) -> list[st
         from postal.near_dupe import near_dupe_hashes as _hash
         from postal.parser import parse_address as _parse_address
     parsed = dict(_parse_address(address_string))
+    if len(parsed) == 0:
+      # catch empty strings from invalid address strings
+      return []
     return _hash(
         list(parsed.values()), list(parsed.keys()), address_only_keys=address_only_keys
     )
