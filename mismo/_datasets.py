@@ -32,8 +32,7 @@ class Datasets:
         """
         if isinstance(tables, ir.Table):
             tables = {"dataset_0": tables}
-        if not isinstance(tables, Mapping):
-            tables = _get_names(tables)
+        tables = _get_names(tables)
 
         self._tables = {}
         for name, t in tables.items():
@@ -68,9 +67,23 @@ class Datasets:
         """Return a new Datasets with all tables cached."""
         return self.__class__({name: t.cache() for name, t in self.items()})
 
-    def map(self, f: Callable[[str, ir.Table], ir.Table]) -> ir.Table:
+    def map(self, f: ibis.Deferred | Callable[[str, ir.Table], ir.Table]) -> ir.Table:
         """Return a new Datasets with all tables transformed by `f`."""
-        return self.__class__({name: f(name, t) for name, t in self.items()})
+        if isinstance(f, ibis.Deferred):
+            return self.__class__({name: f.bind(t) for name, t in self.items()})
+        else:
+            return self.__class__({name: f(name, t) for name, t in self.items()})
+
+    def filter(
+        self, f: ibis.Deferred | Callable[[str, ir.Table], ir.Table]
+    ) -> ir.Table:
+        """Return a new Datasets with all tables filtered by `f`."""
+        if isinstance(f, ibis.Deferred):
+            return self.__class__({name: t.filter(f) for name, t in self.items()})
+        else:
+            return self.__class__(
+                {name: t.filter(f(name, t)) for name, t in self.items()}
+            )
 
     @property
     def names(self) -> tuple[str, ...]:
@@ -131,7 +144,9 @@ class Datasets:
         return self.unioned().select("record_id").distinct().record_id
 
 
-def _get_names(tables: Sequence[ir.Table]) -> dict[str, ir.Table]:
+def _get_names(
+    tables: Sequence[ir.Table] | Mapping[str, ir.Table],
+) -> dict[str, ir.Table]:
     def _get_name(i: int, t: ir.Table) -> str:
         try:
             ds = t.get_name()
@@ -146,4 +161,7 @@ def _get_names(tables: Sequence[ir.Table]) -> dict[str, ir.Table]:
         else:
             return f"dataset_{i}"
 
-    return {_get_name(i, t): t for i, t in enumerate(tables)}
+    try:
+        return dict(tables.items())
+    except AttributeError:
+        return {_get_name(i, t): t for i, t in enumerate(tables)}

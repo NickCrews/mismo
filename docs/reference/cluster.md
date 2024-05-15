@@ -14,3 +14,4 @@ graph algorithms, which are implemented in this module.
 
 ::: mismo.cluster.degree_dashboard
 ::: mismo.cluster.cluster_dashboard
+::: mismo.cluster.clusters_dashboard

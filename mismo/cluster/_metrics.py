@@ -43,9 +43,9 @@ def degree(
     if records is None:
         return lookup
     ds = Datasets(records).map(
-        lambda _name, t: t.left_join(lookup, "record_id").mutate(
-            degree=_.degree.fillna(0)
-        )
+        lambda _name, t: t.left_join(lookup, "record_id")
+        .mutate(degree=_.degree.fillna(0))
+        .drop("record_id_right")
     )
     if len(ds) == 1:
         return ds[0]

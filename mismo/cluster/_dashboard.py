@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
+import ibis
 from ibis import _
 from ibis.expr import types as ir
 from IPython.display import display
@@ -45,7 +46,7 @@ def cytoscape_widget(
 
     ds = Datasets(tables)
     links = _filter_links(links, ds)
-    graph = {"nodes": _nodes_to_json(*ds), "edges": _edges_to_json(links)}
+    graph = {"nodes": _nodes_to_json(ds), "edges": _edges_to_json(links)}
     cyto = ipycytoscape.CytoscapeWidget(graph, layout={"name": "fcose"})
     style = [
         *cyto.get_style(),
@@ -54,7 +55,7 @@ def cytoscape_widget(
             "css": {
                 "label": "data(label)",
                 "font-size": 8,
-                "color": "black",
+                "color": "data(color)",
                 "width": 15,
                 "height": 15,
             },
@@ -84,13 +85,40 @@ def _filter_links(links: ir.Table, ds: Datasets) -> ir.Table:
     return links
 
 
-def _nodes_to_json(*tables: ir.Table) -> list[dict[str, Any]]:
-    tables = [_ensure_label(t) for t in tables]
-    tables = [t.mutate(id=_.record_id) for t in tables]
-    return _to_json(*tables)
+def _nodes_to_json(ds: Datasets) -> list[dict[str, Any]]:
+    colors = ["blue", "red", "green"]
+    cmap = dict(zip(ds.names, colors[: len(ds)]))
+
+    def f(name: str, t: ir.Table) -> ir.Table:
+        m = {
+            "dataset": ibis.literal(name),
+            "id": _.record_id.cast(str),
+        }
+        if "label" not in t.columns:
+            m["label"] = name + ":" + _.record_id.cast(str)
+        if "color" not in t.columns:
+            m["color"] = ibis.literal(cmap[name])
+        return t.mutate(m)
+
+    return _to_json(*ds.map(f))
 
 
 def _edges_to_json(links: ir.Table) -> list[dict[str, Any]]:
+    def _ensure_has_width(links: ir.Table) -> ir.Table:
+        if "width" in links.columns:
+            return links
+        if "odds" not in links.columns:
+            return links.mutate(width=5)
+        log_odds = _.odds.log10()
+        log_odds_fraction = log_odds / log_odds.max()
+        width = 10 * log_odds_fraction
+        return links.mutate(width=width)
+
+    def _ensure_has_opacity(links: ir.Table) -> ir.Table:
+        if "opacity" in links.columns:
+            return links
+        return links.mutate(opacity=0.5)
+
     if "source" in links.columns:
         raise ValueError("links must not have a source column")
     if "target" in links.columns:
@@ -162,7 +190,7 @@ def cluster_dashboard(
 
     def make_cyto() -> tuple[Any, dict[Any, dict]]:
         cyto = cytoscape_widget(ds, links)
-        lookup = {r["record_id"]: r for r in _nodes_to_json(*ds.values())}
+        lookup = {r["record_id"]: r for r in _nodes_to_json(ds)}
 
         def on_record(node: dict[str, Any]):
             info.clear_output()
@@ -236,26 +264,3 @@ def clusters_dashboard(
 
     subgraph = solara.use_memo(get_subgraph, [ds, component.value])
     return solara.Column([component_selector, cluster_dashboard(subgraph, links)])
-
-
-def _ensure_label(t: ir.Table) -> ir.Table:
-    if "label" in t.columns:
-        return t
-    return t.mutate(label=_.record_id)
-
-
-def _ensure_has_width(links: ir.Table) -> ir.Table:
-    if "width" in links.columns:
-        return links
-    if "odds" not in links.columns:
-        return links.mutate(width=5)
-    log_odds = _.odds.log10()
-    log_odds_fraction = log_odds / log_odds.max()
-    width = 10 * log_odds_fraction
-    return links.mutate(width=width)
-
-
-def _ensure_has_opacity(links: ir.Table) -> ir.Table:
-    if "opacity" in links.columns:
-        return links
-    return links.mutate(opacity=0.5)
