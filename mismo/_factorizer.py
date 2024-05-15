@@ -16,24 +16,27 @@ class Factorizer:
     integer codes to do some operation, and then restore the original column.
     """
 
-    def __init__(self, t: ir.Table, column: str) -> None:
+    def __init__(self, t: ir.Table, column: str, *, dtype: str = "uint64") -> None:
         """Create a Factorizer from column of values.
 
         If the input column is already an integer, the Factorizer is a no-op.
 
         Parameters
         ----------
-        t : Table
+        t :
             The table containing the column to encode.
-        column : str
+        column :
             The name of the column to encode.
+        dtype:
+            The datatype to encode to.
         """
         self.t = t
         self.column = column
         self._int_column = _util.unique_column_name(t)
-        # The input column is already an integer, so the mapping
+        self.dtype = ibis.dtype(dtype)
+        # The input column is already the right dtype, so the mapping
         # is simply the identity function. This is an optimization.
-        self._noop = t[column].type().is_integer()
+        self._noop = t[column].type() == self.dtype
 
     def encode(
         self,
@@ -46,14 +49,14 @@ class Factorizer:
 
         Parameters
         ----------
-        t : Table, optional
+        t :
             The table to encode. If None, use the table passed to the constructor.
-        src : str, optional
+        src :a
             The name of the  column to encode.
             If None, use the column passed to the constructor.
-        dst : str, optional
+        dst :
             The name of the column to create. If None, overwrite the `src` column.
-        verify : bool, default True
+        verify :
             If True, raise an error if the column contains values that are not
             in the original column.
         """
@@ -99,13 +102,13 @@ class Factorizer:
 
         Parameters
         ----------
-        t : Table
+        t :
             The table to decode.
-        src : str
+        src :
             The name of the column to decode.
-        dst : str, optional
+        dst :
             The name of the column to create. If None, overwrite the `src` column.
-        verify : bool, default True
+        verify :
             If True, raise an error if the column contains codes that are not
             froms the original column.
         """

@@ -32,6 +32,7 @@ dependencies = [
     "scikit-learn",
     "typing-extensions ; python_version < \"3.11\"", # needed for Self
     "postal>=1.1.7",
+    "solara>=1.32.1",
 ]
 
 [project.urls]
