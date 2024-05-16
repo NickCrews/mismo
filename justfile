@@ -44,5 +44,5 @@ benchcmp number *args:
     just bench --benchmark-compare {{ number }} {{ args }}
 
 # update dependencies
-deps-update:
+update:
     pdm update -dG :all --update-all
