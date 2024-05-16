@@ -3,7 +3,7 @@ from __future__ import annotations
 import ibis
 import pytest
 
-from mismo import text
+from mismo import sets
 from mismo.tests.util import assert_tables_equal
 
 
@@ -16,7 +16,7 @@ def test_document_counts(table_factory):
     ]
     t = table_factory({"address": addresses})
     tokens = t.address.re_split(r"\s+")
-    result = text.document_counts(tokens)
+    result = sets.document_counts(tokens)
     expected_records = [
         ("12", 2),
         ("56", 1),
@@ -67,7 +67,7 @@ def test_document_counts(table_factory):
 def test_term_counts(table_factory, terms, expected):
     typ = "string" if terms and isinstance(terms[0], str) else "int64"
     inp = table_factory({"terms": [terms]}, schema={"terms": f"array<{typ}>"})
-    result = text.add_array_value_counts(inp, "terms")
+    result = sets.add_array_value_counts(inp, "terms")
     expected = table_factory(
         {"terms": [terms], "terms_counts": [expected]},
         schema={"terms": f"array<{typ}>", "terms_counts": f"map<{typ}, int64>"},
@@ -87,7 +87,7 @@ def test_add_tfidf(table_factory):
         ["12", "glacier", "st"],
     ]
     t = table_factory({"terms": terms})
-    result = text.add_tfidf(t, "terms", normalize=False)
+    result = sets.add_tfidf(t, "terms", normalize=False)
     expected_records = [
         {"terms": ["st"], "terms_tfidf": {"st": 0.3364722366212129}},
         {
