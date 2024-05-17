@@ -18,7 +18,7 @@ I have claimed `mismo` on PyPI, but I won't update it often
 until this is more stable. Until then, install from source:
 
 ```console
-pip install "mismo[viz] @ git+https://github.com/NickCrews/mismo@<SOME-SHA-OR-BRANCH>"
+python -m pip install "mismo[viz] @ git+https://github.com/NickCrews/mismo@<SOME-SHA-OR-BRANCH>"
 ```
 
 ## Goals
