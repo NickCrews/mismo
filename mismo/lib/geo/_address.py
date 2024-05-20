@@ -17,6 +17,14 @@ ADDRESS_SCHEMA = """struct<street1:string,
                            postal_code:string, 
                            country:string>"""
 
+POSTAL_SCHEMA = """struct<house_number:string,
+                          street:string,
+                          unit:string,
+                          city:string,
+                          state:string,
+                          postcode:string,
+                          country:string>"""
+
 
 def _create_expand_schema():
     """Creates the schema used to store expanded address components."""
@@ -314,14 +322,39 @@ def hash_address(address_string: str, address_only_keys: bool = True) -> list[st
         from postal.parser import parse_address as _parse_address
     parsed = dict(_parse_address(address_string))
     if len(parsed) == 0:
-      # catch empty strings from invalid address strings
-      return []
+        # catch empty strings from invalid address strings
+        return []
     return _hash(
         list(parsed.values()), list(parsed.keys()), address_only_keys=address_only_keys
     )
 
 
-@ibis.udf.scalar.python(signature=(("string",), EXPAND_SCHEMA))
+POSTAL_SCHEMA = """struct<house_number:string,
+                          street:string,
+                          unit:string,
+                          city:string,
+                          state:string,
+                          postcode:string,
+                          country:string>"""
+
+
+@ibis.udf.scalar.python(signature=(("string",), POSTAL_SCHEMA))
+def _parse_address_postal(address_string: str):
+    with _util.optional_import("postal"):
+        from postal.parser import parse_address as _parse_address
+    parsed_fields = _parse_address(address_string)
+    address_dict = {v: k for k, v in dict(parsed_fields).items()}
+    return {
+        "house_number": address_dict.get("house_number", ""),
+        "street": address_dict.get("road", ""),
+        "unit": address_dict.get("unit", ""),
+        "city": address_dict.get("city", ""),
+        "state": address_dict.get("state", ""),
+        "postcode": address_dict.get("postcode", ""),
+        "country": address_dict.get("country", ""),
+    }
+
+
 def expand_address_components(address_string: str) -> dict:
     """Parse an address string and expand the components along with their roots
     for subsequent comparison.
@@ -370,28 +403,43 @@ def expand_address_components(address_string: str) -> dict:
             expand_address,
             expand_address_root,
         )
-        from postal.parser import parse_address as _parse_address
-    parsed = {v: k for k, v in dict(_parse_address(address_string)).items()}
+
+    @ibis.udf.scalar.pyarrow(
+        signature=(
+            (
+                "string",
+                "int",
+            ),
+            "struct<component:array<string>,root:array<string>>",
+        )
+    )
+    def _expand_component(s: str, address_components: int) -> list[dict]:
+        values = s.unique().to_pylist()
+        a = address_components[0].as_py()
+        comp_results = {x: expand_address(x, a) for x in values}
+        root_results = {x: expand_address_root(x, a) for x in values}
+        result = [
+            {"component": comp_results.get(x), "root": root_results.get(x)}
+            for x in s.to_pylist()
+        ]
+        return result
+
+    address_struct = _parse_address_postal(address_string)
     component_mapping = {
         "house_number": ADDRESS_HOUSE_NUMBER | ADDRESS_ANY,
-        "road": ADDRESS_STREET | ADDRESS_ANY,
+        "street": ADDRESS_STREET | ADDRESS_ANY,
         "unit": ADDRESS_UNIT | ADDRESS_ANY,
         "city": ADDRESS_NAME | ADDRESS_ANY,
         "state": ADDRESS_NAME | ADDRESS_ANY,
         "postcode": ADDRESS_POSTAL_CODE | ADDRESS_ANY,
         "country": ADDRESS_NAME | ADDRESS_ANY,
     }
-    level_rename = {"road": "street"}
-    result = {}
-    for level, address_components in component_mapping.items():
-        component = parsed.get(level, "")
-        expanded = expand_address(component, address_components=address_components)
-        expanded_root = expand_address_root(
-            component, address_components=address_components
-        )
-        name = level_rename.get(level, level)
-        result[name] = {"component": expanded, "root": expanded_root}
-    return result
+    return ibis.struct(
+        {
+            k: _expand_component(address_struct[k], ibis.literal(v))
+            for k, v in component_mapping.items()
+        }
+    )
 
 
 def _is_duplicate(
@@ -456,7 +504,7 @@ def compare_addresses(
     address_components1 :
         The expanded components and roots of each field for the first address
 
-    address2:
+    address_components2:
         The expanded components and roots of each field for the second address
 
     Returns
