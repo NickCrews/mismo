@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from functools import cache
 
 import ibis
 from ibis.expr import types as ir
@@ -403,7 +404,8 @@ def expand_address_components(address_string: str) -> dict:
             expand_address,
             expand_address_root,
         )
-
+    f = cache(expand_address)
+    g = cache(expand_address_root)
     @ibis.udf.scalar.pyarrow(
         signature=(
             (
@@ -414,10 +416,11 @@ def expand_address_components(address_string: str) -> dict:
         )
     )
     def _expand_component(s: str, address_components: int) -> list[dict]:
+
         values = s.unique().to_pylist()
         a = address_components[0].as_py()
-        comp_results = {x: expand_address(x, a) for x in values}
-        root_results = {x: expand_address_root(x, a) for x in values}
+        comp_results = {x: f(x, a) for x in values}
+        root_results = {x: g(x, a) for x in values}
         result = [
             {"component": comp_results.get(x), "root": root_results.get(x)}
             for x in s.to_pylist()
