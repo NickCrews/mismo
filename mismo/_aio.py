@@ -30,7 +30,9 @@ def iter_over_async(
         nxt = get_next()
         try:
             obj = loop.run_until_complete(nxt)
-        except RuntimeError:
+        except RuntimeError as e:
+            if "This event loop is already running" not in str(e):
+                raise
             import nest_asyncio
 
             nest_asyncio.apply()
