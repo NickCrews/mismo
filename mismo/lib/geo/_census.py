@@ -282,7 +282,7 @@ async def _with_retries(f, *, chunk_id, max_retries: int):
         try:
             return await f()
         except Exception as e:
-            logger.warn(
+            logger.warning(
                 f"Retrying chunk {chunk_id} {i + 1}/{max_retries} after error: {e!r}"
             )
             if i == max_retries - 1:
