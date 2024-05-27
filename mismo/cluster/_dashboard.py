@@ -254,7 +254,7 @@ def clusters_dashboard(
 
     all_components = solara.use_memo(get_components, [ds])
 
-    component = solara.use_reactive(0)
+    component = solara.use_reactive(all_components[0] if len(all_components) else None)
     component_selector = solara.Select(
         "Component", values=all_components, value=component
     )
