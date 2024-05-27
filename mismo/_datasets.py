@@ -63,6 +63,9 @@ class Datasets:
             return key in self._tables
         return key in self._tables.values()
 
+    def __repr__(self) -> str:
+        return repr({name: table.head(5) for name, table in self.items()})
+
     def cache(self) -> Datasets:
         """Return a new Datasets with all tables cached."""
         return self.__class__({name: t.cache() for name, t in self.items()})
