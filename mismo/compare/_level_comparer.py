@@ -133,7 +133,7 @@ class LevelComparer:
         # mis-specifies the ELSE level condition so that it doesn't
         # match everything.
         cases = [(level.is_match(pairs), level.name) for level in self[:-1]]
-        return _util.cases(cases, "else").name(self.name)
+        return _util.cases(*cases, else_="else").name(self.name)
 
     def __repr__(self) -> str:
         levels_str = ", ".join(repr(level) for level in self)

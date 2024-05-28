@@ -141,7 +141,7 @@ def best_match(left: ir.ArrayValue, right: ir.ArrayValue) -> AddressesMatchLevel
         ]
     else:
         within_100km_levels = []
-    levels = [
+    return _util.cases(
         (
             _array.array_all(
                 combos.map(
@@ -172,8 +172,8 @@ def best_match(left: ir.ArrayValue, right: ir.ArrayValue) -> AddressesMatchLevel
             _array.array_any(combos.map(lambda pair: pair.l.state == pair.r.state)),
             AddressesMatchLevels.SAME_STATE.as_integer(),
         ),
-    ]
-    return _util.cases(levels, AddressesMatchLevels.ELSE.as_integer())
+        else_=AddressesMatchLevels.ELSE.as_integer(),
+    )
 
 
 class AddressesDimension:

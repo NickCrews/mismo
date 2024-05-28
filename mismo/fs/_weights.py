@@ -245,8 +245,8 @@ def compare_one(
     labels = [level.name for level in level_comparer]
     odds = [level_weights.odds for level_weights in comp_weights]
     return (
-        _util.cases(zip(conditions, labels), "else").name(comp_weights.name),
-        _util.cases(zip(conditions, odds), 1).name(f"{comp_weights.name}_odds"),
+        _util.cases(*zip(conditions, labels), else_="else").name(comp_weights.name),
+        _util.cases(*zip(conditions, odds), else_=1).name(f"{comp_weights.name}_odds"),
     )
 
 

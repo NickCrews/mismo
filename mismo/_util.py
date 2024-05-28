@@ -11,14 +11,14 @@ from ibis.expr import types as ir
 
 
 def cases(
-    case_result_pairs: Iterable[tuple[ir.BooleanValue, ir.Value]],
-    default: ir.Value | None = None,
+    *case_result_pairs: tuple[ir.BooleanValue, ir.Value],
+    else_: ir.Value | None = None,
 ) -> ir.Value:
     """A more concise way to write a case statement."""
     builder = ibis.case()
     for case, result in case_result_pairs:
         builder = builder.when(case, result)
-    return builder.else_(default).end()
+    return builder.else_(else_).end()
 
 
 def bind(t: ir.Table, ref: Any) -> tuple[ir.Value]:
