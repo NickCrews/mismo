@@ -27,13 +27,12 @@ class _LevelsMeta(ABCMeta):
         newcls = super().__new__(cls, name, bases, dct)
         newcls.__s2i__ = s2i
         newcls.__i2s__ = i2s
-        newcls.__members__ = {s: newcls(s) for s in s2i}
-        for k, v in newcls.__members__.items():
-            setattr(newcls, k, v)
         newcls.__annotations__ = {
             **newcls.__annotations__,
             **{k: newcls for k in s2i},
         }
+        for s in s2i:
+            setattr(newcls, s, newcls(s))
         return newcls
 
     @typing.overload
@@ -173,3 +172,17 @@ class MatchLevels(metaclass=_LevelsMeta):
 
     def __repr__(self) -> str:
         return self.as_string()
+
+    def __eq__(self, other):
+        if isinstance(other, MatchLevels):
+            return self.as_integer() == other.as_integer()
+        elif isinstance(other, int):
+            return self.as_integer() == other
+        elif isinstance(other, str):
+            return self.as_string() == other
+        elif isinstance(other, ir.NumericValue):
+            return self.as_integer() == other
+        elif isinstance(other, ir.StringValue):
+            return self.as_string() == other
+        else:
+            return NotImplemented

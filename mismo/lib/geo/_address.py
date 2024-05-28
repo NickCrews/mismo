@@ -4,7 +4,7 @@ import ibis
 from ibis.expr import types as ir
 
 from mismo import _array, _util
-from mismo.compare import LevelComparer, compare
+from mismo.compare import MatchLevels
 from mismo.lib.geo._latlon import distance_km
 from mismo.sets import rare_terms
 
@@ -84,6 +84,98 @@ def normalize_address(address: ir.StructValue) -> ir.StructValue:
     )
 
 
+class AddressesMatchLevels(MatchLevels):
+    """How closely two addresses match."""
+
+    NULL = 0
+    """At least one street1, city, or state is NULL from either side."""
+    STREET1_CITY = 1
+    """The street1 and city match."""
+    STREET1_AND_CITY_OR_POSTAL = 2
+    """The street1, city, and state match."""
+    SAME_REGION = 3
+    """The postal code, or city and state, match."""
+    WITHIN_100KM = 4
+    """The addresses are within 100 km of each other."""
+    SAME_STATE = 5
+    """The states match."""
+    ELSE = 6
+    """None of the above."""
+
+
+def best_match(left: ir.ArrayValue, right: ir.ArrayValue) -> AddressesMatchLevels:
+    """Compare two arrays of address structs, and return the best match level.
+
+    We compare every pair of addresses, and whichever pair has the highest match
+    level, that is the match level for the two arrays.
+
+    Parameters
+    ----------
+    left :
+        The first set of addresses.
+    right :
+        The second set of addresses.
+
+    Returns
+    -------
+    level :
+        The match level.
+    """
+    combos = _array.array_combinations(left, right)
+    if "latitude" in left.type().value_type.names:
+        within_100km_levels = [
+            (
+                _array.array_min(
+                    combos.map(
+                        lambda pair: distance_km(
+                            lat1=pair.l.latitude,
+                            lon1=pair.l.longitude,
+                            lat2=pair.r.latitude,
+                            lon2=pair.r.longitude,
+                        )
+                    )
+                )
+                <= 100,
+                AddressesMatchLevels.WITHIN_100KM.as_integer(),
+            ),
+        ]
+    else:
+        within_100km_levels = []
+    levels = [
+        (
+            _array.array_all(
+                combos.map(
+                    lambda pair: ibis.or_(
+                        _util.struct_isnull(
+                            pair.l, how="any", fields=["street1", "city", "state"]
+                        ),
+                        _util.struct_isnull(
+                            pair.r, how="any", fields=["street1", "city", "state"]
+                        ),
+                    )
+                )
+            ),
+            AddressesMatchLevels.NULL.as_integer(),
+        ),
+        (
+            _array.array_any(
+                combos.map(lambda pair: same_address_for_mailing(pair.l, pair.r))
+            ),
+            AddressesMatchLevels.STREET1_AND_CITY_OR_POSTAL.as_integer(),
+        ),
+        (
+            _array.array_any(combos.map(lambda pair: same_region(pair.l, pair.r))),
+            AddressesMatchLevels.SAME_REGION.as_integer(),
+        ),
+        *within_100km_levels,
+        (
+            _array.array_any(combos.map(lambda pair: pair.l.state == pair.r.state)),
+            AddressesMatchLevels.SAME_STATE.as_integer(),
+        ),
+    ]
+    return _util.cases(levels, AddressesMatchLevels.ELSE.as_integer())
+
+
 class AddressesDimension:
     """Preps, blocks, and compares based on array<address> columns.
 
@@ -108,11 +200,13 @@ class AddressesDimension:
         column_normed: str = "{column}_normed",
         column_tokens: str = "{column}_tokens",
         column_keywords: str = "{column}_keywords",
+        column_compared: str = "{column}_compared",
     ):
         self.column = column
         self.column_normed = column_normed.format(column=column)
         self.column_tokens = column_tokens.format(column=column)
         self.column_keywords = column_keywords.format(column=column)
+        self.column_compared = column_compared.format(column=column)
 
     def prep(self, t: ir.Table) -> ir.Table:
         """Prepares the table for blocking, adding normalized and tokenized columns."""
@@ -141,60 +235,7 @@ class AddressesDimension:
     def compare(self, t: ir.Table) -> ir.Table:
         al = t[self.column_normed + "_l"]
         ar = t[self.column_normed + "_r"]
-        combos = _array.array_combinations(al, ar)
-        if "latitude" in al.type().value_type.names:
-            within_100km_levels = [
-                (
-                    "within_100km",
-                    _array.array_min(
-                        combos.map(
-                            lambda pair: distance_km(
-                                lat1=pair.l.latitude,
-                                lon1=pair.l.longitude,
-                                lat2=pair.r.latitude,
-                                lon2=pair.r.longitude,
-                            )
-                        )
-                    )
-                    <= 100,
-                ),
-            ]
-        else:
-            within_100km_levels = []
-        levels = [
-            (
-                "null",
-                _array.array_all(
-                    combos.map(
-                        lambda pair: ibis.or_(
-                            _util.struct_isnull(
-                                pair.l, how="any", fields=["street1", "city", "state"]
-                            ),
-                            _util.struct_isnull(
-                                pair.r, how="any", fields=["street1", "city", "state"]
-                            ),
-                        )
-                    )
-                ),
-            ),
-            (
-                "street1_and_city_or_postal_code",
-                _array.array_any(
-                    combos.map(lambda pair: same_address_for_mailing(pair.l, pair.r))
-                ),
-            ),
-            (
-                "same_region",
-                _array.array_any(combos.map(lambda pair: same_region(pair.l, pair.r))),
-            ),
-            *within_100km_levels,
-            (
-                "same_state",
-                _array.array_any(combos.map(lambda pair: pair.l.state == pair.r.state)),
-            ),
-        ]
-        name = type(self).__name__
-        return compare(t, LevelComparer(name, levels))
+        return t.mutate(best_match(al, ar).name(self.column_compared))
 
 
 def address_tokens(address: ir.StructValue, *, unique: bool = True) -> ir.ArrayColumn:
