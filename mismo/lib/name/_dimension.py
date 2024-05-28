@@ -1,28 +1,8 @@
 from __future__ import annotations
 
-import ibis
 from ibis.expr import types as ir
 
-from mismo import _util
-from mismo.compare import MatchLevels
 from mismo.lib.name import _clean, _compare
-
-
-class NameMatchLevels(MatchLevels):
-    """How closely two names match."""
-
-    NULL = 0
-    """At least one first or last name is NULL from either side."""
-    EXACT = 1
-    """The names are exactly the same."""
-    FIRST_LAST = 2
-    """The first and last names match."""
-    NICKNAMES = 3
-    """The first names match with nicknames, and the last names match."""
-    INITIALS = 4
-    """The first letter of the first name matches, and the last names match."""
-    ELSE = 5
-    """None of the above."""
 
 
 class NameDimension:
@@ -84,35 +64,9 @@ class NameDimension:
         t :
             The compared table.
         """
-
-        le = t[self.column_normed + "_l"]
-        ri = t[self.column_normed + "_r"]
-        result = (
-            ibis.case()
-            .when(
-                ibis.or_(
-                    _util.struct_isnull(le, how="any", fields=["first", "last"]),
-                    _util.struct_isnull(ri, how="any", fields=["first", "last"]),
-                ),
-                NameMatchLevels.NULL.as_integer(),
-            )
-            .when(_util.struct_equal(le, ri), NameMatchLevels.EXACT.as_integer())
-            .when(
-                _util.struct_equal(le, ri, fields=["first", "last"]),
-                NameMatchLevels.FIRST_LAST.as_integer(),
-            )
-            .when(
-                _compare.are_match_with_nicknames(le, ri),
-                NameMatchLevels.NICKNAMES.as_integer(),
-            )
-            .when(
-                ibis.and_(
-                    _compare.initials_equal(le["first"], ri["first"]),
-                    le["last"] == ri["last"],
-                ),
-                NameMatchLevels.INITIALS.as_integer(),
-            )
-            .else_(NameMatchLevels.ELSE.as_integer())
-            .end()
+        comparer = _compare.NameComparer(
+            self.column_normed + "_l",
+            self.column_normed + "_r",
+            result_column=self.column_compared,
         )
-        return t.mutate(result.name(self.column_compared))
+        return comparer(t)

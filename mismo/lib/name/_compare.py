@@ -3,6 +3,8 @@ from __future__ import annotations
 import ibis
 from ibis.expr import types as ir
 
+from mismo import _util
+from mismo.compare import MatchLevels
 from mismo.lib.name._nicknames import are_aliases
 
 
@@ -48,3 +50,80 @@ def substring_match(
         ibis.and_(left.contains(right), right.length() >= min_len),
         ibis.and_(right.contains(left), left.length() >= min_len),
     )
+
+
+class NameMatchLevels(MatchLevels):
+    """How closely two names match."""
+
+    NULL = 0
+    """At least one first or last name is NULL from either side."""
+    EXACT = 1
+    """The names are exactly the same."""
+    FIRST_LAST = 2
+    """The first and last names match."""
+    NICKNAMES = 3
+    """The first names match with nicknames, and the last names match."""
+    INITIALS = 4
+    """The first letter of the first name matches, and the last names match."""
+    ELSE = 5
+    """None of the above."""
+
+
+class NameComparer:
+    """Compare names."""
+
+    def __init__(
+        self,
+        left_column: str = "name_l",
+        right_column: str = "name_r",
+        *,
+        result_column: str | None = None,
+    ):
+        if result_column is None:
+            result_column = f"{left_column}_vs_{right_column}"
+        self.left_column = left_column
+        self.right_column = right_column
+        self.name = result_column
+
+    def __call__(self, pairs: ir.Table) -> ir.Table:
+        """Compare pairs of names.
+
+        Parameters
+        ----------
+        pairs :
+            A table with columns ``self.left_column`` and ``self.right_column``.
+
+        Returns
+        -------
+        t :
+            The table with the comparison results in the column ``self.name``.
+        """
+        le = pairs[self.left_column]
+        ri = pairs[self.right_column]
+        result = _util.cases(
+            (
+                ibis.or_(
+                    _util.struct_isnull(le, how="any", fields=["first", "last"]),
+                    _util.struct_isnull(ri, how="any", fields=["first", "last"]),
+                ),
+                NameMatchLevels.NULL.as_integer(),
+            ),
+            (_util.struct_equal(le, ri), NameMatchLevels.EXACT.as_integer()),
+            (
+                _util.struct_equal(le, ri, fields=["first", "last"]),
+                NameMatchLevels.FIRST_LAST.as_integer(),
+            ),
+            (
+                are_match_with_nicknames(le, ri),
+                NameMatchLevels.NICKNAMES.as_integer(),
+            ),
+            (
+                ibis.and_(
+                    initials_equal(le["first"], ri["first"]),
+                    le["last"] == ri["last"],
+                ),
+                NameMatchLevels.INITIALS.as_integer(),
+            ),
+            else_=(NameMatchLevels.ELSE.as_integer()),
+        )
+        return pairs.mutate(result.name(self.name))
