@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABCMeta
-import typing
+from typing import Iterator, overload
 
 import ibis
 from ibis.expr import types as ir
@@ -35,10 +35,10 @@ class _LevelsMeta(ABCMeta):
             setattr(newcls, s, newcls(s))
         return newcls
 
-    @typing.overload
+    @overload
     def __getitem__(self, key: str) -> int: ...
 
-    @typing.overload
+    @overload
     def __getitem__(self, key: int) -> str: ...
 
     def __getitem__(self, key):
@@ -52,7 +52,7 @@ class _LevelsMeta(ABCMeta):
     def __contains__(self, key: str | int) -> bool:
         return key in self.__s2i__ or key in self.__i2s__
 
-    def __iter__(self) -> typing.Iterator[str]:
+    def __iter__(self) -> Iterator[str]:
         return iter(self.__s2i__.keys())
 
     def __len__(self) -> int:
@@ -186,3 +186,61 @@ class MatchLevels(metaclass=_LevelsMeta):
             return self.as_string() == other
         else:
             return NotImplemented
+
+
+# class LevelComparer(ABC):
+#     """
+#     Assigns a MatchLevel to record pairs based on one dimension, e.g. *name*
+#     """
+
+#     name: str
+#     """The name of the comparer, eg "date", "address", "latlon", "price"."""
+#     levels: MatchLevels
+#     """The levels of agreement."""
+#     representation: Literal["string", "integer"] = "integer"
+#     """The native representation of the levels in ibis expressions.
+
+#     Integers are more performant, but strings are more human-readable.
+#     """
+
+#     @abstractmethod
+#     def compare(
+#         self,
+#         pairs: ir.Table,
+#         *,
+#         representation: Literal["string", "integer"],
+#     ) -> ir.StringColumn | ir.IntegerColumn:
+#         raise NotImplementedError
+
+#     def __call__(
+#         self,
+#         pairs: ir.Table,
+#         *,
+#         representation: Literal["string", "integer"] | None = None,
+#     ) -> ir.StringColumn | ir.IntegerColumn:
+#         """Label each record pair with the level that it matches.
+
+#         Go through the levels in order. If a record pair matches a level, label ir.
+#         If none of the levels match a pair, it labeled as "else".
+
+#         Parameters
+#         ----------
+#         pairs : Table
+#             A table of record pairs.
+#         Returns
+#         -------
+#         labels : StringColumn
+#             The labels for each record pair.
+#         """
+#         if representation is None:
+#             representation = self.representation
+#         return pairs.mutate(
+#             self.compare(pairs, representation=representation).name(self.name)
+#         )
+
+#     @property
+#     def name(self):
+#         return getattr(self.__class__, "name", self.__class__.__name__)
+
+#     def __repr__(self) -> str:
+#         return f"LevelComparer(name={self.name}, levels=[{self.levels}])"
