@@ -6,6 +6,7 @@ from ibis.expr import types as ir
 from mismo import _util
 from mismo.compare import MatchLevels
 from mismo.lib.name._nicknames import are_aliases
+from mismo.text import damerau_levenshtein
 
 
 def are_match_with_nicknames(
@@ -24,10 +25,6 @@ def initials_equal(left: ir.StringValue, right: ir.StringValue) -> ir.BooleanVal
         left[0] == right[0],
         ibis.or_(right.length() == 1, left.length() == 1),
     )
-
-
-@ibis.udf.scalar.builtin
-def damerau_levenshtein(left: str, right: str) -> int: ...
 
 
 def are_spelling_error(
