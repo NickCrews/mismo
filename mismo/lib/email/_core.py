@@ -11,35 +11,39 @@ from mismo.compare import MatchLevels
 from mismo.text import damerau_levenshtein
 
 
-def parse_and_normalize_email(email: ir.StringValue) -> ir.StructValue:
-    """Parses an email address into its `<user>@<domain>` parts.
+def clean_email(email: ir.StringValue, *, normalize: bool = False) -> ir.StringValue:
+    r"""Clean an email address.
 
-    The email address is normalized by removing dots and underscores,
-    and converting to lowercase.
+    - convert to lowercase
+    - extract anything that matches r".*(\S+@\S+).*"
+
+    If ``normalize`` is True, an additional step of removing "." and "_" is performed.
+    This makes it possible to compare two addresses and be more immune to noise.
+    For example, in many email systems such as gmail, "." are ignored.
+    """
+    pattern = r"(\S+@\S+)"
+    email = email.lower().re_extract(pattern, 1).nullif("")
+    if normalize:
+        email = email.replace(".", "").replace("_", "")
+    return email
+
+
+def parse_email(email: ir.StringValue) -> ir.StructValue:
+    """Parse an email into <user>@<domain> parts
 
     Parameters
     ----------
-    email :
-        The email address.
+    email:
+        An email string, assumed to already be cleaned by ``clean_email``
 
     Returns
     -------
-    parsed : StructValue<full: string, user: string, domain: string>
-        The parsed and normalized email address.
-
-    Examples
-    --------
-    import ibis
-    >>> from mismo.lib.email import parse_and_normalize_email
-    >>> parse_and_normalize_email(ibis.literal(" Bob.Jones@gmail.com")).execute()
-    {'full': 'bobjones@gmailcom', 'user': 'bobjones', 'domain': 'gmailcom'}
+    parsed:
+        An ibis struct<full:string, user:string, domain: domain>
     """
-    email = (
-        email.strip().lower().replace(".", "").replace("_", "").nullif("").nullif("@")
-    )
     parts = email.split("@")
     user, domain = parts[0].nullif(""), parts[1].nullif("")
-    return ir.struct({"full": email, "user": user, "domain": domain})
+    return ibis.struct({"full": email, "user": user, "domain": domain})
 
 
 class EmailMatchLevels(MatchLevels):
@@ -80,10 +84,14 @@ def match_level(
     level : EmailMatchLevels
         The match level.
     """
+
+    def norm_and_parse(e):
+        return parse_email(clean_email(e, normalize=True))
+
     if isinstance(e1, ir.StringValue):
-        e1 = parse_and_normalize_email(e1)
+        e1 = norm_and_parse(e1)
     if isinstance(e2, ir.StringValue):
-        e2 = parse_and_normalize_email(e2)
+        e2 = norm_and_parse(e2)
 
     def f(level: MatchLevels):
         if native_representation == "string":
@@ -132,7 +140,7 @@ class EmailsDimension:
         """Add a column with the parsed and normalized email addresses."""
         return t.mutate(
             get_column(t, self.column)
-            .map(parse_and_normalize_email)
+            .map(lambda email: parse_email(clean_email(email, normalize=True)))
             .name(self.column_parsed)
         )
 

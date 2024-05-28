@@ -3,32 +3,51 @@ from __future__ import annotations
 import ibis
 import pytest
 
-from mismo.lib.email import EmailMatchLevels, match_level, parse_and_normalize_email
+from mismo.lib import email
+
+
+@pytest.mark.parametrize(
+    "input, exp",
+    [
+        pytest.param(
+            " Bob.Jones@gmail.com",
+            "bob.jones@gmail.com",
+            id="bobjones",
+        ),
+        pytest.param("", None, id="empty"),
+        pytest.param("  ", None, id="whitespace"),
+        pytest.param(None, None, id="null"),
+        pytest.param("@", None, id="at"),
+        pytest.param(" @  ", None, id="empty_at_empty"),
+        pytest.param("anne@", None, id="no_domain"),
+        pytest.param("@gmail.com", None, id="no_user"),
+        pytest.param("A@B ", "a@b", id="short"),
+    ],
+)
+def test_clean_email(input, exp):
+    result = email.clean_email(ibis.literal(input, type="string")).execute()
+    assert result == exp
 
 
 @pytest.mark.parametrize(
     "input, expfull, expuser, expdomain",
     [
         pytest.param(
-            " Bob.Jones@gmail.com",
-            "bobjones@gmailcom",
-            "bobjones",
-            "gmailcom",
+            "bob.jones@gmail.com",
+            "bob.jones@gmail.com",
+            "bob.jones",
+            "gmail.com",
             id="bobjones",
         ),
-        pytest.param("", None, None, None, id="empty"),
-        pytest.param("  ", None, None, None, id="whitespace"),
-        pytest.param("@", None, None, None, id="at"),
-        pytest.param(" @  ", None, None, None, id="empty_at_empty"),
-        pytest.param("anne@", "anne@", "anne", None, id="no_domain"),
+        pytest.param("", "", None, None, id="empty"),
         pytest.param(None, None, None, None, id="null"),
     ],
 )
-def test_parse_and_normalize_email(input, expfull, expuser, expdomain):
-    result = parse_and_normalize_email(ibis.literal(input, type="string"))
-    assert result.full.execute() == expfull
-    assert result.user.execute() == expuser
-    assert result.domain.execute() == expdomain
+def test_parse_email(input, expfull, expuser, expdomain):
+    result = email.parse_email(ibis.literal(input, str)).execute()
+    assert result["full"] == expfull
+    assert result["user"] == expuser
+    assert result["domain"] == expdomain
 
 
 @pytest.mark.parametrize(
@@ -52,6 +71,6 @@ def test_parse_and_normalize_email(input, expfull, expuser, expdomain):
     ],
 )
 def test_match_level(a, b, level_str):
-    ml = match_level(ibis.literal(a), ibis.literal(b))
+    ml = email.match_level(ibis.literal(a), ibis.literal(b))
     assert ml.as_string().execute() == level_str
-    assert ml.as_integer().execute() == EmailMatchLevels[level_str]
+    assert ml.as_integer().execute() == email.EmailMatchLevels[level_str]
