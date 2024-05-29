@@ -3,7 +3,7 @@ from __future__ import annotations
 import ibis
 from ibis.expr import types as ir
 
-from mismo import _array, _util
+from mismo import _util, arrays
 from mismo.compare import MatchLevel
 from mismo.lib.geo._latlon import distance_km
 from mismo.sets import rare_terms
@@ -121,11 +121,11 @@ def best_match(left: ir.ArrayValue, right: ir.ArrayValue) -> AddressesMatchLevel
     level :
         The match level.
     """
-    combos = _array.array_combinations(left, right)
+    combos = arrays.array_combinations(left, right)
     if "latitude" in left.type().value_type.names:
         within_100km_levels = [
             (
-                _array.array_min(
+                arrays.array_min(
                     combos.map(
                         lambda pair: distance_km(
                             lat1=pair.l.latitude,
@@ -143,7 +143,7 @@ def best_match(left: ir.ArrayValue, right: ir.ArrayValue) -> AddressesMatchLevel
         within_100km_levels = []
     return _util.cases(
         (
-            _array.array_all(
+            arrays.array_all(
                 combos.map(
                     lambda pair: ibis.or_(
                         _util.struct_isnull(
@@ -158,18 +158,18 @@ def best_match(left: ir.ArrayValue, right: ir.ArrayValue) -> AddressesMatchLevel
             AddressesMatchLevel.NULL.as_integer(),
         ),
         (
-            _array.array_any(
+            arrays.array_any(
                 combos.map(lambda pair: same_address_for_mailing(pair.l, pair.r))
             ),
             AddressesMatchLevel.STREET1_AND_CITY_OR_POSTAL.as_integer(),
         ),
         (
-            _array.array_any(combos.map(lambda pair: same_region(pair.l, pair.r))),
+            arrays.array_any(combos.map(lambda pair: same_region(pair.l, pair.r))),
             AddressesMatchLevel.SAME_REGION.as_integer(),
         ),
         *within_100km_levels,
         (
-            _array.array_any(combos.map(lambda pair: pair.l.state == pair.r.state)),
+            arrays.array_any(combos.map(lambda pair: pair.l.state == pair.r.state)),
             AddressesMatchLevel.SAME_STATE.as_integer(),
         ),
         else_=AddressesMatchLevel.ELSE.as_integer(),
@@ -224,7 +224,7 @@ class AddressesDimension:
         t = t.mutate(t._tokens_nonunique.unique().name(self.column_tokens)).drop(
             "_tokens_nonunique"
         )
-        t = _array.array_filter_isin_other(
+        t = arrays.array_filter_isin_other(
             t,
             self.column_tokens,
             rare_terms(t[self.column_tokens], max_records_frac=0.01),

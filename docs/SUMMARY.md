@@ -19,8 +19,9 @@
         * [Play Data](reference/playdata.md)
     * By Data Type
         * [Text Utils](reference/text.md)
-        * [Vector Utils](reference/vectors.md)
+        * [Array Utils](reference/arrays.md)
         * [Set Utils](reference/sets.md)
+        * [Vector Utils](reference/vectors.md)
     * By Domain
         * [Geospatial](reference/lib/geo.md)
         * [Human Names](reference/lib/name.md)

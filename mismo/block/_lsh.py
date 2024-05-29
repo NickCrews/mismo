@@ -7,8 +7,8 @@ import ibis
 from ibis import _
 from ibis.expr import types as ir
 
-from mismo._array import array_choice
 from mismo._util import get_column
+from mismo.arrays import array_choice
 from mismo.block._key_blocker import KeyBlocker
 
 

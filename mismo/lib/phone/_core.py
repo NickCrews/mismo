@@ -5,8 +5,8 @@ from typing import Literal, overload
 import ibis
 from ibis.expr import types as ir
 
-from mismo._array import array_combinations, array_min
 from mismo._util import get_column
+from mismo.arrays import array_combinations, array_min
 from mismo.compare import MatchLevel
 from mismo.text import damerau_levenshtein
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import ibis
 import pytest
 
-from mismo._array import array_any
+from mismo.arrays import array_any
 from mismo.compare import LevelComparer, MatchLevel
 
 
