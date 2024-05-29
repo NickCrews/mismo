@@ -11,7 +11,7 @@ from ibis.expr import types as ir
 import ipywidgets
 import pandas as pd
 
-from mismo.compare._level_comparer import AgreementLevel, LevelComparer
+from mismo.compare._level_comparer import LevelComparer
 from mismo.fs._plot import LOG_ODDS_COLOR_SCALE
 from mismo.fs._util import odds_to_log_odds
 from mismo.fs._weights import Weights
@@ -19,41 +19,42 @@ from mismo.fs._weights import Weights
 
 def compared_dashboard(
     compared: ir.Table,
-    comparisons: Iterable[LevelComparer],
+    comparers: Iterable[LevelComparer],
     weights: Weights | None = None,
     *,
     width: int = 500,
 ) -> ipywidgets.VBox:
     """A dashboard for debugging compared record pairs.
 
-    Used to see which comparison levels are common, which are rare, and which
-    Comparisons are related to each other. For example, exact matches should
-    appear together across all Comparisons, this probably represents true
+    Used to see which match levels are common, which are rare, and which
+    Comparers are related to each other. For example, exact matches should
+    appear together across all Comparers, this probably represents true
     matches.
 
     Parameters
     ----------
     compared :
-        The result of a comparison.
-    comparisons :
-        The Comparisons used to compare the records.
+        The result of running the blocked table through the supplied `comparers`.
+    comparers :
+        The LevelCompareres that were used to compare `compared`.
     weights :
-        The Weights used to score the comparison, by default None
-        If provided, the chart will be colored by the odds found from
-        the Weights.
+        The Weights used to score the comparers.
+        If provided, the chart will be colored by the odds found from the Weights.
     width :
-        The width of the chart, by default 500
+        The width of the chart.
 
     Returns
     -------
     ipywidgets.VBox
         The dashboard.
     """
-    cols = [comp.name for comp in comparisons]
+    cols = [comp.name for comp in comparers]
     compared = compared.mutate(
-        vector_id=ibis.literal(":").join([compared[c] for c in cols]),
+        vector_id=ibis.literal(":").join(
+            [c.levels(compared[c.name]).as_string() for c in comparers]
+        ),
     )
-    chart = _compared_chart(compared, comparisons, weights, width=width)
+    chart = _compared_chart(compared, comparers, weights, width=width)
     chart_widget = alt.JupyterChart(chart)
     limiter_widget = ipywidgets.IntSlider(
         min=1, max=100, value=5, step=1, description="Show Pairs:"
@@ -90,12 +91,12 @@ def compared_dashboard(
 
 def _compared_chart(
     compared: ir.Table,
-    comparisons: Iterable[LevelComparer],
+    comparers: Iterable[LevelComparer],
     weights: Weights | None = None,
     *,
     width: int = 500,
 ) -> alt.Chart:
-    cols = [comp.name for comp in comparisons]
+    cols = [comp.name for comp in comparers]
 
     vector_counts = compared.group_by(cols + ["vector_id"]).agg(n_pairs=_.count())
     vector_counts = vector_counts.mutate(
@@ -127,8 +128,8 @@ def _compared_chart(
     opacity_vector = alt.condition(vector_fader_mouseover, alt.value(1), alt.value(0.8))
     level_color = alt.Color(
         "level_uid",
-        title="Comparison:Level",
-        scale=_make_level_color_scale(comparisons),
+        title="Comparer:Level",
+        scale=_make_level_color_scale(comparers),
         legend=None,
     )
     x = alt.X(
@@ -190,13 +191,13 @@ def _compared_chart(
         .add_params(vector_fader_click)
     )
     vector_chart = (
-        alt.Chart(_vector_grid_data(comparisons, vector_counts), height=80, width=width)
+        alt.Chart(_vector_grid_data(comparers, vector_counts), height=80, width=width)
         .mark_rect()
         .encode(
             x=x,
             y=alt.Y(
-                "comparison",
-                title="Comparison",
+                "comparer",
+                title="Comparer",
                 sort=cols,
             ),
             color=level_color,
@@ -210,7 +211,7 @@ def _compared_chart(
     together = alt.vconcat(scrubber_chart, hist, vector_chart, spacing=0)
     together = together.properties(
         title=alt.Title(
-            text="Distribution of Comparison Levels",
+            text="Distribution of Match Levels",
             subtitle=f"Total Pairs: {vector_counts.n_pairs.sum():,}",
             anchor="middle",
             fontSize=14,
@@ -224,20 +225,20 @@ def _frange(start, stop, n):
 
 
 def _vector_grid_data(
-    comparisons: Iterable[LevelComparer], vector_data: pd.DataFrame
+    comparers: Iterable[LevelComparer], vector_data: pd.DataFrame
 ) -> pd.DataFrame:
     records = []
-    for levels in product(*comparisons):
-        vector_id = ":".join(level.name for level in levels)
-        for comp, level in zip(comparisons, levels):
-            level_info = {c.name: None for c in comparisons}
-            level_info[comp.name] = level.name
+    for levels in product(*(c.levels for c in comparers)):
+        vector_id = ":".join(levels)
+        for comp, level in zip(comparers, levels):
+            level_info = {c.name: None for c in comparers}
+            level_info[comp.name] = level
             records.append(
                 {
                     "vector_id": vector_id,
                     "level_uid": _level_uid(comp, level),
-                    "comparison": comp.name,
-                    "level": level.name,
+                    "comparer": comp.name,
+                    "level": level,
                     **level_info,
                 }
             )
@@ -248,37 +249,38 @@ def _vector_grid_data(
     return result
 
 
-def _make_level_color_scale(comparisons: Iterable[LevelComparer]) -> alt.Scale:
+def _make_level_color_scale(comparers: Iterable[LevelComparer]) -> alt.Scale:
     domain = []
     range = []
-    hues = _frange(0, 1, len(comparisons))
-    for comp, hue in zip(comparisons, hues):
-        shades = _frange(0.2, 0.9, len(comp))
-        for level, shade in zip(comp, shades):
+    hues = _frange(0, 1, len(comparers))
+    for comp, hue in zip(comparers, hues):
+        levels = comp.levels
+        shades = _frange(0.2, 0.9, len(levels))
+        for level_name, shade in zip(levels, shades):
             r, g, b = colorsys.hsv_to_rgb(hue, 1, shade)
             r = int(r * 255)
             g = int(g * 255)
             b = int(b * 255)
             hex_color = f"#{r:02x}{g:02x}{b:02x}"
-            domain.append(_level_uid(comp, level))
+            domain.append(_level_uid(comp, level_name))
             range.append(hex_color)
     return alt.Scale(domain=domain, range=range)
 
 
-def _level_uid(comparison: LevelComparer, level: AgreementLevel) -> str:
-    return comparison.name + ":" + level.name
+def _level_uid(comparer: LevelComparer, level: str) -> str:
+    return comparer.name + ":" + level
 
 
 # TODO: make this work as a filter for the above histogram
 def _make_legend_plot(longer: ir.Table, color_map):
-    levels = longer.group_by(["comparison", "level"]).agg(
+    levels = longer.group_by(["comparer", "level"]).agg(
         id=_.id.first(),
         level_idx=_.level_idx.first(),
         vector_ids=_.vector_id.collect(),
     )
     levels = levels.distinct()
 
-    comparison_level_filter = alt.selection_point(fields=["comparison", "level"])
+    match_level_filter = alt.selection_point(fields=["comparer", "level"])
     # Use names based off of https://github.com/altair-viz/altair/issues/2366
     vector_ids_filter = alt.selection_point(fields=["vector_ids"], name="vidf")
 
@@ -290,19 +292,17 @@ def _make_legend_plot(longer: ir.Table, color_map):
                 "level_idx:N", axis=alt.Axis(title="Level", labels=False, ticks=False)
             ),
             y=alt.Y(
-                "comparison",
-                title="Comparison",
+                "comparer",
+                title="Comparer",
             ),
-            opacity=alt.condition(
-                comparison_level_filter, alt.value(1), alt.value(0.4)
-            ),
+            opacity=alt.condition(match_level_filter, alt.value(1), alt.value(0.4)),
             tooltip=["level"],
         )
     )
     legend_rects = legend_base.encode(
         color=alt.Color(
             "id",
-            title="Comparison:Level",
+            title="Comparer:Level",
             scale=alt.Scale(domain=color_map[0], range=color_map[1]),
             legend=None,
         ),
@@ -316,6 +316,6 @@ def _make_legend_plot(longer: ir.Table, color_map):
         text="level",
     )
     legend = legend_rects + legend_text
-    legend = legend.add_params(comparison_level_filter)
+    legend = legend.add_params(match_level_filter)
     legend = legend.add_params(vector_ids_filter)
     return legend

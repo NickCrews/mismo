@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # See https://arxiv.org/pdf/1802.09478.pdf
 def connected_components(
     *,
-    records: ir.Table | Iterable[ir.Table] | Mapping[str, ir.Table] = None,
+    records: ir.Column | ir.Table | Iterable[ir.Table] | Mapping[str, ir.Table] = None,
     links: ir.Table,
     max_iter: int | None = None,
 ) -> Datasets:
@@ -35,7 +35,8 @@ def connected_components(
         A table with the columns (record_id_l, record_id_r), corresponding
         to the `record_id`s in `records`.
     records :
-        Table(s) of records with at least the column `record_id`, or None.
+        Table(s) of records with at least the column `record_id`, the column
+        of record_ids itself, or None.
 
         !!! note
 
@@ -158,6 +159,8 @@ def connected_components(
     labels = restore(int_labels)
     if records is None:
         return labels
+    if isinstance(records, ir.Column):
+        records = records.name("record_id").as_table()
     ds = Datasets(records)
     result = _label_datasets(ds, labels)
     if isinstance(records, ir.Table):

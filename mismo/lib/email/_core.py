@@ -7,7 +7,7 @@ from ibis.expr import types as ir
 
 from mismo._array import array_combinations, array_min
 from mismo._util import get_column
-from mismo.compare import MatchLevels
+from mismo.compare import MatchLevel
 from mismo.text import damerau_levenshtein
 
 
@@ -46,7 +46,7 @@ def parse_email(email: ir.StringValue) -> ir.StructValue:
     return ibis.struct({"full": email, "user": user, "domain": domain})
 
 
-class EmailMatchLevels(MatchLevels):
+class EmailMatchLevel(MatchLevel):
     """How closely two email addresses of the form `<user>@<domain>` match.
 
     Case is ignored, and dots and underscores are removed.
@@ -69,7 +69,7 @@ def match_level(
     e2: ir.StructValue | ir.StringValue,
     *,
     native_representation: Literal["integer", "string"] = "integer",
-) -> EmailMatchLevels:
+) -> EmailMatchLevel:
     """Match level of two email addresses.
 
     Parameters
@@ -81,7 +81,7 @@ def match_level(
 
     Returns
     -------
-    level : EmailMatchLevels
+    level : EmailMatchLevel
         The match level.
     """
 
@@ -93,7 +93,7 @@ def match_level(
     if isinstance(e2, ir.StringValue):
         e2 = norm_and_parse(e2)
 
-    def f(level: MatchLevels):
+    def f(level: MatchLevel):
         if native_representation == "string":
             return level.as_string()
         else:
@@ -101,14 +101,14 @@ def match_level(
 
     raw = (
         ibis.case()
-        .when(e1 == e2, f(EmailMatchLevels.FULL_EXACT))
-        .when(damerau_levenshtein(e1.full, e2.full) <= 1, f(EmailMatchLevels.FULL_NEAR))
-        .when(e1.user == e2.user, f(EmailMatchLevels.USER_EXACT))
-        .when(damerau_levenshtein(e1.user, e2.user) <= 1, f(EmailMatchLevels.USER_NEAR))
-        .else_(f(EmailMatchLevels.ELSE))
+        .when(e1 == e2, f(EmailMatchLevel.FULL_EXACT))
+        .when(damerau_levenshtein(e1.full, e2.full) <= 1, f(EmailMatchLevel.FULL_NEAR))
+        .when(e1.user == e2.user, f(EmailMatchLevel.USER_EXACT))
+        .when(damerau_levenshtein(e1.user, e2.user) <= 1, f(EmailMatchLevel.USER_NEAR))
+        .else_(f(EmailMatchLevel.ELSE))
         .end()
     )
-    return EmailMatchLevels(raw)
+    return EmailMatchLevel(raw)
 
 
 class EmailsDimension:
@@ -151,7 +151,7 @@ class EmailsDimension:
         pairs = array_combinations(le, ri)
         min_level = array_min(
             pairs.map(lambda pair: match_level(pair.l, pair.r).as_integer())
-        ).fillna(EmailMatchLevels.ELSE.as_integer())
+        ).fillna(EmailMatchLevel.ELSE.as_integer())
         return t.mutate(
-            EmailMatchLevels(min_level).as_string().name(self.column_compared)
+            EmailMatchLevel(min_level).as_string().name(self.column_compared)
         )

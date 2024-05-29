@@ -4,7 +4,7 @@ import ibis
 from ibis.expr import types as ir
 
 from mismo import _util
-from mismo.compare import MatchLevels
+from mismo.compare import MatchLevel
 from mismo.lib.name._nicknames import are_aliases
 from mismo.text import damerau_levenshtein
 
@@ -49,7 +49,7 @@ def substring_match(
     )
 
 
-class NameMatchLevels(MatchLevels):
+class NameMatchLevel(MatchLevel):
     """How closely two names match."""
 
     NULL = 0
@@ -103,24 +103,24 @@ class NameComparer:
                     _util.struct_isnull(le, how="any", fields=["first", "last"]),
                     _util.struct_isnull(ri, how="any", fields=["first", "last"]),
                 ),
-                NameMatchLevels.NULL.as_integer(),
+                NameMatchLevel.NULL.as_integer(),
             ),
-            (_util.struct_equal(le, ri), NameMatchLevels.EXACT.as_integer()),
+            (_util.struct_equal(le, ri), NameMatchLevel.EXACT.as_integer()),
             (
                 _util.struct_equal(le, ri, fields=["first", "last"]),
-                NameMatchLevels.FIRST_LAST.as_integer(),
+                NameMatchLevel.FIRST_LAST.as_integer(),
             ),
             (
                 are_match_with_nicknames(le, ri),
-                NameMatchLevels.NICKNAMES.as_integer(),
+                NameMatchLevel.NICKNAMES.as_integer(),
             ),
             (
                 ibis.and_(
                     initials_equal(le["first"], ri["first"]),
                     le["last"] == ri["last"],
                 ),
-                NameMatchLevels.INITIALS.as_integer(),
+                NameMatchLevel.INITIALS.as_integer(),
             ),
-            else_=(NameMatchLevels.ELSE.as_integer()),
+            else_=(NameMatchLevel.ELSE.as_integer()),
         )
         return pairs.mutate(result.name(self.name))

@@ -16,7 +16,7 @@ from ._util import odds_to_log_odds, odds_to_prob
 
 
 class LevelWeights:
-    """Weights for a single [AgreementLevel][mismo.compare.AgreementLevel].
+    """Weights for a single [MatchLevel][mismo.compare.MatchLevel].
 
     This describes for example "If zipcodes match perfectly, then
     this increases the probability of a match by 10x as compared to if we
@@ -86,19 +86,7 @@ class LevelWeights:
         )
 
 
-def _else_weights(other_level_weights: Iterable[LevelWeights]) -> LevelWeights:
-    """A level that matches all record pairs that don't match any other level."""
-    other_level_weights = list(other_level_weights)
-    if any(w.name == "else" for w in other_level_weights):
-        raise ValueError("Cannot have a level named 'else'")
-    ms = [w.m for w in other_level_weights]
-    us = [w.u for w in other_level_weights]
-    else_m = 1 - sum(ms)
-    else_u = 1 - sum(us)
-    return LevelWeights(name="else", m=else_m, u=else_u)
-
-
-class ComparisonWeights:
+class ComparerWeights:
     """
     The weights for a single [LevelComparer][mismo.compare.LevelComparer].
 
@@ -107,9 +95,9 @@ class ComparisonWeights:
     """
 
     def __init__(self, name: str, level_weights: Iterable[LevelWeights]):
-        """Create a new ComparisonWeights object."""
+        """Create a new ComparerWeights object."""
         self._name = name
-        self._level_weights = tuple(level_weights) + (_else_weights(level_weights),)
+        self._level_weights = tuple(level_weights)
         lookup = {}
         for i, lw in enumerate(self._level_weights):
             if lw.name in lookup:
@@ -166,7 +154,7 @@ class ComparisonWeights:
     )"""
 
     def __eq__(self, other):
-        if not isinstance(other, ComparisonWeights):
+        if not isinstance(other, ComparerWeights):
             return False
         return self.name == other.name and self._level_weights == other._level_weights
 
@@ -232,20 +220,21 @@ class ComparisonWeights:
 
     @staticmethod
     def plot(self) -> alt.Chart:
-        """Plot the weights for this comparison."""
+        """Plot the weights for this Comparer."""
         from ._plot import plot_weights
 
         return plot_weights(self)
 
 
 def compare_one(
-    t: ir.Table, level_comparer: LevelComparer, comp_weights: ComparisonWeights
+    t: ir.Table, level_comparer: LevelComparer, comp_weights: ComparerWeights
 ) -> tuple[ir.StringValue, ir.FloatingValue]:
     conditions = [level.is_match(t) for level in level_comparer]
-    labels = [level.name for level in level_comparer]
     odds = [level_weights.odds for level_weights in comp_weights]
     return (
-        _util.cases(*zip(conditions, labels), else_="else").name(comp_weights.name),
+        _util.cases(*zip(conditions, level_comparer.levels), else_="else").name(
+            comp_weights.name
+        ),
         _util.cases(*zip(conditions, odds), else_=1).name(f"{comp_weights.name}_odds"),
     )
 
@@ -254,24 +243,24 @@ class Weights:
     """Weights for the Fellegi-Sunter model.
 
     An unordered, dict-like collection of
-    [ComparisonWeights][mismo.fs.ComparisonWeights],
+    [ComparerWeights][mismo.fs.ComparerWeights],
     one for each [LevelComparer][mismo.compare.LevelComparer] of the same name.
     """
 
-    def __init__(self, comparison_weights: Iterable[ComparisonWeights]):
+    def __init__(self, comparer_weights: Iterable[ComparerWeights]):
         """Create a new Weights object."""
-        self._lookup = {cw.name: cw for cw in comparison_weights}
+        self._lookup = {cw.name: cw for cw in comparer_weights}
 
-    def __getitem__(self, name: str) -> ComparisonWeights:
-        """Get a `ComparisonWeights` by name."""
+    def __getitem__(self, name: str) -> ComparerWeights:
+        """Get a `ComparerWeights` by name."""
         return self._lookup[name]
 
-    def __iter__(self) -> Iterator[ComparisonWeights]:
-        """Iterate over the contained `ComparisonWeights`."""
+    def __iter__(self) -> Iterator[ComparerWeights]:
+        """Iterate over the contained `ComparerWeights`."""
         return iter(self._lookup.values())
 
     def __len__(self) -> int:
-        """The number of `ComparisonWeights`."""
+        """The number of `ComparerWeights`."""
         return len(self._lookup)
 
     def score_compared(self, compared: ir.Table) -> ir.Table:
@@ -296,10 +285,10 @@ class Weights:
         by each LevelComparer's odds to get the overall odds.
         """
         results = []
-        for comparison_weights in self:
-            name = comparison_weights.name
+        for comparer_weights in self:
+            name = comparer_weights.name
             labels = compared[name]
-            odds = comparison_weights.odds(labels)
+            odds = comparer_weights.odds(labels)
             results.append((name, labels, odds))
         return self._score(compared, results)
 
@@ -330,7 +319,7 @@ class Weights:
         result = t.mutate(**m)
         # Don't do any of this relocation in terms of record_id, etc
         # because the passed in table doesn't need ot have these.
-        # It only needs to have the labels for each comparison.
+        # It only needs to have the labels for each comparer.
         for odds_name, name in naming.items():
             result = result.relocate(odds_name, after=name)
         result = result.relocate("odds", before=list(naming.values())[0])
@@ -372,7 +361,7 @@ class Weights:
 
         Parameters
         ----------
-        json : dict | str | Path
+        json:
             If a dict, assumed to be the JSON-serializable representation.
             Load it directly.
             If a str or Path, assumed to be a path to a JSON file.
@@ -386,12 +375,12 @@ class Weights:
         if not isinstance(json, dict):
             json = loads(Path(json).read_text())
         return cls(
-            ComparisonWeights(
-                name=comparison_name,
+            ComparerWeights(
+                name=comparer_name,
                 level_weights=[
                     LevelWeights(name=level_name, m=level["m"], u=level["u"])
-                    for level_name, level in comparison.items()
+                    for level_name, level in comparer.items()
                 ],
             )
-            for comparison_name, comparison in json.items()
+            for comparer_name, comparer in json.items()
         )

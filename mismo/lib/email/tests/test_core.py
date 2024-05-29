@@ -73,4 +73,4 @@ def test_parse_email(input, expfull, expuser, expdomain):
 def test_match_level(a, b, level_str):
     ml = email.match_level(ibis.literal(a), ibis.literal(b))
     assert ml.as_string().execute() == level_str
-    assert ml.as_integer().execute() == email.EmailMatchLevels[level_str]
+    assert ml.as_integer().execute() == email.EmailMatchLevel[level_str]

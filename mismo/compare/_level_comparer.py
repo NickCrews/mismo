@@ -1,120 +1,241 @@
 from __future__ import annotations
 
-from typing import Callable, Iterable, Iterator, NamedTuple, overload
+from abc import ABCMeta
+from typing import Iterable, Iterator, Literal, Type, TypeVar, overload
 
-from ibis import Deferred
+import ibis
 from ibis.expr import types as ir
 
 from mismo import _util
 
 
-class AgreementLevel(NamedTuple):
-    """A level of agreement such as *exact*, *phonetic*, or *within_1_day*.
+class _LevelsMeta(ABCMeta):
+    def __new__(cls, name, bases, dct):
+        s2i = {
+            k: v for k, v in dct.items() if not k.startswith("_") and isinstance(v, int)
+        }
+        val_to_names = {v: set() for v in s2i.values()}
+        for k, v in s2i.items():
+            val_to_names[v].add(k)
+        dupes = {}
+        for v, names in val_to_names.items():
+            if len(names) > 1:
+                for n in names:
+                    dupes[n] = v
+        if dupes:
+            raise TypeError(f"Duplicate values: {dupes}")
+        i2s = {i: s for s, i in s2i.items()}
 
-    A AgreementLevel is a named condition that determines whether a record pair
-    matches that level.
+        newcls = super().__new__(cls, name, bases, dct)
+        newcls.__s2i__ = s2i
+        newcls.__i2s__ = i2s
+        newcls.__annotations__ = {
+            **newcls.__annotations__,
+            **{k: newcls for k in s2i},
+        }
+        for s in s2i:
+            setattr(newcls, s, newcls(s))
+        return newcls
+
+    @overload
+    def __getitem__(self, key: str) -> int: ...
+
+    @overload
+    def __getitem__(self, key: int) -> str: ...
+
+    def __getitem__(self, key):
+        if isinstance(key, str):
+            return self.__s2i__[key]
+        elif isinstance(key, int):
+            return self.__i2s__[key]
+        else:
+            raise TypeError(f"Invalid key: {key}")
+
+    def __contains__(self, key: str | int) -> bool:
+        return key in self.__s2i__ or key in self.__i2s__
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.__s2i__.keys())
+
+    def __len__(self) -> int:
+        return len(self.__s2i__)
+
+    def __repr__(self) -> str:
+        pairs = (f"{k}={v}" for k, v in self.__s2i__.items())
+        return f"{self.__name__}({', '.join(pairs)})"
+
+
+class MatchLevel(metaclass=_LevelsMeta):
+    """An enum-like class for match levels.
+
+    This class is used to define the levels of agreement between two records.
+
+    Examples
+    --------
+    >>> from mismo.compare import MatchLevel
+    >>> class NameMatchLevel(MatchLevel):
+    ...     EXACT = 0
+    ...     NEAR = 1
+    ...     ELSE = 2
+    ...
+    >>> NameMatchLevel.EXACT
+    EXACT
+    >>> NameMatchLevel.EXACT.as_string()
+    'EXACT'
+    >>> NameMatchLevel.EXACT.as_integer()
+    0
+    >>> len(NameMatchLevel)
+    3
+    >>> 2 in NameMatchLevel
+    True
+    >>> NameMatchLevel[1]
+    'NEAR'
+
+    You can construct your own values:
+
+    >>> NameMatchLevel("NEAR").as_integer()
+    1
+    >>> NameMatchLevel(2).as_string()
+    'ELSE'
+    >>> NameMatchLevel(3) # doctest: +IGNORE_EXCEPTION_DETAIL
+    Traceback (most recent call last):
+        ...
+    ValueError: Invalid value: 3. Must be one of {0, 1, 2}
+
+    The powerful thing is it can be used to convert between string and integer
+    ibis expressions:
+
+    >>> import ibis
+    >>> levels_raw = ibis.array([0, 2, 1, 99]).unnest()
+    >>> levels = NameMatchLevel(levels_raw)
+    >>> levels.as_string().execute()
+    0    EXACT
+    1     ELSE
+    2     NEAR
+    3     None
+    Name: NameMatchLevel, dtype: object
+    >>> levels.as_integer().execute()
+    0     0
+    1     2
+    2     1
+    3    99
+    Name: Array(), dtype: int8
     """
 
-    name: str
-    """The name of the level. Should be short and unique within a LevelComparer.
+    def __init__(
+        self, value: MatchLevel | int | str | ir.StringValue | ir.IntegerValue
+    ):
+        """Create a new match level value.
 
-    Examples:
+        If the given value is a python int or str, it is checked against the
+        valid values for this class. If it is an ibis expression,
+        we do no such check.
 
-    - "exact"
-    - "misspelling"
-    - "phonetic"
-    - "within_1_day"
-    - "within_1_km"
-    - "within_10_percent"
-    """
-    condition: bool | Deferred | Callable[[ir.Table], ir.BooleanValue]
-    """
-    A condition that determines whether a record pair matches this level.
+        Parameters
+        ----------
+        value :
+            The value of the match level.
+        """
+        if not isinstance(
+            value, (MatchLevel, ir.StringValue, ir.IntegerValue, int, str)
+        ):
+            raise TypeError(f"Invalid value: {value}")
+        valid_ints = set(self.__i2s__.keys())
+        valid_strs = set(self.__s2i__.keys())
+        if isinstance(value, int) and value not in valid_ints:
+            raise ValueError(f"Invalid value: {value}. Must be one of {valid_ints}")
+        if isinstance(value, str) and value not in valid_strs:
+            raise ValueError(f"Invalid value: {value}. Must be one of {valid_strs}")
+        if isinstance(value, MatchLevel):
+            self._value = value._value
+        else:
+            self._value = value
 
-    Note that if this AgreementLevel is used in conjunction with other
-    AgreementLevels, the condition is implcitly dependent on the previous
-    levels. For example, if the previous level's condition is
-    `_.name_l.upper() == _.name_r.upper()`, then if this level's condition is
-    `_.name_l == _.name_r`, this level is useless, and will match no records pairs,
-    because they all would have been matched by the previous level.
+    def as_integer(self) -> int | ir.IntegerValue:
+        """Convert to a python int or ibis integer, depending on the original type."""
+        v = self._value
+        if isinstance(v, (int, ir.IntegerValue)):
+            return v
+        elif isinstance(v, str):
+            return self.__s2i__.get(v, None)
+        elif isinstance(v, ir.StringValue):
+            return v.substitute(self.__s2i__, else_=ibis.null()).name(
+                self.__class__.__name__
+            )
+        else:
+            raise TypeError(f"Invalid value: {v}")
 
-    Examples:
+    def as_string(self) -> str | ir.StringValue:
+        """Convert to a python str or ibis string, depending on the original type."""
+        v = self._value
+        if isinstance(v, (str, ir.StringValue)):
+            return v
+        elif isinstance(v, int):
+            return self.__i2s__.get(v, None)
+        elif isinstance(v, ir.IntegerValue):
+            return v.substitute(self.__i2s__, else_=ibis.null()).name(
+                self.__class__.__name__
+            )
+        else:
+            raise TypeError(f"Invalid value: {v}")
 
-    - `_.name_l == _.name_r`
-    - `lambda t: (t.cost_l - t.cost_r).abs() / t.cost_l < 0.1`
-    - `True`
-    """
+    def __repr__(self) -> str:
+        return self.as_string()
 
-    def is_match(self, pairs: ir.Table) -> ir.BooleanColumn:
-        """Return a boolean column for if the record pair matches this level."""
-        return _util.get_column(pairs, self.condition)
+    def __eq__(self, other):
+        if isinstance(other, MatchLevel):
+            return self.as_integer() == other.as_integer()
+        elif isinstance(other, int):
+            return self.as_integer() == other
+        elif isinstance(other, str):
+            return self.as_string() == other
+        elif isinstance(other, ir.NumericValue):
+            return self.as_integer() == other
+        elif isinstance(other, ir.StringValue):
+            return self.as_string() == other
+        else:
+            return NotImplemented
 
 
-_ELSE_LEVEL = AgreementLevel("else", True)
+MatchLevelT = TypeVar("MatchLevelT", bound=MatchLevel)
 
 
 class LevelComparer:
     """
-    Assigns a level of similarity to record pairs based on one dimension, e.g. *name*
-
-    This acts like an ordered, dict-like collection of
-    [AgreementLevels][mismo.compare.AgreementLevel].
-    You can access the levels by index or by name, or iterate over them.
-    The last level is always an `else` level, which matches all record pairs
-    if none of the previous levels matched.
+    Assigns a MatchLevel to record pairs based on one dimension, e.g. *name*
     """
 
     def __init__(
         self,
         name: str,
-        levels: Iterable[
-            AgreementLevel
-            | tuple[str, bool | Deferred | Callable[[ir.Table], ir.BooleanValue]]
-        ],
+        levels: Type[MatchLevelT],
+        cases: Iterable[tuple[ir.BooleanColumn, MatchLevelT]],
+        *,
+        representation: Literal["string", "integer"] = "integer",
     ):
-        """Create a LevelComparer.
+        self.name = name
+        self.levels = levels
+        self.cases = tuple((c, self.levels(lev)) for c, lev in cases)
+        self.representation = representation
 
-        Parameters
-        ----------
-        name :
-            The name of the comparer, eg "date", "address", "latlon", "price".
-        levels :
-            The levels of agreement. Can be either actual AgreementLevel objects,
-            or tuples of (name, condition) that will be converted into AgreementLevels.
+    name: str
+    """The name of the comparer, eg "date", "address", "latlon", "price"."""
+    levels: Type[MatchLevelT]
+    """The levels of agreement."""
+    cases: tuple[tuple[ir.BooleanColumn, MatchLevelT], ...]
+    """The cases to check for each level."""
+    representation: Literal["string", "integer"] = "integer"
+    """The native representation of the levels in ibis expressions.
 
-            You may include an `else` level as a final
-            level that matches everything, or it will be added automatically if
-            you don't include one.
-        """
-        self._name = name
-        self._levels, self._lookup = self._parse_levels(levels)
+    Integers are more performant, but strings are more human-readable.
+    """
 
-    @property
-    def name(self) -> str:
-        """The name of the comparer, eg "date", "address", "latlon", "price"."""
-        return self._name
-
-    @overload
-    def __getitem__(self, name_or_index: str | int) -> AgreementLevel: ...
-
-    @overload
-    def __getitem__(self, name_or_index: slice) -> tuple[AgreementLevel, ...]: ...
-
-    def __getitem__(self, name_or_index):
-        """Get a level by name or index."""
-        if isinstance(name_or_index, (int, slice)):
-            return self._levels[name_or_index]
-        return self._lookup[name_or_index]
-
-    def __iter__(self) -> Iterator[AgreementLevel]:
-        """Iterate over the levels, including the ELSE level."""
-        return iter(self._levels)
-
-    def __len__(self) -> int:
-        """The number of levels, including the ELSE level."""
-        return len(self._levels)
-
-    def __call__(self, pairs: ir.Table) -> ir.StringColumn:
+    def __call__(
+        self,
+        pairs: ir.Table,
+        *,
+        representation: Literal["string", "integer"] | None = None,
+    ) -> ir.StringColumn | ir.IntegerColumn:
         """Label each record pair with the level that it matches.
 
         Go through the levels in order. If a record pair matches a level, label ir.
@@ -129,35 +250,18 @@ class LevelComparer:
         labels : StringColumn
             The labels for each record pair.
         """
-        # Skip the ELSE level, do that ourselves. This is to avoid if someone
-        # mis-specifies the ELSE level condition so that it doesn't
-        # match everything.
-        cases = [(level.is_match(pairs), level.name) for level in self[:-1]]
-        return _util.cases(*cases, else_="else").name(self.name)
+        if representation is None:
+            representation = self.representation
+
+        cases = [(pairs.bind(c)[0], level) for c, level in self.cases]
+        if representation == "string":
+            cases = [(c, level.as_string()) for c, level in cases]
+        elif representation == "integer":
+            cases = [(c, level.as_integer()) for c, level in cases]
+        else:
+            raise ValueError(f"Invalid representation: {representation}")
+
+        return pairs.mutate(_util.cases(*cases).name(self.name))
 
     def __repr__(self) -> str:
-        levels_str = ", ".join(repr(level) for level in self)
-        return f"{self.__class__.__name__}(name={self.name}, levels=[{levels_str}])"
-
-    @classmethod
-    def _parse_levels(
-        cls,
-        levels: Iterable[AgreementLevel],
-    ) -> tuple[tuple[AgreementLevel], dict[str | int, AgreementLevel]]:
-        levels = tuple(AgreementLevel(*level) for level in levels)
-        rest, last = levels[:-1], levels[-1]
-        for level in rest:
-            if level.name == "else":
-                raise ValueError(
-                    f"ELSE AgreementLevel must be the last level in a {cls.__name__}."
-                )
-        if last.name != "else":
-            levels = (*levels, _ELSE_LEVEL)
-
-        lookup = {}
-        for i, level in enumerate(levels):
-            if level.name in lookup:
-                raise ValueError(f"Duplicate level name: {level.name}")
-            lookup[level.name] = level
-            lookup[i] = level
-        return levels, lookup
+        return f"LevelComparer(name={self.name}, levels=[{self.levels}])"

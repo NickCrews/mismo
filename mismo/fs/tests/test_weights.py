@@ -4,7 +4,7 @@ import ibis
 import numpy as np
 import pytest
 
-from mismo.fs import ComparisonWeights, LevelWeights, Weights
+from mismo.fs import ComparerWeights, LevelWeights, Weights
 
 
 def test_level_weights_basic():
@@ -53,13 +53,13 @@ def test_level_weights_eq():
     assert lw1 == lw4
 
 
-def test_comparison_weights_basic():
+def test_comparer_weights_basic():
     close_lw = LevelWeights(name="close", m=0.3, u=0.1)
     exact_lw = LevelWeights(name="exact", m=0.6, u=0.2)
     else_lw = LevelWeights(name="else", m=0.1, u=0.7)
-    cw = ComparisonWeights(
+    cw = ComparerWeights(
         name="address",
-        level_weights=[close_lw, exact_lw],
+        level_weights=[close_lw, exact_lw, else_lw],
     )
     assert cw.name == "address"
     assert "close" in cw
@@ -75,7 +75,7 @@ def test_comparison_weights_basic():
     assert -3 in cw
     assert -4 not in cw
 
-    assert len(cw) == 3  # 2 levels + 1 ELSE
+    assert len(cw) == 3
     assert cw["close"] == close_lw
     assert cw["exact"] == exact_lw
     assert cw["else"] == else_lw
@@ -105,30 +105,27 @@ def test_comparison_weights_basic():
     assert "else" in repr(cw)
 
 
-def test_comparison_weights_eq():
+def test_comparer_weights_eq():
     close_lw = LevelWeights(name="close", m=0.3, u=0.1)
     exact_lw = LevelWeights(name="exact", m=0.6, u=0.2)
-    cw1 = ComparisonWeights(name="address", level_weights=[close_lw, exact_lw])
-    cw2 = ComparisonWeights(name="address", level_weights=[close_lw, exact_lw])
-    cw3 = ComparisonWeights(name="other", level_weights=[close_lw, exact_lw])
-    cw4 = ComparisonWeights(name="address", level_weights=[exact_lw, close_lw])
+    cw1 = ComparerWeights(name="address", level_weights=[close_lw, exact_lw])
+    cw2 = ComparerWeights(name="address", level_weights=[close_lw, exact_lw])
+    cw3 = ComparerWeights(name="other", level_weights=[close_lw, exact_lw])
+    cw4 = ComparerWeights(name="address", level_weights=[exact_lw, close_lw])
     assert cw1 == cw2
     assert cw1 != cw3
     assert cw1 != cw4
     assert cw1 != 999
 
 
-def test_comparison_weights_odds():
+def test_comparer_weights_odds():
     close_lw = LevelWeights(name="close", m=0.1, u=0.01)
     exact_lw = LevelWeights(name="exact", m=0.6, u=0.3)
-    cw = ComparisonWeights(name="address", level_weights=[close_lw, exact_lw])
+    cw = ComparerWeights(name="address", level_weights=[close_lw, exact_lw])
     assert cw.odds("close") == 10
     assert cw.odds(0) == 10
     assert cw.odds("exact") == 2
     assert cw.odds(1) == 2
-    assert isinstance(cw.odds("else"), float)
-    assert cw.odds("else") > 0
-    assert cw.odds(2) > 0
 
     with pytest.raises(KeyError):
         cw.odds("oops")
@@ -146,14 +143,14 @@ def test_comparison_weights_odds():
 def test_weights_serde(tmp_path):
     weights = Weights(
         [
-            ComparisonWeights(
+            ComparerWeights(
                 name="name",
                 level_weights=[
                     LevelWeights(name="close", m=0.5, u=0.1),
                     LevelWeights(name="exact", m=0.6, u=0.9),
                 ],
             ),
-            ComparisonWeights(
+            ComparerWeights(
                 name="address",
                 level_weights=[
                     LevelWeights(name="within 10 km", m=0.5, u=0.1),

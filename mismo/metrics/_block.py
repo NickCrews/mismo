@@ -22,11 +22,16 @@ def n_naive_comparisons(left: Sizable, right: Sizable | None = None) -> int:
 
     Parameters
     ----------
-    left : int | Sized | Table
+    left
         The number of records in the left dataset, or the left dataset itself.
-    right : int | Sized | Table, optional
+    right
         The number of records in the right dataset, or the right dataset itself.
         For dedupe tasks leave this as None.
+
+    Returns
+    -------
+    int
+        The number of comparisons.
     """
     if right is None:
         return _get_len(left) * (_get_len(left) - 1) // 2

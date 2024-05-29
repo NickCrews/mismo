@@ -51,4 +51,4 @@ def test_clean_phone_number(inp, expected):
 def test_match_level(a, b, level_str):
     ml = phone.match_level(ibis.literal(a), ibis.literal(b))
     assert ml.as_string().execute() == level_str
-    assert ml.as_integer().execute() == phone.PhoneMatchLevels[level_str]
+    assert ml.as_integer().execute() == phone.PhoneMatchLevel[level_str]

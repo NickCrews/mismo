@@ -4,32 +4,47 @@ from ibis import _
 import pytest
 
 from mismo import datasets, fs
-from mismo.compare import LevelComparer
+from mismo.compare import LevelComparer, MatchLevel
 from mismo.lib.geo import distance_km
 
 
 @pytest.fixture
 def name_comparer():
+    class NameMatchLevel(MatchLevel):
+        EXACT = 0
+        CLOSE = 1
+        ELSE = 2
+
     return LevelComparer(
         name="name",
-        levels=[
-            ("exact", _.name_l == _.name_r),
-            ("close", _.name_l[:3] == _.name_r[:3]),
+        levels=NameMatchLevel,
+        cases=[
+            (_.name_l == _.name_r, NameMatchLevel.EXACT),
+            (_.name_l[:3] == _.name_r[:3], "CLOSE"),
+            (True, NameMatchLevel.ELSE),
         ],
     )
 
 
 @pytest.fixture
 def location_comparer():
+    class LocationMatchLevel(MatchLevel):
+        EXACT = 0
+        WITHIN_10KM = 1
+        WITHIN_100KM = 2
+        BOTH_MISSING = 3
+        ONE_MISSING = 4
+        ELSE = 5
+
     return LevelComparer(
         name="location",
-        levels=[
+        levels=LocationMatchLevel,
+        cases=[
             (
-                "exact",
                 (_.latitude_l == _.latitude_r) & (_.longitude_l == _.longitude_r),
+                "EXACT",
             ),
             (
-                "coords <= 10km",
                 distance_km(
                     lat1=_.latitude_l,
                     lon1=_.longitude_l,
@@ -37,9 +52,9 @@ def location_comparer():
                     lon2=_.longitude_r,
                 )
                 <= 10,
+                "WITHIN_10KM",
             ),
             (
-                "coords <= 100km",
                 distance_km(
                     lat1=_.latitude_l,
                     lon1=_.longitude_l,
@@ -47,39 +62,41 @@ def location_comparer():
                     lon2=_.longitude_r,
                 )
                 <= 100,
+                "WITHIN_100KM",
             ),
             (
-                "both coord missing",
                 _.latitude_l.isnull() & _.latitude_r.isnull(),
+                "BOTH_MISSING",
             ),
             (
-                "one coord missing",
                 _.latitude_l.isnull() | _.latitude_r.isnull(),
+                "ONE_MISSING",
             ),
+            (True, "ELSE"),
         ],
     )
 
 
-def test_train_comparison_from_labels(backend, name_comparer):
-    """Test that finding the weights for a Comparison works."""
+def test_train_comparer_from_labels(backend, name_comparer):
+    """Test that finding the weights for a Comparer works."""
     patents = datasets.load_patents(backend)
     (weights,) = fs.train_using_labels(
         [name_comparer], patents, patents, max_pairs=100_000
     )
     assert weights.name == "name"
-    assert len(weights) == 3  # 2 levels + 1 ELSE
+    assert len(weights) == 3
 
     exact, close, else_ = weights
 
-    assert exact.name == "exact"
+    assert exact.name == "EXACT"
     assert exact.m == pytest.approx(0.02723, abs=0.1)
     assert exact.u == pytest.approx(0.00207, abs=0.01)
 
-    assert close.name == "close"
+    assert close.name == "CLOSE"
     assert close.m == pytest.approx(0.3522, abs=0.3)
     assert close.u == pytest.approx(0.03623, abs=0.1)
 
-    assert else_.name == "else"
+    assert else_.name == "ELSE"
     assert else_.m == pytest.approx(0.5971, abs=0.4)
     assert else_.u == pytest.approx(0.9617, abs=0.1)
 
@@ -99,19 +116,20 @@ def test_train_comparions_using_em(backend, name_comparer, location_comparer):
     )
     assert len(weights) == 2
     exact, close, else_ = weights["name"]
+    print(weights["name"])
 
-    assert exact.name == "exact"
+    assert exact.name == "EXACT"
     assert exact.m > 0.1
     assert exact.u < 0.1
-    # This doesn't appear to be repeatable enough to do exact comparisons
+    # This doesn't appear to be repeatable enough to do exact comparers
     # assert exact.m == pytest.approx(0.999, rel=0.1)
     # assert exact.u == pytest.approx(0.006, rel=0.1)
 
-    assert close.name == "close"
+    assert close.name == "CLOSE"
     # assert close.m == pytest.approx(0.0027, rel=0.1)
     # assert close.u == pytest.approx(0.067, rel=0.1)
 
-    assert else_.name == "else"
+    assert else_.name == "ELSE"
     assert else_.m < 0.6
     assert else_.u > 0.7
     # assert else_.m == pytest.approx(0.0027, rel=0.1)

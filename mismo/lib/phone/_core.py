@@ -7,7 +7,7 @@ from ibis.expr import types as ir
 
 from mismo._array import array_combinations, array_min
 from mismo._util import get_column
-from mismo.compare import MatchLevels
+from mismo.compare import MatchLevel
 from mismo.text import damerau_levenshtein
 
 
@@ -61,7 +61,7 @@ def _drop_bogus_numbers(numbers: ir.StringValue) -> ir.StringValue:
     return is_bogus.ifelse(None, numbers)
 
 
-class PhoneMatchLevels(MatchLevels):
+class PhoneMatchLevel(MatchLevel):
     """How closely two phone numbers match."""
 
     EXACT = 0
@@ -77,7 +77,7 @@ def match_level(
     p2: ir.StringValue,
     *,
     native_representation: Literal["integer", "string"] = "integer",
-) -> PhoneMatchLevels:
+) -> PhoneMatchLevel:
     """Match level of two phone numbers.
 
     Assumes the phone numbers have already been cleaned and normalized.
@@ -95,7 +95,7 @@ def match_level(
         The match level.
     """
 
-    def f(level: MatchLevels):
+    def f(level: MatchLevel):
         if native_representation == "string":
             return level.as_string()
         else:
@@ -103,12 +103,12 @@ def match_level(
 
     raw = (
         ibis.case()
-        .when(p1 == p2, f(PhoneMatchLevels.EXACT))
-        .when(damerau_levenshtein(p1, p2) <= 1, f(PhoneMatchLevels.NEAR))
-        .else_(f(PhoneMatchLevels.ELSE))
+        .when(p1 == p2, f(PhoneMatchLevel.EXACT))
+        .when(damerau_levenshtein(p1, p2) <= 1, f(PhoneMatchLevel.NEAR))
+        .else_(f(PhoneMatchLevel.ELSE))
         .end()
     )
-    return PhoneMatchLevels(raw)
+    return PhoneMatchLevel(raw)
 
 
 class PhonesDimension:
@@ -149,7 +149,7 @@ class PhonesDimension:
         pairs = array_combinations(le, ri)
         min_level = array_min(
             pairs.map(lambda pair: match_level(pair.l, pair.r).as_integer())
-        ).fillna(PhoneMatchLevels.ELSE.as_integer())
+        ).fillna(PhoneMatchLevel.ELSE.as_integer())
         return t.mutate(
-            PhoneMatchLevels(min_level).as_string().name(self.column_compared)
+            PhoneMatchLevel(min_level).as_string().name(self.column_compared)
         )

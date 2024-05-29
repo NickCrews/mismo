@@ -4,7 +4,7 @@ import ibis
 from ibis.expr import types as ir
 
 from mismo import _array, _util
-from mismo.compare import MatchLevels
+from mismo.compare import MatchLevel
 from mismo.lib.geo._latlon import distance_km
 from mismo.sets import rare_terms
 
@@ -84,7 +84,7 @@ def normalize_address(address: ir.StructValue) -> ir.StructValue:
     )
 
 
-class AddressesMatchLevels(MatchLevels):
+class AddressesMatchLevel(MatchLevel):
     """How closely two addresses match."""
 
     NULL = 0
@@ -103,7 +103,7 @@ class AddressesMatchLevels(MatchLevels):
     """None of the above."""
 
 
-def best_match(left: ir.ArrayValue, right: ir.ArrayValue) -> AddressesMatchLevels:
+def best_match(left: ir.ArrayValue, right: ir.ArrayValue) -> AddressesMatchLevel:
     """Compare two arrays of address structs, and return the best match level.
 
     We compare every pair of addresses, and whichever pair has the highest match
@@ -136,7 +136,7 @@ def best_match(left: ir.ArrayValue, right: ir.ArrayValue) -> AddressesMatchLevel
                     )
                 )
                 <= 100,
-                AddressesMatchLevels.WITHIN_100KM.as_integer(),
+                AddressesMatchLevel.WITHIN_100KM.as_integer(),
             ),
         ]
     else:
@@ -155,24 +155,24 @@ def best_match(left: ir.ArrayValue, right: ir.ArrayValue) -> AddressesMatchLevel
                     )
                 )
             ),
-            AddressesMatchLevels.NULL.as_integer(),
+            AddressesMatchLevel.NULL.as_integer(),
         ),
         (
             _array.array_any(
                 combos.map(lambda pair: same_address_for_mailing(pair.l, pair.r))
             ),
-            AddressesMatchLevels.STREET1_AND_CITY_OR_POSTAL.as_integer(),
+            AddressesMatchLevel.STREET1_AND_CITY_OR_POSTAL.as_integer(),
         ),
         (
             _array.array_any(combos.map(lambda pair: same_region(pair.l, pair.r))),
-            AddressesMatchLevels.SAME_REGION.as_integer(),
+            AddressesMatchLevel.SAME_REGION.as_integer(),
         ),
         *within_100km_levels,
         (
             _array.array_any(combos.map(lambda pair: pair.l.state == pair.r.state)),
-            AddressesMatchLevels.SAME_STATE.as_integer(),
+            AddressesMatchLevel.SAME_STATE.as_integer(),
         ),
-        else_=AddressesMatchLevels.ELSE.as_integer(),
+        else_=AddressesMatchLevel.ELSE.as_integer(),
     )
 
 
