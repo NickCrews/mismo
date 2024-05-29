@@ -2,7 +2,6 @@
 
 Utilities for assessing the quality of a linkage result.
 
-::: mismo.metrics.n_naive_comparisons
 ::: mismo.metrics.mutual_info_score
 ::: mismo.metrics.adjusted_mutual_info_score
 ::: mismo.metrics.normalized_mutual_info_score

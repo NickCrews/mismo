@@ -12,6 +12,7 @@ becomes intractable for datasets much larger than a few thousand.
 ::: mismo.block.ConditionBlocker
 
 ## Utils
+::: mismo.block.n_naive_comparisons
 ::: mismo.block.sample_all_pairs
 ::: mismo.block.join
 

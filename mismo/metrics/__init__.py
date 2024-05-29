@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from mismo.metrics._block import n_naive_comparisons as n_naive_comparisons
 from mismo.metrics._cluster import (
     adjusted_mutual_info_score as adjusted_mutual_info_score,
 )
