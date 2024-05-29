@@ -16,6 +16,7 @@
         * [Clustering](reference/cluster.md)
         * [Metrics](reference/metrics.md)
         * [Datasets](reference/datasets.md)
+        * [Play Data](reference/playdata.md)
     * By Data Type
         * [Text Utils](reference/text.md)
         * [Vector Utils](reference/vectors.md)

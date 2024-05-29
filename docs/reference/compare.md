@@ -3,7 +3,7 @@
 Once records are blocked together into pairs, we actually can do pairwise
 comparisons on them.
 
-All of the APIs revolve around the [](mismo.compare.PComparer) protocol.
+All of the APIs revolve around the [](#mismo.compare.PComparer) protocol.
 This is simply a function which takes a table of record pairs,
 (eg with columns suffixed with `_l` and `_r`), and returns a modified
 version of this table. For example, it could add a column with match scores,

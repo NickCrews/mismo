@@ -6,7 +6,6 @@ graph algorithms, which are implemented in this module.
 
 ## Algorithms
 
-::: mismo.Datasets
 ::: mismo.cluster.connected_components
 ::: mismo.cluster.degree
 
