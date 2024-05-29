@@ -7,6 +7,12 @@ in the collection of documents.
 This also is relevant for other sorts of unordered collections.
 For example, movies might be tagged with multiple genres such as "fantasy" and "action".
 
+## Sets
+
+::: mismo.sets.jaccard
+
+## Bag-Of-Words
+
 ::: mismo.sets.add_array_value_counts
 ::: mismo.sets.add_tfidf
 ::: mismo.sets.document_counts

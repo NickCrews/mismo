@@ -21,12 +21,6 @@ such as *exact*, *misspelling*, *within_1_km*, etc.
 ::: mismo.compare.AgreementLevel
 ::: mismo.compare.MatchLevels
 
-## Comparison Functions
-
-These utility functions help you create [AgreementLevel](#mismo.compare.AgreementLevel)
-
-::: mismo.compare.jaccard
-
 ## Plotting
 
 ::: mismo.compare.compared_dashboard

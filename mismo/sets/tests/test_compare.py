@@ -4,7 +4,7 @@ import ibis
 import numpy as np
 import pytest
 
-from mismo.compare._array import jaccard
+from mismo.sets import jaccard
 
 
 @pytest.mark.parametrize(
