@@ -150,6 +150,4 @@ class PhonesDimension:
         min_level = array_min(
             pairs.map(lambda pair: match_level(pair.l, pair.r).as_integer())
         ).fillna(PhoneMatchLevel.ELSE.as_integer())
-        return t.mutate(
-            PhoneMatchLevel(min_level).as_string().name(self.column_compared)
-        )
+        return t.mutate(min_level.name(self.column_compared))

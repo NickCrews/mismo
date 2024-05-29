@@ -152,6 +152,4 @@ class EmailsDimension:
         min_level = array_min(
             pairs.map(lambda pair: match_level(pair.l, pair.r).as_integer())
         ).fillna(EmailMatchLevel.ELSE.as_integer())
-        return t.mutate(
-            EmailMatchLevel(min_level).as_string().name(self.column_compared)
-        )
+        return t.mutate(min_level.name(self.column_compared))
