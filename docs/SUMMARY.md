@@ -24,4 +24,5 @@
             * [Geospatial](reference/lib/geo.md)
             * [Human Names](reference/lib/name.md)
             * [Emails](reference/lib/email.md)
+            * [Phones](reference/lib/phone.md)
 * [Contribute](contributing.md)
