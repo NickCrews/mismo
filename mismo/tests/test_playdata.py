@@ -3,7 +3,7 @@ from __future__ import annotations
 import ibis
 import pytest
 
-from mismo.datasets import (
+from mismo.playdata import (
     load_febrl1,
     load_febrl2,
     load_febrl3,

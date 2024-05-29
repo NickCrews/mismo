@@ -3,7 +3,7 @@ from __future__ import annotations
 from ibis import _
 import pytest
 
-from mismo import datasets, fs
+from mismo import fs, playdata
 from mismo.compare import LevelComparer, MatchLevel
 from mismo.lib.geo import distance_km
 
@@ -79,7 +79,7 @@ def location_comparer():
 
 def test_train_comparer_from_labels(backend, name_comparer):
     """Test that finding the weights for a Comparer works."""
-    patents = datasets.load_patents(backend)
+    patents = playdata.load_patents(backend)
     (weights,) = fs.train_using_labels(
         [name_comparer], patents, patents, max_pairs=100_000
     )
@@ -107,7 +107,7 @@ def test_train_comparer_from_labels(backend, name_comparer):
 # platforms and/or duckdb versions.
 # At this point this just checks that there are no errors raised
 def test_train_comparions_using_em(backend, name_comparer, location_comparer):
-    patents = datasets.load_patents(backend)
+    patents = playdata.load_patents(backend)
     weights = fs.train_using_em(
         [name_comparer, location_comparer],
         patents,

@@ -96,6 +96,6 @@ def test_unnest(table_factory, t1: ir.Table, t2: ir.Table):
 
 
 def test_patents_unnest():
-    t = mismo.datasets.load_patents().select("record_id", classes=_.classes.split("**"))
+    t = mismo.playdata.load_patents().select("record_id", classes=_.classes.split("**"))
     b = KeyBlocker(_.classes.unnest())(t, t)
     assert b.count().execute() == 569034
