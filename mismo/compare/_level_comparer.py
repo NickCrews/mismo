@@ -6,7 +6,7 @@ from typing import Iterable, Iterator, Literal, Type, TypeVar, overload
 import ibis
 from ibis.expr import types as ir
 
-from mismo import _util
+from mismo import _typing, _util
 
 
 class _LevelsMeta(ABCMeta):
@@ -30,7 +30,7 @@ class _LevelsMeta(ABCMeta):
         newcls.__s2i__ = s2i
         newcls.__i2s__ = i2s
         newcls.__annotations__ = {
-            **newcls.__annotations__,
+            **_typing.get_annotations(newcls),
             **{k: newcls for k in s2i},
         }
         for s in s2i:
