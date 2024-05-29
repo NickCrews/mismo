@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, Mapping
+from typing import Iterable, Mapping, overload
 
 import ibis
 from ibis import _
@@ -9,11 +9,27 @@ from ibis.expr import types as ir
 from mismo._datasets import Datasets
 
 
+@overload
+def degree(
+    *,
+    links: ir.Table,
+    records: ir.Table | None,
+) -> ir.Table: ...
+
+
+@overload
+def degree(
+    *,
+    links: ir.Table,
+    records: Iterable[ir.Table] | Mapping[str, ir.Table],
+) -> Datasets: ...
+
+
 def degree(
     *,
     links: ir.Table,
     records: ir.Table | Iterable[ir.Table] | Mapping[str, ir.Table] | None = None,
-) -> Datasets:
+) -> ir.Table | Datasets:
     """Label records with their degree (number of links to other records).
 
     This is the graph theory definition of degree, i.e. the number of vertices
@@ -29,12 +45,13 @@ def degree(
 
     Returns
     -------
-    If `records` is None, a Table will be returned with columns
-    `record_id` and `degree:uint64` that maps record_id to a degree.
-    If `records` is a single Table, that table will be returned
-    with a `degree:uint64` column added.
-    If an iterable/mapping of Tables is given, a `Datasets` will be returned, with
-    a `component` column added to each contained Table.
+    result
+        If `records` is None, a Table will be returned with columns
+        `record_id` and `degree:uint64` that maps record_id to a degree.
+        If `records` is a single Table, that table will be returned
+        with a `degree:uint64` column added.
+        If an iterable/mapping of Tables is given, a `Datasets` will be returned,
+        with a `component` column added to each contained Table.
     """
     l1 = links.select(record_id="record_id_l", other="record_id_r")
     l2 = links.select(record_id="record_id_r", other="record_id_l")

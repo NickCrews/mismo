@@ -6,7 +6,6 @@ from mismo import compare as compare
 from mismo import eda as eda
 from mismo import fs as fs
 from mismo import lib as lib
-from mismo import metrics as metrics
 from mismo import playdata as playdata
 from mismo import text as text
 from mismo import vector as vector

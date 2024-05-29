@@ -3,7 +3,7 @@ from __future__ import annotations
 from ibis.expr import types as ir
 import pytest
 
-from mismo.metrics import _cluster
+from mismo import cluster
 
 
 @pytest.fixture
@@ -29,14 +29,14 @@ def labels_pred(table_factory) -> ir.Table:
 @pytest.mark.parametrize(
     "func",
     [
-        _cluster.rand_score,
-        _cluster.adjusted_rand_score,
-        _cluster.fowlkes_mallows_score,
-        _cluster.homogeneity_score,
-        _cluster.completeness_score,
-        _cluster.v_measure_score,
-        _cluster.mutual_info_score,
-        _cluster.normalized_mutual_info_score,
+        cluster.rand_score,
+        cluster.adjusted_rand_score,
+        cluster.fowlkes_mallows_score,
+        cluster.homogeneity_score,
+        cluster.completeness_score,
+        cluster.v_measure_score,
+        cluster.mutual_info_score,
+        cluster.normalized_mutual_info_score,
     ],
 )
 def test_scalar_metrics(func, labels_true: ir.Table, labels_pred: ir.Table):
@@ -51,7 +51,7 @@ def test_homogeneity_completeness_v_measure(
     labels_true: ir.Table, labels_pred: ir.Table
 ):
     # We assume sklearns implementation is correct
-    homogeneity, completeness, v_measure = _cluster.homogeneity_completeness_v_measure(
+    homogeneity, completeness, v_measure = cluster.homogeneity_completeness_v_measure(
         labels_true, labels_pred
     )
     assert homogeneity >= 0.0

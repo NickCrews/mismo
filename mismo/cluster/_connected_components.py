@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from itertools import count
 import logging
-from typing import Callable, Iterable, Mapping
+from typing import Callable, Iterable, Mapping, overload
 
 import ibis
 from ibis import _
@@ -14,14 +14,32 @@ from mismo._factorizer import Factorizer
 logger = logging.getLogger(__name__)
 
 
+@overload
+def connected_components(
+    *,
+    links: ir.Table,
+    records: ir.Column | ir.Table | None,
+    max_iter: int | None = None,
+) -> ir.Table: ...
+
+
+@overload
+def connected_components(
+    *,
+    links: ir.Table,
+    records: Iterable[ir.Table] | Mapping[str, ir.Table],
+    max_iter: int | None = None,
+) -> Datasets: ...
+
+
 # I think more performant algorithms exist, but they are more complicated.
 # See https://arxiv.org/pdf/1802.09478.pdf
 def connected_components(
     *,
-    records: ir.Column | ir.Table | Iterable[ir.Table] | Mapping[str, ir.Table] = None,
     links: ir.Table,
+    records: ir.Column | ir.Table | Iterable[ir.Table] | Mapping[str, ir.Table] = None,
     max_iter: int | None = None,
-) -> Datasets:
+) -> ir.Table | Datasets:
     """Label records using connected components, based on the given links.
 
     This uses [an iterative algorithm](https://www.drmaciver.com/2008/11/computing-connected-graph-components-via-sql/)
@@ -48,12 +66,13 @@ def connected_components(
 
     Returns
     -------
-    If `records` is None, a Table will be returned with columns
-    `record_id` and `component:uint64` that maps record_id to component.
-    If `records` is a single Table, that table will be returned
-    with a `component:uint64` column added.
-    If an iterable/mapping of Tables is given, a `Datasets` will be returned, with
-    a `component:uint64` column added to each contained Table.
+    result
+        If `records` is None, a Table will be returned with columns
+        `record_id` and `component:uint64` that maps record_id to component.
+        If `records` is a single Table, that table will be returned
+        with a `component:uint64` column added.
+        If an iterable/mapping of Tables is given, a `Datasets` will be returned, with
+        a `component:uint64` column added to each contained Table.
 
     Examples
     --------

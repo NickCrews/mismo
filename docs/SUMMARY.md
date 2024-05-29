@@ -14,7 +14,6 @@
         * [Comparing](reference/compare.md)
             * [Fellegi-Sunter](reference/fs.md)
         * [Clustering](reference/cluster.md)
-        * [Metrics](reference/metrics.md)
         * [Datasets](reference/datasets.md)
         * [Play Data](reference/playdata.md)
     * By Data Type
