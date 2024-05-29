@@ -60,3 +60,12 @@ def test_sample_all_pairs_warns(table_factory):
     t = table_factory({"record_id": range(100_000)})
     with pytest.warns(UserWarning):
         sample_all_pairs(t, t)
+
+
+def test_sample_all_pairs_different_tables(table_factory):
+    # check that we can sample from two different tables
+    # https://github.com/NickCrews/mismo/issues/35#issuecomment-2116178262
+    t = table_factory({"record_id": range(100)})
+    df = sample_all_pairs(t, t.view(), max_pairs=10).execute()
+    assert df.columns.tolist() == ["record_id_l", "record_id_r"]
+    assert len(df) == 10
