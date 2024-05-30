@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from ._address import AddressesDimension as AddressesDimension
-from ._address import compare_addresses as compare_addresses
-from ._address import expand_address_components as expand_address_components
 from ._address import hash_address as hash_address
 from ._address import normalize_address as normalize_address
 from ._address import parse_address as parse_address

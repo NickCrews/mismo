@@ -119,29 +119,3 @@ def test_parse_address(address, expected):
 def test_hash_address(address, expected):
     result = _address.hash_address(address).execute()
     assert result == expected
-
-
-@pytest.mark.parametrize(
-    "address1, address2, expected",
-    [
-        (
-            "123 main st, springfield, il, 62701, us",
-            "123 main road, springfield, wi, 62701, us",
-            {
-                "house_number": "EXACT_DUPLICATE",
-                "street": "NEEDS_REVIEW",
-                "unit": "NULL_DUPLICATE",
-                "city": "EXACT_DUPLICATE",
-                "state": "NON_DUPLICATE",
-                "postcode": "EXACT_DUPLICATE",
-                "country": "EXACT_DUPLICATE",
-            },
-        )
-    ],
-)
-def test_compare_addresses(address1, address2, expected):
-    a = _address.expand_address_components(address1)
-    b = _address.expand_address_components(address2)
-    result = _address.compare_addresses(a, b).execute()
-
-    assert result == expected
