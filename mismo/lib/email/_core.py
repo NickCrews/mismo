@@ -7,6 +7,7 @@ from ibis.expr import types as ir
 
 from mismo._util import get_column
 from mismo.arrays import array_combinations, array_min
+from mismo.block import KeyBlocker
 from mismo.compare import MatchLevel
 from mismo.text import damerau_levenshtein
 
@@ -112,7 +113,11 @@ def match_level(
 
 
 class EmailsDimension:
-    """A dimension of email addresses."""
+    """A dimension of email addresses.
+
+    This is useful if each record contains a collection of email addresses.
+    Two records are probably the same if they have a lot of email addresses in common.
+    """
 
     def __init__(
         self,
@@ -136,13 +141,17 @@ class EmailsDimension:
         self.column_parsed = column_parsed.format(column=column)
         self.column_compared = column_compared.format(column=column)
 
-    def prep(self, t: ir.Table) -> ir.Table:
+    def prepare(self, t: ir.Table) -> ir.Table:
         """Add a column with the parsed and normalized email addresses."""
         return t.mutate(
             get_column(t, self.column)
             .map(lambda email: parse_email(clean_email(email, normalize=True)))
             .name(self.column_parsed)
         )
+
+    def block(self, t1: ir.Table, t2: ir.Table, **kwargs) -> ir.Table:
+        blocker = KeyBlocker(ibis._[self.column_parsed].full.unnest())
+        return blocker(t1, t2, **kwargs)
 
     def compare(self, t: ir.Table) -> ir.Table:
         """Add a column with the best match between all pairs of email addresses."""
