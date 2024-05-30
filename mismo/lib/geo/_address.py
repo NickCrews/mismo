@@ -4,6 +4,7 @@ import ibis
 from ibis.expr import types as ir
 
 from mismo import _util, arrays
+from mismo.block import MinhashLshBlocker
 from mismo.compare import MatchLevel
 from mismo.lib.geo._latlon import distance_km
 from mismo.sets import rare_terms
@@ -208,7 +209,7 @@ class AddressesDimension:
         self.column_keywords = column_keywords.format(column=column)
         self.column_compared = column_compared.format(column=column)
 
-    def prep(self, t: ir.Table) -> ir.Table:
+    def prepare(self, t: ir.Table) -> ir.Table:
         """Prepares the table for blocking, adding normalized and tokenized columns."""
         addrs = t[self.column]
         t = t.mutate(addrs.map(normalize_address).name(self.column_normed))
@@ -231,6 +232,12 @@ class AddressesDimension:
             result_format=self.column_keywords,
         )
         return t
+
+    def block(self, t1: ir.Table, t2: ir.Table, **kwargs) -> ir.Table:
+        blocker = MinhashLshBlocker(
+            terms_column=self.column_keywords, band_size=10, n_bands=10
+        )
+        return blocker(t1, t2, **kwargs)
 
     def compare(self, t: ir.Table) -> ir.Table:
         al = t[self.column_normed + "_l"]
