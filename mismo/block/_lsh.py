@@ -28,7 +28,10 @@ def minhash_lsh_keys(
 
 
 class MinhashLshBlocker:
-    """Uses Minhash LSH to block record pairs that have high Jaccard similarity."""
+    """Uses Minhash LSH to block record pairs that have high Jaccard similarity.
+
+    See [the how-to guide](../howto/lsh.ipynb) for more information.
+    """
 
     def __init__(
         self,
@@ -37,7 +40,22 @@ class MinhashLshBlocker:
         band_size: int,
         n_bands: int,
         keys_column: str = "{terms_column}_lsh_keys",
-    ):
+    ) -> None:
+        """Make a Minhash LSH blocker.
+
+        Parameters
+        ----------
+        terms_column :
+            The column that holds the terms to compare.
+        band_size :
+            The number of terms in each band.
+            See [plot_lsh_curves](#mismo.block.plot_lsh_curves) for guidance.
+        n_bands :
+            The number of bands.
+            See [plot_lsh_curves](#mismo.block.plot_lsh_curves) for guidance.
+        keys_column :
+            The name of the column that will hold the LSH keys.
+        """
         self.terms_column = terms_column
         self.band_size = band_size
         self.n_bands = n_bands
@@ -94,9 +112,13 @@ def plot_lsh_curves(
          0.0         Jaccard         1.0
     ```
 
+    ![](../assets/lsh_curves.png)
+
     The shape of this curve is determined by the band size and number of bands.
     Use this function to choose the best band size and number of bands for your
-    use case.
+    use case. Note that the runtime of the Minhash LSH blocker runs in
+    `O(band_size * n_bands * n_records)` time, so you want to choose as small
+    of band size and number of bands as possible.
 
     Based on [this PyData talk](https://youtu.be/n3dCcwWV4_k?si=Q9f4EuGtRE0xSyEg&t=1582)
     and the [accompanying code](https://github.com/mattilyra/LSH/blob/a57069bfb70f4b620d47931f81966b5a73c1b480/examples/Introduction.ipynb)
@@ -104,7 +126,7 @@ def plot_lsh_curves(
     Parameters
     ----------
     band_params :
-        List of band size and number of bands to plot. If not provided, defaults to
+        List of (band size, number of bands) to plot. If not provided, defaults to
         a reasonable selection to show the various curves.
 
     Returns
