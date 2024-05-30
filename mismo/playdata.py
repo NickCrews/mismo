@@ -55,14 +55,29 @@ def _wrap_febrl(loader_name: str) -> tuple[ir.Table, ir.Table]:
 
 
 def load_febrl1() -> tuple[ir.Table, ir.Table]:
+    """Load the FEBRL 1 dataset.
+
+    The Freely Extensible Biomedical Record Linkage (Febrl) package is distributed
+    with a dataset generator and four datasets generated with the generator.
+    """
     return _wrap_febrl("load_febrl1")
 
 
 def load_febrl2() -> tuple[ir.Table, ir.Table]:
+    """Load the FEBRL 2 dataset.
+
+    The Freely Extensible Biomedical Record Linkage (Febrl) package is distributed
+    with a dataset generator and four datasets generated with the generator.
+    """
     return _wrap_febrl("load_febrl2")
 
 
 def load_febrl3() -> tuple[ir.Table, ir.Table]:
+    """Load the FEBRL 3 dataset.
+
+    The Freely Extensible Biomedical Record Linkage (Febrl) package is distributed
+    with a dataset generator and four datasets generated with the generator.
+    """
     return _wrap_febrl("load_febrl3")
 
 

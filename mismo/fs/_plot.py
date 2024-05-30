@@ -5,7 +5,7 @@ from typing import Iterable
 import altair as alt
 import pandas as pd
 
-from ._weights import ComparisonWeights
+from ._weights import ComparerWeights
 
 LOG_ODDS_COLOR_SCALE = alt.Scale(
     domainMid=0,
@@ -15,8 +15,8 @@ LOG_ODDS_COLOR_SCALE = alt.Scale(
 )
 
 
-def plot_weights(weights: ComparisonWeights | Iterable[ComparisonWeights]) -> alt.Chart:
-    """Plot the weights for a comparison or comparisons.
+def plot_weights(weights: ComparerWeights | Iterable[ComparerWeights]) -> alt.Chart:
+    """Plot the weights for Comparer(s).
 
     Use this to
     - See which levels are common and which are rare.
@@ -34,7 +34,7 @@ def plot_weights(weights: ComparisonWeights | Iterable[ComparisonWeights]) -> al
 
     Parameters
     ----------
-    weights : ComparisonWeights | Iterable[ComparisonWeights]
+    weights :
         The weights to plot.
 
     Returns
@@ -42,14 +42,14 @@ def plot_weights(weights: ComparisonWeights | Iterable[ComparisonWeights]) -> al
     alt.Chart
         The plot.
     """
-    if isinstance(weights, ComparisonWeights):
+    if isinstance(weights, ComparerWeights):
         weights = [weights]
-    subplots = [_plot_comparison_weights(cw) for cw in weights]
+    subplots = [_plot_comparer_weights(cw) for cw in weights]
     together = alt.vconcat(*subplots, spacing=30)
     return together.interactive()
 
 
-def _plot_comparison_weights(cw: ComparisonWeights) -> alt.Chart:
+def _plot_comparer_weights(cw: ComparerWeights) -> alt.Chart:
     t = _comp_weights_to_table(cw)
     mu_width = 200
     ms = _subplot(
@@ -95,17 +95,16 @@ def _plot_comparison_weights(cw: ComparisonWeights) -> alt.Chart:
     )
     together = alt.hconcat(ms, us, odds, spacing=5)
     together = together.properties(
-        title=alt.Title(text=f"Weights for Comparison '{cw.name}'", anchor="middle")
+        title=alt.Title(text=f"Weights for Comparer '{cw.name}'", anchor="middle")
     )
     return together
 
 
-def _comp_weights_to_table(comparison_weights: ComparisonWeights) -> pd.DataFrame:
+def _comp_weights_to_table(comparer_weights: ComparerWeights) -> pd.DataFrame:
     records = []
-    for i, lw in enumerate(comparison_weights):
+    for i, lw in enumerate(comparer_weights):
         records.append(
             {
-                # "comparison": comparison_weights.name,
                 "level": lw.name,
                 "m": lw.m,
                 "u": lw.u,

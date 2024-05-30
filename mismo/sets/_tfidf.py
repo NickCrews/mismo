@@ -249,13 +249,23 @@ def add_tfidf(
             __term_counts=vector.normalize(with_counts.__term_counts)
         )
     idf = term_idf(t[column])
-    idf_m = ibis.map(idf.term.collect(), idf.idf.collect()).name("__idf_map")
-    idf_table = idf_m.as_table()
-    idf_table = idf_table.cache()
-    cj = with_counts.cross_join(idf_table)
+    with_counts = with_counts.mutate(__row_number=ibis.row_number())
+    term_counts = with_counts.select("__row_number", "__term_counts")
+    term_counts = term_counts.mutate(
+        term=_.__term_counts.keys().unnest(),
+        term_count=_.__term_counts.values().unnest(),
+    ).drop("__term_counts")
+    idf_table = term_counts.join(idf, "term")
+    idf_table = idf_table.mutate(idf=_.idf * _.term_count).drop("term_count")
     r = result_name.format(name=column)
-    cj = cj.mutate(vector.mul(cj.__term_counts, cj.__idf_map).name(r))
-    result = cj.drop("__term_counts", "__idf_map")
+    idf_table = idf_table.group_by("__row_number").aggregate(
+        ibis.map(idf_table.term.collect(), idf_table.idf.collect()).name(r)
+    )
+    result = with_counts.left_join(idf_table, "__row_number").drop(
+        "__row_number", "__term_counts", "__row_number_right"
+    )
+    empty = ibis.literal({}, type=result[r].type())
+    result = result.mutate((_[column].length() == 0).ifelse(empty, _[r]).name(r))
     return result
 
 

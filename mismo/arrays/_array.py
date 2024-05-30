@@ -6,42 +6,6 @@ from ibis.expr import types as ir
 
 from mismo import _util
 
-_ARRAY_AGGS = {}
-
-
-def _get_array_agg(array: ir.ArrayValue, name: str) -> ir.Column:
-    t = array.type()
-    if not isinstance(array, ir.ArrayValue):
-        raise ValueError(f"Expected an array, got {t}")
-
-    key = (t, name)
-    if key not in _ARRAY_AGGS:
-
-        @ibis.udf.scalar.builtin(name=name, signature=((t,), t.value_type()))
-        def f(array): ...
-
-        _ARRAY_AGGS[key] = f
-
-    return _ARRAY_AGGS[key](array)
-
-
-def array_min(array: ir.ArrayValue) -> ir.NumericValue:
-    """Get the minimum value of an array."""
-    return _get_array_agg(array, "list_min")
-
-
-def array_max(array: ir.ArrayValue) -> ir.NumericValue:
-    """Get the maximum value of an array."""
-    return _get_array_agg(array, "list_max")
-
-
-@ibis.udf.scalar.builtin(name="list_bool_or")
-def array_any(array) -> bool: ...
-
-
-@ibis.udf.scalar.builtin(name="list_bool_and")
-def array_all(array) -> bool: ...
-
 
 def array_combinations(left: ir.ArrayValue, right: ir.ArrayValue) -> ir.ArrayValue:
     """Generate all combinations of elements from two arrays.
@@ -50,14 +14,14 @@ def array_combinations(left: ir.ArrayValue, right: ir.ArrayValue) -> ir.ArrayVal
 
     Parameters
     ----------
-    array1 :
+    left
         The first array.
-    array2 :
+    right
         The second array.
 
     Returns
     -------
-    combinations : ArrayValue
+    combinations
         An `array<struct<l: T, r: U>>` where `T` is the type of the
         elements in `array1` and `U` is the type of the elements in `array2`.
     """
@@ -74,12 +38,12 @@ def array_filter_isin_other(
     result_format: str = "{name}_filtered",
 ) -> ir.Table:
     """
-    Equivalent to t.mutate(result_name=t[array].filter(lambda x: x.isin(other)))
+    Equivalent to `t.mutate(result_name=t[array].filter(lambda x: x.isin(other)))`
 
     We can't have subqueries in the filter lambda (need this to avoid
-    https://stackoverflow.com/questions/77559936/how-to-implementlist-filterarray-elem-elem-in-column-in-other-table)
+    [https://stackoverflow.com/questions/77559936/how-to-implementlist-filterarray-elem-elem-in-column-in-other-table]()))
 
-    See https://github.com/NickCrews/mismo/issues/32 for more info.
+    See [issues/32](https://github.com/NickCrews/mismo/issues/32) for more info.
 
     Parameters
     ----------
@@ -134,4 +98,4 @@ def array_shuffle(a: ir.ArrayValue) -> ir.ArrayValue:
 
 def array_choice(a: ir.ArrayValue, n: int) -> ir.ArrayValue:
     """Randomly select `n` elements from an array."""
-    return array_shuffle(a)[:n]
+    return array_shuffle(a)[n:]

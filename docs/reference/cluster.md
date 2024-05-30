@@ -6,11 +6,26 @@ graph algorithms, which are implemented in this module.
 
 ## Algorithms
 
-::: mismo.Datasets
 ::: mismo.cluster.connected_components
 ::: mismo.cluster.degree
+
+## Evaluation
+
+Utilities for assessing the quality of a linkage result.
+
+::: mismo.cluster.mutual_info_score
+::: mismo.cluster.adjusted_mutual_info_score
+::: mismo.cluster.normalized_mutual_info_score
+::: mismo.cluster.rand_score
+::: mismo.cluster.adjusted_rand_score
+::: mismo.cluster.fowlkes_mallows_score
+::: mismo.cluster.homogeneity_score
+::: mismo.cluster.completeness_score
+::: mismo.cluster.v_measure_score
+::: mismo.cluster.homogeneity_completeness_v_measure
 
 ## Plot
 
 ::: mismo.cluster.degree_dashboard
 ::: mismo.cluster.cluster_dashboard
+::: mismo.cluster.clusters_dashboard

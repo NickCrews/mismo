@@ -5,44 +5,49 @@ from typing import Literal
 import ibis
 from ibis.expr import types as ir
 
-from mismo._array import array_combinations, array_min
 from mismo._util import get_column
-from mismo.compare import MatchLevels
+from mismo.arrays import array_combinations, array_min
+from mismo.block import KeyBlocker
+from mismo.compare import MatchLevel
 from mismo.text import damerau_levenshtein
 
 
-def parse_and_normalize_email(email: ir.StringValue) -> ir.StructValue:
-    """Parses an email address into its `<user>@<domain>` parts.
+def clean_email(email: ir.StringValue, *, normalize: bool = False) -> ir.StringValue:
+    r"""Clean an email address.
 
-    The email address is normalized by removing dots and underscores,
-    and converting to lowercase.
+    - convert to lowercase
+    - extract anything that matches r".*(\S+@\S+).*"
+
+    If ``normalize`` is True, an additional step of removing "." and "_" is performed.
+    This makes it possible to compare two addresses and be more immune to noise.
+    For example, in many email systems such as gmail, "." are ignored.
+    """
+    pattern = r"(\S+@\S+)"
+    email = email.lower().re_extract(pattern, 1).nullif("")
+    if normalize:
+        email = email.replace(".", "").replace("_", "")
+    return email
+
+
+def parse_email(email: ir.StringValue) -> ir.StructValue:
+    """Parse an email into <user>@<domain> parts
 
     Parameters
     ----------
-    email :
-        The email address.
+    email:
+        An email string, assumed to already be cleaned by ``clean_email``
 
     Returns
     -------
-    parsed : StructValue<full: string, user: string, domain: string>
-        The parsed and normalized email address.
-
-    Examples
-    --------
-    import ibis
-    >>> from mismo.lib.email import parse_and_normalize_email
-    >>> parse_and_normalize_email(ibis.literal(" Bob.Jones@gmail.com")).execute()
-    {'full': 'bobjones@gmailcom', 'user': 'bobjones', 'domain': 'gmailcom'}
+    parsed:
+        An ibis struct<full:string, user:string, domain: domain>
     """
-    email = (
-        email.strip().lower().replace(".", "").replace("_", "").nullif("").nullif("@")
-    )
     parts = email.split("@")
     user, domain = parts[0].nullif(""), parts[1].nullif("")
-    return ir.struct({"full": email, "user": user, "domain": domain})
+    return ibis.struct({"full": email, "user": user, "domain": domain})
 
 
-class EmailMatchLevels(MatchLevels):
+class EmailMatchLevel(MatchLevel):
     """How closely two email addresses of the form `<user>@<domain>` match.
 
     Case is ignored, and dots and underscores are removed.
@@ -65,7 +70,7 @@ def match_level(
     e2: ir.StructValue | ir.StringValue,
     *,
     native_representation: Literal["integer", "string"] = "integer",
-) -> EmailMatchLevels:
+) -> EmailMatchLevel:
     """Match level of two email addresses.
 
     Parameters
@@ -77,15 +82,19 @@ def match_level(
 
     Returns
     -------
-    level : EmailMatchLevels
+    level : EmailMatchLevel
         The match level.
     """
-    if isinstance(e1, ir.StringValue):
-        e1 = parse_and_normalize_email(e1)
-    if isinstance(e2, ir.StringValue):
-        e2 = parse_and_normalize_email(e2)
 
-    def f(level: MatchLevels):
+    def norm_and_parse(e):
+        return parse_email(clean_email(e, normalize=True))
+
+    if isinstance(e1, ir.StringValue):
+        e1 = norm_and_parse(e1)
+    if isinstance(e2, ir.StringValue):
+        e2 = norm_and_parse(e2)
+
+    def f(level: MatchLevel):
         if native_representation == "string":
             return level.as_string()
         else:
@@ -93,18 +102,22 @@ def match_level(
 
     raw = (
         ibis.case()
-        .when(e1 == e2, f(EmailMatchLevels.FULL_EXACT))
-        .when(damerau_levenshtein(e1.full, e2.full) <= 1, f(EmailMatchLevels.FULL_NEAR))
-        .when(e1.user == e2.user, f(EmailMatchLevels.USER_EXACT))
-        .when(damerau_levenshtein(e1.user, e2.user) <= 1, f(EmailMatchLevels.USER_NEAR))
-        .else_(f(EmailMatchLevels.ELSE))
+        .when(e1 == e2, f(EmailMatchLevel.FULL_EXACT))
+        .when(damerau_levenshtein(e1.full, e2.full) <= 1, f(EmailMatchLevel.FULL_NEAR))
+        .when(e1.user == e2.user, f(EmailMatchLevel.USER_EXACT))
+        .when(damerau_levenshtein(e1.user, e2.user) <= 1, f(EmailMatchLevel.USER_NEAR))
+        .else_(f(EmailMatchLevel.ELSE))
         .end()
     )
-    return EmailMatchLevels(raw)
+    return EmailMatchLevel(raw)
 
 
 class EmailsDimension:
-    """A dimension of email addresses."""
+    """A dimension of email addresses.
+
+    This is useful if each record contains a collection of email addresses.
+    Two records are probably the same if they have a lot of email addresses in common.
+    """
 
     def __init__(
         self,
@@ -128,13 +141,17 @@ class EmailsDimension:
         self.column_parsed = column_parsed.format(column=column)
         self.column_compared = column_compared.format(column=column)
 
-    def prep(self, t: ir.Table) -> ir.Table:
+    def prepare(self, t: ir.Table) -> ir.Table:
         """Add a column with the parsed and normalized email addresses."""
         return t.mutate(
             get_column(t, self.column)
-            .map(parse_and_normalize_email)
+            .map(lambda email: parse_email(clean_email(email, normalize=True)))
             .name(self.column_parsed)
         )
+
+    def block(self, t1: ir.Table, t2: ir.Table, **kwargs) -> ir.Table:
+        blocker = KeyBlocker(ibis._[self.column_parsed].full.unnest())
+        return blocker(t1, t2, **kwargs)
 
     def compare(self, t: ir.Table) -> ir.Table:
         """Add a column with the best match between all pairs of email addresses."""
@@ -143,7 +160,5 @@ class EmailsDimension:
         pairs = array_combinations(le, ri)
         min_level = array_min(
             pairs.map(lambda pair: match_level(pair.l, pair.r).as_integer())
-        ).fillna(EmailMatchLevels.ELSE.as_integer())
-        return t.mutate(
-            EmailMatchLevels(min_level).as_string().name(self.column_compared)
-        )
+        ).fillna(EmailMatchLevel.ELSE.as_integer())
+        return t.mutate(min_level.name(self.column_compared))

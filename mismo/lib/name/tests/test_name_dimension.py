@@ -4,12 +4,12 @@ import ibis
 from ibis import _
 
 from mismo.block import CrossBlocker
-from mismo.lib.name import NameDimension
+from mismo.lib.name import NameDimension, NameMatchLevel
 
 
 def test_name_dimension(name_table):
     dim = NameDimension("name")
-    name_table = dim.prep(name_table)
+    name_table = dim.prepare(name_table)
     real_pairs = [
         (1, 2),
         (1, 3),
@@ -21,9 +21,9 @@ def test_name_dimension(name_table):
     )
     compared = dim.compare(blocked)
     compared = compared.order_by(["record_id_l", "record_id_r"])
-    assert compared.execute().NameDimension.to_list() == [
-        "initials",
-        "else",
-        "nicknames",
-        "first_last",
+    assert compared.execute().name_compared.to_list() == [
+        NameMatchLevel.INITIALS,
+        NameMatchLevel.ELSE,
+        NameMatchLevel.NICKNAMES,
+        NameMatchLevel.FIRST_LAST,
     ]

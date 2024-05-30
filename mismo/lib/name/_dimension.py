@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-import ibis
 from ibis.expr import types as ir
 
-from mismo import _util
-from mismo.compare import LevelComparer, compare
+from mismo.block import MinhashLshBlocker
 from mismo.lib.name import _clean, _compare
 
 
 class NameDimension:
-    """Preps, blocks, and compares based on a human name.
+    """Prepares, blocks, and compares based on a human name.
 
     A name is a Struct of the type
     `struct<
@@ -28,22 +26,24 @@ class NameDimension:
         *,
         column_normed: str = "{column}_normed",
         column_tokens: str = "{column}_tokens",
+        column_compared: str = "{column}_compared",
     ) -> None:
         self.column = column
         self.column_normed = column_normed.format(column=column)
         self.column_tokens = column_tokens.format(column=column)
+        self.column_compared = column_compared.format(column=column)
 
-    def prep(self, t: ir.Table) -> ir.Table:
+    def prepare(self, t: ir.Table) -> ir.Table:
         """Add columns with the normalized name and name tokens.
 
         Parameters
         ----------
-        t : ir.Table
+        t
             The table to prep.
 
         Returns
         -------
-        t : ir.Table
+        t
             The prepped table.
         """
         t = t.mutate(_clean.normalize_name(t[self.column]).name(self.column_normed))
@@ -51,6 +51,24 @@ class NameDimension:
         t = t.cache()
         t = t.mutate(_clean.name_tokens(t[self.column_normed]).name(self.column_tokens))
         return t
+
+    def block(self, left: ir.Table, right: ir.Table, **kwargs) -> ir.Table:
+        """Block records based on the name tokens.
+
+        Parameters
+        ----------
+        left
+            The left table.
+        right
+            The right table.
+
+        Returns
+        -------
+        t
+            The blocked table.
+        """
+        blocker = MinhashLshBlocker(self.column_tokens, band_size=10, n_bands=10)
+        return blocker(left, right, **kwargs)
 
     def compare(self, t: ir.Table) -> ir.Table:
         """Compare the left and right names.
@@ -65,35 +83,9 @@ class NameDimension:
         t :
             The compared table.
         """
-
-        def le(t):
-            return t[self.column_normed + "_l"]
-
-        def ri(t):
-            return t[self.column_normed + "_r"]
-
-        levels = [
-            (
-                "null",
-                lambda t: ibis.or_(
-                    _util.struct_isnull(le(t), how="any", fields=["first", "last"]),
-                    _util.struct_isnull(ri(t), how="any", fields=["first", "last"]),
-                ),
-            ),
-            ("exact", lambda t: _util.struct_equal(le(t), ri(t))),
-            (
-                "first_last",
-                lambda t: _util.struct_equal(le(t), ri(t), fields=["first", "last"]),
-            ),
-            (
-                "nicknames",
-                lambda t: _compare.are_match_with_nicknames(le(t), ri(t)),
-            ),
-            (
-                "initials",
-                lambda t: _compare.initials_equal(le(t)["first"], ri(t)["first"])
-                & (le(t)["last"] == ri(t)["last"]),
-            ),
-        ]
-        name = type(self).__name__
-        return compare(t, LevelComparer(name, levels))
+        comparer = _compare.NameComparer(
+            self.column_normed + "_l",
+            self.column_normed + "_r",
+            result_column=self.column_compared,
+        )
+        return comparer(t)

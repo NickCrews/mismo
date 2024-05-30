@@ -1,37 +1,43 @@
 from __future__ import annotations
 
-from typing import Iterable
+from typing import Iterable, Type
 
+from ibis import _
 from ibis.expr import types as ir
 
 from mismo._util import sample_table
 from mismo.block import KeyBlocker, sample_all_pairs
-from mismo.compare import LevelComparer, compare
+from mismo.compare import LevelComparer, MatchLevel
 
-from ._weights import ComparisonWeights, LevelWeights, Weights
+from ._weights import ComparerWeights, LevelWeights, Weights
 
 
 def level_proportions(
-    comparer: LevelComparer, labels: ir.IntegerColumn | ir.StringColumn
+    levels: Type[MatchLevel], labels: ir.IntegerColumn | ir.StringColumn
 ) -> list[float]:
     """
-    Return the proportion of labels that fall into each Comparison level.
-    """
-    vc = labels.name("level").value_counts().rename(n="level_count")
-    vc_df = vc.to_pandas().set_index("level")
+    Return the proportion of labels that fall into each [MatchLevel](mismo.compare.MatchLevel).
+    """  # noqa: E501
+    counts = (
+        levels(labels)
+        .as_integer()
+        .name("level")
+        .as_table()
+        .group_by("level")
+        .agg(n=_.count())
+    )
+    counts_dict: dict = counts.execute().set_index("level")["n"].to_dict()
     # If we didn't see a level, that won't be present in the value_counts table.
     # Add it in, with a count of 1 to regularaize it.
     # If a level shows shows up 0 times among nonmatches, this would lead to an odds
     # of M/0 = infinity.
     # If it shows up 0 times among matches, this would lead to an odds of 0/M = 0.
     # To avoid this, for any levels that we didn't see, we pretend we saw them once.
-    vc_df = vc_df.reindex([lev.name for lev in comparer], fill_value=1)
-    vc_df["pct"] = vc_df["n"] / vc_df["n"].sum()
-    vc_dict = vc_df["pct"].to_dict()
-    if isinstance(labels, ir.StringColumn):
-        name_to_i = {lev.name: i for i, lev in enumerate(comparer)}
-        vc_dict = {name_to_i[name]: v for name, v in vc_dict.items()}
-    return [vc_dict[i] for i in range(len(comparer))]
+    int_levels = [levels(lev).as_integer() for lev in levels]
+    for lev in int_levels:
+        counts_dict.setdefault(lev, 1)
+    n_total = sum(counts_dict.values())
+    return [counts_dict[lev] / n_total for lev in int_levels]
 
 
 def train_us_using_sampling(
@@ -45,14 +51,13 @@ def train_us_using_sampling(
 
     This is from splink's `estimate_u_using_random_sampling()`
 
-    The u parameters represent the proportion of record comparisons
-    that fall into each comparison level amongst truly non-matching records.
+    The u parameters represent the proportion of record pairs
+    that fall into each MatchLevel amongst truly non-matching records.
 
-    This procedure takes a sample of the data and generates the cartesian
-    product of pairwise record comparisons amongst the sampled records.
-    The validity of the u values rests on the assumption that the resultant
-    pairwise comparisons are non-matches (or at least, they are very unlikely
-    to be matches). For large datasets, this is typically true.
+    This procedure takes a sample of `left` and `right` and generates the cartesian
+    product of record pairs.
+    The validity of the u values rests on the assumption that nearly all of the
+    resultant pairs are non-matches. For large datasets, this is typically true.
 
     The results of estimate_u_using_random_sampling, and therefore an
     entire splink model, can be made reproducible by setting the seed
@@ -61,18 +66,18 @@ def train_us_using_sampling(
 
     Args:
         max_pairs:
-            The maximum number of pairwise record comparisons to
-            sample. Larger will give more accurate estimates
-            but lead to longer runtimes.  In our experience at least 1e9 (one billion)
-            gives best results but can take a long time to compute. 1e7 (ten million)
-            is often adequate whilst testing different model specifications, before
-            the final model is estimated.
+            The maximum number of pairwise record pairs to sample.
+            Larger will give more accurate estimates but lead to longer runtimes.
+            In our experience at least 1e9 (one billion)
+            gives best results but can take a long time to compute.
+            1e7 (ten million) is often adequate whilst testing different model
+            specifications, before the final model is estimated.
     """
     if max_pairs is None:
         max_pairs = 1_000_000_000
     sample = sample_all_pairs(left, right, max_pairs=max_pairs)
-    labels = compare(sample, comparer)[comparer.name]
-    return level_proportions(comparer, labels)
+    labels = comparer(sample)[comparer.name]
+    return level_proportions(comparer.levels, labels)
 
 
 def train_ms_from_labels(
@@ -86,10 +91,9 @@ def train_ms_from_labels(
     """Using the true labels in the dataset, estimate the m weight.
 
     The m parameter represent the proportion of record pairs
-    that fall into each comparison level amongst truly matching pairs.
+    that fall into each MatchLevel amongst truly matching pairs.
 
-    The ground truth column is used to generate pairwise record
-    comparisons which are then assumed to be matches.
+    The `label_true` column is used to generate true-match record pairs.
 
     For example, if the entity being matched is persons, and your
     input dataset(s) contain social security number, this could be
@@ -100,14 +104,32 @@ def train_ms_from_labels(
     security number is only partially populated.
     When NULL values are encountered in the ground truth column,
     that record is simply ignored.
+
+    Parameters
+    ----------
+    comparer
+        The comparer to train.
+    left
+        The left dataset. Must contain a column "label_true".
+    right
+        The right dataset. Must contain a column "label_true".
+    max_pairs
+        The maximum number of pairs to sample.
+    seed
+        The random seed to use for sampling.
+
+    Returns
+    -------
+    list[float]
+        The estimated m weights.
     """
     pairs = _true_pairs_from_labels(left, right)
     if max_pairs is None:
         max_pairs = 1_000_000_000
     n_pairs = min(pairs.count().execute(), max_pairs)
     sample = sample_table(pairs, n_pairs, seed=seed)
-    labels = compare(sample, comparer)[comparer.name]
-    return level_proportions(comparer, labels)
+    labels = comparer(sample)[comparer.name]
+    return level_proportions(comparer.levels, labels)
 
 
 def _true_pairs_from_labels(left: ir.Table, right: ir.Table) -> ir.Table:
@@ -128,7 +150,7 @@ def _train_using_labels(
     right: ir.Table,
     *,
     max_pairs: int | None = None,
-) -> ComparisonWeights:
+) -> ComparerWeights:
     ms = train_ms_from_labels(comparer, left, right, max_pairs=max_pairs)
     us = train_us_using_sampling(comparer, left, right, max_pairs=max_pairs)
     return make_weights(comparer, ms, us)
@@ -148,9 +170,10 @@ def train_using_labels(
 
 
 def make_weights(comparer: LevelComparer, ms: list[float], us: list[float]):
-    assert len(ms) == len(us) == len(comparer)
+    levels = comparer.levels
+    assert len(ms) == len(us) == len(levels)
     level_weights = [
-        LevelWeights(level.name, m=m, u=u) for m, u, level in zip(ms, us, comparer)
+        LevelWeights(level, m=m, u=u) for level, m, u in zip(levels, ms, us)
     ]
     level_weights = [lw for lw in level_weights if lw.name != "else"]
-    return ComparisonWeights(comparer.name, level_weights)
+    return ComparerWeights(comparer.name, level_weights)

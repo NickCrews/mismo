@@ -47,7 +47,7 @@ def test_intify_column(table_factory):
     )
     inp = inp.mutate(original=inp.vals)
     inted, restore = _util.intify_column(inp, "vals")
-    assert inted.vals.type() == ibis.dtype("uint64")
+    assert inted.vals.type() == ibis.dtype("!uint64")
     assert (inted.vals == inted.ints_expected).all().execute()
     restored = restore(inted)
     assert (restored.vals == restored.original).all().execute()
