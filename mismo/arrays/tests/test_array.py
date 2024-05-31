@@ -90,3 +90,17 @@ def test_array_any(backend, inp, exp):
     assert result.type() == dt.Boolean()
     r = result.execute()
     assert r == exp
+
+
+def test_array_sort():
+    emails = ibis.array(
+        [
+            ibis.struct({"email": "b", "date": 1}),
+            ibis.struct({"email": "c", "date": 3}),
+            ibis.struct({"email": "a", "date": 2}),
+        ]
+    )
+    result = arrays.array_sort(emails, key=lambda x: x.date)
+    emails = result.map(lambda x: x.email)
+    expected = ["b", "a", "c"]
+    assert emails.execute() == expected
