@@ -5,7 +5,7 @@
 groups = ["default", "viz", "lint", "docs", "test"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.1"
-content_hash = "sha256:1a1f46e0bac80aadfec2172509af9f9bfbd5e6d865a509d1bf8bee23b09950d6"
+content_hash = "sha256:80f6632596dad71867872751a1353ccaefd759755d7a9acd04611e55847af5ba"
 
 [[package]]
 name = "aiohttp"
@@ -285,13 +285,13 @@ files = [
 
 [[package]]
 name = "certifi"
-version = "2024.2.2"
+version = "2024.6.2"
 requires_python = ">=3.6"
 summary = "Python package for providing Mozilla's CA Bundle."
 groups = ["docs", "test", "viz"]
 files = [
-    {file = "certifi-2024.2.2-py3-none-any.whl", hash = "sha256:dc383c07b76109f368f6106eee2b593b04a011ea4d55f652c6ca24a754d1cdd1"},
-    {file = "certifi-2024.2.2.tar.gz", hash = "sha256:0569859f95fc761b18b45ef421b1290a0f65f147e92a1e5eb3e635f9a5e4e66f"},
+    {file = "certifi-2024.6.2-py3-none-any.whl", hash = "sha256:ddc6c8ce995e6987e7faf5e3f1b02b302836a0e5d98ece18392cb1a36c72ad56"},
+    {file = "certifi-2024.6.2.tar.gz", hash = "sha256:3cd43f1c6fa7dedc5899d69d3ad0398fd018ad1a17fba83ddaf78aa46c747516"},
 ]
 
 [[package]]
@@ -1058,16 +1058,16 @@ files = [
 
 [[package]]
 name = "googleapis-common-protos"
-version = "1.63.0"
+version = "1.63.1"
 requires_python = ">=3.7"
 summary = "Common protobufs used in Google APIs"
 groups = ["test"]
 dependencies = [
-    "protobuf!=3.20.0,!=3.20.1,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5,<5.0.0.dev0,>=3.19.5",
+    "protobuf!=3.20.0,!=3.20.1,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5,<6.0.0.dev0,>=3.19.5",
 ]
 files = [
-    {file = "googleapis-common-protos-1.63.0.tar.gz", hash = "sha256:17ad01b11d5f1d0171c06d3ba5c04c54474e883b66b949722b4938ee2694ef4e"},
-    {file = "googleapis_common_protos-1.63.0-py2.py3-none-any.whl", hash = "sha256:ae45f75702f7c08b541f750854a678bd8f534a1a6bace6afe975f1d0a82d6632"},
+    {file = "googleapis-common-protos-1.63.1.tar.gz", hash = "sha256:c6442f7a0a6b2a80369457d79e6672bb7dcbaab88e0848302497e3ec80780a6a"},
+    {file = "googleapis_common_protos-1.63.1-py2.py3-none-any.whl", hash = "sha256:0e1c2cdfcbc354b76e4a211a35ea35d6926a835cba1377073c4861db904a1877"},
 ]
 
 [[package]]
@@ -1444,7 +1444,7 @@ name = "joblib"
 version = "1.4.2"
 requires_python = ">=3.8"
 summary = "Lightweight pipelining with Python functions"
-groups = ["default", "test"]
+groups = ["test"]
 files = [
     {file = "joblib-1.4.2-py3-none-any.whl", hash = "sha256:06d478d5674cbc267e7496a410ee875abd68e4340feff4490bcb7afb88060ae6"},
     {file = "joblib-1.4.2.tar.gz", hash = "sha256:2382c5816b2636fbd20a09e0f4e9dad4736765fdfb7dca582943b9c1366b3f0e"},
@@ -1758,7 +1758,7 @@ files = [
 
 [[package]]
 name = "mkdocs-git-revision-date-localized-plugin"
-version = "1.2.5"
+version = "1.2.6"
 requires_python = ">=3.8"
 summary = "Mkdocs plugin that enables displaying the localized date of the last git modification of a markdown file."
 groups = ["docs"]
@@ -1769,8 +1769,8 @@ dependencies = [
     "pytz",
 ]
 files = [
-    {file = "mkdocs_git_revision_date_localized_plugin-1.2.5-py3-none-any.whl", hash = "sha256:d796a18b07cfcdb154c133e3ec099d2bb5f38389e4fd54d3eb516a8a736815b8"},
-    {file = "mkdocs_git_revision_date_localized_plugin-1.2.5.tar.gz", hash = "sha256:0c439816d9d0dba48e027d9d074b2b9f1d7cd179f74ba46b51e4da7bb3dc4b9b"},
+    {file = "mkdocs_git_revision_date_localized_plugin-1.2.6-py3-none-any.whl", hash = "sha256:f015cb0f3894a39b33447b18e270ae391c4e25275cac5a626e80b243784e2692"},
+    {file = "mkdocs_git_revision_date_localized_plugin-1.2.6.tar.gz", hash = "sha256:e432942ce4ee8aa9b9f4493e993dee9d2cc08b3ea2b40a3d6b03ca0f2a4bcaa2"},
 ]
 
 [[package]]
@@ -1807,7 +1807,7 @@ files = [
 
 [[package]]
 name = "mkdocs-material"
-version = "9.5.25"
+version = "9.5.26"
 requires_python = ">=3.8"
 summary = "Documentation that simply works"
 groups = ["docs"]
@@ -1825,8 +1825,8 @@ dependencies = [
     "requests~=2.26",
 ]
 files = [
-    {file = "mkdocs_material-9.5.25-py3-none-any.whl", hash = "sha256:68fdab047a0b9bfbefe79ce267e8a7daaf5128bcf7867065fcd201ee335fece1"},
-    {file = "mkdocs_material-9.5.25.tar.gz", hash = "sha256:d0662561efb725b712207e0ee01f035ca15633f29a64628e24f01ec99d7078f4"},
+    {file = "mkdocs_material-9.5.26-py3-none-any.whl", hash = "sha256:5d01fb0aa1c7946a1e3ae8689aa2b11a030621ecb54894e35aabb74c21016312"},
+    {file = "mkdocs_material-9.5.26.tar.gz", hash = "sha256:56aeb91d94cffa43b6296fa4fbf0eb7c840136e563eecfd12c2d9e92e50ba326"},
 ]
 
 [[package]]
@@ -2088,24 +2088,24 @@ files = [
 
 [[package]]
 name = "nicknames"
-version = "0.1.9"
+version = "0.1.10"
 requires_python = ">=3.7"
 summary = "Hand-curated dataset of English given names and nicknames"
 groups = ["test"]
 files = [
-    {file = "nicknames-0.1.9-py3-none-any.whl", hash = "sha256:dd4e338e8b2f3e7c61451b128bfb573f044b0a3b116f222678157885f4a34fc8"},
-    {file = "nicknames-0.1.9.tar.gz", hash = "sha256:6a2db862991aa3f31002a4244e0f441d280a8e4bc245fa900849e8267d420279"},
+    {file = "nicknames-0.1.10-py3-none-any.whl", hash = "sha256:4e2f8d5af7ec46dce0e4034cab447e0fd778d2760d3f173e824d8da29b43d26b"},
+    {file = "nicknames-0.1.10.tar.gz", hash = "sha256:1cefec16859ee01170a5552e4f096ed2cb4ab5af54f685ba4915b549a7be70b4"},
 ]
 
 [[package]]
 name = "nodeenv"
-version = "1.9.0"
+version = "1.9.1"
 requires_python = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7"
 summary = "Node.js virtual environment builder"
 groups = ["lint"]
 files = [
-    {file = "nodeenv-1.9.0-py2.py3-none-any.whl", hash = "sha256:508ecec98f9f3330b636d4448c0f1a56fc68017c68f1e7857ebc52acf0eb879a"},
-    {file = "nodeenv-1.9.0.tar.gz", hash = "sha256:07f144e90dae547bf0d4ee8da0ee42664a42a04e02ed68e06324348dafe4bdb1"},
+    {file = "nodeenv-1.9.1-py2.py3-none-any.whl", hash = "sha256:ba11c9782d29c27c70ffbdda2d7415098754709be8a7056d79a737cd901155c9"},
+    {file = "nodeenv-1.9.1.tar.gz", hash = "sha256:6ec12890a2dab7946721edbfbcd91f3319c6ccc9aec47be7c7e6b7011ee6645f"},
 ]
 
 [[package]]
@@ -2438,7 +2438,7 @@ files = [
 
 [[package]]
 name = "prompt-toolkit"
-version = "3.0.45"
+version = "3.0.46"
 requires_python = ">=3.7.0"
 summary = "Library for building powerful interactive command lines in Python"
 groups = ["docs", "viz"]
@@ -2446,8 +2446,8 @@ dependencies = [
     "wcwidth",
 ]
 files = [
-    {file = "prompt_toolkit-3.0.45-py3-none-any.whl", hash = "sha256:a29b89160e494e3ea8622b09fa5897610b437884dcdcd054fdc1308883326c2a"},
-    {file = "prompt_toolkit-3.0.45.tar.gz", hash = "sha256:07c60ee4ab7b7e90824b61afa840c8f5aad2d46b3e2e10acc33d8ecc94a49089"},
+    {file = "prompt_toolkit-3.0.46-py3-none-any.whl", hash = "sha256:45abe60a8300f3c618b23c16c4bb98c6fc80af8ce8b17c7ae92db48db3ee63c1"},
+    {file = "prompt_toolkit-3.0.46.tar.gz", hash = "sha256:869c50d682152336e23c4db7f74667639b5047494202ffe7670817053fd57795"},
 ]
 
 [[package]]
@@ -2673,7 +2673,7 @@ files = [
 
 [[package]]
 name = "pytest"
-version = "8.2.1"
+version = "8.2.2"
 requires_python = ">=3.8"
 summary = "pytest: simple powerful testing with Python"
 groups = ["test"]
@@ -2686,8 +2686,8 @@ dependencies = [
     "tomli>=1; python_version < \"3.11\"",
 ]
 files = [
-    {file = "pytest-8.2.1-py3-none-any.whl", hash = "sha256:faccc5d332b8c3719f40283d0d44aa5cf101cec36f88cde9ed8f2bc0538612b1"},
-    {file = "pytest-8.2.1.tar.gz", hash = "sha256:5046e5b46d8e4cac199c373041f26be56fdb81eb4e67dc11d4e10811fc3408fd"},
+    {file = "pytest-8.2.2-py3-none-any.whl", hash = "sha256:c434598117762e2bd304e526244f67bf66bbd7b5d6cf22138be51ff661980343"},
+    {file = "pytest-8.2.2.tar.gz", hash = "sha256:de4bb8104e201939ccdc688b27a89a7be2079b22e2bd2b07f806b6ba71117977"},
 ]
 
 [[package]]
@@ -3193,28 +3193,28 @@ files = [
 
 [[package]]
 name = "ruff"
-version = "0.4.6"
+version = "0.4.8"
 requires_python = ">=3.7"
 summary = "An extremely fast Python linter and code formatter, written in Rust."
 groups = ["lint"]
 files = [
-    {file = "ruff-0.4.6-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:ef995583a038cd4a7edf1422c9e19118e2511b8ba0b015861b4abd26ec5367c5"},
-    {file = "ruff-0.4.6-py3-none-macosx_11_0_arm64.whl", hash = "sha256:602ebd7ad909eab6e7da65d3c091547781bb06f5f826974a53dbe563d357e53c"},
-    {file = "ruff-0.4.6-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3f9ced5cbb7510fd7525448eeb204e0a22cabb6e99a3cb160272262817d49786"},
-    {file = "ruff-0.4.6-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:04a80acfc862e0e1630c8b738e70dcca03f350bad9e106968a8108379e12b31f"},
-    {file = "ruff-0.4.6-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:be47700ecb004dfa3fd4dcdddf7322d4e632de3c06cd05329d69c45c0280e618"},
-    {file = "ruff-0.4.6-py3-none-manylinux_2_17_ppc64.manylinux2014_ppc64.whl", hash = "sha256:1ff930d6e05f444090a0139e4e13e1e2e1f02bd51bb4547734823c760c621e79"},
-    {file = "ruff-0.4.6-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:f13410aabd3b5776f9c5699f42b37a3a348d65498c4310589bc6e5c548dc8a2f"},
-    {file = "ruff-0.4.6-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:0cf5cc02d3ae52dfb0c8a946eb7a1d6ffe4d91846ffc8ce388baa8f627e3bd50"},
-    {file = "ruff-0.4.6-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ea3424793c29906407e3cf417f28fc33f689dacbbadfb52b7e9a809dd535dcef"},
-    {file = "ruff-0.4.6-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:1fa8561489fadf483ffbb091ea94b9c39a00ed63efacd426aae2f197a45e67fc"},
-    {file = "ruff-0.4.6-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:4d5b914818d8047270308fe3e85d9d7f4a31ec86c6475c9f418fbd1624d198e0"},
-    {file = "ruff-0.4.6-py3-none-musllinux_1_2_i686.whl", hash = "sha256:4f02284335c766678778475e7698b7ab83abaf2f9ff0554a07b6f28df3b5c259"},
-    {file = "ruff-0.4.6-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:3a6a0a4f4b5f54fff7c860010ab3dd81425445e37d35701a965c0248819dde7a"},
-    {file = "ruff-0.4.6-py3-none-win32.whl", hash = "sha256:9018bf59b3aa8ad4fba2b1dc0299a6e4e60a4c3bc62bbeaea222679865453062"},
-    {file = "ruff-0.4.6-py3-none-win_amd64.whl", hash = "sha256:a769ae07ac74ff1a019d6bd529426427c3e30d75bdf1e08bb3d46ac8f417326a"},
-    {file = "ruff-0.4.6-py3-none-win_arm64.whl", hash = "sha256:735a16407a1a8f58e4c5b913ad6102722e80b562dd17acb88887685ff6f20cf6"},
-    {file = "ruff-0.4.6.tar.gz", hash = "sha256:a797a87da50603f71e6d0765282098245aca6e3b94b7c17473115167d8dfb0b7"},
+    {file = "ruff-0.4.8-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:7663a6d78f6adb0eab270fa9cf1ff2d28618ca3a652b60f2a234d92b9ec89066"},
+    {file = "ruff-0.4.8-py3-none-macosx_11_0_arm64.whl", hash = "sha256:eeceb78da8afb6de0ddada93112869852d04f1cd0f6b80fe464fd4e35c330913"},
+    {file = "ruff-0.4.8-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:aad360893e92486662ef3be0a339c5ca3c1b109e0134fcd37d534d4be9fb8de3"},
+    {file = "ruff-0.4.8-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:284c2e3f3396fb05f5f803c9fffb53ebbe09a3ebe7dda2929ed8d73ded736deb"},
+    {file = "ruff-0.4.8-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:a7354f921e3fbe04d2a62d46707e569f9315e1a613307f7311a935743c51a764"},
+    {file = "ruff-0.4.8-py3-none-manylinux_2_17_ppc64.manylinux2014_ppc64.whl", hash = "sha256:72584676164e15a68a15778fd1b17c28a519e7a0622161eb2debdcdabdc71883"},
+    {file = "ruff-0.4.8-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:9678d5c9b43315f323af2233a04d747409d1e3aa6789620083a82d1066a35199"},
+    {file = "ruff-0.4.8-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:704977a658131651a22b5ebeb28b717ef42ac6ee3b11e91dc87b633b5d83142b"},
+    {file = "ruff-0.4.8-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d05f8d6f0c3cce5026cecd83b7a143dcad503045857bc49662f736437380ad45"},
+    {file = "ruff-0.4.8-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:6ea874950daca5697309d976c9afba830d3bf0ed66887481d6bca1673fc5b66a"},
+    {file = "ruff-0.4.8-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:fc95aac2943ddf360376be9aa3107c8cf9640083940a8c5bd824be692d2216dc"},
+    {file = "ruff-0.4.8-py3-none-musllinux_1_2_i686.whl", hash = "sha256:384154a1c3f4bf537bac69f33720957ee49ac8d484bfc91720cc94172026ceed"},
+    {file = "ruff-0.4.8-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:e9d5ce97cacc99878aa0d084c626a15cd21e6b3d53fd6f9112b7fc485918e1fa"},
+    {file = "ruff-0.4.8-py3-none-win32.whl", hash = "sha256:6d795d7639212c2dfd01991259460101c22aabf420d9b943f153ab9d9706e6a9"},
+    {file = "ruff-0.4.8-py3-none-win_amd64.whl", hash = "sha256:e14a3a095d07560a9d6769a72f781d73259655919d9b396c650fc98a8157555d"},
+    {file = "ruff-0.4.8-py3-none-win_arm64.whl", hash = "sha256:14019a06dbe29b608f6b7cbcec300e3170a8d86efaddb7b23405cb7f7dcaf780"},
+    {file = "ruff-0.4.8.tar.gz", hash = "sha256:16d717b1d57b2e2fd68bd0bf80fb43931b79d05a7131aa477d66fc40fbd86268"},
 ]
 
 [[package]]
@@ -3222,7 +3222,7 @@ name = "scikit-learn"
 version = "1.5.0"
 requires_python = ">=3.9"
 summary = "A set of python modules for machine learning and data mining"
-groups = ["default", "test"]
+groups = ["test"]
 dependencies = [
     "joblib>=1.2.0",
     "numpy>=1.19.5",
@@ -3258,7 +3258,7 @@ name = "scipy"
 version = "1.13.1"
 requires_python = ">=3.9"
 summary = "Fundamental algorithms for scientific computing in Python"
-groups = ["default", "test"]
+groups = ["test"]
 dependencies = [
     "numpy<2.3,>=1.22.4",
 ]
@@ -3325,21 +3325,21 @@ files = [
 
 [[package]]
 name = "solara"
-version = "1.32.2"
+version = "1.33.0"
 summary = ""
 groups = ["viz"]
 dependencies = [
-    "solara-server[dev,starlette]==1.32.2",
-    "solara-ui[all]==1.32.2",
+    "solara-server[dev,starlette]==1.33.0",
+    "solara-ui[all]==1.33.0",
 ]
 files = [
-    {file = "solara-1.32.2-py2.py3-none-any.whl", hash = "sha256:ca4a793476b68ba345b6a538802d8fee0fb8e9764e7ecc55470d4c81d3d75a6b"},
-    {file = "solara-1.32.2.tar.gz", hash = "sha256:1e0f98bf0f073bc31cfe87a8e7b441b612751f8d93189b25ab614b33eeccda76"},
+    {file = "solara-1.33.0-py2.py3-none-any.whl", hash = "sha256:028584f7904af4de3317480ae6115ed6af6ded44367e2beb8c6c55a077b63111"},
+    {file = "solara-1.33.0.tar.gz", hash = "sha256:98fce593f4476f27379174575404c409939481e74e0c25c66bf8205e01adf808"},
 ]
 
 [[package]]
 name = "solara-server"
-version = "1.32.2"
+version = "1.33.0"
 summary = ""
 groups = ["viz"]
 dependencies = [
@@ -3353,18 +3353,18 @@ dependencies = [
     "solara-ui",
 ]
 files = [
-    {file = "solara_server-1.32.2-py2.py3-none-any.whl", hash = "sha256:3dada0235615acb910c78e6a64f825b303d7e8ea3977b6ad7b12c20ed79b9db1"},
-    {file = "solara_server-1.32.2.tar.gz", hash = "sha256:3783f55f6970bb70c61dead9629799a135f8d880953d304d2e1cfa41e9598ff6"},
+    {file = "solara_server-1.33.0-py2.py3-none-any.whl", hash = "sha256:12d9770a5a0f8521fcce3951c8c117e442b51e7dd17282c41d4c819641795ce6"},
+    {file = "solara_server-1.33.0.tar.gz", hash = "sha256:c0d3932a8b9a1b87f7a7bc6c02e662076685d92b9f47c1a7161c30ad73210490"},
 ]
 
 [[package]]
 name = "solara-server"
-version = "1.32.2"
+version = "1.33.0"
 extras = ["dev", "starlette"]
 summary = ""
 groups = ["viz"]
 dependencies = [
-    "solara-server==1.32.2",
+    "solara-server==1.33.0",
     "starlette",
     "uvicorn",
     "watchdog",
@@ -3372,13 +3372,13 @@ dependencies = [
     "websockets",
 ]
 files = [
-    {file = "solara_server-1.32.2-py2.py3-none-any.whl", hash = "sha256:3dada0235615acb910c78e6a64f825b303d7e8ea3977b6ad7b12c20ed79b9db1"},
-    {file = "solara_server-1.32.2.tar.gz", hash = "sha256:3783f55f6970bb70c61dead9629799a135f8d880953d304d2e1cfa41e9598ff6"},
+    {file = "solara_server-1.33.0-py2.py3-none-any.whl", hash = "sha256:12d9770a5a0f8521fcce3951c8c117e442b51e7dd17282c41d4c819641795ce6"},
+    {file = "solara_server-1.33.0.tar.gz", hash = "sha256:c0d3932a8b9a1b87f7a7bc6c02e662076685d92b9f47c1a7161c30ad73210490"},
 ]
 
 [[package]]
 name = "solara-ui"
-version = "1.32.2"
+version = "1.33.0"
 summary = ""
 groups = ["viz"]
 dependencies = [
@@ -3390,61 +3390,61 @@ dependencies = [
     "requests",
 ]
 files = [
-    {file = "solara_ui-1.32.2-py2.py3-none-any.whl", hash = "sha256:0af81a1091b37f7cc77a3fca6f8de9d26be1115046890ffeda2cdb50f6f55143"},
-    {file = "solara_ui-1.32.2.tar.gz", hash = "sha256:5e61d58426ef8b2c37dfd39629c094c9d2bc898b4fba4c9e26d0e0368ca32ea9"},
+    {file = "solara_ui-1.33.0-py2.py3-none-any.whl", hash = "sha256:8b7b3f2f730ecc9782bc45d860b45e9e01682d7b81733998e41a9f65d3dfeb39"},
+    {file = "solara_ui-1.33.0.tar.gz", hash = "sha256:f0d337e7e681a187d5e269948ced0c33d315e5c2c7f345100cef47105c1025d7"},
 ]
 
 [[package]]
 name = "solara-ui"
-version = "1.32.2"
+version = "1.33.0"
 extras = ["all"]
 summary = ""
 groups = ["viz"]
 dependencies = [
-    "solara-ui==1.32.2",
+    "solara-ui==1.33.0",
     "solara-ui[cache]",
     "solara-ui[extra]",
     "solara-ui[markdown]",
 ]
 files = [
-    {file = "solara_ui-1.32.2-py2.py3-none-any.whl", hash = "sha256:0af81a1091b37f7cc77a3fca6f8de9d26be1115046890ffeda2cdb50f6f55143"},
-    {file = "solara_ui-1.32.2.tar.gz", hash = "sha256:5e61d58426ef8b2c37dfd39629c094c9d2bc898b4fba4c9e26d0e0368ca32ea9"},
+    {file = "solara_ui-1.33.0-py2.py3-none-any.whl", hash = "sha256:8b7b3f2f730ecc9782bc45d860b45e9e01682d7b81733998e41a9f65d3dfeb39"},
+    {file = "solara_ui-1.33.0.tar.gz", hash = "sha256:f0d337e7e681a187d5e269948ced0c33d315e5c2c7f345100cef47105c1025d7"},
 ]
 
 [[package]]
 name = "solara-ui"
-version = "1.32.2"
+version = "1.33.0"
 extras = ["cache"]
 summary = ""
 groups = ["viz"]
 dependencies = [
     "cachetools",
-    "solara-ui==1.32.2",
+    "solara-ui==1.33.0",
 ]
 files = [
-    {file = "solara_ui-1.32.2-py2.py3-none-any.whl", hash = "sha256:0af81a1091b37f7cc77a3fca6f8de9d26be1115046890ffeda2cdb50f6f55143"},
-    {file = "solara_ui-1.32.2.tar.gz", hash = "sha256:5e61d58426ef8b2c37dfd39629c094c9d2bc898b4fba4c9e26d0e0368ca32ea9"},
+    {file = "solara_ui-1.33.0-py2.py3-none-any.whl", hash = "sha256:8b7b3f2f730ecc9782bc45d860b45e9e01682d7b81733998e41a9f65d3dfeb39"},
+    {file = "solara_ui-1.33.0.tar.gz", hash = "sha256:f0d337e7e681a187d5e269948ced0c33d315e5c2c7f345100cef47105c1025d7"},
 ]
 
 [[package]]
 name = "solara-ui"
-version = "1.32.2"
+version = "1.33.0"
 extras = ["extra"]
 summary = ""
 groups = ["viz"]
 dependencies = [
     "numpy",
     "pillow",
-    "solara-ui==1.32.2",
+    "solara-ui==1.33.0",
 ]
 files = [
-    {file = "solara_ui-1.32.2-py2.py3-none-any.whl", hash = "sha256:0af81a1091b37f7cc77a3fca6f8de9d26be1115046890ffeda2cdb50f6f55143"},
-    {file = "solara_ui-1.32.2.tar.gz", hash = "sha256:5e61d58426ef8b2c37dfd39629c094c9d2bc898b4fba4c9e26d0e0368ca32ea9"},
+    {file = "solara_ui-1.33.0-py2.py3-none-any.whl", hash = "sha256:8b7b3f2f730ecc9782bc45d860b45e9e01682d7b81733998e41a9f65d3dfeb39"},
+    {file = "solara_ui-1.33.0.tar.gz", hash = "sha256:f0d337e7e681a187d5e269948ced0c33d315e5c2c7f345100cef47105c1025d7"},
 ]
 
 [[package]]
 name = "solara-ui"
-version = "1.32.2"
+version = "1.33.0"
 extras = ["markdown"]
 summary = ""
 groups = ["viz"]
@@ -3452,11 +3452,11 @@ dependencies = [
     "markdown",
     "pygments",
     "pymdown-extensions",
-    "solara-ui==1.32.2",
+    "solara-ui==1.33.0",
 ]
 files = [
-    {file = "solara_ui-1.32.2-py2.py3-none-any.whl", hash = "sha256:0af81a1091b37f7cc77a3fca6f8de9d26be1115046890ffeda2cdb50f6f55143"},
-    {file = "solara_ui-1.32.2.tar.gz", hash = "sha256:5e61d58426ef8b2c37dfd39629c094c9d2bc898b4fba4c9e26d0e0368ca32ea9"},
+    {file = "solara_ui-1.33.0-py2.py3-none-any.whl", hash = "sha256:8b7b3f2f730ecc9782bc45d860b45e9e01682d7b81733998e41a9f65d3dfeb39"},
+    {file = "solara_ui-1.33.0.tar.gz", hash = "sha256:f0d337e7e681a187d5e269948ced0c33d315e5c2c7f345100cef47105c1025d7"},
 ]
 
 [[package]]
@@ -3516,7 +3516,7 @@ name = "threadpoolctl"
 version = "3.5.0"
 requires_python = ">=3.8"
 summary = "threadpoolctl"
-groups = ["default", "test"]
+groups = ["test"]
 files = [
     {file = "threadpoolctl-3.5.0-py3-none-any.whl", hash = "sha256:56c1e26c150397e58c4926da8eeee87533b1e32bef131bd4bf6a2f45f3185467"},
     {file = "threadpoolctl-3.5.0.tar.gz", hash = "sha256:082433502dd922bf738de0d8bcc4fdcbf0979ff44c42bd40f5af8a282f6fa107"},
@@ -3561,22 +3561,22 @@ files = [
 
 [[package]]
 name = "tornado"
-version = "6.4"
-requires_python = ">= 3.8"
+version = "6.4.1"
+requires_python = ">=3.8"
 summary = "Tornado is a Python web framework and asynchronous networking library, originally developed at FriendFeed."
 groups = ["docs", "viz"]
 files = [
-    {file = "tornado-6.4-cp38-abi3-macosx_10_9_universal2.whl", hash = "sha256:02ccefc7d8211e5a7f9e8bc3f9e5b0ad6262ba2fbb683a6443ecc804e5224ce0"},
-    {file = "tornado-6.4-cp38-abi3-macosx_10_9_x86_64.whl", hash = "sha256:27787de946a9cffd63ce5814c33f734c627a87072ec7eed71f7fc4417bb16263"},
-    {file = "tornado-6.4-cp38-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f7894c581ecdcf91666a0912f18ce5e757213999e183ebfc2c3fdbf4d5bd764e"},
-    {file = "tornado-6.4-cp38-abi3-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:e43bc2e5370a6a8e413e1e1cd0c91bedc5bd62a74a532371042a18ef19e10579"},
-    {file = "tornado-6.4-cp38-abi3-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f0251554cdd50b4b44362f73ad5ba7126fc5b2c2895cc62b14a1c2d7ea32f212"},
-    {file = "tornado-6.4-cp38-abi3-musllinux_1_1_aarch64.whl", hash = "sha256:fd03192e287fbd0899dd8f81c6fb9cbbc69194d2074b38f384cb6fa72b80e9c2"},
-    {file = "tornado-6.4-cp38-abi3-musllinux_1_1_i686.whl", hash = "sha256:88b84956273fbd73420e6d4b8d5ccbe913c65d31351b4c004ae362eba06e1f78"},
-    {file = "tornado-6.4-cp38-abi3-musllinux_1_1_x86_64.whl", hash = "sha256:71ddfc23a0e03ef2df1c1397d859868d158c8276a0603b96cf86892bff58149f"},
-    {file = "tornado-6.4-cp38-abi3-win32.whl", hash = "sha256:6f8a6c77900f5ae93d8b4ae1196472d0ccc2775cc1dfdc9e7727889145c45052"},
-    {file = "tornado-6.4-cp38-abi3-win_amd64.whl", hash = "sha256:10aeaa8006333433da48dec9fe417877f8bcc21f48dda8d661ae79da357b2a63"},
-    {file = "tornado-6.4.tar.gz", hash = "sha256:72291fa6e6bc84e626589f1c29d90a5a6d593ef5ae68052ee2ef000dfd273dee"},
+    {file = "tornado-6.4.1-cp38-abi3-macosx_10_9_universal2.whl", hash = "sha256:163b0aafc8e23d8cdc3c9dfb24c5368af84a81e3364745ccb4427669bf84aec8"},
+    {file = "tornado-6.4.1-cp38-abi3-macosx_10_9_x86_64.whl", hash = "sha256:6d5ce3437e18a2b66fbadb183c1d3364fb03f2be71299e7d10dbeeb69f4b2a14"},
+    {file = "tornado-6.4.1-cp38-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:e2e20b9113cd7293f164dc46fffb13535266e713cdb87bd2d15ddb336e96cfc4"},
+    {file = "tornado-6.4.1-cp38-abi3-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:8ae50a504a740365267b2a8d1a90c9fbc86b780a39170feca9bcc1787ff80842"},
+    {file = "tornado-6.4.1-cp38-abi3-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:613bf4ddf5c7a95509218b149b555621497a6cc0d46ac341b30bd9ec19eac7f3"},
+    {file = "tornado-6.4.1-cp38-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:25486eb223babe3eed4b8aecbac33b37e3dd6d776bc730ca14e1bf93888b979f"},
+    {file = "tornado-6.4.1-cp38-abi3-musllinux_1_2_i686.whl", hash = "sha256:454db8a7ecfcf2ff6042dde58404164d969b6f5d58b926da15e6b23817950fc4"},
+    {file = "tornado-6.4.1-cp38-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:a02a08cc7a9314b006f653ce40483b9b3c12cda222d6a46d4ac63bb6c9057698"},
+    {file = "tornado-6.4.1-cp38-abi3-win32.whl", hash = "sha256:d9a566c40b89757c9aa8e6f032bcdb8ca8795d7c1a9762910c722b1635c9de4d"},
+    {file = "tornado-6.4.1-cp38-abi3-win_amd64.whl", hash = "sha256:b24b8982ed444378d7f21d563f4180a2de31ced9d8d84443907a0a64da2072e7"},
+    {file = "tornado-6.4.1.tar.gz", hash = "sha256:92d3ab53183d8c50f8204a51e6f91d18a15d5ef261e84d452800d4ff6fc504e9"},
 ]
 
 [[package]]
@@ -3592,13 +3592,13 @@ files = [
 
 [[package]]
 name = "typing-extensions"
-version = "4.12.0"
+version = "4.12.1"
 requires_python = ">=3.8"
 summary = "Backported and Experimental Type Hints for Python 3.8+"
 groups = ["default", "docs", "lint", "test", "viz"]
 files = [
-    {file = "typing_extensions-4.12.0-py3-none-any.whl", hash = "sha256:b349c66bea9016ac22978d800cfff206d5f9816951f12a7d0ec5578b0a819594"},
-    {file = "typing_extensions-4.12.0.tar.gz", hash = "sha256:8cbcdc8606ebcb0d95453ad7dc5065e6237b6aa230a31e81d0f440c30fed5fd8"},
+    {file = "typing_extensions-4.12.1-py3-none-any.whl", hash = "sha256:6024b58b69089e5a89c347397254e35f1bf02a907728ec7fee9bf0fe837d203a"},
+    {file = "typing_extensions-4.12.1.tar.gz", hash = "sha256:915f5e35ff76f56588223f15fdd5938f9a1cf9195c0de25130c627e4d597f6d1"},
 ]
 
 [[package]]
@@ -3625,7 +3625,7 @@ files = [
 
 [[package]]
 name = "uvicorn"
-version = "0.30.0"
+version = "0.30.1"
 requires_python = ">=3.8"
 summary = "The lightning-fast ASGI server."
 groups = ["viz"]
@@ -3635,8 +3635,8 @@ dependencies = [
     "typing-extensions>=4.0; python_version < \"3.11\"",
 ]
 files = [
-    {file = "uvicorn-0.30.0-py3-none-any.whl", hash = "sha256:78fa0b5f56abb8562024a59041caeb555c86e48d0efdd23c3fe7de7a4075bdab"},
-    {file = "uvicorn-0.30.0.tar.gz", hash = "sha256:f678dec4fa3a39706bbf49b9ec5fc40049d42418716cea52b53f07828a60aa37"},
+    {file = "uvicorn-0.30.1-py3-none-any.whl", hash = "sha256:cd17daa7f3b9d7a24de3617820e634d0933b69eed8e33a516071174427238c81"},
+    {file = "uvicorn-0.30.1.tar.gz", hash = "sha256:d46cd8e0fd80240baffbcd9ec1012a712938754afcf81bce56c024c1656aece8"},
 ]
 
 [[package]]
@@ -4037,11 +4037,11 @@ files = [
 
 [[package]]
 name = "zipp"
-version = "3.19.0"
+version = "3.19.2"
 requires_python = ">=3.8"
 summary = "Backport of pathlib-compatible object wrapper for zip files"
 groups = ["docs", "test", "viz"]
 files = [
-    {file = "zipp-3.19.0-py3-none-any.whl", hash = "sha256:96dc6ad62f1441bcaccef23b274ec471518daf4fbbc580341204936a5a3dddec"},
-    {file = "zipp-3.19.0.tar.gz", hash = "sha256:952df858fb3164426c976d9338d3961e8e8b3758e2e059e0f754b8c4262625ee"},
+    {file = "zipp-3.19.2-py3-none-any.whl", hash = "sha256:f091755f667055f2d02b32c53771a7a6c8b47e1fdbc4b72a8b9072b3eef8015c"},
+    {file = "zipp-3.19.2.tar.gz", hash = "sha256:bf1dcf6450f873a13e952a29504887c89e6de7506209e5b1bcc3460135d4de19"},
 ]
