@@ -109,7 +109,7 @@ def homogeneity_completeness_v_measure(
 
     See [sklearn.metrics.homogeneity_completeness_v_measure][] for more information.
     """
-    with optional_import("sklearn"):
+    with optional_import("scikit-learn"):
         from sklearn import metrics as _metrics
     labels_true, labels_pred = _to_numpy_labels(labels_true, labels_pred)
     return _metrics.homogeneity_completeness_v_measure(
@@ -127,7 +127,7 @@ def mutual_info_score(
 
     See [sklearn.metrics.mutual_info_score][] for more information.
     """
-    with optional_import("sklearn"):
+    with optional_import("scikit-learn"):
         from sklearn import metrics as _metrics
     labels_true, labels_pred = _to_numpy_labels(labels_true, labels_pred)
     return _metrics.mutual_info_score(labels_true, labels_pred, contingency=contingency)
@@ -143,7 +143,7 @@ def normalized_mutual_info_score(
 
     See [sklearn.metrics.normalized_mutual_info_score][] for more information.
     """
-    with optional_import("sklearn"):
+    with optional_import("scikit-learn"):
         from sklearn import metrics as _metrics
     labels_true, labels_pred = _to_numpy_labels(labels_true, labels_pred)
     return _metrics.normalized_mutual_info_score(
@@ -159,7 +159,7 @@ def rand_score(labels_true: ir.Table, labels_pred: ir.Table) -> float:
 
     See [sklearn.metrics.rand_score][] for more information.
     """
-    with optional_import("sklearn"):
+    with optional_import("scikit-learn"):
         from sklearn import metrics as _metrics
     labels_true, labels_pred = _to_numpy_labels(labels_true, labels_pred)
     return _metrics.rand_score(labels_true, labels_pred)
