@@ -4,6 +4,7 @@ from collections import defaultdict
 
 import ibis
 from ibis.expr import types as ir
+from ibis.expr import datatypes as dt
 
 from mismo import _util, arrays
 from mismo.block import MinhashLshBlocker
@@ -11,12 +12,14 @@ from mismo.compare import MatchLevel
 from mismo.lib.geo._latlon import distance_km
 from mismo.sets import rare_terms
 
-ADDRESS_SCHEMA = """struct<street1:string, 
-                           street2:string, 
-                           city:string, 
-                           state:string, 
-                           postal_code:string, 
-                           country:string>"""
+ADDRESS_SCHEMA = dt.Struct({
+    "street1": "string",
+    "street2": "string",
+    "city": "string",
+    "state": "string",
+    "postal_code": "string",
+    "country": "string",
+})
 
 
 def same_region(
@@ -273,6 +276,8 @@ def address_tokens(address: ir.StructValue, *, unique: bool = True) -> ir.ArrayC
 @ibis.udf.scalar.python(signature=(("string",), ADDRESS_SCHEMA))
 def parse_address(address_string: str):
     """Parse individual fields from an address string.
+
+
     This uses the optional `postal` library to extract individual fields
     from the string using the following mapping:
 
@@ -283,7 +288,7 @@ def parse_address(address_string: str):
     - postcode -> postal_code
     - country -> country
 
-    Any additional fields parsed by postal will not be included
+    Any additional fields parsed by postal will not be included.
 
     Parameters
     ----------
@@ -293,37 +298,45 @@ def parse_address(address_string: str):
     Returns
     -------
     address :
-        The address.
+        The parsed address as a Struct
     """
 
     with _util.optional_import("postal"):
         from postal.parser import parse_address as _parse_address
 
     parsed_fields = _parse_address(address_string)
-    address_dict = defaultdict(list)
-    for k, v in parsed_fields:
-        address_dict[v].append(k)
-    address_dict = {k: " ".join(v) for k, v in address_dict.items()}
-    return {
-        "street1": (
-            address_dict.get("house_number", "") + " " + address_dict.get("road", "")
-        ).strip(),
-        "street2": address_dict.get("unit", ""),
-        "city": address_dict.get("city", ""),
-        "state": address_dict.get("state", ""),
-        "postal_code": address_dict.get("postcode", ""),
-        "country": address_dict.get("country", ""),
-    }
+    label_to_values = defaultdict(list)  
+    for value, label in parsed_fields:  
+        label_to_values[label].append(value)  
+    renamed = {  
+        "street1": label_to_values["house_number"] + label_to_values["road"],  
+        "street2": label_to_values["unit"],  
+        "city": label_to_values["city"],  
+        "state": label_to_values["state"],  
+        "postal_code": label_to_values["postcode"],  
+        "country": label_to_values["country"],  
+    }  
+    return {k: " ".join(v) for k, v in renamed.items()} 
 
 
 @ibis.udf.scalar.python
 def hash_address(address_string: str, address_only_keys: bool = True) -> list[str]:
-    """Hash an address string using `postal.near_dupe_hashes`.
-    This returns a list of normalized tokens that represent the minimum
+    """Generate multiple hashes of an address string to be used for e.g. blocking.
+
+    This uses the near-dupe hashing functionality of `postal` to expand the root 
+    of each address component, ignoring tokens such as "road" or "street" in street names.
+
+    For street names, whitespace is removed so that for example "Sea Grape Ln" and 
+    "Seagrape Ln" will both normalize to "seagrape".
+
+    This returns a list of normalized tokens that are the minimum
     required information to represent the given address.
 
     Near-dupe hashes can be used as keys when blocking,
     to generate pairs of potential duplicates.
+
+    Further details about the hashing function can be found 
+    [here](https://github.com/openvenues/libpostal/releases/tag/v1.1).
 
     Parameters
     ----------
@@ -334,8 +347,8 @@ def hash_address(address_string: str, address_only_keys: bool = True) -> list[st
 
     Returns
     -------
-    hash :
-        The hash of the address.
+    hases :
+        Hashes of the address.
     """
 
     with _util.optional_import("postal"):

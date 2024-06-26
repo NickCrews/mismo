@@ -11,7 +11,7 @@ def assert_columns_equal(
     left: ir.Column,
     right: ir.Column,
     *,
-    tol: Optional[float] = None,
+    tol: float | None = None,
 ) -> None:
     assert type(left) == type(right)
     if tol is not None:
