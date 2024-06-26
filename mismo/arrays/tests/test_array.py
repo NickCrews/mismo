@@ -51,6 +51,36 @@ def test_array_max(backend, dtype, inp, exp):
 
 
 @pytest.mark.parametrize(
+    "fn",
+    [
+        pytest.param(arrays.array_median, id="median"),
+        pytest.param(arrays.array_mean, id="mean"),
+    ],
+)
+@pytest.mark.parametrize(
+    "inp,type,exp",
+    [
+        pytest.param([0, 1, 2], "int", 1.0, id="happy"),
+        pytest.param([0, 2], "int", 1.0, id="split"),
+        pytest.param([0, 1], "int", 0.5, id="frac"),
+        pytest.param([0.0, 1.0], "float", 0.5, id="frac_float"),
+        pytest.param([0, 1, None, 2], "int", 1.0, id="with_null"),
+        pytest.param([], "int", None, id="empty"),
+        pytest.param(None, "int", None, id="null"),
+        pytest.param([None, None], "int", None, id="all_null"),
+    ],
+)
+def test_array_mean_median(backend, fn, inp, type, exp):
+    a = ibis.literal(inp, type=f"array<{type}>")
+    result = fn(a)
+    assert result.type().is_floating()
+    r = result.execute()
+    if pd.isna(r):
+        r = None
+    assert r == exp
+
+
+@pytest.mark.parametrize(
     "inp,exp",
     [
         pytest.param([True, False, True, None], False, id="mixed"),

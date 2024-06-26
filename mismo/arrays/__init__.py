@@ -10,4 +10,6 @@ from mismo.arrays._array import array_sort as array_sort
 from mismo.arrays._builtins import array_all as array_all
 from mismo.arrays._builtins import array_any as array_any
 from mismo.arrays._builtins import array_max as array_max
+from mismo.arrays._builtins import array_mean as array_mean
+from mismo.arrays._builtins import array_median as array_median
 from mismo.arrays._builtins import array_min as array_min
