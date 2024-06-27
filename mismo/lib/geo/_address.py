@@ -354,10 +354,6 @@ def hash_address(address: ADDRESS_SCHEMA) -> list[str]:
 
     Examples
     -------
-    >>> import ibis
-    >>> from ibis import _
-    >>> ibis.options.interactive = True
-
     >>> address = ibis.struct({
         "street1": "123 Main Street",
         "street2": "",
