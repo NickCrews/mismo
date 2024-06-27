@@ -50,15 +50,17 @@ def test_ngrams(inp, n, exp):
         assert set(result) == set(exp)
 
 
-def test_levenshtein_ratio(table_factory, column_factory):
-    string_1 = ["foo", "bar", "baz"]
+def test_levenshtein_ratio(table_factory):
+    string_1 = ["foo", "bar", "baz", "", None]
     string_2 = [
         "foo",
         "baz",
         "def",
+        "",
+        None
     ]
     t = table_factory(
-        {"string1": string_1, "string2": string_2, "expected": [1, 2 / 3, 0]}
+        {"string1": string_1, "string2": string_2, "expected": [1, 2 / 3, 0, 1, None]}
     )
     t = t.mutate(result=text.levenshtein_ratio(t.string1, t.string2))
     assert_columns_equal(t.result, t.expected, tol=1e-6)
