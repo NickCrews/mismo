@@ -1,10 +1,23 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Optional
 
 from ibis.expr import types as ir
 import pandas as pd
 import pytest
+
+
+def assert_columns_equal(
+    left: ir.Column,
+    right: ir.Column,
+    *,
+    tol: Optional[float] = None,
+) -> None:
+    assert type(left) == type(right)
+    if tol is not None:
+        assert all((left - right).abs() <= tol)
+    else:
+        assert all(left == right)
 
 
 def assert_tables_equal(
