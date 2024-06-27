@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import asyncio
-from typing import AsyncIterator, Iterable, TypeVar
+from contextlib import closing, contextmanager
+from typing import AsyncIterable, Iterable, TypeVar
 
 T = TypeVar("T")
 
 
 def iter_over_async(
-    ait: AsyncIterator[T], loop: asyncio.AbstractEventLoop | None = None
+    ait: AsyncIterable[T], loop: asyncio.AbstractEventLoop | None = None
 ) -> Iterable[T]:
     """Iterate over an async iterator in a synchronous manner.
 
@@ -15,8 +16,6 @@ def iter_over_async(
     calling this function.
     """
     # copied from https://stackoverflow.com/a/63595496/5156887
-    if loop is None:
-        loop = asyncio.get_event_loop()
     ait = ait.__aiter__()
     DONE = object()
 
@@ -26,17 +25,35 @@ def iter_over_async(
         except StopAsyncIteration:
             return DONE
 
-    while True:
-        nxt = get_next()
-        try:
-            obj = loop.run_until_complete(nxt)
-        except RuntimeError as e:
-            if "This event loop is already running" not in str(e):
-                raise
-            import nest_asyncio
+    with with_event_loop(loop) as loop:
+        while True:
+            nxt = get_next()
+            result = run_until_complete(nxt, loop)
+            if result is DONE:
+                break
+            yield result
 
-            nest_asyncio.apply()
-            obj = loop.run_until_complete(nxt)
-        if obj is DONE:
-            break
-        yield obj
+
+def run_until_complete(future, loop: asyncio.AbstractEventLoop):
+    if not loop.is_running():
+        return loop.run_until_complete(future)
+    import nest_asyncio
+
+    nest_asyncio.apply()
+    return loop.run_until_complete(future)
+
+
+@contextmanager
+def with_event_loop(
+    loop: asyncio.AbstractEventLoop | None = None,
+) -> asyncio.AbstractEventLoop:
+    if loop is not None:
+        yield loop
+    else:
+        try:
+            # This works if a loop is already running, eg we are in a Jupyter notebook
+            yield asyncio.get_running_loop()
+        except RuntimeError:
+            # Otherwise, create a new loop, and close it when done
+            with closing(asyncio.new_event_loop()) as loop:
+                yield loop

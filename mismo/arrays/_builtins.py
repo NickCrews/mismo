@@ -1,20 +1,24 @@
 from __future__ import annotations
 
 import ibis
+from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 
 _ARRAY_AGGS = {}
 
 
-def _get_array_agg(array: ir.ArrayValue, name: str) -> ir.Column:
+def _get_array_agg(array: ir.ArrayValue, name: str, *, out_type=None) -> ir.Column:
     t = array.type()
     if not isinstance(array, ir.ArrayValue):
         raise ValueError(f"Expected an array, got {t}")
 
+    if out_type is None:
+        out_type = t.value_type()
+
     key = (t, name)
     if key not in _ARRAY_AGGS:
 
-        @ibis.udf.scalar.builtin(name=name, signature=((t,), t.value_type()))
+        @ibis.udf.scalar.builtin(name=name, signature=((t,), out_type))
         def f(array): ...
 
         _ARRAY_AGGS[key] = f
@@ -30,6 +34,18 @@ def array_min(array: ir.ArrayValue) -> ir.NumericValue:
 def array_max(array: ir.ArrayValue) -> ir.NumericValue:
     """Get the maximum value of an array."""
     return _get_array_agg(array, "list_max")
+
+
+# @ibis.udf.scalar.builtin(name="list_avg")
+def array_mean(array: ir.ArrayValue) -> ir.FloatingValue:
+    """Get the mean value of an array."""
+    return _get_array_agg(array, "list_avg", out_type=dt.float64)
+
+
+# @ibis.udf.scalar.builtin(name="list_median")
+def array_median(array: ir.ArrayValue) -> ir.FloatingValue:
+    """Get the median value of an array."""
+    return _get_array_agg(array, "list_median", out_type=dt.float64)
 
 
 @ibis.udf.scalar.builtin(name="list_bool_or")
