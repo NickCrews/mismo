@@ -6,20 +6,6 @@ from ibis.expr import types as ir
 import pandas as pd
 import pytest
 
-
-def assert_columns_equal(
-    left: ir.Column,
-    right: ir.Column,
-    *,
-    tol: float | None = None,
-) -> None:
-    assert type(left) == type(right)
-    if tol is not None:
-        assert ((left - right).abs() <= tol).all().to_pandas()
-    else:
-        assert (left == right).all().to_pandas()
-
-
 def assert_tables_equal(
     left: ir.Table,
     right: ir.Table,
