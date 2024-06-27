@@ -65,3 +65,31 @@ def ngrams(string: ir.StringValue, n: int) -> ir.ArrayValue:
         else:
             result = result.concat(this)
     return result
+
+
+def levenshtein_ratio(s1: ir.StringValue, s2: ir.StringValue) -> ir.FloatingValue:
+    """Uses the Levenshtein distance to calculate the similarity between two strings.
+
+    This is similar to the Levenshtein distance, but it is normalized to be between 0 and 1 
+    and is resilient to different string lengths.
+
+    The ratio is defined as `(lensum - ldist)/lensum` where `lensum` is the
+    maximum length of the two strings and ldist is the number of edits required
+    to transform one string into the other.
+
+    Parameters
+    ----------
+    s1:
+        The first string
+
+    s2:
+        The second string
+
+    Returns
+    -------
+    lev_ratio:
+        The ratio of the Levenshtein edit cost to the total string length
+    """
+    lensum = ibis.greatest(s1.length(), s2.length())
+    ldist = s1.levenshtein(s2)
+    return (lensum - ldist) / lensum
