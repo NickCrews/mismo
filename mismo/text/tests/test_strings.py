@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import ibis
+import numpy as np
 import pytest
 
 from mismo import text
-from mismo.tests.util import assert_columns_equal
 
 
 @pytest.mark.parametrize(
@@ -50,17 +50,19 @@ def test_ngrams(inp, n, exp):
         assert set(result) == set(exp)
 
 
-def test_levenshtein_ratio(table_factory):
-    string_1 = ["foo", "bar", "baz", "", None]
-    string_2 = [
-        "foo",
-        "baz",
-        "def",
-        "",
-        None
-    ]
-    t = table_factory(
-        {"string1": string_1, "string2": string_2, "expected": [1, 2 / 3, 0, 1, None]}
-    )
-    t = t.mutate(result=text.levenshtein_ratio(t.string1, t.string2))
-    assert_columns_equal(t.result, t.expected, tol=1e-6)
+@pytest.mark.parametrize(
+    "string1,string2,expected",
+    [
+        ("foo", "foo", 1),
+        ("bar", "baz", 2 / 3),
+        ("baz", "def", 0),
+        ("", "", np.nan),
+        (None, None, np.nan),
+    ],
+)
+def test_levenshtein_ratio(string1, string2, expected):
+    result = text.levenshtein_ratio(string1, string2).execute()
+    if not np.isnan(expected):
+        assert abs(result - expected) <= 1e-6
+    else:
+        assert np.isnan(result)
