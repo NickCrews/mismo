@@ -3,9 +3,9 @@ from __future__ import annotations
 from ._address import AddressesDimension as AddressesDimension
 from ._address import AddressesMatchLevel as AddressesMatchLevel
 from ._address import best_match as best_match
+from ._address import hash_address as hash_address
 from ._address import normalize_address as normalize_address
 from ._address import parse_address as parse_address
-from ._address import hash_address as hash_address
 from ._census import us_census_geocode as us_census_geocode
 from ._latlon import CoordinateBlocker as CoordinateBlocker
 from ._latlon import distance_km as distance_km
