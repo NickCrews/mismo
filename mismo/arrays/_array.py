@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Callable
+
 import ibis
 from ibis import _
 from ibis.expr import types as ir
@@ -74,12 +76,17 @@ def array_filter_isin_other(
     return re_joined.rename({result_name: "__filtered"})
 
 
-@ibis.udf.scalar.builtin(
-    name="list_select",
-    signature=(("array<string>", "array<int64>"), "array<string>"),
-)
-def _list_select(x: list, indexes: list) -> list:
+def _list_select(x: ir.ArrayValue, indexes: ir.ArrayValue) -> ir.ArrayValue:
     """Selects elements from a list by index."""
+
+    t = x.type()
+    # if t.is_array():
+    #     raise ValueError(f"Expected an array, got {t}")
+
+    @ibis.udf.scalar.builtin(name="list_select", signature=((t, "array<int>"), t))
+    def f(array, idxs): ...
+
+    return f(x, indexes)
 
 
 @ibis.udf.scalar.builtin(
@@ -99,3 +106,19 @@ def array_shuffle(a: ir.ArrayValue) -> ir.ArrayValue:
 def array_choice(a: ir.ArrayValue, n: int) -> ir.ArrayValue:
     """Randomly select `n` elements from an array."""
     return array_shuffle(a)[n:]
+
+
+def array_sort(
+    arr: ir.ArrayValue, *, key: Callable[[ir.Value], ir.Value] | None = None
+) -> ir.ArrayValue:
+    """Sort an array, optionally using a key function.
+
+    The builtin ArrayValue.sort() method doesn't support a key function.
+    This function is a workaround for that.
+
+    See https://github.com/duckdb/duckdb/discussions/10417
+    """
+    if key is None:
+        return arr.sort()
+    keys = arr.map(key)
+    return _list_select(arr, _list_grade_up(keys))

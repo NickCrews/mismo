@@ -3,12 +3,15 @@ from __future__ import annotations
 import ibis
 from ibis.expr import types as ir
 
+from mismo import _util
+
 
 def norm_whitespace(texts: ir.StringValue) -> ir.StringValue:
     """
     Strip leading/trailing whitespace, replace multiple whitespace with a single space.
     """
-    return texts.strip().re_replace(r"\s+", " ")  # type: ignore
+    texts = _util.ensure_ibis(texts, "string")
+    return texts.strip().re_replace(r"\s+", " ")
 
 
 @ibis.udf.scalar.builtin(
@@ -51,8 +54,7 @@ def ngrams(string: ir.StringValue, n: int) -> ir.ArrayValue:
     >>> ngrams("abcdef", 3).execute()
     ["abc", "def", "bcd", "cde"]
     """
-    if not isinstance(string, ir.Expr) and not isinstance(string, ibis.Deferred):
-        string = ibis.literal(string, type="string")
+    string = _util.ensure_ibis(string, "string")
     pattern = "." * n
     # if you just do _re_extract_all("abcdef", "..."), you get ["abc", "def"].
     # So to get the "bcd" and the "cde", we need to offset the string

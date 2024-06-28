@@ -23,7 +23,6 @@ classifiers = [
 dependencies = [
     "ibis-framework>=9.0.0",
     # "ibis-framework[duckdb] @ git+https://github.com/ibis-project/ibis.git@42f45fe59da492897f0449468a3036384be34214",
-    "scikit-learn",
     "typing-extensions ; python_version < \"3.11\"", # needed for Self
 ]
 
@@ -53,6 +52,7 @@ test = [
   "pytest",
   "pytest-benchmark>=3.4.1",
   "pytest-cov",
+  "scikit-learn",
   "recordlinkage",
 ]
 docs = [
