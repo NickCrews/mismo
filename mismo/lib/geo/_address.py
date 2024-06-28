@@ -24,6 +24,8 @@ ADDRESS_SCHEMA = dt.Struct(
     }
 )
 
+DIGITS_REGEX = re.compile(r"[0-9]+")
+
 
 def same_region(
     address1: ir.StructColumn,
@@ -383,13 +385,12 @@ def hash_address(address: ADDRESS_SCHEMA) -> list[str]:
 
     with _util.optional_import("postal"):
         from postal.near_dupe import near_dupe_hashes as _hash
-    if not address:
+    if address is None:
         return []
-    # parsed = dict(_parse_address(address_string))
     # split street1 into house number/ road
     street1 = address["street1"] or ""
     house, *rest = street1.split(" ", 1)
-    contains_digits = re.match("[0-9]+", house) is not None
+    contains_digits = DIGITS_REGEX.match(house) is not None
     parsed = {
         "unit": address["street2"],
         "city": address["city"],
@@ -398,6 +399,7 @@ def hash_address(address: ADDRESS_SCHEMA) -> list[str]:
         "country": address["country"],
     }
     if contains_digits:
+        # handle the fact that street1 contains both the house number and the road
         parsed["house_number"] = house
         parsed["road"] = " ".join(rest)
     else:

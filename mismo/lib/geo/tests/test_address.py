@@ -138,16 +138,17 @@ def test_address_tokens(address, expected):
                 "country": None,
             },
         ),
-        (
+        pytest.param(
             "〒150-2345 東京都渋谷区本町2丁目4-7サニーマンション203",
             {
-                "street1": "4-7",
+                "street1": "2丁目4-7 本町",
                 "street2": None,
-                "city": "京 区",
-                "state": "東",
+                "city": "渋谷区",
+                "state": "東京都",
                 "postal_code": "〒150-2345",
                 "country": None,
-            },  # incorrect, but currently expected
+            },
+            marks=pytest.mark.xfail(reason="postal incorrectly parses street and city"),
         ),
     ],
 )
