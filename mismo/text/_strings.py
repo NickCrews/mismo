@@ -65,4 +65,3 @@ def ngrams(string: ir.StringValue, n: int) -> ir.ArrayValue:
         else:
             result = result.concat(this)
     return result
-

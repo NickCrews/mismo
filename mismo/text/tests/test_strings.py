@@ -5,6 +5,7 @@ import pytest
 
 from mismo import text
 
+
 @pytest.mark.parametrize(
     "inp,exp",
     [
@@ -46,4 +47,3 @@ def test_ngrams(inp, n, exp):
         assert result is None
     else:
         assert set(result) == set(exp)
-

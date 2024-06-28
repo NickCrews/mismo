@@ -6,6 +6,7 @@ from ibis.expr import types as ir
 import pandas as pd
 import pytest
 
+
 def assert_tables_equal(
     left: ir.Table,
     right: ir.Table,
