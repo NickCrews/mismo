@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
-from mismo.text import double_metaphone
+from mismo import text
 
 
 @pytest.mark.parametrize(
@@ -17,5 +18,23 @@ from mismo.text import double_metaphone
     ],
 )
 def test_double_metaphone(input, expected):
-    result = double_metaphone(input).execute()
+    result = text.double_metaphone(input).execute()
     assert expected == result
+
+
+@pytest.mark.parametrize(
+    "string1,string2,expected",
+    [
+        ("foo", "foo", 1),
+        ("bare", "bone", 0.5),
+        ("baz", "def", 0),
+        ("", "", np.nan),
+        (None, None, np.nan),
+    ],
+)
+def test_levenshtein_ratio(string1, string2, expected):
+    result = text.levenshtein_ratio(string1, string2).execute()
+    if np.isnan(expected):
+        assert np.isnan(result)
+    else:
+        assert expected == result

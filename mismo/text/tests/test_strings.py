@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import ibis
-import numpy as np
 import pytest
 
 from mismo import text
@@ -48,21 +47,3 @@ def test_ngrams(inp, n, exp):
         assert result is None
     else:
         assert set(result) == set(exp)
-
-
-@pytest.mark.parametrize(
-    "string1,string2,expected",
-    [
-        ("foo", "foo", 1),
-        ("bar", "baz", 2 / 3),
-        ("baz", "def", 0),
-        ("", "", np.nan),
-        (None, None, np.nan),
-    ],
-)
-def test_levenshtein_ratio(string1, string2, expected):
-    result = text.levenshtein_ratio(string1, string2).execute()
-    if not np.isnan(expected):
-        assert abs(result - expected) <= 1e-6
-    else:
-        assert np.isnan(result)
