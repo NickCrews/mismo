@@ -278,9 +278,8 @@ def address_tokens(address: ir.StructValue, *, unique: bool = True) -> ir.ArrayC
     return _util.struct_tokens(address, unique=unique)
 
 
-# @ibis.udf.scalar.python(signature=(("string",), ADDRESS_SCHEMA))
 @ibis.udf.scalar.python
-def parse_address(address_string: str) -> ADDRESS_SCHEMA:
+def postal_parse_address(address_string: str) -> ADDRESS_SCHEMA:
     """Parse individual fields from an address string.
 
     .. note:: To use this function, you need the optional `postal` library installed.
@@ -328,7 +327,7 @@ def parse_address(address_string: str) -> ADDRESS_SCHEMA:
 
 
 @ibis.udf.scalar.python
-def hash_address(address: ADDRESS_SCHEMA) -> list[str]:
+def postal_fingerprint_address(address: ADDRESS_SCHEMA) -> list[str]:
     """Generate multiple hashes of an address string to be used for e.g. blocking.
 
     .. note:: To use this function, you need to have the optional `postal` library
@@ -364,7 +363,7 @@ def hash_address(address: ADDRESS_SCHEMA) -> list[str]:
         "postal_code": "62701",
         "country": "us",
     })
-    >>> hash_address(address).execute()
+    >>> postal_fingerprint_address(address).execute()
     [
         "act|main street|123|springfield",
         "act|main|123|springfield",
@@ -379,7 +378,7 @@ def hash_address(address: ADDRESS_SCHEMA) -> list[str]:
 
     Returns
     -------
-    hases :
+    address_hashes :
         Hashes of the address.
     """
 

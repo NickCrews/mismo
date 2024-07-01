@@ -153,7 +153,7 @@ def test_address_tokens(address, expected):
     ],
 )
 def test_parse_address(address, expected):
-    result = _address.parse_address(address).execute()
+    result = _address.postal_parse_address(address).execute()
     assert result == expected
 
 
@@ -211,5 +211,5 @@ def test_hash_address(address, expected):
         address,
         type="struct<street1: string, street2: string, city: string, state: string, postal_code: string, country: string>",  # noqa
     )
-    result = _address.hash_address(a).execute()
+    result = _address.postal_fingerprint_address(a).execute()
     assert result == expected
