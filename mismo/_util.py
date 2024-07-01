@@ -7,6 +7,7 @@ from typing import Any, Callable, Iterable, Literal, TypeVar
 import ibis
 from ibis import _
 from ibis.common.deferred import Deferred
+from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 
 
@@ -54,6 +55,15 @@ def get_column(
             return ibis.struct({c.get_name(): c for c in cols})
         raise ValueError(f"on_many must be 'error' or 'struct'. Got {on_many}")
     return cols[0]
+
+
+def ensure_ibis(
+    val: Any, type: str | dt.DataType | None = None
+) -> ir.Value | ibis.Deferred:
+    """Ensure that `val` is an ibis expression."""
+    if isinstance(val, ir.Expr) or isinstance(val, ibis.Deferred):
+        return val
+    return ibis.literal(val, type=type)
 
 
 def get_name(x) -> str:

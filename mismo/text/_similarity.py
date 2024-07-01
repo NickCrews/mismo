@@ -24,6 +24,7 @@ def double_metaphone(s: ir.StringValue) -> ir.ArrayValue[ir.StringValue]:
     >>> double_metaphone(None).execute()
     None
     """
+    s = _util.ensure_ibis(s, "string")
     return _dm_udf(s)
 
 
@@ -44,3 +45,49 @@ def damerau_levenshtein(a: str, b: str) -> int:
     This is the levenstein distance with the addition of transpositions as
     a possible operation.
     """
+
+
+def levenshtein_ratio(s1: ir.StringValue, s2: ir.StringValue) -> ir.FloatingValue:
+    """The levenshtein distance between two strings, normalized to be between 0 and 1.
+
+    The ratio is defined as `(lenmax - ldist)/lenmax` where
+
+    - `ldist` is the regular levenshtein distance
+    - `lenmax` is the maximum length of the two strings
+      (eg the largest possible edit distance)
+
+    This makes it so that the ratio is 1 when the strings are the same and 0
+    when they are completely different.
+    By doing this normalization, the ratio is always between 0 and 1, regardless
+    of the length of the strings.
+
+    Parameters
+    ----------
+    s1:
+        The first string
+
+    s2:
+        The second string
+
+    Returns
+    -------
+    lev_ratio:
+        The ratio of the Levenshtein edit cost to the maximum string length
+
+    Examples
+    --------
+    >>> from mismo.text import levenshtein_ratio
+    >>> levenshtein_ratio("mile", "mike").execute()
+    0.75
+    >>> levenshtein_ratio("mile", "mile").execute()
+    1.0
+    >>> levenshtein_ratio("mile", "").execute()
+    0.0
+    >>> levenshtein_ratio("", "").execute()
+    nan
+    """
+    s1 = _util.ensure_ibis(s1, "string")
+    s2 = _util.ensure_ibis(s2, "string")
+    lenmax = ibis.greatest(s1.length(), s2.length())
+    ldist = s1.levenshtein(s2)
+    return (lenmax - ldist) / lenmax

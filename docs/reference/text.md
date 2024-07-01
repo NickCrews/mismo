@@ -4,3 +4,4 @@
 ::: mismo.text.ngrams
 ::: mismo.text.double_metaphone
 ::: mismo.text.damerau_levenshtein
+::: mismo.text.levenshtein_ratio
