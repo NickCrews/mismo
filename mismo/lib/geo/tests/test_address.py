@@ -5,6 +5,7 @@ import pytest
 
 from mismo.lib.geo import _address
 
+postal = pytest.importorskip("postal")
 
 @pytest.mark.parametrize(
     "address, expected",
