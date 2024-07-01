@@ -2,6 +2,7 @@
 .coverage
 .pdm-python
 .venv
+.vscode
 dist
 site
 

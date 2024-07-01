@@ -2,10 +2,10 @@
 # It is not intended for manual editing.
 
 [metadata]
-groups = ["default", "viz", "lint", "docs", "test"]
+groups = ["default", "viz", "lint", "docs", "test", "postal"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.1"
-content_hash = "sha256:80f6632596dad71867872751a1353ccaefd759755d7a9acd04611e55847af5ba"
+content_hash = "sha256:5ac8b7c9c0b8f87c594a1e56da4356432143b8564db91079c5e86dd710bf89e6"
 
 [[package]]
 name = "aiohttp"
@@ -2419,6 +2419,18 @@ files = [
 ]
 
 [[package]]
+name = "postal"
+version = "1.1.10"
+summary = "Python bindings to libpostal for fast international address parsing/normalization"
+groups = ["postal"]
+dependencies = [
+    "six",
+]
+files = [
+    {file = "postal-1.1.10.tar.gz", hash = "sha256:ca0f9693d61261e058a03d141a4fa065d9bbe67bd86484521450f0a9d0f9e77b"},
+]
+
+[[package]]
 name = "pre-commit"
 version = "3.7.1"
 requires_python = ">=3.9"
@@ -3295,7 +3307,7 @@ name = "six"
 version = "1.16.0"
 requires_python = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
 summary = "Python 2 and 3 compatibility utilities"
-groups = ["default", "docs", "test", "viz"]
+groups = ["default", "docs", "postal", "test", "viz"]
 files = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
     {file = "six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"},
