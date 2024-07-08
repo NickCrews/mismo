@@ -129,7 +129,7 @@ def test_norm(a, metric, expected):
     ],
 )
 def test_normalize(a, metric, expected):
-    result = vector.normalize(_to_vector(a), metric)
+    result = vector.normalize(_to_vector(a), metric=metric)
     assert result.execute() == expected
 
 

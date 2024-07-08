@@ -122,7 +122,7 @@ def norm(vec: T, *, metric: Literal["l1", "l2"] = "l2") -> ir.FloatingValue:
         raise ValueError(f"Unsupported norm {metric}")
 
 
-def normalize(vec: T, metric: Literal["l1", "l2"] = "l2") -> T:
+def normalize(vec: T, *, metric: Literal["l1", "l2"] = "l2") -> T:
     """Normalize a vector to have unit length.
 
     The vector can either be a dense vector, represented as array<numeric>,
