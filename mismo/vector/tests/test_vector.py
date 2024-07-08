@@ -73,11 +73,37 @@ def test_dot(a, b, expected):
 @pytest.mark.parametrize(
     "a,metric,expected",
     [
+        pytest.param([-3, 4], "l2", 5.0, id="array_l2"),
+        pytest.param([3, 4], "l1", 7, id="array_l1"),
+        pytest.param({"a": -3, "b": 4}, "l2", 5.0, id="map_l2"),
+        pytest.param({"a": -3, "b": 4}, "l1", 7, id="map_l1"),
+        pytest.param([], "l2", None, id="array_empty"),
+        pytest.param({}, "l2", None, id="map_empty"),
+        pytest.param(ibis.literal(None, "array<int64>"), "l2", None, id="null_array"),
         pytest.param(
-            [1, 2], "l2", [0.4472135954999579, 0.8944271909999159], id="array_l2"
+            ibis.literal(None, "map<string, int64>"), "l1", None, id="null_map_l1"
         ),
         pytest.param(
-            [1, 2], "l1", [0.3333333333333333, 0.6666666666666666], id="array_l1"
+            ibis.literal(None, "map<string, int64>"), "l2", None, id="null_map_l2"
+        ),
+    ],
+)
+def test_norm(a, metric, expected):
+    e = vector.norm(_to_vector(a), metric=metric)
+    result = e.execute()
+    if pd.isna(result):
+        result = None
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "a,metric,expected",
+    [
+        pytest.param(
+            [-1, 2], "l2", [-0.4472135954999579, 0.8944271909999159], id="array_l2"
+        ),
+        pytest.param(
+            [-1, 2], "l1", [-0.3333333333333333, 0.6666666666666666], id="array_l1"
         ),
         pytest.param(
             {"a": 1, "b": 2},

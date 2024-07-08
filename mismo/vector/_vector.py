@@ -79,6 +79,49 @@ def mul(a: T, b: T) -> T:
         raise ValueError(f"Unsupported types {type(a)} and {type(b)}")
 
 
+def norm(vec: T, *, metric: Literal["l1", "l2"] = "l2") -> ir.FloatingValue:
+    """Compute the norm (length) of a vector.
+
+    The vector can either be a dense vector, represented as array<numeric>,
+    or a sparse vector, represented as map<any_type, numeric>.
+
+    Parameters
+    ----------
+    vec :
+        The vector to compute the norm of.
+    metric : {"l1", "l2"}, default "l2"
+        The metric to use. "l1" for Manhattan distance, "l2" for Euclidean distance.
+
+    Returns
+    -------
+    The norm of the vector.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> from mismo.vector import norm
+    >>> v = ibis.array([-3, 4])
+    >>> norm(v).execute()
+    5.0
+    >>> m = ibis.map({"a": -3, "b": 4})
+    >>> norm(m, metric="l1").execute()
+    7.0
+    """
+    if isinstance(vec, ir.ArrayValue):
+        vals = vec
+    elif isinstance(vec, ir.MapValue):
+        vals = map_values(vec)
+    else:
+        raise ValueError(f"Unsupported type {type(vec)}")
+
+    if metric == "l1":
+        return _array_sum(vals.map(lambda x: x.abs()))
+    elif metric == "l2":
+        return _array_sum(vals.map(lambda x: x**2)).sqrt()
+    else:
+        raise ValueError(f"Unsupported norm {metric}")
+
+
 def normalize(vec: T, metric: Literal["l1", "l2"] = "l2") -> T:
     """Normalize a vector to have unit length.
 
@@ -117,12 +160,7 @@ def normalize(vec: T, metric: Literal["l1", "l2"] = "l2") -> T:
     else:
         raise ValueError(f"Unsupported type {type(vec)}")
 
-    if metric == "l1":
-        denom = _array_sum(vals)
-    elif metric == "l2":
-        denom = _array_sum(vals.map(lambda x: x**2)).sqrt()
-    else:
-        raise ValueError(f"Unsupported norm {metric}")
+    denom = norm(vec, metric=metric)
     normed_vals = vals.map(lambda x: x / denom)
 
     if isinstance(vec, ir.ArrayValue):
