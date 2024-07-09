@@ -12,7 +12,7 @@ from mismo.block._core import block_on_id_pairs, join
 class KeyBlocker:
     """Blocks records together wherever they share a key, eg "emails match."
 
-    This is the oldest and most basic blocking rule.
+    This is one of the most basic blocking rules, used very often in record linkage.
     This is what is used in `splink`.
 
     Examples
@@ -37,7 +37,8 @@ class KeyBlocker:
 
     Block the table with itself wherever the names match:
 
-    >>> mismo.block.block_one(t, t, "name").head()
+    >>> blocker = mismo.block.KeyBlocker("name")
+    >>> blocker(t, t).head()
     ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
     ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l               ┃ name_r               ┃
     ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
@@ -55,7 +56,8 @@ class KeyBlocker:
           AND
         - the latitudes, rounded to 1 decimal place, are the same
 
-    >>> mismo.block.block_one(t, t, (_["name"][:5].upper(), _.latitude.round(1))).head()
+    >>> blocker = mismo.block.KeyBlocker((_["name"][:5].upper(), _.latitude.round(1)))
+    >>> blocker(t, t).head()
     ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l                ┃ name_r                     ┃
     ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -94,8 +96,8 @@ class KeyBlocker:
     Now, block the tables together wherever two records share a token.
     Note that this blocked `* SCHLUMBERGER LIMITED` with `* SCHLUMBERGER TECHNOLOGY BV`.
 
-    >>> b = mismo.block.block_one(t, t, tokens.unnest())
-    >>> b[_.name_l != _.name_r]
+    >>> blocker = mismo.block.KeyBlocker(tokens.unnest())
+    >>> blocker(t, t).filter(_.name_l != _.name_r)
     ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l                                            ┃ name_r                                            ┃
     ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
