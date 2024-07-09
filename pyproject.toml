@@ -62,6 +62,16 @@ docs = [
   "mkdocs-material",
   "mkdocstrings[python]",
 ]
+# If you are developing on linux or mac, you can install libpostal
+# using the `install-libpostal` justfile recipe.
+# Then, pypostal will be installed automatically by pip.
+# 
+# If you are developing on windows, you will need to install libpostal manually.
+# Then install pypostal manually:
+# `pdm run python -m ensurepip && pdm run python -m pip install postal`
+postal = [
+   "postal>=1.1.7; sys_platform == 'linux' or sys_platform == 'darwin'",
+]
 
 [tool.pytest.ini_options]
 xfail_strict = true

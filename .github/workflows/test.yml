@@ -45,6 +45,15 @@ jobs:
         with:
           just-version: "1.14" # optional semver specification, otherwise latest
 
+      - name: Install libpostal
+        run: |
+             if [ "$RUNNER_OS" != "Windows" ]; then
+                just install-libpostal
+             else
+                echo "Postal installation not supported on $RUNNER_OS"
+             fi
+        shell: bash
+
       - name: Install dev environment
         run: just install
 
@@ -67,6 +76,9 @@ jobs:
       - uses: extractions/setup-just@v2
         with:
           just-version: "1.14" # optional semver specification, otherwise latest
+
+      - name: Install libpostal
+        run: just install-libpostal
 
       - name: Install dev environment
         run: just install
