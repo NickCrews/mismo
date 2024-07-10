@@ -48,15 +48,15 @@ update:
     pdm update -dG :all --update-all
 
 #install libpostal to the system, a dependency for the pypostal python package 
-install-libpostal flags="":
+install-libpostal datadir="/tmp/postal":
     #!/usr/bin/env bash
     if [ "$(uname)" = "Linux" ]; then sudo apt-get install curl autoconf automake libtool pkg-config; fi
     if [ "$(uname)" = "Darwin" ]; then brew install curl autoconf automake libtool pkg-config; fi
     git clone https://github.com/openvenues/libpostal
     cd libpostal
     ./bootstrap.sh
-    if [ "$(uname)" = "Linux" ]; then ./configure --datadir=/tmp/postal; fi
-    if [ "$(uname)" = "Darwin" ]; then ./configure --datadir=/tmp/postal --disable-sse2; fi
+    if [ "$(uname)" = "Linux" ]; then ./configure --datadir={{datadir}}; fi
+    if [ "$(uname)" = "Darwin" ]; then ./configure --datadir={{datadir}} --disable-sse2; fi
     make -j4
     sudo make install
     if [ "$(uname)" = "Linux" ]; then sudo ldconfig; fi
