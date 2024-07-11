@@ -31,6 +31,11 @@ def array_min(array: ir.ArrayValue) -> ir.NumericValue:
     return _get_array_agg(array, "list_min")
 
 
+def array_sum(array: ir.ArrayValue) -> ir.NumericValue:
+    """Get the sum of all values of an array."""
+    return _get_array_agg(array, "list_sum")
+
+
 def array_max(array: ir.ArrayValue) -> ir.NumericValue:
     """Get the maximum value of an array."""
     return _get_array_agg(array, "list_max")

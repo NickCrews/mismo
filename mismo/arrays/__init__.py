@@ -13,3 +13,4 @@ from mismo.arrays._builtins import array_max as array_max
 from mismo.arrays._builtins import array_mean as array_mean
 from mismo.arrays._builtins import array_median as array_median
 from mismo.arrays._builtins import array_min as array_min
+from mismo.arrays._builtins import array_sum as array_sum

@@ -13,3 +13,4 @@
 :::mismo.arrays.array_max
 :::mismo.arrays.array_mean
 :::mismo.arrays.array_median
+:::mismo.arrays.array_sum
