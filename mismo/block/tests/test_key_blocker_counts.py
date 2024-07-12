@@ -36,15 +36,25 @@ def test_key_counts_letters(inp, table_factory, key):
     expected = table_factory(
         {
             "letter": ["c", "b", "a"],
-            "n": [3, 3, 1],
+            "expected_keys": [3, 3, 1],
+            "expected_pairs_link": [9, 9, 1],
+            "expected_pairs_dedupe": [3, 3, 0],
         }
     )
     result = blocker.key_counts(inp)
-    assert_tables_equal(result, expected)
+    assert_tables_equal(result, expected.select("letter", n=_.expected_keys))
 
-    expected_2 = expected.mutate(n=_.n * _.n)
-    result2 = blocker.key_counts(inp, inp)
-    assert_tables_equal(result2, expected_2)
+    result2 = blocker.pair_counts(inp, inp)
+    assert_tables_equal(result2, expected.select("letter", n=_.expected_pairs_dedupe))
+
+    result2 = blocker.pair_counts(inp, inp, task="dedupe")
+    assert_tables_equal(result2, expected.select("letter", n=_.expected_pairs_dedupe))
+
+    result2 = blocker.pair_counts(inp, inp.view())
+    assert_tables_equal(result2, expected.select("letter", n=_.expected_pairs_link))
+
+    result2 = blocker.pair_counts(inp, inp, task="link")
+    assert_tables_equal(result2, expected.select("letter", n=_.expected_pairs_link))
 
 
 @pytest.mark.parametrize(
@@ -60,21 +70,22 @@ def test_key_counts_letters_num(inp, table_factory, key):
         {
             "letter": ["c", "b", "b", "a"],
             "num": [3, 1, 2, 1],
-            "n": [3, 2, 1, 1],
+            "expected_keys": [3, 2, 1, 1],
+            "expected_pairs_link": [9, 4, 1, 1],
+            "expected_pairs_dedupe": [3, 1, 0, 0],
         }
     )
-    result = blocker.key_counts(inp)
-    assert_tables_equal(result, expected)
+    r = blocker.key_counts(inp)
+    assert_tables_equal(r, expected.select("letter", "num", n=_.expected_keys))
 
-    expected_2 = expected.mutate(n=_.n * _.n)
-    result2 = blocker.key_counts(inp, inp)
-    assert_tables_equal(result2, expected_2)
+    r = blocker.pair_counts(inp, inp)
+    assert_tables_equal(r, expected.select("letter", "num", n=_.expected_pairs_dedupe))
 
+    r = blocker.pair_counts(inp, inp, task="dedupe")
+    assert_tables_equal(r, expected.select("letter", "num", n=_.expected_pairs_dedupe))
 
-def test_key_counts_errs(inp):
-    blocker = KeyBlocker("letter")
-    # we only support positional args
-    with pytest.raises(TypeError):
-        blocker.key_counts(left=inp)
-    with pytest.raises(TypeError):
-        blocker.key_counts(left=inp, right=inp)
+    r = blocker.pair_counts(inp, inp.view())
+    assert_tables_equal(r, expected.select("letter", "num", n=_.expected_pairs_link))
+
+    r = blocker.pair_counts(inp, inp, task="link")
+    assert_tables_equal(r, expected.select("letter", "num", n=_.expected_pairs_link))
