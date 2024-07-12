@@ -67,6 +67,7 @@ class MinhashLshBlocker:
         right: ir.Table,
         *,
         task: Literal["dedupe", "link"] | None = None,
+        **kwargs,
     ) -> ir.Table:
         """Block two tables using Minhash LSH."""
         left_terms = get_column(left, self.terms_column)

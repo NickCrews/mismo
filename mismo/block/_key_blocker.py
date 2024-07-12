@@ -155,6 +155,7 @@ class KeyBlocker:
         self,
         left: ir.Table,
         right: ir.Table,
+        *,
         task: Literal["dedupe", "link"] | None = None,
         **kwargs,
     ):
