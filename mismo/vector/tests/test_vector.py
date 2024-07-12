@@ -71,6 +71,77 @@ def test_dot(a, b, expected):
 
 
 @pytest.mark.parametrize(
+    "a,b,expected",
+    [
+        pytest.param([1, 1], [-2, -2], -1.0, id="opposite_directions"),
+        pytest.param([1, 2], [2, 4], 1.0, id="same_directions"),
+        pytest.param([1], [-99], -1.0, id="1D_arrays"),
+        pytest.param(
+            [],
+            [],
+            0.0,
+            id="empty_arrays",
+            marks=pytest.mark.xfail(
+                reason="https://github.com/duckdb/duckdb/issues/12960"
+            ),
+        ),
+        pytest.param(
+            {},
+            {},
+            0.0,
+            id="empty_maps",
+            marks=pytest.mark.xfail(
+                reason="https://github.com/duckdb/duckdb/issues/12960"
+            ),
+        ),
+        pytest.param(
+            {},
+            {"a": 5},
+            0.0,
+            id="one_empty_map",
+            marks=pytest.mark.xfail(
+                reason="https://github.com/duckdb/duckdb/issues/12960"
+            ),
+        ),
+        pytest.param({"a": 1, "b": 1}, {"a": -2, "b": -2}, -1.0, id="opposite_maps"),
+        pytest.param(
+            ibis.literal(None, "array<int64>"),
+            [5, 3],
+            None,
+            id="one_null_array",
+        ),
+        pytest.param(
+            [5, 3],
+            ibis.literal(None, "array<int64>"),
+            None,
+            id="nonnull_null_array",
+        ),
+        pytest.param(
+            ibis.literal(None, "array<int64>"),
+            ibis.literal(None, "array<int64>"),
+            None,
+            id="both_null_array",
+        ),
+    ],
+)
+def test_cosine_similarity(a, b, expected):
+    def to_ibis(x):
+        if isinstance(x, dict):
+            return ibis.literal(x, type="map<string, int64>")
+        if isinstance(x, list):
+            return ibis.literal(x, type="array<int64>")
+        return x
+
+    a = to_ibis(a)
+    b = to_ibis(b)
+    e = vector.cosine_similarity(a, b)
+    result = e.execute()
+    if pd.isna(result):
+        result = None
+    assert result == pytest.approx(expected)
+
+
+@pytest.mark.parametrize(
     "a,metric,expected",
     [
         pytest.param([-3, 4], "l2", 5.0, id="array_l2"),

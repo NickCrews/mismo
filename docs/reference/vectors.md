@@ -7,4 +7,5 @@ or sparse (using `map<any_type, numeric>`)
 ::: mismo.vector.norm
 ::: mismo.vector.normalize
 ::: mismo.vector.dot
+::: mismo.vector.cosine_similarity
 ::: mismo.vector.mul

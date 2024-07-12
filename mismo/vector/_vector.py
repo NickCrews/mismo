@@ -18,6 +18,11 @@ def _array_sum(a) -> float: ...
 def _array_dot_product(a, b) -> float: ...
 
 
+# for duckdb
+@ibis.udf.scalar.builtin(name="list_cosine_similarity")
+def _array_cosine_similarity(a, b) -> float: ...
+
+
 T = TypeVar("T", ir.MapValue, ir.ArrayValue)
 
 
@@ -53,16 +58,46 @@ def dot(a: T, b: T) -> ir.FloatingValue:
     >>> dot(m1, m2)
     6.0  # 2*3
     """
-    if isinstance(a, ir.ArrayValue) and isinstance(b, ir.ArrayValue):
-        a_vals = a
-        b_vals = b
-    elif isinstance(a, ir.MapValue) and isinstance(b, ir.MapValue):
-        keys = _shared_keys(a, b)
-        a_vals = keys.map(lambda k: a[k])
-        b_vals = keys.map(lambda k: b[k])
-    else:
-        raise ValueError(f"Unsupported types {type(a)} and {type(b)}")
+    a_vals, b_vals = _shared_vals(a, b)
     return _array_dot_product(a_vals, b_vals)
+
+
+def cosine_similarity(a: T, b: T) -> ir.FloatingValue:
+    """Compute the cosine similarity of two vectors
+
+    The vectors can either be dense vectors, represented as array<numeric>,
+    or sparse vectors, represented as map<any_type, numeric>.
+    Both vectors must be of the same type though.
+
+    Parameters
+    ----------
+    a :
+        The first vector.
+    b :
+        The second vector.
+
+    Returns
+    -------
+    FloatingValue
+        The cosine similarity of the two vectors.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> from mismo.vector import cosine_similarity
+
+    Opposite directions:
+
+    >>> cosine_similarity(ibis.array([1, 1]), ibis.array([-2, -2])).execute()
+    -1.0
+
+    Orthogonal vectors:
+
+    >>> cosine_similarity(ibis.array([1, 0]), ibis.array([0, 1])).execute()
+    0.0
+    """
+    a_vals, b_vals = _shared_vals(a, b)
+    return _array_cosine_similarity(a_vals, b_vals)
 
 
 def mul(a: T, b: T) -> T:
@@ -173,6 +208,18 @@ def _shared_keys(a: ir.MapValue, b: ir.MapValue) -> ir.ArrayValue:
     regular = map_keys(a).filter(lambda k: b.contains(k))
     null = ibis.literal(None, type=dt.Array(value_type=a.type().key_type))
     return b.isnull().ifelse(null, regular)
+
+
+def _shared_vals(a: T, b: T) -> tuple[ir.ArrayValue, ir.ArrayValue]:
+    if isinstance(a, ir.ArrayValue) and isinstance(b, ir.ArrayValue):
+        return a, b
+    elif isinstance(a, ir.MapValue) and isinstance(b, ir.MapValue):
+        keys = _shared_keys(a, b)
+        a_vals = keys.map(lambda k: a[k])
+        b_vals = keys.map(lambda k: b[k])
+        return a_vals, b_vals
+    else:
+        raise ValueError(f"Unsupported types {type(a)} and {type(b)}")
 
 
 def map_keys(m: ir.MapValue) -> ir.ArrayValue:
