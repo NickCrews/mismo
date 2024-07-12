@@ -178,6 +178,8 @@ def _shared_keys(a: ir.MapValue, b: ir.MapValue) -> ir.ArrayValue:
 def map_keys(m: ir.MapValue) -> ir.ArrayValue:
     """workaround for https://github.com/duckdb/duckdb/issues/11116"""
     normal = m.keys()
+    if not _need_old_duckdb_workaround():
+        return normal
     null = ibis.literal(None, type=dt.Array(value_type=m.type().key_type))
     return m.isnull().ifelse(null, normal)
 
@@ -185,12 +187,16 @@ def map_keys(m: ir.MapValue) -> ir.ArrayValue:
 def map_values(m: ir.MapValue) -> ir.ArrayValue:
     """workaround for https://github.com/duckdb/duckdb/issues/11116"""
     normal = m.values()
+    if not _need_old_duckdb_workaround():
+        return normal
     null = ibis.literal(None, type=dt.Array(value_type=m.type().value_type))
     return m.isnull().ifelse(null, normal)
 
 
 def map_(keys: ir.ArrayValue, values: ir.ArrayValue) -> ir.MapValue:
     """workaround for https://github.com/duckdb/duckdb/issues/11115"""
+    if not _need_old_duckdb_workaround():
+        return ibis.map(keys, values)
     either_null = keys.isnull() | values.isnull()
     regular = ibis.map(keys, values)
     null = ibis.literal(
@@ -200,3 +206,16 @@ def map_(keys: ir.ArrayValue, values: ir.ArrayValue) -> ir.MapValue:
         ),
     )
     return either_null.ifelse(null, regular)
+
+
+def _need_old_duckdb_workaround() -> bool:
+    # Do we need workarounds for:
+    # - https://github.com/duckdb/duckdb/issues/11115
+    # - https://github.com/duckdb/duckdb/issues/11116
+    # They were fixed in
+    # https://github.com/duckdb/duckdb/releases/tag/v0.10.3
+    try:
+        import duckdb
+    except ImportError:
+        return False
+    return duckdb.__version__ < "0.10.3"
