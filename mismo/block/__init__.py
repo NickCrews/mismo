@@ -8,7 +8,6 @@ to be compared, hopefully to a manageable level.
 
 from __future__ import annotations
 
-from mismo.block._analyze import key_counts as key_counts
 from mismo.block._blocker import ConditionBlocker as ConditionBlocker
 from mismo.block._blocker import CrossBlocker as CrossBlocker
 from mismo.block._blocker import EmptyBlocker as EmptyBlocker

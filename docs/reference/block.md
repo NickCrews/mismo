@@ -17,13 +17,12 @@ becomes intractable for datasets much larger than a few thousand.
 ::: mismo.block.join
 
 ## Key-Based Blockers
-Generate pairs wherever the records share a single key.
+Generate pairs where records share a single key, eg "first_name"
 
 ::: mismo.block.KeyBlocker
-::: mismo.block.key_counts
 
 ## Set-Based Blockers
-Generate pairs where there is a high degree of term overlap.
+Generate pairs where two sets have a high degree of member overlap.
 
 ::: mismo.block.MinhashLshBlocker
 ::: mismo.block.minhash_lsh_keys
