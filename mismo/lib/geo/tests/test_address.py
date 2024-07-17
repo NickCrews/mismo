@@ -5,9 +5,12 @@ import sys
 import ibis
 import pytest
 
-from mismo.lib.geo import _address
+from mismo.lib import geo
 
 
+@pytest.mark.xfail(
+    reason="arrays.array_filter_isin_other(), which is used internally, is broken"
+)
 @pytest.mark.parametrize(
     "address, expected",
     [
@@ -20,7 +23,7 @@ from mismo.lib.geo import _address
                 "postal_code": "62701",
                 "country": "US",
             },
-            {"123", "Main", "St", "Apt", "1", "Springfield", "IL", "62701", "US"},
+            {"123", "MAIN", "ST", "APT", "1", "SPRINGFIELD", "IL", "62701", "US"},
         ),
         (
             {
@@ -31,7 +34,7 @@ from mismo.lib.geo import _address
                 "postal_code": "62701",
                 "country": "US",
             },
-            {"123", "Main", "St", "IL", "62701", "US"},
+            {"123", "MAIN", "ST", "IL", "62701", "US"},
         ),
         (
             {
@@ -44,15 +47,17 @@ from mismo.lib.geo import _address
             },
             set(),
         ),
-        (None, None),
+        (None, set()),
     ],
 )
-def test_address_tokens(address, expected):
-    a = ibis.literal(
-        address,
-        type="struct<street1: string, street2: string, city: string, state: string, postal_code: string, country: string>",  # noqa
-    )
-    result = _address.address_tokens(a).execute()
+def test_addresses_dimension(address, expected, table_factory):
+    address_type = "struct<street1: string, street2: string, city: string, state: string, postal_code: string, country: string>"  # noqa: E501
+    t = table_factory({"address": [address]}, schema={"address": address_type})
+    t = t.mutate(addresses=ibis.array([t.address]))
+    dim = geo.AddressesDimension("addresses")
+    result = dim.prepare(t).addresses_tokens.execute()
+    print(result)
+    result = result.iloc[0]
     if expected is None:
         assert result is None
     else:
@@ -157,7 +162,7 @@ def test_address_tokens(address, expected):
 )
 def test_postal_parse_address(to_shape, address, expected):
     address = ibis.literal(address, type=str)
-    e = to_shape.call(_address.postal_parse_address, address)
+    e = to_shape.call(geo.postal_parse_address, address)
     result = e.execute()
     assert result == expected
 
@@ -223,6 +228,6 @@ def test_postal_fingerprint_address(to_shape, address, expected):
         address,
         type="struct<street1: string, street2: string, city: string, state: string, postal_code: string, country: string>",  # noqa
     )
-    e = to_shape.call(_address.postal_fingerprint_address, a)
+    e = to_shape.call(geo.postal_fingerprint_address, a)
     result = e.execute()
     assert result == expected

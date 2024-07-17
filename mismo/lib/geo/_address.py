@@ -230,18 +230,20 @@ class AddressesDimension:
         """Prepares the table for blocking, adding normalized and tokenized columns."""
         addrs = t[self.column]
         t = t.mutate(addrs.map(normalize_address).name(self.column_normed))
-        tokens_nonunique = (
+
+        t = t.mutate(
             t[self.column_normed]
-            .map(lambda address: address_tokens(address, unique=False))
+            .map(lambda address: _util.struct_tokens(address, unique=False))
             .flatten()
+            .name("_tokens_nonunique")
         )
-        t = t.mutate(_tokens_nonunique=tokens_nonunique)
         # Array.unique() results in 4 duplications of the input, so .cache it so
         # we only execute it once. See https://github.com/ibis-project/ibis/issues/8770
         t = t.cache()
         t = t.mutate(t._tokens_nonunique.unique().name(self.column_tokens)).drop(
             "_tokens_nonunique"
         )
+
         t = arrays.array_filter_isin_other(
             t,
             self.column_tokens,
@@ -260,22 +262,6 @@ class AddressesDimension:
         al = t[self.column_normed + "_l"]
         ar = t[self.column_normed + "_r"]
         return t.mutate(best_match(al, ar).name(self.column_compared))
-
-
-def address_tokens(address: ir.StructValue, *, unique: bool = True) -> ir.ArrayColumn:
-    """Extract keywords from an address.
-
-    Parameters
-    ----------
-    address :
-        The address.
-
-    Returns
-    -------
-    keywords :
-        The keywords in the address.
-    """
-    return _util.struct_tokens(address, unique=unique)
 
 
 def postal_parse_address(address_string: ir.StringValue) -> ir.StructValue:
