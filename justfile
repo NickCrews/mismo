@@ -36,8 +36,12 @@ docs-publish:
     mkdocs gh-deploy --force
 
 # run the timing benchmark suite
-bench:
-    pytest --benchmark-only --benchmark-enable --benchmark-autosave
+# just bench -k test_benchmark_us_census_geocode[100]
+bench *args:
+    pytest --benchmark-only --benchmark-enable --benchmark-autosave {{args}}
+
+benchmark *args:
+    bench {{args}}
 
 # run timing benchmarks and compare with a previous run
 benchcmp number *args:
