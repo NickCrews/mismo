@@ -155,7 +155,7 @@ def test_address_tokens(address, expected):
         ),
     ],
 )
-def test_parse_address(address, expected):
+def test_postal_parse_address(address, expected):
     result = _address.postal_parse_address(address).execute()
     assert result == expected
 
@@ -210,7 +210,7 @@ def test_parse_address(address, expected):
         ),
     ],
 )
-def test_hash_address(address, expected):
+def test_postal_fingerprint_address(address, expected):
     a = ibis.literal(
         address,
         type="struct<street1: string, street2: string, city: string, state: string, postal_code: string, country: string>",  # noqa

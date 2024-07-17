@@ -278,8 +278,7 @@ def address_tokens(address: ir.StructValue, *, unique: bool = True) -> ir.ArrayC
     return _util.struct_tokens(address, unique=unique)
 
 
-@ibis.udf.scalar.python
-def postal_parse_address(address_string: str) -> ADDRESS_SCHEMA:
+def postal_parse_address(address_string: ir.StringValue) -> ir.StructValue:
     """Parse individual fields from an address string.
 
     .. note:: To use this function, you need the optional `postal` library installed.
@@ -306,28 +305,30 @@ def postal_parse_address(address_string: str) -> ADDRESS_SCHEMA:
     address :
         The parsed address as a Struct
     """
-
     with _util.optional_import("postal"):
         from postal.parser import parse_address as _parse_address
 
-    parsed_fields = _parse_address(address_string)
-    label_to_values = defaultdict(list)
-    for value, label in parsed_fields:
-        label_to_values[label].append(value)
-    renamed = {
-        "street1": label_to_values["house_number"] + label_to_values["road"],
-        "street2": label_to_values["unit"],
-        "city": label_to_values["city"],
-        "state": label_to_values["state"],
-        "postal_code": label_to_values["postcode"],
-        "country": label_to_values["country"],
-    }
-    # replace empty strings with None
-    return {k: " ".join(v) or None for k, v in renamed.items()}
+    @ibis.udf.scalar.python(signature=((str,), ADDRESS_SCHEMA))
+    def udf(address_string: str) -> dict[str, str]:
+        parsed_fields = _parse_address(address_string)
+        label_to_values = defaultdict(list)
+        for value, label in parsed_fields:
+            label_to_values[label].append(value)
+        renamed = {
+            "street1": label_to_values["house_number"] + label_to_values["road"],
+            "street2": label_to_values["unit"],
+            "city": label_to_values["city"],
+            "state": label_to_values["state"],
+            "postal_code": label_to_values["postcode"],
+            "country": label_to_values["country"],
+        }
+        # replace empty strings with None
+        return {k: " ".join(v) or None for k, v in renamed.items()}
+
+    return udf(address_string)
 
 
-@ibis.udf.scalar.python
-def postal_fingerprint_address(address: ADDRESS_SCHEMA) -> list[str]:
+def postal_fingerprint_address(address: ir.StructValue) -> ir.ArrayValue:
     """Generate multiple hashes of an address string to be used for e.g. blocking.
 
     .. note:: To use this function, you need to have the optional `postal` library
@@ -381,36 +382,38 @@ def postal_fingerprint_address(address: ADDRESS_SCHEMA) -> list[str]:
     address_hashes :
         Hashes of the address.
     """
-
     with _util.optional_import("postal"):
         from postal.near_dupe import near_dupe_hashes as _hash
-    if address is None:
-        return []
-    # split street1 into house number/ road
-    street1 = address["street1"] or ""
-    house, *rest = street1.split(" ", 1)
-    contains_digits = DIGITS_REGEX.match(house) is not None
-    parsed = {
-        "unit": address["street2"],
-        "city": address["city"],
-        "state": address["state"],
-        "postcode": address["postal_code"],
-        "country": address["country"],
-    }
-    if contains_digits:
-        # handle the fact that street1 contains both the house number and the road
-        parsed["house_number"] = house
-        parsed["road"] = " ".join(rest)
-    else:
-        parsed["road"] = street1
 
-    parsed = {k: v for k, v in parsed.items() if v}
+    @ibis.udf.scalar.python(signature=((ADDRESS_SCHEMA,), str))
+    def udf(address: dict[str, str]) -> list[str]:
+        # split street1 into house_number and road
+        street1 = address["street1"] or ""
+        house, *rest = street1.split(" ", 1)
+        contains_digits = DIGITS_REGEX.match(house) is not None
+        parsed = {
+            "unit": address["street2"],
+            "city": address["city"],
+            "state": address["state"],
+            "postcode": address["postal_code"],
+            "country": address["country"],
+        }
+        if contains_digits:
+            # handle the fact that street1 contains both the house number and the road
+            parsed["house_number"] = house
+            parsed["road"] = " ".join(rest)
+        else:
+            parsed["road"] = street1
 
-    if len(parsed) == 0:
-        # catch empty strings from invalid addresses
-        return []
-    return _hash(
-        list(parsed.keys()),
-        list(parsed.values()),
-        address_only_keys=True,
-    )
+        parsed = {k: v for k, v in parsed.items() if v}
+
+        if len(parsed) == 0:
+            # catch empty strings from invalid addresses
+            return []
+        return _hash(
+            list(parsed.keys()),
+            list(parsed.values()),
+            address_only_keys=True,
+        )
+
+    return udf(address)
