@@ -80,7 +80,7 @@ xfail_strict = true
 addopts = [
   "--strict-markers",
   "--strict-config",
-  "--benchmark-disable",
+  "--benchmark-skip",
   "--benchmark-group-by=name",
   "--benchmark-sort=name",
 ]
