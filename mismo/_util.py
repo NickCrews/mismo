@@ -307,7 +307,7 @@ def struct_isnull(
 def struct_join(struct: ir.StructValue, sep: str) -> ir.StringValue:
     """Join all the fields in a struct with a separator."""
     regular = ibis.literal(sep).join(
-        [struct[f].fillna("") for f in struct.type().names]
+        [struct[f].fill_null("") for f in struct.type().names]
     )
     return struct.isnull().ifelse(None, regular)
 

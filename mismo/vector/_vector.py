@@ -108,7 +108,7 @@ def mul(a: T, b: T) -> T:
         keys = _shared_keys(a, b)
         vals = keys.map(lambda k: a[k] * b[k])
         is_null = vals.isnull()
-        result = map_(keys.fillna([]), vals.fillna([]))
+        result = map_(keys.fill_null([]), vals.fill_null([]))
         return is_null.ifelse(ibis.null(), result)
     else:
         raise ValueError(f"Unsupported types {type(a)} and {type(b)}")

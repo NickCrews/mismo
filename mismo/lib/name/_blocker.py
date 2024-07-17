@@ -73,15 +73,15 @@ class NameBlocker:
 
 def _oneline(name: ir.StructValue) -> ir.StringValue:
     return (
-        name["prefix"].fillna("")
+        name["prefix"].fill_null("")
         + " "
-        + name["first"].fillna("")
+        + name["first"].fill_null("")
         + " "
-        + name["middle"].fillna("")
+        + name["middle"].fill_null("")
         + " "
-        + name["last"].fillna("")
+        + name["last"].fill_null("")
         + " "
-        + name["suffix"].fillna("")
+        + name["suffix"].fill_null("")
         + " "
-        + name["nickname"].fillna("")
+        + name["nickname"].fill_null("")
     ).strip()

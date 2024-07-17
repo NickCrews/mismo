@@ -4,10 +4,10 @@ build-backend = "pdm.backend"
 
 [project]
 name = "mismo"
-description = ''
+description = "The SQL/Ibis powered sklearn of record linkage."
 version = "0.1.0"
 readme = "README.md"
-requires-python = ">=3.9" # require >3.9 so that we can use ibis>=6
+requires-python = ">=3.10" # ibis>=9.1 requires python >=3.10
 license = { text = "LGPL-3.0-or-later" }
 keywords = []
 authors = [{ name = "Nick Crews", email = "nicholas.b.crews@gmail.com" }]
@@ -21,7 +21,7 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-    "ibis-framework>=9.0.0",
+    "ibis-framework>=9.1.0",
     # "ibis-framework[duckdb] @ git+https://github.com/ibis-project/ibis.git@42f45fe59da492897f0449468a3036384be34214",
     "typing-extensions ; python_version < \"3.11\"", # needed for Self
 ]

@@ -137,8 +137,8 @@ class KeyBlocker:
             - A string, which is interpreted as the name of a column in both tables.
               eg "price" is equivalent to `left.price == right.price`
             - A Deferred, which is used to reference a column in a table.
-              eg `_.price.fillna(0)` is equivalent to
-              `left.price.fillna(0) == right.price.fillna(0)`
+              eg `_.price.fill_null(0)` is equivalent to
+              `left.price.fill_null(0) == right.price.fill_null(0)`
             - An iterable of the above, which is interpreted as a tuple of conditions.
               eg `("age", _.first_name.upper()")` is equivalent to
               `(left.age == right.age) & (left.first_name.upper() == right.first_name.upper())`
@@ -224,7 +224,7 @@ class KeyBlocker:
         └────────┴───────┴───────┘
         """
         t = t.select(self.key)
-        t = t.dropna(how="any")
+        t = t.drop_null(how="any")
         return t.group_by(t.columns).agg(n=_.count()).order_by(_.n.desc())
 
     def pair_counts(

@@ -159,5 +159,5 @@ class PhonesDimension:
         pairs = array_combinations(le, ri)
         min_level = array_min(
             pairs.map(lambda pair: match_level(pair.l, pair.r).as_integer())
-        ).fillna(PhoneMatchLevel.ELSE.as_integer())
+        ).fill_null(PhoneMatchLevel.ELSE.as_integer())
         return t.mutate(min_level.name(self.column_compared))
