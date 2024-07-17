@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 from typing import Callable, Iterable
 
 import ibis
@@ -62,3 +63,58 @@ def t2(table_factory) -> ir.Table:
             "array": [["b"], ["c"], ["d"], None],
         }
     )
+
+
+@dataclasses.dataclass
+class ToShape:
+    forward: Callable[[ir.Value], ir.Value]
+    revert: Callable[[ir.Value], ir.Value]
+
+    def call(self, f: Callable, *args, **kwargs) -> ir.Value:
+        first, *rest = args
+        args = (self.forward(first), *rest)
+        result = f(*args, **kwargs)
+        return self.revert(result)
+
+
+@pytest.fixture(params=["scalar", "column"])
+def to_shape(request) -> ToShape:
+    """Fixture that allows you to test a function with both scalar and column inputs.
+
+    Say you had some function ``add_one(x: ir.Value) -> ir.Value``.
+    You already have a test like
+
+    ```python
+    inp = literal(1)
+    result = add_one(inp)
+    assert result.execute() == 2
+    ```
+
+    You can use this fixture to test add_one with a column input:
+
+    ```
+    inp = literal(1)
+    result = to_shape.revert(add_one(to_shape.forward(inp)))
+    assert result.execute() == 2
+    ```
+
+    Or, to do it in one step:
+
+    ```
+    inp = literal(1)
+    result = to_shape.call(add_one, inp)
+    assert result.execute() == 2
+    ```
+    """
+    if request.param == "scalar":
+        return ToShape(
+            forward=lambda x: x,
+            revert=lambda x: x,
+        )
+    elif request.param == "column":
+        return ToShape(
+            forward=lambda x: ibis.array([x]).unnest(),
+            revert=lambda x: x.as_scalar(),
+        )
+    else:
+        assert False

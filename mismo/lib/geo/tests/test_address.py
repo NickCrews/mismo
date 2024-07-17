@@ -155,8 +155,10 @@ def test_address_tokens(address, expected):
         ),
     ],
 )
-def test_postal_parse_address(address, expected):
-    result = _address.postal_parse_address(address).execute()
+def test_postal_parse_address(to_shape, address, expected):
+    address = ibis.literal(address, type=str)
+    e = to_shape.call(_address.postal_parse_address, address)
+    result = e.execute()
     assert result == expected
 
 
@@ -216,10 +218,11 @@ def test_postal_parse_address(address, expected):
         ),
     ],
 )
-def test_postal_fingerprint_address(address, expected):
+def test_postal_fingerprint_address(to_shape, address, expected):
     a = ibis.literal(
         address,
         type="struct<street1: string, street2: string, city: string, state: string, postal_code: string, country: string>",  # noqa
     )
-    result = _address.postal_fingerprint_address(a).execute()
+    e = to_shape.call(_address.postal_fingerprint_address, a)
+    result = e.execute()
     assert result == expected

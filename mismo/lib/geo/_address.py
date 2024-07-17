@@ -309,7 +309,10 @@ def postal_parse_address(address_string: ir.StringValue) -> ir.StructValue:
         from postal.parser import parse_address as _parse_address
 
     @ibis.udf.scalar.python(signature=((str,), ADDRESS_SCHEMA))
-    def udf(address_string: str) -> dict[str, str]:
+    def udf(address_string: str | None) -> dict[str, str] | None:
+        # remove once https://github.com/ibis-project/ibis/pull/9625 is fixed
+        if address_string is None:
+            return None
         parsed_fields = _parse_address(address_string)
         label_to_values = defaultdict(list)
         for value, label in parsed_fields:
@@ -386,7 +389,10 @@ def postal_fingerprint_address(address: ir.StructValue) -> ir.ArrayValue:
         from postal.near_dupe import near_dupe_hashes as _hash
 
     @ibis.udf.scalar.python(signature=((ADDRESS_SCHEMA,), str))
-    def udf(address: dict[str, str]) -> list[str]:
+    def udf(address: dict[str, str] | None) -> list[str] | None:
+        # remove once https://github.com/ibis-project/ibis/pull/9625 is fixed
+        if address is None:
+            return None
         # split street1 into house_number and road
         street1 = address["street1"] or ""
         house, *rest = street1.split(" ", 1)
