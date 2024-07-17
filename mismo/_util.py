@@ -206,7 +206,7 @@ def optional_import(pip_name: str):
         yield
     except ImportError as e:
         raise ImportError(
-            f"Package `{e.name}` is required for this functionality. "
+            f"Package `{pip_name}` is required for this functionality. "
             f"Please install it separately using `python -m pip install {pip_name}`."
         ) from e
 

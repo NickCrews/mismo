@@ -161,6 +161,12 @@ def test_postal_parse_address(address, expected):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="postal not tested for Windows dev")
+@pytest.mark.skipif(
+    sys.platform == "darwin",
+    # For some reason the mac install of postal doesn't have this symbol?
+    # dlopen(.../_near_dupe.cpython-312-darwin.so, 0x0002): symbol not found in flat namespace '_libpostal_near_dupe_name_hashes'  # noqa: E501
+    reason="mac install of postal doesn't have this function",
+)
 @pytest.mark.parametrize(
     "address, expected",
     [
