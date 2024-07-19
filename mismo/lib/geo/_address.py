@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import defaultdict
 import re
 
 import ibis
@@ -295,24 +294,64 @@ def postal_parse_address(address_string: ir.StringValue) -> ir.StructValue:
         from postal.parser import parse_address as _parse_address
 
     @ibis.udf.scalar.python(signature=((str,), ADDRESS_SCHEMA))
-    def udf(address_string: str | None) -> dict[str, str] | None:
-        # remove once https://github.com/ibis-project/ibis/pull/9625 is fixed
+    def udf(address_string: str | None) -> dict[str, str | None] | None:
+        # TODO: remove once https://github.com/ibis-project/ibis/pull/9625 is fixed
         if address_string is None:
             return None
-        parsed_fields = _parse_address(address_string)
-        label_to_values = defaultdict(list)
-        for value, label in parsed_fields:
-            label_to_values[label].append(value)
-        renamed = {
-            "street1": label_to_values["house_number"] + label_to_values["road"],
-            "street2": label_to_values["unit"],
-            "city": label_to_values["city"],
-            "state": label_to_values["state"],
-            "postal_code": label_to_values["postcode"],
-            "country": label_to_values["country"],
+
+        # Initially, the key set of the `result` dict is given by the union of
+        # both the names of the fields in the `ADDRESS_SCHEMA` struct and
+        # the names of the pypostal fields we use.
+        # Later, the latter are popped to match the shape of `ADDRESS_SCHEMA`.
+
+        # NB: due to https://github.com/ibis-project/ibis/issues/9613
+        # the keys of the `result` dict returned at the end of this function
+        # must be sorted in the same order as they are declared in the
+        # `ADDRESS_SCHEMA` struct. Current workaround is to create the dict
+        # with all those keys in the proper order since the beginning.
+        result: dict[str, str | None] = {
+            "street1": None,
+            "street2": None,
+            "city": None,
+            "state": None,
+            "postal_code": None,
+            "country": None,
+
+            # Temporary keys used to store values returned by pypostal and
+            # popped before returning the dictionary
+            "house_number": None,
+            "road": None,
+            "unit": None,
+            "postcode": None
         }
-        # replace empty strings with None
-        return {k: " ".join(v) or None for k, v in renamed.items()}
+
+        parsed_fields = _parse_address(address_string)
+        for value, label in parsed_fields:
+            # Pypostal returns more fields than the ones we actually need.
+            # Here `False` is used as a placeholder under the assumption that
+            # such value is never returned by pypostal a field value.
+            current = result.get(label, False)
+
+            # Keep only the fields declared when `result` is initialized.
+            # Pypostal fields can be repeated, in such case we concat their values.
+            if current is not False:
+                result[label] = value if current is None else f"{current} {value}"
+
+        # Hack to prepend "house_number" to "road"
+        house_number = result.pop("house_number")
+        if house_number is not None:
+            road = result["road"]
+            if road is None:
+                result["road"] = house_number
+            else:
+                result["road"] = f"{house_number} {road}"
+
+        # Modify `result` to match the shape of an `ADDRESS_SCHEMA`.
+        result["street1"] = result.pop("road")
+        result["street2"] = result.pop("unit")
+        result["postal_code"] = result.pop("postcode")
+
+        return result
 
     return udf(address_string)
 
