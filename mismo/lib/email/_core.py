@@ -29,8 +29,8 @@ def clean_email(email: ir.StringValue, *, normalize: bool = False) -> ir.StringV
     return email
 
 
-def parse_email(email: ir.StringValue) -> ir.StructValue:
-    """Parse an email into <user>@<domain> parts
+def split_email(email: ir.StringValue) -> ir.StructValue:
+    """Split an email address into <user>@<domain> parts
 
     Parameters
     ----------
@@ -87,7 +87,7 @@ def match_level(
     """
 
     def norm_and_parse(e):
-        return parse_email(clean_email(e, normalize=True))
+        return split_email(clean_email(e, normalize=True))
 
     if isinstance(e1, ir.StringValue):
         e1 = norm_and_parse(e1)
@@ -145,7 +145,7 @@ class EmailsDimension:
         """Add a column with the parsed and normalized email addresses."""
         return t.mutate(
             get_column(t, self.column)
-            .map(lambda email: parse_email(clean_email(email, normalize=True)))
+            .map(lambda email: split_email(clean_email(email, normalize=True)))
             .name(self.column_parsed)
         )
 

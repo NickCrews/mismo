@@ -43,8 +43,8 @@ def test_clean_email(input, exp):
         pytest.param(None, None, None, None, id="null"),
     ],
 )
-def test_parse_email(input, expfull, expuser, expdomain):
-    result = email.parse_email(ibis.literal(input, str)).execute()
+def test_split_email_address(input, expfull, expuser, expdomain):
+    result = email.split_email(ibis.literal(input, str)).execute()
     assert result["full"] == expfull
     assert result["user"] == expuser
     assert result["domain"] == expdomain
