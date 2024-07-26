@@ -21,10 +21,11 @@ def _prepare_db_table(benchmark_id: str, db_name: str) -> Table:
     apoc_file = Path(_CURRENT_DIR, 'apoc_addresses_1M.parquet')
     apoc_data = pd.read_parquet(apoc_file)
 
-    db_file = Path(_DB_DIR, benchmark_id, db_name)
-    os.makedirs(db_file.parent, exist_ok=True)
-    con = ibis.duckdb.connect(db_file)
-    t = con.create_table(db_name, apoc_data)
+    # db_file = Path(_DB_DIR, benchmark_id, db_name)
+    # os.makedirs(db_file.parent, exist_ok=True)
+    # con = ibis.duckdb.connect(db_file)
+    # t = con.create_table(db_name, apoc_data)
+    t = ibis.memtable(apoc_data)
 
     return t
 
