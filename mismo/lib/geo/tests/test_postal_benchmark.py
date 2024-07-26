@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from pathlib import Path
 
 import ibis
@@ -31,23 +32,30 @@ udf = ibis.udf.scalar.python(signature=((str,), ADDRESS_SCHEMA))
 
 
 @udf
-def noop(address_string: str | None) -> dict:
+def noop(address_string: str | None) -> dict[str, None]:
     return _NOOP_ADDRESS
 
 
 @udf
-def python_only(address_string: str | None) -> dict:
+def python_only(address_string: str | None) -> dict[str, str | None] | None:
+    # remove once https://github.com/ibis-project/ibis/pull/9625 is fixed
+    if address_string is None:
+        return None
+
     result: dict[str, str | None] = {
-        "house_number": None,
-        "road": None,
-        "unit": None,
-        "city": None,
-        "state": None,
-        "postcode": None,
-        "country": None,
+            "street1": None,
+            "street2": None,
+            "city": None,
+            "state": None,
+            "postal_code": None,
+            "country": None,
+            "house_number": None,
+            "road": None,
+            "unit": None,
+            "postcode": None
     }
 
-    # Fake 'parse_address' function that emits just one field ("street")
+    # Fake '_parse_address' function that emits just one field ("street")
     # containing the whole address.
     parsed_fields = (("street", address_string),)
     for value, label in parsed_fields:
@@ -71,40 +79,40 @@ def python_only(address_string: str | None) -> dict:
 
 
 @udf
-def postal_only(address_string: str | None) -> dict:
-    _parse_address(address_string or "")
+def postal_only(address_string: str | None) -> dict[str, None] | None:
+    # remove once https://github.com/ibis-project/ibis/pull/9625 is fixed
+    if address_string is None:
+        return None
+
+    _parse_address(address_string)
     return _NOOP_ADDRESS
 
 
-@udf
-def complete(address_string: str | None) -> dict | None:
+@ibis.udf.scalar.python
+def postal_parse_address__direct_import(address_string: str) -> ADDRESS_SCHEMA:
+    # TODO: remove once https://github.com/ibis-project/ibis/pull/9625 is fixed
     if address_string is None:
         return None
-    # Initially, the keys match the names of pypostal fields we need.
-    # Later, this dict is modified to match the shape of an `ADDRESS_SCHEMA`.
+
     result: dict[str, str | None] = {
+        "street1": None,
+        "street2": None,
+        "city": None,
+        "state": None,
+        "postal_code": None,
+        "country": None,
         "house_number": None,
         "road": None,
         "unit": None,
-        "city": None,
-        "state": None,
-        "postcode": None,
-        "country": None,
+        "postcode": None
     }
 
     parsed_fields = _parse_address(address_string)
     for value, label in parsed_fields:
-        # Pypostal returns more fields than the ones we actually need.
-        # Here `False` is used as a placeholder under the assumption that
-        # such value is never returned by pypostal a field value.
         current = result.get(label, False)
-
-        # Keep only the fields declared when `result` is initialized.
-        # Pypostal fields can be repeated, in such case we concat their values.
         if current is not False:
             result[label] = value if current is None else f"{current} {value}"
 
-    # Hack to prepend "house_number" to "road"
     house_number = result.pop("house_number")
     if house_number is not None:
         road = result["road"]
@@ -113,12 +121,32 @@ def complete(address_string: str | None) -> dict | None:
         else:
             result["road"] = f"{house_number} {road}"
 
-    # Modify `result` in-place to match the shape of an `ADDRESS_SCHEMA`.
     result["street1"] = result.pop("road")
     result["street2"] = result.pop("unit")
     result["postal_code"] = result.pop("postcode")
 
     return result
+
+
+@udf
+def postal_parse_address__initial_impl(address_string: str | None) -> dict[str, str | None] | None:
+    # remove once https://github.com/ibis-project/ibis/pull/9625 is fixed
+    if address_string is None:
+        return None
+    parsed_fields = _parse_address(address_string)
+    label_to_values = defaultdict(list)
+    for value, label in parsed_fields:
+        label_to_values[label].append(value)
+    renamed = {
+        "street1": label_to_values["house_number"] + label_to_values["road"],
+        "street2": label_to_values["unit"],
+        "city": label_to_values["city"],
+        "state": label_to_values["state"],
+        "postal_code": label_to_values["postcode"],
+        "country": label_to_values["country"],
+    }
+    # replace empty strings with None
+    return {k: " ".join(v) or None for k, v in renamed.items()}
 
 
 def download_test_data() -> ir.Table:
@@ -162,8 +190,9 @@ def data(backend: ibis.BaseBackend) -> ir.Table:
         noop,
         python_only,
         postal_only,
-        complete,
         postal_parse_address,
+        postal_parse_address__direct_import,
+        postal_parse_address__initial_impl,
     ],
 )
 @pytest.mark.parametrize(
