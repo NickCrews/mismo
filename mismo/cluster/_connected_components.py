@@ -20,6 +20,7 @@ def connected_components(
     links: ir.Table,
     records: ir.Column | ir.Table | None,
     max_iter: int | None = None,
+    label_as: str = "component",
 ) -> ir.Table: ...
 
 
@@ -29,6 +30,7 @@ def connected_components(
     links: ir.Table,
     records: Iterable[ir.Table] | Mapping[str, ir.Table],
     max_iter: int | None = None,
+    label_as: str = "component",
 ) -> Datasets: ...
 
 
@@ -39,11 +41,13 @@ def connected_components(
     links: ir.Table,
     records: ir.Column | ir.Table | Iterable[ir.Table] | Mapping[str, ir.Table] = None,
     max_iter: int | None = None,
+    label_as: str = "component",
 ) -> ir.Table | Datasets:
     """Label records using connected components, based on the given links.
 
     This uses [an iterative algorithm](https://www.drmaciver.com/2008/11/computing-connected-graph-components-via-sql/)
-    that is linear in terms of the diameter of the largest component.
+    that is linear in terms of the diameter of the largest component
+    (ie how many "hops" it takes to get from one end of a cluster to the other).
     This is usually acceptable for our use case,
     because we expect the components to be small.
 
@@ -64,15 +68,18 @@ def connected_components(
     max_iter :
         The maximum number of iterations to run. If None, run until convergence.
 
+    label_as :
+        The name of the label column that will contain the component ID.
+
     Returns
     -------
     result
-        If `records` is None, a Table will be returned with columns
-        `record_id` and `component:uint64` that maps record_id to component.
-        If `records` is a single Table, that table will be returned
-        with a `component:uint64` column added.
-        If an iterable/mapping of Tables is given, a `Datasets` will be returned, with
-        a `component:uint64` column added to each contained Table.
+        - If `records` is None, a Table will be returned with columns
+        `record_id` and `<label_as>` of type `uint64` that maps record_id to component.
+        - If `records` is a single Table, that table will be returned
+        with a `<label_as> column added of type `uint64`.
+        - If `records` is an iterable/mapping of Tables, a `Datasets` will be returned,
+        with a `<label_as>` column of type `uint64` added to each contained Table.
 
     Examples
     --------
@@ -87,7 +94,7 @@ def connected_components(
     ...         ("d", 3),
     ...         ("g", 6),
     ...     ],
-    ...     columns=["record_id", "other"]
+    ...     columns=["record_id", "other"],
     ... )
     >>> records2 = ibis.memtable(
     ...     [
@@ -96,7 +103,7 @@ def connected_components(
     ...         ("y", 24),
     ...         ("z", 25),
     ...     ],
-    ...     columns=["record_id", "other"]
+    ...     columns=["record_id", "other"],
     ... )
     >>> links = ibis.memtable(
     ...     [
@@ -107,7 +114,8 @@ def connected_components(
     ...         ("c", "z"),
     ...         ("g", "h"),
     ...     ],
-    ...     columns=["record_id_l", "record_id_r"])
+    ...     columns=["record_id_l", "record_id_r"],
+    ... )
 
     If you don't supply the records, then you just get a labeling map
     from record_id -> component. Note how only the record_ids that are
@@ -129,20 +137,21 @@ def connected_components(
     │ h         │         3 │
     └───────────┴───────────┘
 
-    If you supply records, then the records are labeled with the component:
+    If you supply records, then the records are labeled with the component.
+    We can also change the name of the column that contains the component:
 
-    >>> connected_components(records=records1, links=links)
-    ┏━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┓
-    ┃ record_id ┃ other ┃ component ┃
-    ┡━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━┩
-    │ string    │ int64 │ uint64    │
-    ├───────────┼───────┼───────────┤
-    │ b         │     1 │         0 │
-    │ a         │     0 │         0 │
-    │ c         │     2 │         0 │
-    │ g         │     6 │         3 │
-    │ d         │     3 │         4 │
-    └───────────┴───────┴───────────┘
+    >>> connected_components(records=records1, links=links, label_as="label")
+    ┏━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━┓
+    ┃ record_id ┃ other ┃ label  ┃
+    ┡━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━┩
+    │ string    │ int64 │ uint64 │
+    ├───────────┼───────┼────────┤
+    │ b         │     1 │      0 │
+    │ a         │     0 │      0 │
+    │ c         │     2 │      0 │
+    │ g         │     6 │      3 │
+    │ d         │     3 │      4 │
+    └───────────┴───────┴────────┘
 
     You can supply multiple sets of records, which are coerced to a `Datasets`,
     and returned as a `Datasets`, with each table of records labeled
@@ -177,11 +186,11 @@ def connected_components(
     int_labels = _connected_components_ints(int_edges, max_iter=max_iter)
     labels = restore(int_labels)
     if records is None:
-        return labels
+        return labels.rename(**{label_as: "component"})
     if isinstance(records, ir.Column):
         records = records.name("record_id").as_table()
     ds = Datasets(records)
-    result = _label_datasets(ds, labels)
+    result = _label_datasets(ds, labels, label_as=label_as)
     if isinstance(records, ir.Table):
         return result[0]
     return result
@@ -279,13 +288,13 @@ def _get_initial_labels(edges: ir.Table) -> ir.Table:
     return ibis.union(labels_left, labels_right, distinct=True)
 
 
-def _label_datasets(ds: Datasets, labels: ir.Table) -> Datasets:
+def _label_datasets(ds: Datasets, labels: ir.Table, *, label_as: str) -> Datasets:
     additional_labels = _get_additional_labels(labels, ds.all_record_ids())
     labels = labels.union(additional_labels)
     return ds.map(
-        lambda name, t: t.left_join(labels, "record_id", rname="{name}_ibis_tmp").drop(
-            "record_id_ibis_tmp"
-        )
+        lambda name, t: t.left_join(labels, "record_id", rname="{name}_ibis_tmp")
+        .drop("record_id_ibis_tmp")
+        .rename(**{label_as: "component"})
     )
 
 
