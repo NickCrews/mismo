@@ -21,8 +21,22 @@ def minhash_lsh_keys(
     # https://dl.acm.org/doi/10.1145/3511808.3557631
     bands = [array_choice(terms, band_size).sort() for _ in range(n_bands)]
     result = ibis.array(bands).filter(lambda x: x.length() > 0)
-    # the .cast() is a workaround for https://github.com/ibis-project/ibis/issues/9135
-    result = result.map(lambda x: x.hash().cast("uint64"))
+
+    def _hash(x):
+        # NOTE: returns int64 in ibis 9.1.0 and later but uint64 in earlier versions
+        if ibis.__version__ >= "9.1.0":
+            # in later ibis versions, there is some post-processing
+            # so the uint64s that duckdb returns are properly cast to int64s
+            return x.hash()
+        else:
+            # in earlier versions, ibis *says* it returns int64s,
+            # but duckdb actually returns uint64s, which
+            # crashes things down the line without this cast.
+            # See https://github.com/ibis-project/ibis/issues/9135
+            # and https://github.com/NickCrews/mismo/issues/45
+            return x.hash().cast("uint64")
+
+    result = result.map(_hash)
     result = result.unique()
     return result
 
@@ -85,8 +99,12 @@ class MinhashLshBlocker:
         )
         left = left.cache()
         right = right.cache()
-        kb = KeyBlocker(_[keys_name].unnest().hash())
+        kb = KeyBlocker(_[keys_name].unnest())
         return kb(left, right, task=task)
+
+
+def p_blocked(jaccard: float, band_size: int, n_bands: int) -> float:
+    return 1 - (1 - jaccard**band_size) ** n_bands
 
 
 def plot_lsh_curves(
@@ -154,7 +172,7 @@ def plot_lsh_curves(
     t = t.mutate(jaccard=ibis.range(51).unnest().cast(float) / 50)
     t = t.mutate(
         label="(" + t.band_size.cast(str) + ", " + t.n_bands.cast(str) + ")",
-        pr=1 - (1 - _.jaccard**t.band_size) ** t.n_bands,
+        pr=p_blocked(_.jaccard, _.band_size, _.n_bands),
     )
     chart = (
         alt.Chart(
