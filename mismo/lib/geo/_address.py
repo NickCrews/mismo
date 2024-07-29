@@ -4,14 +4,12 @@ from collections import defaultdict
 import re
 
 import ibis
+from ibis import _
 from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 
-from mismo import _util, arrays
-from mismo.block import MinhashLshBlocker
-from mismo.compare import MatchLevel
+from mismo import _util, arrays, block, compare, sets
 from mismo.lib.geo._latlon import distance_km
-from mismo.sets import rare_terms
 
 ADDRESS_SCHEMA = dt.Struct(
     {
@@ -102,7 +100,7 @@ def normalize_address(address: ir.StructValue) -> ir.StructValue:
     )
 
 
-class AddressesMatchLevel(MatchLevel):
+class AddressesMatchLevel(compare.MatchLevel):
     """How closely two addresses match."""
 
     NULL = 0
@@ -247,15 +245,13 @@ class AddressesDimension:
         t = arrays.array_filter_isin_other(
             t,
             self.column_tokens,
-            rare_terms(t[self.column_tokens], max_records_frac=0.01),
+            sets.rare_terms(t[self.column_tokens], max_records_frac=0.01),
             result_format=self.column_keywords,
         )
         return t
 
     def block(self, t1: ir.Table, t2: ir.Table, **kwargs) -> ir.Table:
-        blocker = MinhashLshBlocker(
-            terms_column=self.column_keywords, band_size=10, n_bands=10
-        )
+        blocker = block.KeyBlocker(_[self.column_keywords].unnest())
         return blocker(t1, t2, **kwargs)
 
     def compare(self, t: ir.Table) -> ir.Table:

@@ -15,9 +15,6 @@ from mismo.block._blocker import PBlocker as PBlocker
 from mismo.block._core import join as join
 from mismo.block._ensemble import UnionBlocker as UnionBlocker
 from mismo.block._key_blocker import KeyBlocker as KeyBlocker
-from mismo.block._lsh import MinhashLshBlocker as MinhashLshBlocker
-from mismo.block._lsh import minhash_lsh_keys as minhash_lsh_keys
-from mismo.block._lsh import plot_lsh_curves as plot_lsh_curves
 from mismo.block._metrics import n_naive_comparisons as n_naive_comparisons
 from mismo.block._sql_analyze import JOIN_ALGORITHMS as JOIN_ALGORITHMS
 from mismo.block._sql_analyze import SLOW_JOIN_ALGORITHMS as SLOW_JOIN_ALGORITHMS

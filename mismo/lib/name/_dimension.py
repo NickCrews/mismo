@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ibis.expr import types as ir
 
-from mismo.block import MinhashLshBlocker
+from mismo import block
 from mismo.lib.name import _clean, _compare
 
 
@@ -67,7 +67,7 @@ class NameDimension:
         t
             The blocked table.
         """
-        blocker = MinhashLshBlocker(self.column_tokens, band_size=10, n_bands=10)
+        blocker = block.KeyBlocker(_[self.column_tokens].unnest())
         return blocker(left, right, **kwargs)
 
     def compare(self, t: ir.Table) -> ir.Table:

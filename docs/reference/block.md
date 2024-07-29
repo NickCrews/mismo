@@ -21,13 +21,6 @@ Generate pairs where records share a single key, eg "first_name"
 
 ::: mismo.block.KeyBlocker
 
-## Set-Based Blockers
-Generate pairs where two sets have a high degree of member overlap.
-
-::: mismo.block.MinhashLshBlocker
-::: mismo.block.minhash_lsh_keys
-::: mismo.block.plot_lsh_curves
-
 ## Ensemble Blockers
 Blockers that use other Blockers
 
