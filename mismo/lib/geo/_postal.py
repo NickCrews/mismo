@@ -133,7 +133,7 @@ def postal_fingerprint_address(address: ir.StructValue) -> ir.ArrayValue:
     with _util.optional_import("postal"):
         from postal.near_dupe import near_dupe_hashes as _hash
 
-    @ibis.udf.scalar.python(signature=((_ADDRESS_SCHEMA,), str))
+    @ibis.udf.scalar.python(signature=((_ADDRESS_SCHEMA,), list[str]))
     def udf(address: dict[str, str] | None) -> list[str] | None:
         # remove once https://github.com/ibis-project/ibis/pull/9625 is fixed
         if address is None:
