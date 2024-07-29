@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import Callable, Iterable
+from typing import Any, Callable, Iterable, Protocol
 
 import ibis
+from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 import pytest
 
@@ -32,10 +33,19 @@ def table_factory(backend: ibis.BaseBackend) -> Callable[..., ir.Table]:
     return factory
 
 
+class ColumnFactory(Protocol):
+    def __call__(
+        column_data: Iterable[Any], type: str | dt.DataType | None = None
+    ) -> ir.Column: ...
+
+
 @pytest.fixture
-def column_factory(table_factory) -> Callable[[Iterable], ir.Column]:
-    def func(column_data):
-        table = table_factory({"column": column_data})
+def column_factory(table_factory) -> ColumnFactory:
+    def func(column_data: Iterable[Any], type: str | dt.DataType | None = None):
+        if type is not None:
+            table = table_factory({"column": column_data}, schema={"column": type})
+        else:
+            table = table_factory({"column": column_data})
         return table.column
 
     return func

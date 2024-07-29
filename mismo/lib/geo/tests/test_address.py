@@ -8,9 +8,6 @@ import pytest
 from mismo.lib import geo
 
 
-@pytest.mark.xfail(
-    reason="arrays.array_filter_isin_other(), which is used internally, is broken"
-)
 @pytest.mark.parametrize(
     "address, expected",
     [

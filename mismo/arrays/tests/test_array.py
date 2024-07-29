@@ -134,3 +134,46 @@ def test_array_sort():
     emails = result.map(lambda x: x.email)
     expected = ["b", "a", "c"]
     assert emails.execute() == expected
+
+
+@pytest.mark.parametrize(
+    "other",
+    [
+        pytest.param([2], id="normal"),
+        pytest.param([1, 2, 3], id="remove_nothing"),
+        pytest.param([], id="remove_all"),
+    ],
+)
+@pytest.mark.parametrize(
+    "inp",
+    [
+        pytest.param([1, 2, 3], id="normal"),
+        pytest.param([1, 2, 2], id="duplicates"),
+        pytest.param([2, None, 2], id="duplicates_null"),
+        pytest.param([1], id="single"),
+        pytest.param([1, None, 2], id="mixed"),
+        pytest.param([None, 1], id="start_null"),
+        pytest.param([1, None], id="end_null"),
+        pytest.param([], id="empty"),
+        pytest.param(None, id="null"),
+    ],
+)
+def test_array_filter_isin_other(table_factory, column_factory, inp, other):
+    # We make 5 rows (admittedly, all with the same data)
+    # because the implementation does some unnesting logic
+    # so we want to test that the output rows line up with the input rows
+    pairs = [{"inp": inp} for _ in range(5)]
+    t = table_factory(pairs, schema={"inp": "array<int32>"})
+    other_col = column_factory(other, type="int32")
+    filtered = arrays.array_filter_isin_other(
+        t, "inp", other_col, result_format="filtered"
+    )
+    df = filtered.execute()
+
+    def baseline(inp):
+        if inp is None:
+            return None
+        return [x for x in inp if x in other or pd.isna(x)]
+
+    assert len(df) == len(pairs)
+    assert df.filtered.tolist() == [baseline(x) for x in df.inp.tolist()]

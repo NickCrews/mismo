@@ -69,9 +69,34 @@ def array_filter_isin_other(
     array_col = _util.get_column(t, array)
     t = t.mutate(__array=array_col, __id=ibis.row_number())
     temp = t.select("__id", __unnested=_.__array.unnest())
-    filtered = temp.filter(temp.__unnested.isin(other))
-    re_agged = filtered.group_by("__id").agg(__filtered=_.__unnested.collect())
-    re_joined = t.join(re_agged, "__id").drop(["__id", "__array"])
+    # When we re-.collect() items below, the order matters,
+    # but the .filter() can mess up the order, so we need to
+    # add a sortable key, filter, re-sort, and then drop the key.
+    filtered = (
+        temp.mutate(elem_id=ibis.row_number())
+        .filter(temp.__unnested.isin(other) | temp.__unnested.isnull())
+        .order_by("elem_id")
+        .drop("elem_id")
+    )
+    # NULLs are dropped from Array.collect() in ibis
+    # https://github.com/ibis-project/ibis/issues/9703
+    # So we can't do this:
+    # re_agged = filtered.group_by("__id").agg(__filtered=_.__unnested.collect())
+    # Instead, we have to do some raw SQL:
+    uname = _util.unique_name("__filtered")
+    re_agged = filtered.alias(uname).sql(
+        f"SELECT __id, list(__unnested) as __filtered FROM {uname} GROUP BY __id",
+        dialect="duckdb",
+    )
+    re_joined = t.left_join(re_agged, "__id").drop("__id", "__id_right")
+    # when we unnested, both [] and NULL rows disappeared.
+    # Once we join back, they all come back as NULL,
+    # so we need to adjust some of them back to [].
+    re_joined = re_joined.mutate(
+        __filtered=(_.__array.notnull() & _.__filtered.isnull()).ifelse(
+            [], _.__filtered
+        )
+    ).drop("__array")
     result_name = result_format.format(name=array_col.get_name())
     return re_joined.rename({result_name: "__filtered"})
 
