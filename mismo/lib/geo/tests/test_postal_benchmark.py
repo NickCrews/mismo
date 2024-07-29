@@ -8,7 +8,7 @@ import ibis.expr.types as ir
 import pytest
 
 from mismo.lib.geo import postal_parse_address
-from mismo.lib.geo._address import ADDRESS_SCHEMA
+from mismo.lib.geo._postal import _ADDRESS_SCHEMA
 
 try:
     from postal.parser import parse_address as _parse_address
@@ -27,7 +27,7 @@ _NOOP_ADDRESS = {
     "country": None,
 }
 
-udf = ibis.udf.scalar.python(signature=((str,), ADDRESS_SCHEMA))
+udf = ibis.udf.scalar.python(signature=((str,), _ADDRESS_SCHEMA))
 
 
 @udf
