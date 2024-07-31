@@ -4,61 +4,11 @@ import ibis
 from ibis import _
 from ibis.expr import types as ir
 
-from mismo import _util, arrays, block, compare, sets
+from mismo import _util, arrays, block, compare, sets, text
 from mismo.lib.geo._latlon import distance_km
 
 
-def same_region(
-    address1: ir.StructColumn,
-    address2: ir.StructColumn,
-) -> ir.BooleanColumn:
-    """Exact match on postal code, or city and state.
-
-    Parameters
-    ----------
-    address1 : ir.StringColumn
-        The first address.
-    address2 : ir.StringColumn
-        The second address.
-
-    Returns
-    -------
-    same : ir.BooleanColumn
-        Whether the two addresses are in the same region.
-    """
-    return ibis.or_(
-        address1.postal_code == address2.postal_code,
-        ibis.and_(address1.city == address2.city, address1.state == address2.state),
-    )
-
-
-def same_address_for_mailing(
-    address1: ir.StructColumn,
-    address2: ir.StructColumn,
-) -> ir.BooleanColumn:
-    """Exact match on street1, and either city or postal code.
-
-    Parameters
-    ----------
-    address1 : ir.StringColumn
-        The first address.
-    address2 : ir.StringColumn
-        The second address.
-
-    Returns
-    -------
-    same : ir.BooleanColumn
-        Whether the two addresses are the same.
-    """
-    return ibis.and_(
-        address1.street1 == address2.street1,
-        ibis.or_(
-            address1.city == address2.city, address1.postal_code == address2.postal_code
-        ),
-    )
-
-
-def normalize_address(address: ir.StructValue) -> ir.StructValue:
+def featurize_address(address: ir.StructValue) -> ir.StructValue:
     """Normalize to uppercase, strip whitespace, and remove punctuation.
 
     Parameters
@@ -75,14 +25,19 @@ def normalize_address(address: ir.StructValue) -> ir.StructValue:
     def norm(s):
         return s.strip().upper().re_replace(r"[0-9A-Z\s]", "")
 
+    def drop_street_number(street1: ir.StringValue) -> ir.StringValue:
+        return street1.re_replace(r"^\d+\s+", "")
+
     return ibis.struct(
         {
             "street1": norm(address.street1),
+            "street1_no_number": drop_street_number(norm(address.street1)),
             "street2": norm(address.street2),
             "city": norm(address.city),
             "state": norm(address.state),
             "postal_code": norm(address.postal_code),
-            "country": norm(address.country),
+            # drop country, this is way too broad to be useful for matching
+            # "country": norm(address.country),
         }
     )
 
@@ -90,53 +45,35 @@ def normalize_address(address: ir.StructValue) -> ir.StructValue:
 class AddressesMatchLevel(compare.MatchLevel):
     """How closely two addresses match."""
 
-    NULL = 0
-    """At least one street1, city, or state is NULL from either side."""
-    STREET1_CITY = 1
-    """The street1 and city match."""
-    STREET1_AND_CITY_OR_POSTAL = 2
+    STREET1_AND_CITY_OR_POSTAL = 0
     """The street1, city, and state match."""
-    SAME_REGION = 3
+    POSSIBLE_TYPO = 1
+    """If you consider typos, the addresses match.
+    
+    eg the levenstein distance is below a certain threshold.
+    """
+    SAME_REGION = 2
     """The postal code, or city and state, match."""
-    WITHIN_100KM = 4
+    WITHIN_100KM = 3
     """The addresses are within 100 km of each other."""
-    SAME_STATE = 5
+    SAME_STATE = 4
     """The states match."""
+    NULL = 5
+    """At least one street1, city, or state is NULL from either side."""
     ELSE = 6
     """None of the above."""
 
 
-def best_match(left: ir.ArrayValue, right: ir.ArrayValue) -> AddressesMatchLevel:
-    """Compare two arrays of address structs, and return the best match level.
-
-    We compare every pair of addresses, and whichever pair has the highest match
-    level, that is the match level for the two arrays.
-
-    Parameters
-    ----------
-    left :
-        The first set of addresses.
-    right :
-        The second set of addresses.
-
-    Returns
-    -------
-    level :
-        The match level.
-    """
-    combos = arrays.array_combinations(left, right)
-    if "latitude" in left.type().value_type.names:
+def match_level(left: ir.StructValue, right: ir.StructValue) -> AddressesMatchLevel:
+    """Compare two address structs, and return the match level."""
+    if "latitude" in left.type().names:
         within_100km_levels = [
             (
-                arrays.array_min(
-                    combos.map(
-                        lambda pair: distance_km(
-                            lat1=pair.l.latitude,
-                            lon1=pair.l.longitude,
-                            lat2=pair.r.latitude,
-                            lon2=pair.r.longitude,
-                        )
-                    )
+                distance_km(
+                    lat1=left.latitude,
+                    lon1=left.longitude,
+                    lat2=right.latitude,
+                    lon2=right.longitude,
                 )
                 <= 100,
                 AddressesMatchLevel.WITHIN_100KM.as_integer(),
@@ -144,37 +81,57 @@ def best_match(left: ir.ArrayValue, right: ir.ArrayValue) -> AddressesMatchLevel
         ]
     else:
         within_100km_levels = []
+
+    if "street1_no_number" in left.type().names:
+        street_simple_col = "street1_no_number"
+    else:
+        street_simple_col = "street1"
     return _util.cases(
         (
-            arrays.array_all(
-                combos.map(
-                    lambda pair: ibis.or_(
-                        _util.struct_isnull(
-                            pair.l, how="any", fields=["street1", "city", "state"]
-                        ),
-                        _util.struct_isnull(
-                            pair.r, how="any", fields=["street1", "city", "state"]
-                        ),
-                    )
-                )
+            ibis.or_(
+                _util.struct_isnull(
+                    left, how="any", fields=["street1", "city", "state"]
+                ),
+                _util.struct_isnull(
+                    right, how="any", fields=["street1", "city", "state"]
+                ),
             ),
             AddressesMatchLevel.NULL.as_integer(),
         ),
         (
-            arrays.array_any(
-                combos.map(lambda pair: same_address_for_mailing(pair.l, pair.r))
+            ibis.and_(
+                left.street1 == right.street1,
+                ibis.or_(
+                    left.city == right.city, left.postal_code == right.postal_code
+                ),
             ),
             AddressesMatchLevel.STREET1_AND_CITY_OR_POSTAL.as_integer(),
         ),
         (
-            arrays.array_any(combos.map(lambda pair: same_region(pair.l, pair.r))),
+            ibis.and_(
+                text.damerau_levenshtein_ratio(
+                    left[street_simple_col], right[street_simple_col]
+                )
+                > 0.9,
+                ibis.or_(
+                    text.damerau_levenshtein_ratio(left.city, right.city) > 0.9,
+                    # >=.8 so that a transposition in a 5digit zipcodem match,
+                    # eg "12345" and "12354"
+                    text.damerau_levenshtein_ratio(left.postal_code, right.postal_code)
+                    >= 0.8,
+                ),
+            ),
+            AddressesMatchLevel.POSSIBLE_TYPO.as_integer(),
+        ),
+        (
+            ibis.or_(
+                left.postal_code == right.postal_code,
+                ibis.and_(left.city == right.city, left.state == right.state),
+            ),
             AddressesMatchLevel.SAME_REGION.as_integer(),
         ),
         *within_100km_levels,
-        (
-            arrays.array_any(combos.map(lambda pair: pair.l.state == pair.r.state)),
-            AddressesMatchLevel.SAME_STATE.as_integer(),
-        ),
+        (left.state == right.state, AddressesMatchLevel.SAME_STATE.as_integer()),
         else_=AddressesMatchLevel.ELSE.as_integer(),
     )
 
@@ -200,13 +157,13 @@ class AddressesDimension:
         self,
         column: str,
         *,
-        column_normed: str = "{column}_normed",
+        column_featured: str = "{column}_featured",
         column_tokens: str = "{column}_tokens",
         column_keywords: str = "{column}_keywords",
         column_compared: str = "{column}_compared",
     ):
         self.column = column
-        self.column_normed = column_normed.format(column=column)
+        self.column_featured = column_featured.format(column=column)
         self.column_tokens = column_tokens.format(column=column)
         self.column_keywords = column_keywords.format(column=column)
         self.column_compared = column_compared.format(column=column)
@@ -214,10 +171,9 @@ class AddressesDimension:
     def prepare(self, t: ir.Table) -> ir.Table:
         """Prepares the table for blocking, adding normalized and tokenized columns."""
         addrs = t[self.column]
-        t = t.mutate(addrs.map(normalize_address).name(self.column_normed))
-
+        t = t.mutate(addrs.map(featurize_address).name(self.column_featured))
         t = t.mutate(
-            t[self.column_normed]
+            t[self.column_featured]
             .map(lambda address: _util.struct_tokens(address, unique=False))
             .flatten()
             .name("_tokens_nonunique")
@@ -228,7 +184,6 @@ class AddressesDimension:
         t = t.mutate(t._tokens_nonunique.unique().name(self.column_tokens)).drop(
             "_tokens_nonunique"
         )
-
         t = arrays.array_filter_isin_other(
             t,
             self.column_tokens,
@@ -242,6 +197,9 @@ class AddressesDimension:
         return blocker(t1, t2, **kwargs)
 
     def compare(self, t: ir.Table) -> ir.Table:
-        al = t[self.column_normed + "_l"]
-        ar = t[self.column_normed + "_r"]
-        return t.mutate(best_match(al, ar).name(self.column_compared))
+        left = t[self.column_featured + "_l"]
+        right = t[self.column_featured + "_r"]
+        combos = arrays.array_combinations(left, right)
+        levels = combos.map(lambda pair: match_level(pair.l, pair.r))
+        best = arrays.array_min(levels)
+        return t.mutate(best.name(self.column_compared))
