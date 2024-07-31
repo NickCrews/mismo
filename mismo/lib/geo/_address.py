@@ -59,7 +59,7 @@ def same_address_for_mailing(
 
 
 def normalize_address(address: ir.StructValue) -> ir.StructValue:
-    """Normalize an address to uppercase, and remove leading and trailing whitespace.
+    """Normalize to uppercase, strip whitespace, and remove punctuation.
 
     Parameters
     ----------
@@ -71,14 +71,18 @@ def normalize_address(address: ir.StructValue) -> ir.StructValue:
     normalized : ir.StructValue
         The normalized address.
     """
+
+    def norm(s):
+        return s.strip().upper().re_replace(r"[0-9A-Z\s]", "")
+
     return ibis.struct(
         {
-            "street1": address.street1.upper().strip(),
-            "street2": address.street2.upper().strip(),
-            "city": address.city.upper().strip(),
-            "state": address.state.upper().strip(),
-            "postal_code": address.postal_code.upper().strip(),
-            "country": address.country.upper().strip(),
+            "street1": norm(address.street1),
+            "street2": norm(address.street2),
+            "city": norm(address.city),
+            "state": norm(address.state),
+            "postal_code": norm(address.postal_code),
+            "country": norm(address.country),
         }
     )
 
