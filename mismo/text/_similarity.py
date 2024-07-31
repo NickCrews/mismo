@@ -86,8 +86,24 @@ def levenshtein_ratio(s1: ir.StringValue, s2: ir.StringValue) -> ir.FloatingValu
     >>> levenshtein_ratio("", "").execute()
     nan
     """
+    return _dist_ratio(s1, s2, s1.levenshtein(s2))
+
+
+def damerau_levenshtein_ratio(
+    s1: ir.StringValue, s2: ir.StringValue
+) -> ir.FloatingValue:
+    """Like levenshtein_ratio, but with the Damerau-Levenshtein distance.
+
+    See Also
+    --------
+    - [damerau_levenshtein()][mismo.text.damerau_levenshtein]
+    - [levenshtein_ratio()][mismo.text.levenshtein_ratio]
+    """
+    return _dist_ratio(s1, s2, damerau_levenshtein(s1, s2))
+
+
+def _dist_ratio(s1, s2, dist):
     s1 = _util.ensure_ibis(s1, "string")
     s2 = _util.ensure_ibis(s2, "string")
     lenmax = ibis.greatest(s1.length(), s2.length())
-    ldist = s1.levenshtein(s2)
-    return (lenmax - ldist) / lenmax
+    return (lenmax - dist) / lenmax
