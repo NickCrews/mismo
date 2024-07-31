@@ -13,42 +13,64 @@ from mismo.text import damerau_levenshtein
 
 
 @overload
-def clean_phone_number(phones: ir.Table) -> ir.Table: ...
+def clean_phone_number(
+    phones: ir.Table, *, default_area_code: str | None = None
+) -> ir.Table: ...
 
 
 @overload
-def clean_phone_number(phones: ir.ArrayValue) -> ir.ArrayValue: ...
+def clean_phone_number(
+    phones: ir.ArrayValue, *, default_area_code: str | None = None
+) -> ir.ArrayValue: ...
 
 
 @overload
-def clean_phone_number(phones: ir.StringValue) -> ir.StringValue: ...
+def clean_phone_number(
+    phones: ir.StringValue, *, default_area_code: str | None = None
+) -> ir.StringValue: ...
 
 
-def clean_phone_number(numbers):
+def clean_phone_number(numbers, *, default_area_code=None):
     """Extracts any 10-digit number from a string.
 
     Drops leading 1 country code if present.
 
     Parsing failures are returned as NULL.
 
-    Empty strings are returned as NULL
+    Empty strings are returned as NULL.
+
+    If you supply a default_area_code, it will be prepended to 7-digit numbers.
 
     If a number looks bogus, ie it contains "0000", "9999", or "12345",
     it is set to NULL.
     """
-    if isinstance(numbers, ir.Table):
-        return numbers.mutate(phones=clean_phone_number(numbers.phones))
+
+    def f(n):
+        return _clean_phone_number(n, default_area_code=default_area_code)
+
+    if isinstance(numbers, ir.StringValue):
+        return f(numbers)
     elif isinstance(numbers, ir.ArrayValue):
-        return numbers.map(_clean_phone_number).filter(lambda x: x.notnull()).unique()
-    elif isinstance(numbers, ir.StringValue):
-        return _clean_phone_number(numbers)
+        return numbers.map(f).filter(lambda x: x.notnull()).unique()
+    elif isinstance(numbers, ir.Table):
+        return numbers.mutate(
+            phones=clean_phone_number(
+                numbers.phones, default_area_code=default_area_code
+            )
+        )
     raise ValueError(f"Unexpected type {type(numbers)}")
 
 
-def _clean_phone_number(numbers: ir.StringValue) -> ir.StringValue:
+def _clean_phone_number(
+    numbers: ir.StringValue, *, default_area_code: str | None = None
+) -> ir.StringValue:
     x = numbers
     x = x.cast("string")
     x = x.re_replace(r"[^0-9]", "")
+    if default_area_code:
+        if len(default_area_code) != 3:
+            raise ValueError("default_area_code must be 3 digits")
+        x = x.re_replace(r"^(\d{7})$", rf"{default_area_code}\1")
     x = x.re_extract(r"1?(\d{10})", 1)
     x = x.nullif("")
     x = _drop_bogus_numbers(x)
