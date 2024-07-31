@@ -71,12 +71,9 @@ def array_filter_isin_other(
     temp = t.select("__id", __unnested=_.__array.unnest())
     # When we re-.collect() items below, the order matters,
     # but the .filter() can mess up the order, so we need to
-    # add a sortable key, filter, re-sort, and then drop the key.
-    filtered = (
-        temp.mutate(elem_id=ibis.row_number())
-        .filter(temp.__unnested.isin(other) | temp.__unnested.isnull())
-        .order_by("elem_id")
-        .drop("elem_id")
+    # add a sortable key before the filter
+    filtered = temp.mutate(elem_id=ibis.row_number()).filter(
+        temp.__unnested.isin(other) | temp.__unnested.isnull()
     )
     # NULLs are dropped from Array.collect() in ibis
     # https://github.com/ibis-project/ibis/issues/9703
@@ -85,7 +82,7 @@ def array_filter_isin_other(
     # Instead, we have to do some raw SQL:
     uname = _util.unique_name("__filtered")
     re_agged = filtered.alias(uname).sql(
-        f"SELECT __id, list(__unnested) as __filtered FROM {uname} GROUP BY __id",
+        f"SELECT __id, list(__unnested ORDER BY elem_id) as __filtered FROM {uname} GROUP BY __id",  # noqa E501
         dialect="duckdb",
     )
     re_joined = t.left_join(re_agged, "__id").drop("__id", "__id_right")
