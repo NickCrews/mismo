@@ -12,10 +12,10 @@ from mismo.text import damerau_levenshtein
 def are_match_with_nicknames(
     left: ir.StructValue, right: ir.StructValue
 ) -> ir.BooleanValue:
-    """The first names match via nickname or alias, and the last names match."""
+    """The given names match via nickname or alias, and the surname names match."""
     return ibis.and_(
-        are_aliases(left["first"], right["first"]),
-        left["last"] == right["last"],
+        are_aliases(left.given, right.given),
+        left.surname == right.surname,
     )
 
 
@@ -53,15 +53,15 @@ class NameMatchLevel(MatchLevel):
     """How closely two names match."""
 
     NULL = 0
-    """At least one first or last name is NULL from either side."""
+    """At least one given or surname is NULL from either side."""
     EXACT = 1
     """The names are exactly the same."""
-    FIRST_LAST = 2
-    """The first and last names match."""
+    GIVEN_SURNAME = 2
+    """The given and surnames both match."""
     NICKNAMES = 3
-    """The first names match with nicknames, and the last names match."""
+    """The given names match with nicknames, and the surnames match."""
     INITIALS = 4
-    """The first letter of the first name matches, and the last names match."""
+    """The first letter of the given name matches, and the surnames match."""
     ELSE = 5
     """None of the above."""
 
@@ -100,15 +100,15 @@ class NameComparer:
         result = _util.cases(
             (
                 ibis.or_(
-                    _util.struct_isnull(le, how="any", fields=["first", "last"]),
-                    _util.struct_isnull(ri, how="any", fields=["first", "last"]),
+                    _util.struct_isnull(le, how="any", fields=["given", "surname"]),
+                    _util.struct_isnull(ri, how="any", fields=["given", "surname"]),
                 ),
                 NameMatchLevel.NULL.as_integer(),
             ),
             (_util.struct_equal(le, ri), NameMatchLevel.EXACT.as_integer()),
             (
-                _util.struct_equal(le, ri, fields=["first", "last"]),
-                NameMatchLevel.FIRST_LAST.as_integer(),
+                _util.struct_equal(le, ri, fields=["given", "surname"]),
+                NameMatchLevel.GIVEN_SURNAME.as_integer(),
             ),
             (
                 are_match_with_nicknames(le, ri),
@@ -116,8 +116,8 @@ class NameComparer:
             ),
             (
                 ibis.and_(
-                    initials_equal(le["first"], ri["first"]),
-                    le["last"] == ri["last"],
+                    initials_equal(le.given, ri.given),
+                    le.surname == ri.surname,
                 ),
                 NameMatchLevel.INITIALS.as_integer(),
             ),

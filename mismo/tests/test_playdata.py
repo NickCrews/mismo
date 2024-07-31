@@ -54,13 +54,13 @@ class TestRLData:
         assert dataset.count().execute() == 500
         assert dataset["label_true"].nunique().execute() == 450  # 50 duplicates
 
-        # Proportion of clusters where last name is not unique.
+        # Proportion of clusters where surname is not unique.
         # Should be around 3.5%, i.e. around one third of the
         # 11% of clusters with more than one record.
         name_variation_rate = 1 - (
             dataset.aggregate(
-                by="label_true", unique_last_name=dataset["lname_c1"].nunique() == 1
-            )["unique_last_name"].mean()
+                by="label_true", unique_surname=dataset["lname_c1"].nunique() == 1
+            )["unique_surname"].mean()
         )
         assert name_variation_rate.execute() == 0.03555555555555556
 
@@ -73,7 +73,7 @@ class TestRLData:
 
         name_variation_rate = 1 - (
             dataset.aggregate(
-                by="label_true", unique_last_name=dataset["lname_c1"].nunique() == 1
-            )["unique_last_name"].mean()
+                by="label_true", unique_surname=dataset["lname_c1"].nunique() == 1
+            )["unique_surname"].mean()
         )
         assert name_variation_rate.execute() == 0.030444444444444496

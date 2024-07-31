@@ -25,5 +25,5 @@ def test_name_dimension(name_table):
         NameMatchLevel.INITIALS,
         NameMatchLevel.ELSE,
         NameMatchLevel.NICKNAMES,
-        NameMatchLevel.FIRST_LAST,
+        NameMatchLevel.GIVEN_SURNAME,
     ]

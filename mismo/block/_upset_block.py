@@ -12,8 +12,8 @@ def upset_chart(blocked: ir.Table) -> alt.Chart:
 
     An [UpSet plot](https://en.wikipedia.org/wiki/UpSet_Plot)
     is useful to visualize the overlap between blocking rules.
-    For example, how many pairs are blocked by the "first name" rule,
-    how many pairs are blocked by the "last name" rule, and how many pairs
+    For example, how many pairs are blocked by the "given name" rule,
+    how many pairs are blocked by the "surname name" rule, and how many pairs
     are blocked by both rules together.
 
     For example, if there is one group that generates a lot of pairs,

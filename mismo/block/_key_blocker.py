@@ -140,8 +140,8 @@ class KeyBlocker:
               eg `_.price.fill_null(0)` is equivalent to
               `left.price.fill_null(0) == right.price.fill_null(0)`
             - An iterable of the above, which is interpreted as a tuple of conditions.
-              eg `("age", _.first_name.upper()")` is equivalent to
-              `(left.age == right.age) & (left.first_name.upper() == right.first_name.upper())`
+              eg `("age", _.given.upper()")` is equivalent to
+              `(left.age == right.age) & (left.given.upper() == right.given.upper())`
         """  # noqa: E501
         self.key = key
         self._name = name if name is not None else _util.get_name(self.key)
@@ -171,7 +171,7 @@ class KeyBlocker:
         counted as a match during joins.
 
         This is useful for analyzing the skew of join keys.
-        For example, if you are joining on (last_name, city),
+        For example, if you are joining on (surname, city),
         there might be only 4 values for (hoessle, tinytown),
         which would lead to a block of 4 * 4 = 16 record pairs.
 
@@ -240,7 +240,7 @@ class KeyBlocker:
         how many pairs would be generated for each key?
 
         This is useful for analyzing the skew of join keys.
-        For example, if you are joining on (last_name, city),
+        For example, if you are joining on (surname, city),
         there might be only 4 values for (hoessle, tinytown),
         which would lead to a block of 4 * 4 = 16 record pairs.
 

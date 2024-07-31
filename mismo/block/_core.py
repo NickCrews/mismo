@@ -63,8 +63,8 @@ def join(
         - A Deferred, which is used to reference a column in a table
           eg "_.price.fill_null(0)" is equivalent to `left.price.fill_null(0) == right.price.fill_null(0)`
         - An iterable of the above, which is interpreted as a tuple of conditions.
-          eg `("age", _.first_name.upper()")` is equivalent to
-          `(left.age == right.age) & (left.first_name.upper() == right.first_name.upper())`
+          eg `("age", _.given.upper()")` is equivalent to
+          `(left.age == right.age) & (left.given.upper() == right.given.upper())`
         - A literal `True`, which results in a cross join.
         - A literal `False`, which results in an empty table.
         - A Table in the expected output schema, which is assumed to be

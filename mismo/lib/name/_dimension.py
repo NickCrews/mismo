@@ -13,9 +13,9 @@ class NameDimension:
     A name is a Struct of the type
     `struct<
         prefix: string,
-        first: string,
+        given: string,
         middle: string,
-        last: string,
+        surname: string,
         suffix: string,
         nickname: string,
     >`.

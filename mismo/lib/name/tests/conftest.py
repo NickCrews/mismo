@@ -8,40 +8,40 @@ def name_table(table_factory):
     names = [
         None,
         {
-            "first": "Alice",
-            "last": "Anderson",
+            "given": "Alice",
+            "surname": "Anderson",
         },
         {
-            "first": "A",
-            "last": "Anderson",
+            "given": "A",
+            "surname": "Anderson",
             "suffix": "PhD",
         },
         {
-            "first": "Bob",
-            "last": "Baker",
+            "given": "Bob",
+            "surname": "Baker",
         },
         {
-            "first": "Robert",
+            "given": "Robert",
             "middle": "b",
-            "last": "Baker",
+            "surname": "Baker",
             "suffix": "Jr.",
         },
         {
             "prefix": "Mr",
-            "first": "Charles",
-            "last": "Carter",
+            "given": "Charles",
+            "surname": "Carter",
             "nickname": "Charlie",
         },
         {
-            "first": "  CHARLES",
-            "last": " CARTER.",
+            "given": "  CHARLES",
+            "surname": " CARTER.",
         },
     ]
     base = {
         "prefix": None,
-        "first": None,
+        "given": None,
         "middle": None,
-        "last": None,
+        "surname": None,
         "suffix": None,
         "nickname": None,
     }

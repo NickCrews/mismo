@@ -27,9 +27,9 @@ class NameBlocker:
         A name column is expected to be a Struct of the type
         `struct<
             prefix: string,
-            first: string,
+            given: string,
             middle: string,
-            last: string,
+            surname: string,
             suffix: string,
             nickname: string,
         >`.
@@ -73,15 +73,15 @@ class NameBlocker:
 
 def _oneline(name: ir.StructValue) -> ir.StringValue:
     return (
-        name["prefix"].fill_null("")
+        name.prefix.fill_null("")
         + " "
-        + name["first"].fill_null("")
+        + name.given.fill_null("")
         + " "
-        + name["middle"].fill_null("")
+        + name.middle.fill_null("")
         + " "
-        + name["last"].fill_null("")
+        + name.surname.fill_null("")
         + " "
-        + name["suffix"].fill_null("")
+        + name.suffix.fill_null("")
         + " "
-        + name["nickname"].fill_null("")
+        + name.nickname.fill_null("")
     ).strip()

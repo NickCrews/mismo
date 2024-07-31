@@ -41,12 +41,12 @@ def normalize_name(name: ir.StructValue) -> ir.StructValue:
     """
     return ibis.struct(
         {
-            "prefix": normalize_name_field(name["prefix"]),
-            "first": normalize_name_field(name["first"]),
-            "middle": normalize_name_field(name["middle"]),
-            "last": normalize_name_field(name["last"]),
-            "suffix": normalize_name_field(name["suffix"]),
-            "nickname": normalize_name_field(name["nickname"]),
+            "prefix": normalize_name_field(name.prefix),
+            "given": normalize_name_field(name.given),
+            "middle": normalize_name_field(name.middle),
+            "surname": normalize_name_field(name.surname),
+            "suffix": normalize_name_field(name.suffix),
+            "nickname": normalize_name_field(name.nickname),
         }
     )
 
