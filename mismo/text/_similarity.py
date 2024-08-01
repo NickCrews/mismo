@@ -91,3 +91,135 @@ def levenshtein_ratio(s1: ir.StringValue, s2: ir.StringValue) -> ir.FloatingValu
     lenmax = ibis.greatest(s1.length(), s2.length())
     ldist = s1.levenshtein(s2)
     return (lenmax - ldist) / lenmax
+
+def token_set_ratio(s1: ir.StringValue, s2: ir.StringValue) -> ir.FloatingValue:
+    """The ratio of the intersection of the token sets of two strings to the union of the token sets.
+
+    This is a measure of how similar two strings are, based on the set of tokens they contain.
+    It is a variation of the Jaccard index, where the intersection and union are based on the
+    set of tokens in the strings.
+
+    Parameters
+    ----------
+    s1:
+        The first string
+
+    s2:
+        The second string
+
+    Returns
+    -------
+    token_set_ratio:
+        The ratio of the intersection of the token sets to the union of the token sets
+
+    Examples
+    --------
+    >>> from mismo.text import token_set_ratio
+    >>> token_set_ratio("mile mile", "mile mike").execute()
+    0.75
+    >>> token_set_ratio("mile mile", "mile").execute()
+    1.0
+    >>> token_set_ratio("mile mile", "").execute()
+    0.0
+    >>> token_set_ratio("", "").execute()
+    nan
+    """
+    s1 = _util.ensure_ibis(s1, "string")
+    s2 = _util.ensure_ibis(s2, "string")
+
+    # Extract unique tokens from the strings
+    tokens1 = _util.tokenize(s1, unique=True, remove_punctuation=True)
+    tokens2 = _util.tokenize(s2, unique=True, remove_punctuation=True)
+    
+    
+    # Find the intersection and differences
+    intersection = tokens1.intersect(tokens2)
+    difference1 = tokens1.filter(lambda x: ~tokens2.contains(x))
+    difference2 = tokens2.filter(lambda x: ~tokens1.contains(x))
+    
+    # Calculate lengths
+    len_intersection = intersection.length()
+    len_diff1 = difference1.length()
+    len_diff2 = difference2.length()
+    
+    # Calculate scores
+    score1 = len_intersection / (len_intersection + len_diff1)
+    score2 = len_intersection / (len_intersection + len_diff2)
+    score3 = (len_intersection + len_diff1) / (len_intersection + len_diff2)
+    
+    # Calculate final ratio
+    ratio = ibis.greatest(score1, score2, score3) * 100
+    return ratio
+
+
+def token_sort_ratio(s1: ir.StringValue, s2: ir.StringValue) -> ir.FloatingValue:
+    """The levenshtein ratio of two strings after tokenizing and sorting the tokens.
+
+    This is a useful measure of similarity when the order of the tokens is not important, 
+    for example with addresses.
+
+    Parameters
+    ----------
+    s1:
+        The first string
+
+    s2:
+        The second string
+
+    Returns
+    -------
+    token_sort_ratio:
+        The levenstein ratio of the sorted tokens
+
+    Examples
+    --------
+    >>> from mismo.text import token_sort_ratio
+    >>> token_sort_ratio("mile mile", "mile mike").execute()
+    0.75
+    >>> token_sort_ratio("mile mile", "mile").execute()
+    1.0
+    >>> token_sort_ratio("mile mile", "").execute()
+    0.0
+    >>> token_sort_ratio("", "").execute()
+    nan
+    """
+    s1 = _util.ensure_ibis(s1, "string")
+    s2 = _util.ensure_ibis(s2, "string")
+
+    tokens1 = _util.tokenize(s1, remove_punctuation=True)
+    tokens2 = _util.tokenize(s2, remove_punctuation=True)
+    
+    sorted_tokens1 = tokens1.sort()
+    sorted_tokens2 = tokens2.sort()
+    
+    sorted_str1 = sorted_tokens1.join(' ')
+    sorted_str2 = sorted_tokens2.join(' ')
+    
+    ratio = levenshtein_ratio(sorted_str1, sorted_str2)
+    return ratio * 100
+
+
+def partial_token_sort_ratio(s1: ir.StringValue, s2: ir.StringValue) -> ir.FloatingValue:
+    """Similar to token_sort_ratio, but only uses the minimum length string
+    
+    This is useful when one of the strings may contain additional noise
+
+    """
+    s1 = _util.ensure_ibis(s1, "string")
+    s2 = _util.ensure_ibis(s2, "string")
+
+    tokens1 = _util.tokenize(s1, remove_punctuation=True)
+    tokens2 = _util.tokenize(s2, remove_punctuation=True)
+    
+    sorted_tokens1 = tokens1.sort()
+    sorted_tokens2 = tokens2.sort()
+    
+    sorted_str1 = sorted_tokens1.join(' ')
+    sorted_str2 = sorted_tokens2.join(' ')
+
+    min_len = ibis.least(sorted_str1.length(), sorted_str2.length())
+    sorted_str1 = sorted_str1.left(min_len)
+    sorted_str2 = sorted_str2.left(min_len)
+    
+    ratio = levenshtein_ratio(sorted_str1, sorted_str2)
+    return ratio * 100

@@ -38,3 +38,39 @@ def test_levenshtein_ratio(string1, string2, expected):
         assert np.isnan(result)
     else:
         assert expected == result
+
+@pytest.mark.parametrize(
+    "string1,string2,expected",
+    [
+        ("fuzzy was a bear", "fuzzy fuzzy was a bear", 100)
+    ]
+)
+def test_token_set_ratio(string1, string2, expected):
+    result = text.token_set_ratio(string1, string2).execute()
+    assert expected == result
+
+@pytest.mark.parametrize(
+    "string1, string2, expected",
+    [
+        ("fuzzy wuzzy was a bear", "wuzzy fuzzy was a bear", 100),
+        ("fuzzy was a bear", "fuzzy fuzzy was a bear", 84),
+
+    ]
+)
+def test_token_sort_ratio(string1, string2, expected):
+    result = text.token_sort_ratio(string1, string2).execute()
+    assert expected == result
+
+
+@pytest.mark.parametrize(
+    "string1, string2, expected",
+    [
+        ("fuzzy wuzzy was a bear", "wuzzy fuzzy was a bear", 100),
+        ("fuzzy was a bear", "fuzzy fuzzy was a bear", 100),
+        ('great is scala', 'java is great', 81),
+        ('C++ and Java', 'Java and Python', 64),
+    ]
+)
+def test_partial_token_sort_ratio(string1, string2, expected):
+    result = text.partial_token_sort_ratio(string1, string2).execute()
+    assert expected == result

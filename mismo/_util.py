@@ -320,3 +320,18 @@ def struct_tokens(struct: ir.StructValue, *, unique: bool = True) -> ir.ArrayVal
     if unique:
         tokens = tokens.unique()
     return tokens
+
+
+def tokenize(s: ir.StringValue, *, unique: bool = False, remove_punctuation: bool = False) -> ir.ArrayValue:
+    """Tokenize a string.
+    
+    If `unique` is True, only unique tokens are returned.
+    If `remove_punctuation` is True, punctuation is removed from the tokens."""
+    if remove_punctuation:
+        tokens = s.re_split(r"\W*\s+\W*")
+    else:
+        tokens = s.re_split(r"\s+")
+    tokens = tokens.filter(lambda x: x != "")
+    if unique:
+        tokens = tokens.unique()
+    return tokens
