@@ -1,5 +1,6 @@
 .benchmarks
 .coverage
+.hypothesis
 .pdm-python
 .venv
 .vscode
