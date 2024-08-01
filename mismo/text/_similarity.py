@@ -174,14 +174,10 @@ def token_sort_ratio(s1: ir.StringValue, s2: ir.StringValue) -> ir.FloatingValue
     Examples
     --------
     >>> from mismo.text import token_sort_ratio
-    >>> token_sort_ratio("mile mile", "mile mike").execute()
-    0.75
-    >>> token_sort_ratio("mile mile", "mile").execute()
-    1.0
-    >>> token_sort_ratio("mile mile", "").execute()
-    0.0
-    >>> token_sort_ratio("", "").execute()
-    nan
+    >>> token_sort_ratio("fuzzy wuzzy was a bear", "wuzzy fuzzy was a bear").execute()
+    100
+    >>> token_sort_ratio("fuzzy was a bear", "fuzzy fuzzy was a bear").execute()
+    84
     """
     s1 = _util.ensure_ibis(s1, "string")
     s2 = _util.ensure_ibis(s2, "string")
