@@ -9,7 +9,10 @@ from mismo.lib.geo._latlon import distance_km
 
 
 def featurize_address(address: ir.StructValue) -> ir.StructValue:
-    """Normalize to uppercase, strip whitespace, and remove punctuation.
+    """
+    Normalize to uppercase, strip whitespace, remove punctuation, NULLify empty strings.
+
+    If all fields are null, return NULL.
 
     Parameters
     ----------
@@ -23,12 +26,12 @@ def featurize_address(address: ir.StructValue) -> ir.StructValue:
     """
 
     def norm(s):
-        return s.strip().upper().re_replace(r"[0-9A-Z\s]", "")
+        return s.strip().upper().re_replace(r"[^0-9A-Z\s]", "").nullif("")
 
     def drop_street_number(street1: ir.StringValue) -> ir.StringValue:
         return street1.re_replace(r"^\d+\s+", "")
 
-    return ibis.struct(
+    s = ibis.struct(
         {
             "street1": norm(address.street1),
             "street1_no_number": drop_street_number(norm(address.street1)),
@@ -40,6 +43,8 @@ def featurize_address(address: ir.StructValue) -> ir.StructValue:
             # "country": norm(address.country),
         }
     )
+    all_null = ibis.and_(*[s[field].isnull() for field in s.type().names])
+    return all_null.ifelse(ibis.null(), s)
 
 
 class AddressesMatchLevel(compare.MatchLevel):
@@ -171,7 +176,11 @@ class AddressesDimension:
     def prepare(self, t: ir.Table) -> ir.Table:
         """Prepares the table for blocking, adding normalized and tokenized columns."""
         addrs = t[self.column]
-        t = t.mutate(addrs.map(featurize_address).name(self.column_featured))
+        t = t.mutate(
+            addrs.map(featurize_address)
+            .filter(lambda a: a.notnull())
+            .name(self.column_featured)
+        )
         t = t.mutate(
             t[self.column_featured]
             .map(lambda address: _util.struct_tokens(address, unique=False))
