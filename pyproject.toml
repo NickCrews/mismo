@@ -33,9 +33,6 @@ viz = [
   "ipywidgets",
   "solara>=1.32.1",
 ]
-dev = [
-    "rapidfuzz>=3.9.5",
-]
 
 [project.urls]
 Documentation = "https://nickcrews.github.io/mismo"
@@ -60,6 +57,7 @@ test = [
     "scikit-learn",
     "recordlinkage",
     "hypothesis[cli]>=6.108.5",
+    "rapidfuzz>=3.9.5",
 ]
 docs = [
   "mkdocs-git-revision-date-localized-plugin",
