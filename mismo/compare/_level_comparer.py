@@ -43,21 +43,64 @@ class _LevelsMeta(ABCMeta):
     @overload
     def __getitem__(self, key: int) -> str: ...
 
+    @overload
+    def __getitem__(self, key: ir.NumericValue) -> ir.StringValue: ...
+
+    @overload
+    @classmethod
+    def __getitem__(self, key: ir.StringValue) -> ir.IntegerValue: ...
+
     def __getitem__(self, key):
-        if isinstance(key, str):
-            return self.__s2i__[key]
-        elif isinstance(key, int):
-            return self.__i2s__[key]
+        """Converts string-likes to int-likes, and vice-versa.
+
+        Ibis expressions are converted, but if you supply a bad value like
+        "bogus level name", we can't type-check you at call time,
+        and down the line when you actually .execute() the results you will get an
+        ibis NULL value.
+
+        Examples
+        --------
+        >>> from mismo.compare import MatchLevel
+        >>> class NameMatchLevel(MatchLevel):
+        ...     EXACT = 0
+        ...     NEAR = 1
+        ...     ELSE = 2
+        ...
+
+        >>> NameMatchLevel[1]
+        'NEAR'
+        >>> NameMatchLevel["NEAR"]
+        1
+        >>> NameMatchLevel[ibis.literal(1)].execute()
+        'NEAR'
+        >>> NameMatchLevel[ibis.literal("NEAR")].execute()
+        1
+        >>> NameMatchLevel[100] # doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+            ...
+        ValueError: Invalid value: 100. Must be one of {0, 1, 2}
+        >>> NameMatchLevel[ibis.literal(100)].execute() is None
+        True
+        """
+        if _is_stringy(key):
+            return self._str_to_int(key)
+        elif _is_inty(key):
+            return self._int_to_str(key)
         else:
             raise TypeError(f"Invalid key: {key}")
 
     def __contains__(self, key: str | int) -> bool:
+        """Check if an int or str is one of the levels."""
+        if not isinstance(key, (str, int)):
+            raise TypeError(f"can only check containment for ints and strs, got {key}")
         return key in self.__s2i__ or key in self.__i2s__
 
     def __iter__(self) -> Iterator[str]:
+        """The names of the levels."""
         return iter(self.__s2i__.keys())
 
     def __len__(self) -> int:
+        """The number of levels"""
         return len(self.__s2i__)
 
     def __repr__(self) -> str:
@@ -78,32 +121,45 @@ class MatchLevel(metaclass=_LevelsMeta):
     ...     NEAR = 1
     ...     ELSE = 2
     ...
-    >>> NameMatchLevel.EXACT
-    EXACT
-    >>> NameMatchLevel.EXACT.as_string()
-    'EXACT'
-    >>> NameMatchLevel.EXACT.as_integer()
-    0
+
+    The class acts as a container:
+
     >>> len(NameMatchLevel)
     3
     >>> 2 in NameMatchLevel
     True
+    >>> list(NameMatchLevel)
+    ['EXACT', 'NEAR', 'ELSE']
+
+    You can access the hardcoded values:
+
+    >>> str(NameMatchLevel.EXACT)
+    'EXACT'
+    >>> int(NameMatchLevel.EXACT)
+    0
+
+    You can use indexing semantics to translate between strings and ints:
+
     >>> NameMatchLevel[1]
     'NEAR'
+    >>> NameMatchLevel["NEAR"]
+    1
+    >>> NameMatchLevel[ibis.literal(1)].execute()
+    'NEAR'
+    >>> NameMatchLevel[ibis.literal("NEAR")].execute()
+    1
 
-    You can construct your own values:
+    You can construct your own values, both from python literals...
 
     >>> NameMatchLevel("NEAR").as_integer()
     1
     >>> NameMatchLevel(2).as_string()
     'ELSE'
     >>> NameMatchLevel(3) # doctest: +IGNORE_EXCEPTION_DETAIL
-    Traceback (most recent call last):
-        ...
-    ValueError: Invalid value: 3. Must be one of {0, 1, 2}
+    ...
+    ValueError: Invalid value: 3. Must be one of {0, 1, 2}`
 
-    The powerful thing is it can be used to convert between string and integer
-    ibis expressions:
+    ...And Ibis expressions
 
     >>> import ibis
     >>> levels_raw = ibis.array([0, 2, 1, 99]).unnest()
@@ -120,6 +176,26 @@ class MatchLevel(metaclass=_LevelsMeta):
     2     1
     3    99
     Name: Array(), dtype: int8
+
+    Comparisons work as you expect:
+
+    >>> NameMatchLevel.NEAR == 1
+    True
+    >>> NameMatchLevel(1) == "NEAR"
+    True
+    >>> (levels_raw == NameMatchLevel.NEAR).execute()
+    0    False
+    1    False
+    2     True
+    3    False
+    Name: Equals(Array(), 1), dtype: bool
+
+    However, implicit ordering is not supported
+    (file an issue if you think it should be):
+
+    >>> NameMatchLevel.NEAR > 0  # doctest: +IGNORE_EXCEPTION_DETAIL
+    ...
+    TypeError: '>' not supported between instances of 'NameMatchLevel' and 'int'
     """
 
     def __init__(
@@ -140,12 +216,10 @@ class MatchLevel(metaclass=_LevelsMeta):
             value, (MatchLevel, ir.StringValue, ir.IntegerValue, int, str)
         ):
             raise TypeError(f"Invalid value: {value}")
-        valid_ints = set(self.__i2s__.keys())
-        valid_strs = set(self.__s2i__.keys())
-        if isinstance(value, int) and value not in valid_ints:
-            raise ValueError(f"Invalid value: {value}. Must be one of {valid_ints}")
-        if isinstance(value, str) and value not in valid_strs:
-            raise ValueError(f"Invalid value: {value}. Must be one of {valid_strs}")
+        if isinstance(value, str):
+            self._check_str(value, ValueError)
+        elif isinstance(value, int):
+            self._check_int(value, ValueError)
         if isinstance(value, MatchLevel):
             self._value = value._value
         else:
@@ -153,48 +227,94 @@ class MatchLevel(metaclass=_LevelsMeta):
 
     def as_integer(self) -> int | ir.IntegerValue:
         """Convert to a python int or ibis integer, depending on the original type."""
-        v = self._value
-        if isinstance(v, (int, ir.IntegerValue)):
-            return v
-        elif isinstance(v, str):
-            return self.__s2i__.get(v, None)
-        elif isinstance(v, ir.StringValue):
-            return v.substitute(self.__s2i__, else_=ibis.null()).name(
-                self.__class__.__name__
-            )
-        else:
-            raise TypeError(f"Invalid value: {v}")
+        if _is_inty(self._value):
+            return self._value
+        return self._str_to_int(self._value)
 
     def as_string(self) -> str | ir.StringValue:
         """Convert to a python str or ibis string, depending on the original type."""
-        v = self._value
-        if isinstance(v, (str, ir.StringValue)):
-            return v
-        elif isinstance(v, int):
-            return self.__i2s__.get(v, None)
-        elif isinstance(v, ir.IntegerValue):
-            return v.substitute(self.__i2s__, else_=ibis.null()).name(
-                self.__class__.__name__
-            )
-        else:
-            raise TypeError(f"Invalid value: {v}")
+        if _is_stringy(self._value):
+            return self._value
+        return self._int_to_str(self._value)
 
     def __repr__(self) -> str:
+        if _is_python(self._value):
+            return self.__class__.__name__ + "." + str(self)
+        else:
+            return self.__class__.__name__ + "(<" + self._value.get_name() + ">)"
+
+    def __str__(self) -> str:
+        if not _is_python(self._value):
+            raise TypeError(
+                "You can only only use str() on MatchLevels made from str's and int's. "
+                f"This {self.__class__.__name__} is made of {self._value.__class__.__name__}"  # noqa: E501
+            )
         return self.as_string()
 
-    def __eq__(self, other):
+    def __int__(self) -> int:
+        if not _is_python(self._value):
+            raise TypeError(
+                "You can only only use int() on MatchLevels made from str's and int's. "
+                f"This {self.__class__.__name__} is made of {self._value.__class__.__name__}"  # noqa: E501
+            )
+        return self.as_integer()
+
+    def __eq__(
+        self, other: int | str | ir.NumericValue | ir.StringValue | MatchLevel
+    ) -> bool | ir.BooleanValue:
+        """"""
         if isinstance(other, MatchLevel):
-            return self.as_integer() == other.as_integer()
-        elif isinstance(other, int):
+            other = other._value
+        if _is_inty(other):
             return self.as_integer() == other
-        elif isinstance(other, str):
-            return self.as_string() == other
-        elif isinstance(other, ir.NumericValue):
-            return self.as_integer() == other
-        elif isinstance(other, ir.StringValue):
+        elif _is_stringy(other):
             return self.as_string() == other
         else:
             return NotImplemented
+
+    @classmethod
+    def _str_to_int(cls, v: str | ir.StringValue) -> int | ir.IntegerValue:
+        # assumes v is in __s2i__
+        if isinstance(v, str):
+            cls._check_str(v, KeyError)
+            return cls.__s2i__[v]
+        elif isinstance(v, ir.StringValue):
+            return v.substitute(cls.__s2i__, else_=ibis.null()).name(cls.__name__)
+        assert False
+
+    @classmethod
+    def _int_to_str(cls, v: int | ir.IntegerValue) -> str | ir.StringValue:
+        # assumes v is in __i2s__
+        if isinstance(v, int):
+            cls._check_int(v, KeyError)
+            return cls.__i2s__[v]
+        elif isinstance(v, ir.IntegerValue):
+            return v.substitute(cls.__i2s__, else_=ibis.null()).name(cls.__name__)
+        assert False
+
+    @classmethod
+    def _check_int(cls, value: int, err_type) -> None:
+        valid_ints = set(cls.__i2s__.keys())
+        if value not in valid_ints:
+            raise err_type(f"Invalid value: {value}. Must be one of {valid_ints}")
+
+    @classmethod
+    def _check_str(cls, value: str, err_type) -> None:
+        valid_strs = set(cls.__s2i__.keys())
+        if value not in valid_strs:
+            raise err_type(f"Invalid value: {value}. Must be one of {valid_strs}")
+
+
+def _is_python(v):
+    return isinstance(v, (int, str))
+
+
+def _is_inty(v):
+    return isinstance(v, (int, ir.NumericValue))
+
+
+def _is_stringy(v):
+    return isinstance(v, (str, ir.StringValue))
 
 
 MatchLevelT = TypeVar("MatchLevelT", bound=MatchLevel)
