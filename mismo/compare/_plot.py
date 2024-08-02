@@ -11,7 +11,7 @@ from ibis.expr import types as ir
 import ipywidgets
 import pandas as pd
 
-from mismo.compare._level_comparer import LevelComparer
+from mismo.compare._match_level import LevelComparer
 from mismo.fs._plot import LOG_ODDS_COLOR_SCALE
 from mismo.fs._util import odds_to_log_odds
 from mismo.fs._weights import Weights
