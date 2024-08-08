@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import os
 from typing import Any, Callable, Iterable, Protocol
 
 import ibis
@@ -128,3 +129,16 @@ def to_shape(request) -> ToShape:
         )
     else:
         assert False
+
+
+@pytest.fixture(autouse=True)
+def set_env(monkeypatch):
+    # disable color for doctests so we don't have to include escape codes in docstrings
+    monkeypatch.setitem(os.environ, "NO_COLOR", "1")
+    # Explicitly set the column width to be as large as needed
+    monkeypatch.setitem(os.environ, "COLUMNS", "88")
+    # reset interactive mode to False for doctests
+    starting_opts = ibis.options
+    ibis.options.repr.interactive.max_columns = 1000
+    yield
+    ibis.options = starting_opts

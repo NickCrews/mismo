@@ -51,12 +51,12 @@ def dot(a: T, b: T) -> ir.FloatingValue:
     >>> from mismo.vector import dot
     >>> v1 = ibis.array([1, 2])
     >>> v2 = ibis.array([4, 5])
-    >>> dot(v1, v2)
-    14.0  # 1*4 + 2*5
+    >>> dot(v1, v2).execute()  # 1*4 + 2*5
+    14.0
     >>> m1 = ibis.map({"a": 1, "b": 2})
     >>> m2 = ibis.map({"b": 3, "c": 4})
-    >>> dot(m1, m2)
-    6.0  # 2*3
+    >>> dot(m1, m2).execute() # 2*3
+    6.0
     """
     a_vals, b_vals = _shared_vals(a, b)
     return _array_dot_product(a_vals, b_vals)
@@ -88,14 +88,14 @@ def cosine_similarity(a: T, b: T) -> ir.FloatingValue:
 
     Opposite directions:
 
-    >>> cosine_similarity(ibis.array([1, 1]), ibis.array([-2, -2])).execute()
+    >>> cosine_similarity(ibis.array([1, 1]), ibis.array([-2, -2])).execute()  # doctest: +SKIP
     -1.0
 
     Orthogonal vectors:
 
     >>> cosine_similarity(ibis.array([1, 0]), ibis.array([0, 1])).execute()
     0.0
-    """
+    """  # noqa: E501
     a_vals, b_vals = _shared_vals(a, b)
     return _array_cosine_similarity(a_vals, b_vals)
 
@@ -180,13 +180,13 @@ def normalize(vec: T, *, metric: Literal["l1", "l2"] = "l2") -> T:
     --------
     >>> import ibis
     >>> ibis.options.interactive = True
-    >>> from mismo.vector import norm
-    >>> norm(ibis.array([1, 2]))
+    >>> from mismo.vector import normalize
+    >>> normalize(ibis.array([1, 2])).execute()
     [0.4472135954999579, 0.8944271909999159]
-    >>> norm(ibis.array([1, 2]), "l1")
+    >>> normalize(ibis.array([1, 2]), metric="l1").execute()
     [0.3333333333333333, 0.6666666666666666]
-    >>> norm(ibis.map({"a": 1, "b": 2}))
-    {"a": 0.4472135954999579, "b": 0.8944271909999159}
+    >>> normalize(ibis.map({"a": 1, "b": 2})).execute()
+    {'a': 0.4472135954999579, 'b': 0.8944271909999159}
     """
     if isinstance(vec, ir.ArrayValue):
         vals = vec

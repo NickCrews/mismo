@@ -36,35 +36,35 @@ def sample_all_pairs(
     Examples
     --------
     >>> import ibis
-    >>> from mismo import datasets, block
+    >>> from mismo import playdata, block
     >>> ibis.options.interactive = True
-    >>> t, _labels = datasets.load_febrl1()
+    >>> t, _labels = playdata.load_febrl1()
     >>> t.head(5)
-    ┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━┳━━━┓
-    ┃ record_id    ┃ given_name ┃ surname    ┃ street_number ┃ address_1         ┃ address_2 ┃ suburb    ┃ postcode ┃ state  ┃ … ┃
-    ┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━╇━━━┩
-    │ string       │ string     │ string     │ string        │ string            │ string    │ string    │ string   │ string │ … │
-    ├──────────────┼────────────┼────────────┼───────────────┼───────────────────┼───────────┼───────────┼──────────┼────────┼───┤
-    │ rec-0-dup-0  │ thomas     │ rokobaro   │ 12            │ herschell circuit │ killanrey │ lawrence  │ 2272     │ nsw    │ … │
-    │ rec-0-org    │ flynn      │ rokobaro   │ 12            │ herschell circuit │ killarney │ lawrence  │ 2227     │ nsw    │ … │
-    │ rec-1-dup-0  │ karli      │ alderson   │ 144           │ nulsen circuit    │ iowanna   │ tings lpa │ 3139     │ nsw    │ … │
-    │ rec-1-org    │ karli      │ alderson   │ 144           │ nulsen circuit    │ iowanna   │ tingalpa  │ 3139     │ nsw    │ … │
-    │ rec-10-dup-0 │ kayla      │ harrington │ NULL          │ maltby circuit    │ coaling   │ coolaroo  │ 3465     │ nsw    │ … │
-    └──────────────┴────────────┴────────────┴───────────────┴───────────────────┴───────────┴───────────┴──────────┴────────┴───┘
-    >>> block.sample_all_pairs(t, t, max_pairs = 7)
-    ┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━┓
-    ┃ record_id_l   ┃ record_id_r   ┃ address_1_l       ┃ address_1_r      ┃ address_2_l                ┃ address_2_r                ┃ … ┃
-    ┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━┩
-    │ string        │ string        │ string            │ string           │ string                     │ string                     │ … │
-    ├───────────────┼───────────────┼───────────────────┼──────────────────┼────────────────────────────┼────────────────────────────┼───┤
-    │ rec-179-org   │ rec-439-org   │ coghill close     │ clarnette place  │ bay city plaza             │ backwoodlands              │ … │
-    │ rec-23-org    │ rec-290-dup-0 │ dilboong place    │ tillyard drive   │ rosetta village            │ willow wood                │ … │
-    │ rec-376-dup-0 │ rec-245-org   │ findlay wtreet    │ discovery street │ booroopki park rmb 596     │ rockview                   │ … │
-    │ rec-454-dup-0 │ rec-365-dup-0 │ tarana street     │ canber ra avenue │ aprt 5x9                   │ aranmor                    │ … │
-    │ rec-498-dup-0 │ rec-117-org   │ oyster farm       │ augustus close   │ basedow street             │ riverbank offices          │ … │
-    │ rec-343-dup-0 │ rec-39-dup-0  │ vincent place     │ coventry close   │ NULL                       │ cressbrook                 │ … │
-    │ rec-494-org   │ rec-307-dup-0 │ mcmillan crescent │ birrigaisquare   │ arcadia                    │ arabian stud ielkette park │ … │
-    └───────────────┴───────────────┴───────────────────┴──────────────────┴────────────────────────────┴────────────────────────────┴───┘
+    ┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+    ┃ record_id    ┃ given_name ┃ surname    ┃ street_number ┃ address_1         ┃ … ┃
+    ┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+    │ string       │ string     │ string     │ string        │ string            │ … │
+    ├──────────────┼────────────┼────────────┼───────────────┼───────────────────┼───┤
+    │ rec-0-dup-0  │ thomas     │ rokobaro   │ 12            │ herschell circuit │ … │
+    │ rec-0-org    │ flynn      │ rokobaro   │ 12            │ herschell circuit │ … │
+    │ rec-1-dup-0  │ karli      │ alderson   │ 144           │ nulsen circuit    │ … │
+    │ rec-1-org    │ karli      │ alderson   │ 144           │ nulsen circuit    │ … │
+    │ rec-10-dup-0 │ kayla      │ harrington │ NULL          │ maltby circuit    │ … │
+    └──────────────┴────────────┴────────────┴───────────────┴───────────────────┴───┘
+    >>> block.sample_all_pairs(t, t, max_pairs = 7) # doctest: +SKIP
+    ┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+    ┃ record_id_l   ┃ record_id_r  ┃ address_1_l      ┃ address_1_r       ┃ … ┃
+    ┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+    │ string        │ string       │ string           │ string            │ … │
+    ├───────────────┼──────────────┼──────────────────┼───────────────────┼───┤
+    │ rec-138-org   │ rec-63-org   │ strachan place   │ charleston street │ … │
+    │ rec-2-org     │ rec-34-org   │ finniss crescent │ messenger street  │ … │
+    │ rec-325-dup-0 │ rec-422-org  │ becker uplace    │ booth crescent    │ … │
+    │ rec-338-org   │ rec-367-org  │ crease place     │ pickles street    │ … │
+    │ rec-367-org   │ rec-431-org  │ pickles street   │ kaveneys road     │ … │
+    │ rec-448-org   │ rec-69-org   │ fenwick place    │ torrens street    │ … │
+    │ rec-72-org    │ rec-58-dup-0 │ madigan street   │ clark close       │ … │
+    └───────────────┴──────────────┴──────────────────┴───────────────────┴───┘
     """  # noqa: E501
     left = left.cache()
     right = right.cache()

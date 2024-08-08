@@ -21,8 +21,8 @@ def double_metaphone(s: ir.StringValue) -> ir.ArrayValue[ir.StringValue]:
     ['K0RN', 'KTRN']
     >>> double_metaphone("").execute()
     ['', '']
-    >>> double_metaphone(None).execute()
-    None
+    >>> double_metaphone(None).execute() is None
+    True
     """
     s = _util.ensure_ibis(s, "string")
     return _dm_udf(s)

@@ -117,24 +117,20 @@ def load_patents(backend: ibis.BaseBackend | None = None) -> ir.Table:
 
     Examples
     --------
-    >>> load_patents()
-    ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ record_id ┃ label_true ┃ name_true            ┃ name                         ┃ latitude ┃ longitude ┃ coauthors                      ┃ classes                        ┃
-    ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-    │ int64     │ int64      │ string               │ string                       │ float64  │ float64   │ string                         │ string                         │
-    ├───────────┼────────────┼──────────────────────┼──────────────────────────────┼──────────┼───────────┼────────────────────────────────┼────────────────────────────────┤
-    │      2909 │     402600 │ AGILENT TECHNOLOGIES │ * AGILENT TECHNOLOGIES, INC. │     0.00 │  0.000000 │ KONINK PHILIPS ELECTRONICS N … │ A61N**A61B                     │
-    │      3574 │     569309 │ AKZO NOBEL           │ * AKZO NOBEL N.V.            │     0.00 │  0.000000 │ TSJERK  HOEKSTRA**ANDRESS K  … │ G01N**B01L**C11D**G02F**F16L   │
-    │      3575 │     569309 │ AKZO NOBEL           │ * AKZO NOBEL NV              │     0.00 │  0.000000 │ WILLIAM JOHN ERNEST  PARR**HA… │ C09K**F17D**B01F**C23F         │
-    │      3779 │     656303 │ ALCATEL              │ * ALCATEL N.V.               │    52.35 │  4.916667 │ GUENTER  KOCHSMEIER**ZBIGNIEW… │ G02B**G04G**H02G**G06F         │
-    │      3780 │     656303 │ ALCATEL              │ * ALCATEL N.V.               │    52.35 │  4.916667 │ ZILAN  MANFRED**JOSIANE  RAMO… │ H03G**B05D**H04L**H04B**C03B*… │
-    │      3782 │     656303 │ ALCATEL              │ * ALCATEL N.V.               │     0.00 │  0.000000 │ OLIVIER  AUDOUIN**MICHEL  SOT… │ H04B**H01S**H04J               │
-    │     15041 │    4333661 │ CANON EUROPA         │ * CANON EUROPA N.V           │     0.00 │  0.000000 │ LEE  RICKLER**SIMON  PARKER**… │ G06F                           │
-    │     15042 │    4333661 │ CANON EUROPA         │ * CANON EUROPA N.V.          │     0.00 │  0.000000 │ QI HE  HONG**ADAM MICHAEL  BA… │ G06T**G01B                     │
-    │     15043 │    4333661 │ CANON EUROPA         │ * CANON EUROPA NV            │     0.00 │  0.000000 │ NILESH  PATHAK**MASAMICHI  MA… │ H04B**G06T**G06F**H04M**H04N*… │
-    │     25387 │    7650783 │ DSM                  │ * DSM N.V.                   │     0.00 │  0.000000 │ GABRIEL MARINUS  MEESTERS**RU… │ C12N**A61K**A23L**A23J**A23K*… │
-    │         … │          … │ …                    │ …                            │        … │         … │ …                              │ …                              │
-    └───────────┴────────────┴──────────────────────┴──────────────────────────────┴──────────┴───────────┴────────────────────────────────┴────────────────────────────────┘
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> load_patents().order_by("record_id").head()  # doctest: +SKIP
+    ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ record_id ┃ label_true ┃ name_true            ┃ name                                             ┃ latitude ┃ longitude ┃ coauthors                                       ┃ classes                                         ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ int64     │ int64      │ string               │ string                                           │ float64  │ float64   │ string                                          │ string                                          │
+    ├───────────┼────────────┼──────────────────────┼──────────────────────────────────────────────────┼──────────┼───────────┼─────────────────────────────────────────────────┼─────────────────────────────────────────────────┤
+    │      2909 │     402600 │ AGILENT TECHNOLOGIES │ * AGILENT TECHNOLOGIES, INC.                     │     0.00 │  0.000000 │ KONINK PHILIPS ELECTRONICS N V**DAVID E  SNYDE… │ A61N**A61B                                      │
+    │      3574 │     569309 │ AKZO NOBEL           │ * AKZO NOBEL N.V.                                │     0.00 │  0.000000 │ TSJERK  HOEKSTRA**ANDRESS K  JOHNSON**TERESA M… │ G01N**B01L**C11D**G02F**F16L                    │
+    │      3575 │     569309 │ AKZO NOBEL           │ * AKZO NOBEL NV                                  │     0.00 │  0.000000 │ WILLIAM JOHN ERNEST  PARR**HANS  OSKARSSON**MA… │ C09K**F17D**B01F**C23F                          │
+    │      3779 │     656303 │ ALCATEL              │ * ALCATEL N.V.                                   │    52.35 │  4.916667 │ GUENTER  KOCHSMEIER**ZBIGNIEW  WIEGOLASKI**EVA… │ G02B**G04G**H02G**G06F                          │
+    │      3780 │     656303 │ ALCATEL              │ * ALCATEL N.V.                                   │    52.35 │  4.916667 │ ZILAN  MANFRED**JOSIANE  RAMOS**DUANE LYNN  MO… │ H03G**B05D**H04L**H04B**C03B**C03C**G02B**H01B  │
+    └───────────┴────────────┴──────────────────────┴──────────────────────────────────────────────────┴──────────┴───────────┴─────────────────────────────────────────────────┴─────────────────────────────────────────────────┘
     """  # noqa E501
     path = _DATASETS_DIR / "patstat/patents.csv"
     if backend is None:
@@ -199,7 +195,9 @@ def load_rldata500(backend: ibis.BaseBackend | None = None) -> ir.Table:
 
     Examples
     --------
-    >>> load_rldata500()
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> load_rldata500().head()  # doctest: +SKIP
     ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┓
     ┃ record_id ┃ label_true ┃ fname_c1 ┃ fname_c2 ┃ lname_c1 ┃ lname_c2 ┃ by    ┃ bm    ┃ bd    ┃
     ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━┩
@@ -210,12 +208,6 @@ def load_rldata500(backend: ibis.BaseBackend | None = None) -> ir.Table:
     │         2 │        115 │ ROBERT   │ NULL     │ HARTMANN │ NULL     │  1930 │     4 │    30 │
     │         3 │        189 │ STEFAN   │ NULL     │ WOLFF    │ NULL     │  1957 │     9 │     2 │
     │         4 │         72 │ RALF     │ NULL     │ KRUEGER  │ NULL     │  1966 │     1 │    13 │
-    │         5 │        142 │ JUERGEN  │ NULL     │ FRANKE   │ NULL     │  1929 │     7 │     4 │
-    │         6 │        162 │ GERD     │ NULL     │ SCHAEFER │ NULL     │  1967 │     8 │     1 │
-    │         7 │         48 │ UWE      │ NULL     │ MEIER    │ NULL     │  1942 │     9 │    20 │
-    │         8 │        133 │ DANIEL   │ NULL     │ SCHMIDT  │ NULL     │  1978 │     3 │     4 │
-    │         9 │        190 │ MICHAEL  │ NULL     │ HAHN     │ NULL     │  1971 │     2 │    27 │
-    │         … │          … │ …        │ …        │ …        │ …        │     … │     … │     … │
     └───────────┴────────────┴──────────┴──────────┴──────────┴──────────┴───────┴───────┴───────┘
     """  # noqa: E501
     path = _DATASETS_DIR / "rldata/RLdata500.csv"
@@ -271,7 +263,9 @@ def load_rldata10000(backend: ibis.BaseBackend | None = None) -> ir.Table:
 
     Examples
     --------
-    >>> load_rldata10000()
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> load_rldata10000().head()  # doctest: +SKIP
     ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┓
     ┃ record_id ┃ label_true ┃ fname_c1 ┃ fname_c2 ┃ lname_c1   ┃ lname_c2 ┃ by    ┃ bm    ┃ bd    ┃
     ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━┩
@@ -282,12 +276,6 @@ def load_rldata10000(backend: ibis.BaseBackend | None = None) -> ir.Table:
     │         2 │       3892 │ HERBERT  │ NULL     │ ZIMMERMANN │ NULL     │  1961 │    11 │     6 │
     │         3 │        329 │ HANS     │ NULL     │ SCHMITT    │ NULL     │  1945 │     8 │    14 │
     │         4 │       1994 │ UWE      │ NULL     │ KELLER     │ NULL     │  2000 │     7 │     5 │
-    │         5 │       2330 │ DANIEL   │ NULL     │ HEINRICH   │ NULL     │  1967 │     5 │     6 │
-    │         6 │       4420 │ MARTIN   │ NULL     │ ZIMMERMANN │ NULL     │  1982 │    11 │     2 │
-    │         7 │       2534 │ ANDREAS  │ BENJAMIN │ BERGMANN   │ NULL     │  1989 │     9 │    13 │
-    │         8 │       3076 │ DIETER   │ NULL     │ SCHUSTER   │ NULL     │  1974 │     4 │    19 │
-    │         9 │       4305 │ MANFRED  │ NULL     │ SCHMIDT    │ NULL     │  1979 │     7 │    11 │
-    │         … │          … │ …        │ …        │ …          │ …        │     … │     … │     … │
     └───────────┴────────────┴──────────┴──────────┴────────────┴──────────┴───────┴───────┴───────┘
     """  # noqa: E501
     path = _DATASETS_DIR / "rldata/RLdata10000.csv"

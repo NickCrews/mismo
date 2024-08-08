@@ -83,10 +83,16 @@ addopts = [
   "--benchmark-skip",
   "--benchmark-group-by=name",
   "--benchmark-sort=name",
+  "--doctest-modules",
 ]
 filterwarnings = [
   # fail on any warnings that are not explicitly matched below
   "error",
+]
+doctest_optionflags = [
+  "NORMALIZE_WHITESPACE",
+  "IGNORE_EXCEPTION_DETAIL",
+  "ELLIPSIS",
 ]
 
 [tool.coverage.run]

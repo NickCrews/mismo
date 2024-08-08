@@ -29,7 +29,7 @@ def document_counts(terms: ir.ArrayColumn) -> ir.Table:
     Examples
     --------
     >>> import ibis
-    >>> from mismo.text import document_counts
+    >>> from mismo.sets import document_counts
     >>> ibis.options.repr.interactive.max_length = 20
     >>> addresses = [
     ...     "12 main st",
@@ -41,21 +41,21 @@ def document_counts(terms: ir.ArrayColumn) -> ir.Table:
     >>> t = ibis.memtable({"address": addresses})
     >>> # split on whitespace
     >>> t = t.mutate(terms=t.address.re_split(r"\s+"))
-    >>> document_counts(t.terms)
+    >>> document_counts(t.terms).order_by("term")
     ┏━━━━━━━━━┳━━━━━━━━━━━┓
     ┃ term    ┃ n_records ┃
     ┡━━━━━━━━━╇━━━━━━━━━━━┩
     │ string  │ int64     │
     ├─────────┼───────────┤
     │ 12      │         2 │
+    │ 21      │         1 │
     │ 56      │         1 │
-    │ main    │         2 │
-    │ st      │         4 │
+    │ 99      │         1 │
     │ ave     │         1 │
     │ glacier │         2 │
-    │ 99      │         1 │
-    │ 21      │         1 │
     │ joseph  │         1 │
+    │ main    │         2 │
+    │ st      │         4 │
     └─────────┴───────────┘
     """  # noqa: E501
     if not isinstance(terms, ir.ArrayValue):
@@ -79,7 +79,7 @@ def term_idf(terms: ir.ArrayValue) -> ir.Table:
     Examples
     --------
     >>> import ibis
-    >>> from mismo.text import term_idf
+    >>> from mismo.sets import term_idf
     >>> ibis.options.interactive = True
     >>> addresses = [
     ...     "12 main st",
@@ -91,21 +91,21 @@ def term_idf(terms: ir.ArrayValue) -> ir.Table:
     >>> t = ibis.memtable({"address": addresses})
     >>> # split on whitespace
     >>> t = t.mutate(terms=t.address.re_split(r"\s+"))
-    >>> term_idf(t.address)
+    >>> term_idf(t.terms).order_by("term")
     ┏━━━━━━━━━┳━━━━━━━━━━┓
     ┃ term    ┃ idf      ┃
     ┡━━━━━━━━━╇━━━━━━━━━━┩
     │ string  │ float64  │
     ├─────────┼──────────┤
     │ 12      │ 0.916291 │
+    │ 21      │ 1.609438 │
     │ 56      │ 1.609438 │
-    │ main    │ 0.916291 │
-    │ st      │ 0.223144 │
+    │ 99      │ 1.609438 │
     │ ave     │ 1.609438 │
     │ glacier │ 0.916291 │
-    │ 99      │ 1.609438 │
     │ joseph  │ 1.609438 │
-    │ 21      │ 1.609438 │
+    │ main    │ 0.916291 │
+    │ st      │ 0.223144 │
     └─────────┴──────────┘
     """
     dc = document_counts(terms)
@@ -136,8 +136,9 @@ def add_array_value_counts(
     Examples
     --------
     >>> import ibis
-    >>> from mismo.text import add_array_value_counts
+    >>> from mismo.sets import add_array_value_counts
     >>> ibis.options.interactive = True
+    >>> ibis.options.repr.interactive.max_length = 20
     >>> terms = [
     ...     None,
     ...     ["st"],
@@ -148,8 +149,8 @@ def add_array_value_counts(
     ...     ["21", "glacier", "st"],
     ...     ["12", "glacier", "st"],
     ... ]
-    t = ibis.memtable({"terms": terms})
-    >>> add_array_value_counts(t, "terms")
+    >>> t = ibis.memtable({"terms": terms})
+    >>> add_array_value_counts(t, "terms")  # doctest: +SKIP
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     ┃ terms                        ┃ terms_counts                     ┃
     ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -217,8 +218,9 @@ def add_tfidf(
     Examples
     --------
     >>> import ibis
-    >>> from mismo.text import add_tfidf
+    >>> from mismo.sets import add_tfidf
     >>> ibis.options.interactive = True
+    >>> ibis.options.repr.interactive.max_length = 20
     >>> terms = [
     ...     None,
     ...     ["st"],
@@ -229,19 +231,22 @@ def add_tfidf(
     ...     ["21", "glacier", "st"],
     ...     ["12", "glacier", "st"],
     ... ]
-    t = ibis.memtable({"terms": terms})
-    >>> add_tfidf(t, "terms")
-    ┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ address         ┃ terms                        ┃ terms_tfidf                                                                         ┃
-    ┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-    │ string          │ array<string>                │ map<string, float64>                                                                │
-    ├─────────────────┼──────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┤
-    │ 12 main st      │ ['12', 'main', 'st']         │ {'main': 0.6968503263117379, 'st': 0.1697034043219193, '12': 0.6968503263117379}    │
-    │ 56 st joseph st │ ['56', 'st', 'joseph', 'st'] │ {'joseph': 0.6938938856579954, '56': 0.6938938856579954, 'st': 0.19241244994255877} │
-    │ 99 main ave     │ ['99', 'main', 'ave']        │ {'99': 0.6559486886294514, 'ave': 0.6559486886294514, 'main': 0.37344696513776354}  │
-    │ 21 glacier st   │ ['21', 'glacier', 'st']      │ {'21': 0.8627899233289343, 'glacier': 0.4912065288092223, 'st': 0.1196231342895101} │
-    │ 12 glacier st   │ ['12', 'glacier', 'st']      │ {'12': 0.6968503263117379, 'st': 0.1697034043219193, 'glacier': 0.6968503263117379} │
-    └─────────────────┴──────────────────────────────┴─────────────────────────────────────────────────────────────────────────────────────┘
+    >>> t = ibis.memtable({"terms": terms})
+    >>> add_tfidf(t, "terms")  # doctest: +SKIP
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ terms                        ┃ terms_tfidf                                                                          ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ array<string>                │ map<string, float64>                                                                 │
+    ├──────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+    │ ['st']                       │ {'st': 0.15415067982725836}                                                          │
+    │ ['st']                       │ {'st': 0.15415067982725836}                                                          │
+    │ ['12', 'glacier', 'st']      │ {'12': 0.7232830370915955, 'glacier': 0.7232830370915955, 'st': 0.08899893649403144} │
+    │ ['12', 'main', 'st']         │ {'12': 0.7232830370915955, 'main': 0.7232830370915955, 'st': 0.08899893649403144}    │
+    │ ['21', 'glacier', 'st']      │ {'21': 1.12347174837591, 'glacier': 0.7232830370915955, 'st': 0.08899893649403144}   │
+    │ ['56', 'st', 'joseph', 'st'] │ {'56': 0.7944144917481126, 'joseph': 0.7944144917481126, 'st': 0.12586350302664107}  │
+    │ ['99', 'main', 'ave']        │ {'main': 0.7232830370915955, 'ave': 1.12347174837591, '99': 1.12347174837591}        │
+    │ NULL                         │ NULL                                                                                 │
+    └──────────────────────────────┴──────────────────────────────────────────────────────────────────────────────────────┘
     """  # noqa: E501
     with_counts = add_array_value_counts(t, column, result_name="__term_counts")
     if normalize:

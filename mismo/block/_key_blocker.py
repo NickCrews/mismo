@@ -22,7 +22,7 @@ class KeyBlocker:
     >>> from ibis import _
     >>> import mismo
     >>> ibis.options.interactive = True
-    >>> t = mismo.datasets.load_patents()["record_id", "name", "latitude"]
+    >>> t = mismo.playdata.load_patents()["record_id", "name", "latitude"]
     >>> t.head()
     ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┓
     ┃ record_id ┃ name                         ┃ latitude ┃
@@ -39,18 +39,18 @@ class KeyBlocker:
     Block the table with itself wherever the names match:
 
     >>> blocker = mismo.block.KeyBlocker("name")
-    >>> blocker(t, t).head()
-    ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l               ┃ name_r               ┃
-    ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
-    │ int64       │ int64       │ float64    │ float64    │ string               │ string               │
-    ├─────────────┼─────────────┼────────────┼────────────┼──────────────────────┼──────────────────────┤
-    │      665768 │      665769 │  51.683333 │        0.0 │ ALCOA NEDERLAND B.V. │ ALCOA NEDERLAND B.V. │
-    │     1598894 │     1598895 │  51.416667 │        0.0 │ ASML NETHERLAND B.V. │ ASML NETHERLAND B.V. │
-    │     4332214 │     4332215 │  52.350000 │        0.0 │ Canon Europa N.V.    │ Canon Europa N.V.    │
-    │     7651166 │     7651167 │  50.900000 │        0.0 │ DSM B.V.             │ DSM B.V.             │
-    │     7651339 │     7651340 │  50.900000 │       50.9 │ DSM I.P. Assets B.V. │ DSM I.P. Assets B.V. │
-    └─────────────┴─────────────┴────────────┴────────────┴──────────────────────┴──────────────────────┘
+    >>> blocker(t, t).order_by("record_id_l", "record_id_r").head()  # doctest: +SKIP
+    ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+    ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l         ┃ name_r         ┃
+    ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+    │ int64       │ int64       │ float64    │ float64    │ string         │ string         │
+    ├─────────────┼─────────────┼────────────┼────────────┼────────────────┼────────────────┤
+    │        3779 │        3780 │      52.35 │  52.350000 │ * ALCATEL N.V. │ * ALCATEL N.V. │
+    │        3779 │        3782 │      52.35 │   0.000000 │ * ALCATEL N.V. │ * ALCATEL N.V. │
+    │        3780 │        3782 │      52.35 │   0.000000 │ * ALCATEL N.V. │ * ALCATEL N.V. │
+    │       25388 │     7651559 │       0.00 │  50.966667 │ DSM N.V.       │ DSM N.V.       │
+    │       25388 │     7651560 │       0.00 │  52.500000 │ DSM N.V.       │ DSM N.V.       │
+    └─────────────┴─────────────┴────────────┴────────────┴────────────────┴────────────────┘
 
     Arbitrary blocking keys are supported. For example, block the table wherever
         - the first 5 characters of the name in uppercase, are the same
@@ -58,18 +58,18 @@ class KeyBlocker:
         - the latitudes, rounded to 1 decimal place, are the same
 
     >>> blocker = mismo.block.KeyBlocker((_["name"][:5].upper(), _.latitude.round(1)))
-    >>> blocker(t, t).head()
-    ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l                ┃ name_r                     ┃
-    ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-    │ int64       │ int64       │ float64    │ float64    │ string                │ string                     │
-    ├─────────────┼─────────────┼────────────┼────────────┼───────────────────────┼────────────────────────────┤
-    │        3574 │        3575 │   0.000000 │   0.000000 │ * AKZO NOBEL N.V.     │ * AKZO NOBEL NV            │
-    │      663246 │      663255 │  52.016667 │  52.025498 │ Alcatel NV            │ ALCATEL N.V., RIJSWIJK, NL │
-    │      665768 │      665773 │  51.683333 │  51.683333 │ ALCOA NEDERLAND B.V.  │ Alcoa Nederland B.V.       │
-    │     1598972 │     1598988 │  51.416667 │  51.416667 │ Asml Netherlands B.V. │ ASML Netherlands-B.V.      │
-    │     7651427 │     7651428 │  50.900000 │  50.900000 │ DSM IP assets B.V.    │ DSM Ip Assets B.V.         │
-    └─────────────┴─────────────┴────────────┴────────────┴───────────────────────┴────────────────────────────┘
+    >>> blocker(t, t).order_by("record_id_l", "record_id_r").head()  # doctest: +SKIP
+    ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l              ┃ name_r              ┃
+    ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
+    │ int64       │ int64       │ float64    │ float64    │ string              │ string              │
+    ├─────────────┼─────────────┼────────────┼────────────┼─────────────────────┼─────────────────────┤
+    │        3574 │        3575 │       0.00 │       0.00 │ * AKZO NOBEL N.V.   │ * AKZO NOBEL NV     │
+    │        3779 │        3780 │      52.35 │      52.35 │ * ALCATEL N.V.      │ * ALCATEL N.V.      │
+    │       15041 │       15042 │       0.00 │       0.00 │ * CANON EUROPA N.V  │ * CANON EUROPA N.V. │
+    │       15041 │       15043 │       0.00 │       0.00 │ * CANON EUROPA N.V  │ * CANON EUROPA NV   │
+    │       15042 │       15043 │       0.00 │       0.00 │ * CANON EUROPA N.V. │ * CANON EUROPA NV   │
+    └─────────────┴─────────────┴────────────┴────────────┴─────────────────────┴─────────────────────┘
 
     We can even block on arrays! For example, first let's split each name into
     significant tokens:
@@ -98,24 +98,18 @@ class KeyBlocker:
     Note that this blocked `* SCHLUMBERGER LIMITED` with `* SCHLUMBERGER TECHNOLOGY BV`.
 
     >>> blocker = mismo.block.KeyBlocker(tokens.unnest())
-    >>> blocker(t, t).filter(_.name_l != _.name_r)
-    ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l                                            ┃ name_r                                            ┃
-    ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-    │ int64       │ int64       │ float64    │ float64    │ string                                            │ string                                            │
-    ├─────────────┼─────────────┼────────────┼────────────┼───────────────────────────────────────────────────┼───────────────────────────────────────────────────┤
-    │        3574 │        3575 │   0.000000 │   0.000000 │ * AKZO NOBEL N.V.                                 │ * AKZO NOBEL NV                                   │
-    │       62445 │       66329 │   0.000000 │   0.000000 │ * N V PHILIPS' GLOEILAMPENFABRIEKEN               │ * N.V. PHILIPS' GLOEILAMPENFABRIEKEN              │
-    │       79860 │       79872 │  52.500000 │   0.000000 │ * SCHLUMBERGER LIMITED                            │ * SCHLUMBERGER TECHNOLOGY BV                      │
-    │       81613 │       81633 │  52.083333 │  52.083333 │ * SHELL INTERNATIONAL RESEARCH MAATSCHHAPPIJ B.V. │ * SHELL INTERNATIONALE RESEARCH MAATSCHAPPIJ B.V. │
-    │       81631 │       81641 │  52.500000 │  52.083333 │ * SHELL INTERNATIONALE RESEARCH MAATSCHAPPIJ B.V. │ * SHELL INTERNATIONALE RESEARCH MAATSCHAPPIJ BV   │
-    │       81614 │      317966 │   0.000000 │  52.350000 │ * SHELL INTERNATIONAL RESEARCH MAATSCHHAPPIJ B.V. │ Adidas International Marketing B.V.               │
-    │       81614 │      317969 │   0.000000 │  52.350000 │ * SHELL INTERNATIONAL RESEARCH MAATSCHHAPPIJ B.V. │ adidas International Marketing B.V,               │
-    │      317969 │      317971 │  52.350000 │  52.500000 │ adidas International Marketing B.V,               │ adidas International Marketing B.V.               │
-    │      317967 │      317971 │   0.000000 │  52.500000 │ Adidas International Marketing B.V.               │ adidas International Marketing B.V.               │
-    │      317968 │      317971 │  52.350000 │  52.500000 │ adidas International Marketing, B.V.              │ adidas International Marketing B.V.               │
-    │           … │           … │          … │          … │ …                                                 │ …                                                 │
-    └─────────────┴─────────────┴────────────┴────────────┴───────────────────────────────────────────────────┴───────────────────────────────────────────────────┘
+    >>> blocker(t, t).filter(_.name_l != _.name_r).order_by("record_id_l", "record_id_r").head()  # doctest: +SKIP
+    ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l                                                     ┃ name_r                                                     ┃
+    ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ int64       │ int64       │ float64    │ float64    │ string                                                     │ string                                                     │
+    ├─────────────┼─────────────┼────────────┼────────────┼────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+    │        2909 │    13390969 │        0.0 │      52.35 │ * AGILENT TECHNOLOGIES, INC.                               │ Hitachi Global Storage Technologies, Inc. Netherlands B.V  │
+    │        2909 │    13390970 │        0.0 │      52.35 │ * AGILENT TECHNOLOGIES, INC.                               │ Hitachi Global Storage Technologies, Inc. Netherlands B.V. │
+    │        2909 │    13391015 │        0.0 │      52.35 │ * AGILENT TECHNOLOGIES, INC.                               │ Hitachi Global Storage Technologies, Netherland B.V.       │
+    │        2909 │    13391055 │        0.0 │      52.50 │ * AGILENT TECHNOLOGIES, INC.                               │ Hitachi Global Storage Technologies, Netherlands, B.V.     │
+    │        2909 │    13391056 │        0.0 │      52.35 │ * AGILENT TECHNOLOGIES, INC.                               │ Hitachi Global Storage Technologies, Netherlands, B.V.     │
+    └─────────────┴─────────────┴────────────┴────────────┴────────────────────────────────────────────────────────────┴────────────────────────────────────────────────────────────┘
     """  # noqa: E501
 
     def __init__(
@@ -211,16 +205,16 @@ class KeyBlocker:
         Note how the (None, 4) record is not counted,
         since NULLs are not counted as a match during a join.
 
-        >>> blocker.key_counts(t)
+        >>> blocker.key_counts(t).order_by("letter", "num")
         ┏━━━━━━━━┳━━━━━━━┳━━━━━━━┓
         ┃ letter ┃ num   ┃ n     ┃
         ┡━━━━━━━━╇━━━━━━━╇━━━━━━━┩
         │ string │ int64 │ int64 │
         ├────────┼───────┼───────┤
-        │ c      │     3 │     3 │
-        │ b      │     1 │     2 │
         │ a      │     1 │     1 │
+        │ b      │     1 │     2 │
         │ b      │     2 │     1 │
+        │ c      │     3 │     3 │
         └────────┴───────┴───────┘
         """
         t = t.select(self.key)
@@ -295,17 +289,17 @@ class KeyBlocker:
         - 1 pairs in the (a, 1) block due to pair (0, 0)
         - 1 pairs in the (b, 2) block due to pair (4, 4)
 
-        >>> counts = blocker.key_counts(t, t, task="link")
+        >>> counts = blocker.pair_counts(t, t, task="link").order_by("letter", "num")
         >>> counts
         ┏━━━━━━━━┳━━━━━━━┳━━━━━━━┓
         ┃ letter ┃ num   ┃ n     ┃
         ┡━━━━━━━━╇━━━━━━━╇━━━━━━━┩
         │ string │ int64 │ int64 │
         ├────────┼───────┼───────┤
-        │ c      │     3 │     9 │
-        │ b      │     2 │     4 │
-        │ b      │     1 │     1 │
         │ a      │     1 │     1 │
+        │ b      │     1 │     4 │
+        │ b      │     2 │     1 │
+        │ c      │     3 │     9 │
         └────────┴───────┴───────┘
 
         If we joined t with itself using this blocker in a dedupe task,
@@ -316,22 +310,22 @@ class KeyBlocker:
         - 0 pairs in the (a, 1) block due to record 0 not getting blocked with itself
         - 0 pairs in the (b, 2) block due to record 4 not getting blocked with itself
 
-        >>> counts = blocker.key_counts(t, t)
+        >>> counts = blocker.pair_counts(t, t).order_by("letter", "num")
         >>> counts
         ┏━━━━━━━━┳━━━━━━━┳━━━━━━━┓
         ┃ letter ┃ num   ┃ n     ┃
         ┡━━━━━━━━╇━━━━━━━╇━━━━━━━┩
         │ string │ int64 │ int64 │
         ├────────┼───────┼───────┤
-        │ c      │     3 │     3 │
-        │ b      │     1 │     1 │
         │ a      │     1 │     0 │
+        │ b      │     1 │     1 │
         │ b      │     2 │     0 │
+        │ c      │     3 │     3 │
         └────────┴───────┴───────┘
 
         The total number of pairs that would be generated is easy to find:
 
-        >>> counts.n.sum()
+        >>> counts.n.sum().execute()
         4
         """  # noqa: E501
         if task is None:

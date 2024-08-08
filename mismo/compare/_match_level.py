@@ -75,10 +75,10 @@ class _LevelsMeta(ABCMeta):
         'NEAR'
         >>> NameMatchLevel[ibis.literal("NEAR")].execute()
         1
-        >>> NameMatchLevel[100] # doctest: +IGNORE_EXCEPTION_DETAIL
+        >>> NameMatchLevel[100]
         Traceback (most recent call last):
             ...
-        ValueError: Invalid value: 100. Must be one of {0, 1, 2}
+        KeyError: Invalid value: 100. Must be one of {0, 1, 2}
         >>> NameMatchLevel[ibis.literal(100)].execute() is None
         True
         """
@@ -155,7 +155,8 @@ class MatchLevel(metaclass=_LevelsMeta):
     1
     >>> NameMatchLevel(2).as_string()
     'ELSE'
-    >>> NameMatchLevel(3) # doctest: +IGNORE_EXCEPTION_DETAIL
+    >>> NameMatchLevel(3)
+    Traceback (most recent call last):
     ...
     ValueError: Invalid value: 3. Must be one of {0, 1, 2}`
 
@@ -193,7 +194,8 @@ class MatchLevel(metaclass=_LevelsMeta):
     However, implicit ordering is not supported
     (file an issue if you think it should be):
 
-    >>> NameMatchLevel.NEAR > 0  # doctest: +IGNORE_EXCEPTION_DETAIL
+    >>> NameMatchLevel.NEAR > 0
+    Traceback (most recent call last):
     ...
     TypeError: '>' not supported between instances of 'NameMatchLevel' and 'int'
     """

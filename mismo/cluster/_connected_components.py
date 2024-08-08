@@ -121,36 +121,36 @@ def connected_components(
     from record_id -> component. Note how only the record_ids that are
     present in `links` are returned, eg there is no record_id `"d"` present:
 
-    >>> connected_components(links=links)
+    >>> connected_components(links=links).order_by("record_id")
     ┏━━━━━━━━━━━┳━━━━━━━━━━━┓
     ┃ record_id ┃ component ┃
     ┡━━━━━━━━━━━╇━━━━━━━━━━━┩
     │ string    │ uint64    │
     ├───────────┼───────────┤
-    │ b         │         0 │
     │ a         │         0 │
+    │ b         │         0 │
     │ c         │         0 │
-    │ y         │         0 │
-    │ x         │         0 │
-    │ z         │         0 │
     │ g         │         3 │
     │ h         │         3 │
+    │ x         │         0 │
+    │ y         │         0 │
+    │ z         │         0 │
     └───────────┴───────────┘
 
     If you supply records, then the records are labeled with the component.
     We can also change the name of the column that contains the component:
 
-    >>> connected_components(records=records1, links=links, label_as="label")
+    >>> connected_components(records=records1, links=links, label_as="label").order_by("record_id")
     ┏━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━┓
     ┃ record_id ┃ other ┃ label  ┃
     ┡━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━┩
     │ string    │ int64 │ uint64 │
     ├───────────┼───────┼────────┤
-    │ b         │     1 │      0 │
     │ a         │     0 │      0 │
+    │ b         │     1 │      0 │
     │ c         │     2 │      0 │
-    │ g         │     6 │      3 │
     │ d         │     3 │      4 │
+    │ g         │     6 │      3 │
     └───────────┴───────┴────────┘
 
     You can supply multiple sets of records, which are coerced to a `Datasets`,
@@ -158,26 +158,26 @@ def connected_components(
     individually.
 
     >>> a, b = connected_components(records=(records1, records2), links=links)
-    >>> a
+    >>> a.order_by("record_id")
     ┏━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┓
     ┃ record_id ┃ other ┃ component ┃
     ┡━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━┩
     │ string    │ int64 │ uint64    │
     ├───────────┼───────┼───────────┤
-    │ g         │     6 │         3 │
-    │ c         │     2 │         0 │
-    │ b         │     1 │         0 │
     │ a         │     0 │         0 │
+    │ b         │     1 │         0 │
+    │ c         │     2 │         0 │
     │ d         │     3 │         4 │
+    │ g         │     6 │         3 │
     └───────────┴───────┴───────────┘
-    >>> b
+    >>> b.order_by("record_id")
     ┏━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┓
     ┃ record_id ┃ other ┃ component ┃
     ┡━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━┩
     │ string    │ int64 │ uint64    │
     ├───────────┼───────┼───────────┤
-    │ x         │    23 │         0 │
     │ h         │     7 │         3 │
+    │ x         │    23 │         0 │
     │ y         │    24 │         0 │
     │ z         │    25 │         0 │
     └───────────┴───────┴───────────┘

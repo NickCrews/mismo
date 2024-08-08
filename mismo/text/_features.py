@@ -6,6 +6,14 @@ from ibis.expr import types as ir
 from mismo import _util
 
 
+def tokenize(texts: ir.StringValue) -> ir.ArrayValue:
+    """
+    Split a string into tokens by whitespace.
+    """
+    texts = _util.ensure_ibis(texts, "string")
+    return texts.re_split(r"\s+")
+
+
 # from https://www.imperva.com/blog/fast-n-grams-extraction-and-analysis-with-sql/
 def ngrams(string: ir.StringValue, n: int) -> ir.ArrayValue:
     """
@@ -27,18 +35,18 @@ def ngrams(string: ir.StringValue, n: int) -> ir.ArrayValue:
     >>> import ibis
     >>> from mismo.text import ngrams
     >>> ngrams("abc", 2).execute()
-    ["ab", "bc"]
+    ['ab', 'bc']
     >>> ngrams("", 2).execute()
     []
     >>> ngrams("a", 2).execute()
     []
-    >>> ngrams(None, 4).execute()
-    None
+    >>> ngrams(None, 4).execute() is None
+    True
 
     Order of n-grams is not guaranteed:
 
     >>> ngrams("abcdef", 3).execute()
-    ["abc", "def", "bcd", "cde"]
+    ['abc', 'def', 'bcd', 'cde']
     """
     string = _util.ensure_ibis(string, "string")
     pattern = "." * n
