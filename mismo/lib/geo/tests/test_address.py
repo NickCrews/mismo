@@ -18,7 +18,7 @@ from mismo.lib import geo
                 "postal_code": "62701",
                 "country": "US",
             },
-            {"123", "MAIN", "ST", "APT", "1", "SPRINGFIELD", "IL", "62701", "US"},
+            {"123", "MAIN", "ST", "APT", "1", "SPRINGFIELD", "IL", "62701"},
         ),
         (
             {
@@ -29,7 +29,7 @@ from mismo.lib import geo
                 "postal_code": "62701",
                 "country": "US",
             },
-            {"123", "MAIN", "ST", "IL", "62701", "US"},
+            {"123", "MAIN", "ST", "IL", "62701"},
         ),
         (
             {
