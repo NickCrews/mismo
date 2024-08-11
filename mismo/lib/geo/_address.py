@@ -63,8 +63,6 @@ class AddressesMatchLevel(compare.MatchLevel):
     """The addresses are within 100 km of each other."""
     SAME_STATE = 4
     """The states match."""
-    NULL = 5
-    """At least one street1, city, or state is NULL from either side."""
     ELSE = 6
     """None of the above."""
 
@@ -92,17 +90,6 @@ def match_level(left: ir.StructValue, right: ir.StructValue) -> AddressesMatchLe
     else:
         street_simple_col = "street1"
     return _util.cases(
-        (
-            ibis.or_(
-                _util.struct_isnull(
-                    left, how="any", fields=["street1", "city", "state"]
-                ),
-                _util.struct_isnull(
-                    right, how="any", fields=["street1", "city", "state"]
-                ),
-            ),
-            AddressesMatchLevel.NULL.as_integer(),
-        ),
         (
             ibis.and_(
                 left.street1 == right.street1,
