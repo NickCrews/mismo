@@ -3,6 +3,7 @@ from __future__ import annotations
 import dataclasses
 import os
 from typing import Any, Callable, Iterable, Protocol
+import warnings
 
 import ibis
 from ibis.expr import datatypes as dt
@@ -13,9 +14,27 @@ import pytest
 pytest.register_assert_rewrite("mismo.tests.util")
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--backend",
+        action="store",
+        default="duckdb",
+        help="Specify the backend to use: duckdb (default) or pyspark",
+    )
+
+
 @pytest.fixture
-def backend() -> ibis.BaseBackend:
-    return ibis.duckdb.connect()
+def backend(request) -> ibis.BaseBackend:
+    backend_option = request.config.getoption("--backend")
+    if backend_option == "duckdb":
+        return ibis.duckdb.connect()
+    elif backend_option == "pyspark":
+        # Suppress warnings from PySpark
+        warnings.filterwarnings("ignore", category=UserWarning)
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        return ibis.pyspark.connect()
+    else:
+        raise ValueError(f"Unsupported backend: {backend_option}")
 
 
 _count = 0
