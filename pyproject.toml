@@ -56,6 +56,7 @@ test = [
   "pytest-cov",
   "scikit-learn",
   "recordlinkage",
+  "ibis-framework[pyspark]>=9.1.0",
 ]
 docs = [
   "mkdocs-git-revision-date-localized-plugin",
