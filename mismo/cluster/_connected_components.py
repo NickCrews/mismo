@@ -75,11 +75,11 @@ def connected_components(
     -------
     result
         - If `records` is None, a Table will be returned with columns
-        `record_id` and `<label_as>` of type `uint64` that maps record_id to component.
+        `record_id` and `<label_as>` of type `int64` that maps record_id to component.
         - If `records` is a single Table, that table will be returned
-        with a `<label_as> column added of type `uint64`.
+        with a `<label_as> column added of type `int64`.
         - If `records` is an iterable/mapping of Tables, a `Datasets` will be returned,
-        with a `<label_as>` column of type `uint64` added to each contained Table.
+        with a `<label_as>` column of type `int64` added to each contained Table.
 
     Examples
     --------
@@ -125,7 +125,7 @@ def connected_components(
     ┏━━━━━━━━━━━┳━━━━━━━━━━━┓
     ┃ record_id ┃ component ┃
     ┡━━━━━━━━━━━╇━━━━━━━━━━━┩
-    │ string    │ uint64    │
+    │ string    │ int64     │
     ├───────────┼───────────┤
     │ a         │         0 │
     │ b         │         0 │
@@ -141,17 +141,17 @@ def connected_components(
     We can also change the name of the column that contains the component:
 
     >>> connected_components(records=records1, links=links, label_as="label").order_by("record_id")
-    ┏━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━┓
-    ┃ record_id ┃ other ┃ label  ┃
-    ┡━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━┩
-    │ string    │ int64 │ uint64 │
-    ├───────────┼───────┼────────┤
-    │ a         │     0 │      0 │
-    │ b         │     1 │      0 │
-    │ c         │     2 │      0 │
-    │ d         │     3 │      4 │
-    │ g         │     6 │      3 │
-    └───────────┴───────┴────────┘
+    ┏━━━━━━━━━━━┳━━━━━━━┳━━━━━━━┓
+    ┃ record_id ┃ other ┃ label ┃
+    ┡━━━━━━━━━━━╇━━━━━━━╇━━━━━━━┩
+    │ string    │ int64 │ int64 │
+    ├───────────┼───────┼───────┤
+    │ a         │     0 │     0 │
+    │ b         │     1 │     0 │
+    │ c         │     2 │     0 │
+    │ d         │     3 │     4 │
+    │ g         │     6 │     3 │
+    └───────────┴───────┴───────┘
 
     You can supply multiple sets of records, which are coerced to a `Datasets`,
     and returned as a `Datasets`, with each table of records labeled
@@ -162,7 +162,7 @@ def connected_components(
     ┏━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┓
     ┃ record_id ┃ other ┃ component ┃
     ┡━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━┩
-    │ string    │ int64 │ uint64    │
+    │ string    │ int64 │ int64     │
     ├───────────┼───────┼───────────┤
     │ a         │     0 │         0 │
     │ b         │     1 │         0 │
@@ -174,7 +174,7 @@ def connected_components(
     ┏━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┓
     ┃ record_id ┃ other ┃ component ┃
     ┡━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━┩
-    │ string    │ int64 │ uint64    │
+    │ string    │ int64 │ int64     │
     ├───────────┼───────┼───────────┤
     │ h         │     7 │         3 │
     │ x         │    23 │         0 │
@@ -262,7 +262,7 @@ def _get_component_update_map(component_equivalences: ir.Table) -> ir.Table:
 def _intify_edges(
     raw_edges: ir.Table,
 ) -> tuple[ir.Table, Callable[[ir.Table], ir.Table]]:
-    """Translate edges to uint64s and create restoring function"""
+    """Translate edges to int64s and create restoring function"""
     if "record_id_l" not in raw_edges.columns or "record_id_r" not in raw_edges.columns:
         raise ValueError(
             "edges must contain the columns `record_id_l` and `record_id_r`, "
@@ -304,6 +304,6 @@ def _get_additional_labels(labels: ir.Table, record_ids: ir.Column) -> ir.Table:
     max_existing_label = labels.component.max()
     additional_labels = nodes[is_missing_label].select(
         "record_id",
-        component=(ibis.row_number() + max_existing_label + 1).cast("uint64"),
+        component=(ibis.row_number() + max_existing_label + 1).cast("int64"),
     )
     return additional_labels

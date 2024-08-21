@@ -27,7 +27,7 @@ def label_as(request):
                 (2, 12),
                 (9, 20),
             ],
-            "uint64",
+            "int64",
             {
                 frozenset({0, 1, 2, 10, 11, 12}),
                 frozenset({9, 20}),
@@ -42,7 +42,7 @@ def label_as(request):
                 (0, 13),
                 (9, 20),
             ],
-            "uint64",
+            "int64",
             {
                 frozenset({0, 10, 11, 12, 13}),
                 frozenset({9, 20}),
@@ -72,7 +72,7 @@ def label_as(request):
                 (("a", 0), ("b", 13)),
                 (("a", 9), ("b", 20)),
             ],
-            "struct<dataset: string, record_id: uint64>",
+            "struct<dataset: string, record_id: int64>",
             {
                 frozenset({("a", 0), ("b", 10), ("b", 11), ("b", 12), ("b", 13)}),
                 frozenset({("a", 9), ("b", 20)}),
@@ -82,19 +82,19 @@ def label_as(request):
         ),
         pytest.param(
             [],
-            "uint64",
+            "int64",
             set(),
             id="empty",
         ),
         pytest.param(
             [(42, 42)],
-            "uint64",
+            "int64",
             {frozenset({42})},
             id="single self-loop",
         ),
         pytest.param(
             [(0, 1)],
-            "uint64",
+            "int64",
             {frozenset({0, 1})},
             id="single edge",
         ),
@@ -147,7 +147,7 @@ def _labels_to_clusters(
     labels: ir.Table, label_as: str = "component"
 ) -> set[frozenset[Any]]:
     labels = labels.rename(component=label_as)
-    assert labels.component.type() == ibis.dtype("uint64")
+    assert labels.component.type() == ibis.dtype("int64")
     df = labels.to_pandas()
     cid_to_rid = {c: set() for c in set(df.component)}
     for row in df.itertuples():

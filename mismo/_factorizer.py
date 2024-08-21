@@ -16,7 +16,8 @@ class Factorizer:
     integer codes to do some operation, and then restore the original column.
     """
 
-    def __init__(self, t: ir.Table, column: str, *, dtype: str = "uint64") -> None:
+    # We use the default of int64 because spark doesn't support unsigned ints
+    def __init__(self, t: ir.Table, column: str, *, dtype: str = "int64") -> None:
         """Create a Factorizer from column of values.
 
         If the input column is already an integer, the Factorizer is a no-op.
@@ -66,7 +67,6 @@ class Factorizer:
             src = self.column
         if dst is None:
             dst = src
-
         if self._noop:
             return t.mutate(**{dst: _[src]})
 
@@ -137,7 +137,9 @@ class Factorizer:
 
     @cached_property
     def _augmented(self) -> ir.Table:
-        return self.t.mutate(_util.group_id(self.column).name(self._int_column))
+        return self.t.mutate(
+            _util.group_id(self.column, dtype=self.dtype).name(self._int_column)
+        )
 
     @cached_property
     def _mapping(self) -> ir.Table:

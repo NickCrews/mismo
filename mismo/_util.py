@@ -133,14 +133,16 @@ def sample_table(
     return table.sample(fraction, method=method, seed=seed)
 
 
-def group_id(keys: str | ir.Column | Iterable[str | ir.Column]) -> ir.IntegerColumn:
+def group_id(
+    keys: str | ir.Column | Iterable[str | ir.Column], *, dtype="!uint64"
+) -> ir.IntegerColumn:
     """Number each group from 0 to "number of groups - 1".
 
     This is equivalent to pandas.DataFrame.groupby(keys).ngroup().
-    The returned values is of type `!uint64` (nonnullable).
+    The returned values is of type `dtype`.
     NULLs in the input are labeled just like any other value.
     """
-    return ibis.dense_rank().over(ibis.window(order_by=keys)).cast("!uint64")
+    return ibis.dense_rank().over(ibis.window(order_by=keys)).cast(dtype)
 
 
 _i = 0
