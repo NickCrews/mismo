@@ -33,13 +33,13 @@ from mismo._factorizer import Factorizer
         ),
         pytest.param(
             [(4, 4), (3, 3), (2, 2), (None, None)],
-            "uint64",
-            id="integers",
+            "int64",
+            id="int64",
         ),
         pytest.param(
             [(4, 2), (3, 1), (2, 0), (None, None)],
-            "int64",
-            id="integers",
+            "uint64",
+            id="uint64",
         ),
         pytest.param(
             [
