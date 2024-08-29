@@ -78,13 +78,13 @@ def levenshtein_ratio(s1: ir.StringValue, s2: ir.StringValue) -> ir.FloatingValu
     --------
     >>> from mismo.text import levenshtein_ratio
     >>> levenshtein_ratio("mile", "mike").execute()
-    0.75
+    np.float64(0.75)
     >>> levenshtein_ratio("mile", "mile").execute()
-    1.0
+    np.float64(1.0)
     >>> levenshtein_ratio("mile", "").execute()
-    0.0
+    np.float64(0.0)
     >>> levenshtein_ratio("", "").execute()
-    nan
+    np.float64(nan)
     """
     return _dist_ratio(s1, s2, lambda a, b: a.levenshtein(b))
 

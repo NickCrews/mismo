@@ -52,11 +52,11 @@ def dot(a: T, b: T) -> ir.FloatingValue:
     >>> v1 = ibis.array([1, 2])
     >>> v2 = ibis.array([4, 5])
     >>> dot(v1, v2).execute()  # 1*4 + 2*5
-    14.0
+    np.float64(14.0)
     >>> m1 = ibis.map({"a": 1, "b": 2})
     >>> m2 = ibis.map({"b": 3, "c": 4})
     >>> dot(m1, m2).execute() # 2*3
-    6.0
+    np.float64(6.0)
     """
     a_vals, b_vals = _shared_vals(a, b)
     return _array_dot_product(a_vals, b_vals)
@@ -94,7 +94,7 @@ def cosine_similarity(a: T, b: T) -> ir.FloatingValue:
     Orthogonal vectors:
 
     >>> cosine_similarity(ibis.array([1, 0]), ibis.array([0, 1])).execute()
-    0.0
+    np.float64(0.0)
     """  # noqa: E501
     a_vals, b_vals = _shared_vals(a, b)
     return _array_cosine_similarity(a_vals, b_vals)
@@ -137,10 +137,10 @@ def norm(vec: T, *, metric: Literal["l1", "l2"] = "l2") -> ir.FloatingValue:
     >>> from mismo.vector import norm
     >>> v = ibis.array([-3, 4])
     >>> norm(v).execute()
-    5.0
+    np.float64(5.0)
     >>> m = ibis.map({"a": -3, "b": 4})
     >>> norm(m, metric="l1").execute()
-    7.0
+    np.float64(7.0)
     """
     if isinstance(vec, ir.ArrayValue):
         vals = vec

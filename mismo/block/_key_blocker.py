@@ -326,7 +326,7 @@ class KeyBlocker:
         The total number of pairs that would be generated is easy to find:
 
         >>> counts.n.sum().execute()
-        4
+        np.int64(4)
         """  # noqa: E501
         if task is None:
             task = "dedupe" if left is right else "link"
