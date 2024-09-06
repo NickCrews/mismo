@@ -135,11 +135,11 @@ def train_ms_from_labels(
 def _true_pairs_from_labels(left: ir.Table, right: ir.Table) -> ir.Table:
     if "label_true" not in left.columns:
         raise ValueError(
-            "Left dataset must have a label_true column. Found: {left.columns}"
+            f"Left dataset must have a label_true column. Found: {left.columns}"
         )
     if "label_true" not in right.columns:
         raise ValueError(
-            "Right dataset must have a label_true column. Found: {right.columns}"
+            f"Right dataset must have a label_true column. Found: {right.columns}"
         )
     return KeyBlocker("label_true")(left, right)
 
