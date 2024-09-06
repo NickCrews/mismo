@@ -255,7 +255,7 @@ def _make_level_color_scale(comparers: Iterable[LevelComparer]) -> alt.Scale:
     hues = _frange(0, 1, len(comparers))
     for comp, hue in zip(comparers, hues):
         levels = comp.levels
-        shades = _frange(0.2, 0.9, len(levels))
+        shades = _frange(0.9, 0.2, len(levels))
         for level_name, shade in zip(levels, shades):
             r, g, b = colorsys.hsv_to_rgb(hue, 1, shade)
             r = int(r * 255)
