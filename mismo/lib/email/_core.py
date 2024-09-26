@@ -33,9 +33,9 @@ class ParsedEmail:
     """A simple data class holding an email address that has been split into parts."""
 
     full: ir.StringValue
-    """The full email address, eg 'bob@gmail.com'."""
+    """The full email address, eg 'bob.smith@gmail.com'."""
     user: ir.StringValue
-    """The user part of the email address, eg 'bob'."""
+    """The user part of the email address, eg 'bob.smith' of 'bob.smith@gmail.com'"""
     domain: ir.StringValue
     """The domain part of the email address, eg 'gmail.com'."""
 
