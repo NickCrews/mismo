@@ -30,8 +30,8 @@ def backend(request) -> ibis.BaseBackend:
         return ibis.duckdb.connect()
     elif backend_option == "pyspark":
         # Suppress warnings from PySpark
-        warnings.filterwarnings("ignore", category=UserWarning)
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        warnings.filterwarnings("ignore", category=UserWarning, module="pyspark")
+        warnings.filterwarnings("ignore", category=DeprecationWarning, module="pyspark")
         return ibis.pyspark.connect()
     else:
         raise ValueError(f"Unsupported backend: {backend_option}")

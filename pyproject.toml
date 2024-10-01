@@ -44,7 +44,7 @@ lint = ["ruff", "mypy", "pre-commit"]
 test = [
   "DoubleMetaphone",
   "httpx",
-  "ibis-framework[duckdb,examples]>=9.0.0",
+  "ibis-framework[duckdb,examples,pyspark]>=9.0.0",
   # I am running into https://github.com/duckdb/duckdb/issues/11542
   # and
   # https://github.com/duckdb/duckdb/issues/13045
@@ -56,7 +56,6 @@ test = [
   "pytest-cov",
   "scikit-learn",
   "recordlinkage",
-  "ibis-framework[pyspark]>=9.1.0",
 ]
 docs = [
   "mkdocs-git-revision-date-localized-plugin",

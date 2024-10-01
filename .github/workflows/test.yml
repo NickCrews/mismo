@@ -60,7 +60,7 @@ jobs:
       - name: Run tests
         run: pdm run just test
       
-      - name: Run tests with pyspark
+      - name: Run tests on pyspark backend
         run: pdm run just test-pyspark mismo #needed to locate conftest.py
   lint-and-docs:
     name: Lint
