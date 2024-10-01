@@ -29,22 +29,44 @@ def clean_email(email: ir.StringValue, *, normalize: bool = False) -> ir.StringV
     return email
 
 
-def split_email(email: ir.StringValue) -> ir.StructValue:
-    """Split an email address into <user>@<domain> parts
+class ParsedEmail:
+    """A simple data class holding an email address that has been split into parts."""
 
-    Parameters
-    ----------
-    email:
-        An email string, assumed to already be cleaned by ``clean_email``
+    full: ir.StringValue
+    """The full email address, eg 'bob.smith@gmail.com'."""
+    user: ir.StringValue
+    """The user part of the email address, eg 'bob.smith' of 'bob.smith@gmail.com'"""
+    domain: ir.StringValue
+    """The domain part of the email address, eg 'gmail.com'."""
 
-    Returns
-    -------
-    parsed:
+    def __init__(self, full: ir.StringValue, /):
+        """Parse an email address from the full string.
+
+        Does no cleaning or normalization. If you want that, use `clean_email` first.
+
+        Parameters
+        ----------
+        full :
+            The full email address.
+        """
+        self.full = full
+        self.user = full.split("@")[0].nullif("")
+        self.domain = full.split("@")[1].nullif("")
+
+    def as_struct(self) -> ir.StructValue:
+        """Convert to an ibis struct.
+
+        Returns
+        -------
         An ibis struct<full:string, user:string, domain: domain>
-    """
-    parts = email.split("@")
-    user, domain = parts[0].nullif(""), parts[1].nullif("")
-    return ibis.struct({"full": email, "user": user, "domain": domain})
+        """
+        return ibis.struct(
+            {
+                "full": self.full,
+                "user": self.user,
+                "domain": self.domain,
+            }
+        )
 
 
 class EmailMatchLevel(MatchLevel):
@@ -87,7 +109,7 @@ def match_level(
     """
 
     def norm_and_parse(e):
-        return split_email(clean_email(e, normalize=True))
+        return ParsedEmail(clean_email(e, normalize=True))
 
     if isinstance(e1, ir.StringValue):
         e1 = norm_and_parse(e1)
@@ -145,7 +167,7 @@ class EmailsDimension:
         """Add a column with the parsed and normalized email addresses."""
         return t.mutate(
             get_column(t, self.column)
-            .map(lambda email: split_email(clean_email(email, normalize=True)))
+            .map(lambda email: ParsedEmail(clean_email(email, normalize=True)))
             .name(self.column_parsed)
         )
 

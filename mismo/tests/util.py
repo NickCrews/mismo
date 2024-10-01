@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
+import ibis
 from ibis.expr import types as ir
 import pandas as pd
 import pytest
@@ -50,3 +51,30 @@ def make_float_comparable(val):
     if isinstance(val, float) and not pd.isna(val):
         return pytest.approx(val, rel=1e-4)
     return val
+
+
+def get_clusters(
+    cluster_id: ibis.Column, *, label: ibis.Column | None = None
+) -> set[frozenset]:
+    """Convert a label column into a set of clusters.
+
+    Say you have a table of records, and one of the columns
+    is an ID that groups records together.
+    This function will return a set of frozensets, where each
+    frozenset is a cluster of record IDs.
+
+    You can either provide a label column to act as the record IDs,
+    or if not given, it will use `ibis.row_number()`.
+    """
+    if label is None:
+        label = ibis.row_number()
+    clusters = label.collect().over(group_by=cluster_id)
+
+    def make_hashable(cluster):
+        for record_id in cluster:
+            if isinstance(record_id, dict):
+                yield tuple(record_id.values())
+            else:
+                yield record_id
+
+    return {frozenset(make_hashable(c)) for c in clusters.execute()}

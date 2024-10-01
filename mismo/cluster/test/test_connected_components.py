@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from typing import Any
-
 import ibis
 from ibis.expr import types as ir
 import pandas as pd
 import pytest
 
 from mismo.cluster import connected_components
+from mismo.tests.util import get_clusters
 
 
 @pytest.fixture(params=["component", "cluster"])
@@ -145,14 +144,5 @@ def test_cc_max_iterations(table_factory):
 
 def _labels_to_clusters(
     labels: ir.Table, label_as: str = "component"
-) -> set[frozenset[Any]]:
-    labels = labels.rename(component=label_as)
-    assert labels.component.type() == ibis.dtype("int64")
-    df = labels.to_pandas()
-    cid_to_rid = {c: set() for c in set(df.component)}
-    for row in df.itertuples():
-        record_id = row.record_id
-        if isinstance(record_id, dict):
-            record_id = tuple(record_id.values())
-        cid_to_rid[row.component].add(record_id)
-    return {frozenset(records) for records in cid_to_rid.values()}
+) -> set[frozenset[int]]:
+    return get_clusters(labels[label_as], label=labels.record_id)

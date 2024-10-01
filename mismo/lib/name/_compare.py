@@ -27,19 +27,18 @@ def initials_equal(left: ir.StringValue, right: ir.StringValue) -> ir.BooleanVal
     )
 
 
-def are_spelling_error(
-    left: ir.StringValue,
-    right: ir.StringValue,
+def equal_forgiving_typo(
+    left: ir.StringValue, right: ir.StringValue
 ) -> ir.BooleanValue:
     edit_distance = damerau_levenshtein(left, right)
     return ibis.or_(
         edit_distance <= 1,
         ibis.and_(edit_distance <= 2, left.length() >= 5),
-        substring_match(left, right),
+        _substring_match(left, right),
     )
 
 
-def substring_match(
+def _substring_match(
     left: ir.StringValue, right: ir.StringValue, *, min_len: int = 3
 ) -> ir.BooleanValue:
     """The shorter string is a substring of the longer string, and at least min_len."""
@@ -60,14 +59,54 @@ class NameMatchLevel(MatchLevel):
     """The given and surnames both match."""
     NICKNAMES = 3
     """The given names match with nicknames, and the surnames match."""
+    TYPO = 5
+    """The given names are the same (forgiving typos), and the surnames match."""
     INITIALS = 4
     """The first letter of the given name matches, and the surnames match."""
-    ELSE = 5
+    ELSE = 6
     """None of the above."""
 
 
+def _get_level(le: ir.StructValue, ri: ir.StructValue) -> ir.IntegerValue:
+    # assumes the inputs have already been featurized/normalized
+    # with _clean.normalize_name()
+    return _util.cases(
+        (
+            ibis.or_(
+                _util.struct_isnull(le, how="any", fields=["given", "surname"]),
+                _util.struct_isnull(ri, how="any", fields=["given", "surname"]),
+            ),
+            NameMatchLevel.NULL.as_integer(),
+        ),
+        (_util.struct_equal(le, ri), NameMatchLevel.EXACT.as_integer()),
+        (
+            _util.struct_equal(le, ri, fields=["given", "surname"]),
+            NameMatchLevel.GIVEN_SURNAME.as_integer(),
+        ),
+        (
+            are_match_with_nicknames(le, ri),
+            NameMatchLevel.NICKNAMES.as_integer(),
+        ),
+        (
+            ibis.and_(
+                equal_forgiving_typo(le.given, ri.given),
+                le.surname == ri.surname,
+            ),
+            NameMatchLevel.TYPO.as_integer(),
+        ),
+        (
+            ibis.and_(
+                initials_equal(le.given, ri.given),
+                le.surname == ri.surname,
+            ),
+            NameMatchLevel.INITIALS.as_integer(),
+        ),
+        else_=(NameMatchLevel.ELSE.as_integer()),
+    )
+
+
 class NameComparer:
-    """Compare names."""
+    """Compare names. Assumes the names have already been normalized/featurized."""
 
     def __init__(
         self,
@@ -89,6 +128,8 @@ class NameComparer:
         ----------
         pairs :
             A table with columns ``self.left_column`` and ``self.right_column``.
+            Each of these columns should be a struct that has been normalized/featurized
+            with _clean.normalize_name(raw_name_struct).
 
         Returns
         -------
@@ -97,30 +138,4 @@ class NameComparer:
         """
         le = pairs[self.left_column]
         ri = pairs[self.right_column]
-        result = _util.cases(
-            (
-                ibis.or_(
-                    _util.struct_isnull(le, how="any", fields=["given", "surname"]),
-                    _util.struct_isnull(ri, how="any", fields=["given", "surname"]),
-                ),
-                NameMatchLevel.NULL.as_integer(),
-            ),
-            (_util.struct_equal(le, ri), NameMatchLevel.EXACT.as_integer()),
-            (
-                _util.struct_equal(le, ri, fields=["given", "surname"]),
-                NameMatchLevel.GIVEN_SURNAME.as_integer(),
-            ),
-            (
-                are_match_with_nicknames(le, ri),
-                NameMatchLevel.NICKNAMES.as_integer(),
-            ),
-            (
-                ibis.and_(
-                    initials_equal(le.given, ri.given),
-                    le.surname == ri.surname,
-                ),
-                NameMatchLevel.INITIALS.as_integer(),
-            ),
-            else_=(NameMatchLevel.ELSE.as_integer()),
-        )
-        return pairs.mutate(result.name(self.name))
+        return pairs.mutate(_get_level(le, ri).name(self.name))
