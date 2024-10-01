@@ -68,7 +68,7 @@ def sample_all_pairs(
     """  # noqa: E501
     left = left.cache()
     right = right.cache()
-    n_possible_pairs = left.count().execute() * right.count().execute()
+    n_possible_pairs = int(left.count().execute() * right.count().execute())
     n_pairs = (
         n_possible_pairs if max_pairs is None else min(n_possible_pairs, max_pairs)
     )

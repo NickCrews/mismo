@@ -17,6 +17,8 @@ from mismo.block import sample_all_pairs
         # use to ensure that pairs are not duplicated.
         (2, 3),
         (10, 99),
+        # Edge case where n_possible_pairs < max_pairs
+        (3, 10_000_000)
     ],
 )
 def test_sample_all_pairs(table_factory, n_records: int, max_pairs: int):
@@ -28,15 +30,16 @@ def test_sample_all_pairs(table_factory, n_records: int, max_pairs: int):
         }
     )
     df = sample_all_pairs(t, t, max_pairs=max_pairs).execute()
+    expected_pairs = min(n_records ** 2, max_pairs)
     assert df.columns.tolist() == ["record_id_l", "record_id_r", "value_l", "value_r"]
-    assert len(df) == max_pairs
+    assert len(df) == expected_pairs
     assert df.record_id_l.notnull().all()
     assert df.record_id_r.notnull().all()
     # We get no duplicates
-    assert len(df.drop_duplicates()) == max_pairs
+    assert len(df.drop_duplicates()) == expected_pairs
 
     # Only do these stats if we have a reasonable number of pairs
-    if max_pairs >= 1000:
+    if expected_pairs >= 1000:
         # These two aren't correlated
         assert (df.record_id_l == df.record_id_r).mean() < 0.01
         # We get about an even distribution, the head or tail are not overrepresented
