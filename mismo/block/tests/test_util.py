@@ -18,7 +18,7 @@ from mismo.block import sample_all_pairs
         (2, 3),
         (10, 99),
         # Edge case where n_possible_pairs < max_pairs
-        (3, 10_000_000)
+        (3, 10_000_000),
     ],
 )
 def test_sample_all_pairs(table_factory, n_records: int, max_pairs: int):
@@ -30,7 +30,7 @@ def test_sample_all_pairs(table_factory, n_records: int, max_pairs: int):
         }
     )
     df = sample_all_pairs(t, t, max_pairs=max_pairs).execute()
-    expected_pairs = min(n_records ** 2, max_pairs)
+    expected_pairs = min(n_records**2, max_pairs)
     assert df.columns.tolist() == ["record_id_l", "record_id_r", "value_l", "value_r"]
     assert len(df) == expected_pairs
     assert df.record_id_l.notnull().all()
