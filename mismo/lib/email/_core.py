@@ -124,7 +124,7 @@ def match_level(
 
     raw = (
         ibis.case()
-        .when(e1 == e2, f(EmailMatchLevel.FULL_EXACT))
+        .when(e1.full == e2.full, f(EmailMatchLevel.FULL_EXACT))
         .when(damerau_levenshtein(e1.full, e2.full) <= 1, f(EmailMatchLevel.FULL_NEAR))
         .when(e1.user == e2.user, f(EmailMatchLevel.USER_EXACT))
         .when(damerau_levenshtein(e1.user, e2.user) <= 1, f(EmailMatchLevel.USER_NEAR))
