@@ -302,7 +302,7 @@ def _get_additional_labels(labels: ir.Table, record_ids: ir.Column) -> ir.Table:
     nodes = record_ids.name("record_id").as_table()
     is_missing_label = nodes.record_id.notin(labels.record_id)
     max_existing_label = labels.component.max()
-    additional_labels = nodes[is_missing_label].select(
+    additional_labels = nodes.filter(is_missing_label).select(
         "record_id",
         component=(ibis.row_number() + max_existing_label + 1).cast("int64"),
     )
