@@ -74,7 +74,7 @@ class _LevelsMeta(ABCMeta):
         >>> NameMatchLevel[ibis.literal(1)].execute()
         'NEAR'
         >>> NameMatchLevel[ibis.literal("NEAR")].execute()
-        1
+        np.int8(1)
         >>> NameMatchLevel[100]
         Traceback (most recent call last):
             ...
@@ -147,7 +147,7 @@ class MatchLevel(metaclass=_LevelsMeta):
     >>> NameMatchLevel[ibis.literal(1)].execute()
     'NEAR'
     >>> NameMatchLevel[ibis.literal("NEAR")].execute()
-    1
+    np.int8(1)
 
     You can construct your own values, both from python literals...
 
@@ -171,12 +171,12 @@ class MatchLevel(metaclass=_LevelsMeta):
     2     NEAR
     3     None
     Name: NameMatchLevel, dtype: object
-    >>> levels.as_integer().execute()
+    >>> levels.as_integer().name("levels").execute()
     0     0
     1     2
     2     1
     3    99
-    Name: Array(), dtype: int8
+    Name: levels, dtype: int8
 
     Comparisons work as you expect:
 
@@ -184,12 +184,12 @@ class MatchLevel(metaclass=_LevelsMeta):
     True
     >>> NameMatchLevel(1) == "NEAR"
     True
-    >>> (levels_raw == NameMatchLevel.NEAR).execute()
+    >>> (levels_raw == NameMatchLevel.NEAR).name("eq").execute()
     0    False
     1    False
     2     True
     3    False
-    Name: Equals(Array(), 1), dtype: bool
+    Name: eq, dtype: bool
 
     However, implicit ordering is not supported
     (file an issue if you think it should be):
