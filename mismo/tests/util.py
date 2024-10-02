@@ -67,8 +67,13 @@ def get_clusters(
     or if not given, it will use `ibis.row_number()`.
     """
     if label is None:
-        label = ibis.row_number()
-    clusters = label.collect().over(group_by=cluster_id)
+        t = cluster_id.name("cluster_id").as_table()
+        t = t.mutate(label=ibis.row_number())
+        clusters = (
+            t.group_by("cluster_id").aggregate(clusters=t.label.collect()).clusters
+        )
+    else:
+        clusters = label.collect().over(group_by=cluster_id)
 
     def make_hashable(cluster):
         for record_id in cluster:

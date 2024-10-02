@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import pandas._testing as tm
 import pytest
 
 from mismo._factorizer import Factorizer
+from mismo.tests.util import get_clusters
 
 
 @pytest.mark.parametrize(
@@ -49,16 +49,18 @@ from mismo._factorizer import Factorizer
                 (None, None),
             ],
             "float",
-            id="floats",
+            id="float",
         ),
     ],
 )
 def test_factorizer(table_factory, values, values_type):
     data = {
+        "id": range(len(values)),
         "values": [val for val, _code in values],
         "expected_codes": [code for _val, code in values],
     }
     schema = {
+        "id": "int64",
         "values": values_type,
         "expected_codes": "int64",
     }
@@ -66,33 +68,39 @@ def test_factorizer(table_factory, values, values_type):
     f = Factorizer(t, "values")
 
     e = f.encode()
-    assert set(e.columns) == {"values", "expected_codes"}
-    assert_equal(e.values, e.expected_codes)
+    assert set(e.columns) == {"id", "values", "expected_codes"}
+    assert_equal(e, "values", "expected_codes")
 
     e = f.encode(dst="encoded")
-    assert set(e.columns) == {"values", "expected_codes", "encoded"}
-    assert_equal(e.encoded, e.expected_codes)
+    assert set(e.columns) == {"id", "values", "expected_codes", "encoded"}
+    assert_equal(e, "encoded", "expected_codes")
 
     restored = f.decode(e, src="encoded")
-    assert set(restored.columns) == {"values", "expected_codes", "encoded"}
-    assert_equal(restored.encoded, restored.values)
+    assert set(restored.columns) == {"id", "values", "expected_codes", "encoded"}
+    assert_equal(restored, "encoded", "values")
 
     restored = f.decode(e, src="encoded", dst="decoded")
-    assert set(restored.columns) == {"values", "expected_codes", "encoded", "decoded"}
-    assert_equal(restored.decoded, restored.values)
+    assert set(restored.columns) == {
+        "id",
+        "values",
+        "expected_codes",
+        "encoded",
+        "decoded",
+    }
+    assert_equal(restored, "decoded", "values")
 
     t2 = t.mutate(values2=t.values)
     e = f.encode(t2)
-    assert set(e.columns) == {"values", "expected_codes", "values2"}
-    assert_equal(e.values, e.expected_codes)
+    assert set(e.columns) == {"id", "values", "expected_codes", "values2"}
+    assert_equal(e, "values", "expected_codes")
 
     e = f.encode(t2, src="values2", dst="codes2")
-    assert set(e.columns) == {"values", "expected_codes", "values2", "codes2"}
-    assert_equal(e.values, e.values2)
-    assert_equal(e.codes2, e.expected_codes)
+    assert set(e.columns) == {"id", "values", "expected_codes", "values2", "codes2"}
+    assert_equal(e, "values", "values2")
+    assert_equal(e, "codes2", "expected_codes")
 
 
-def assert_equal(x, y):
-    x = x.to_pandas()
-    y = y.to_pandas()
-    tm.assert_series_equal(x, y, check_names=False, check_dtype=False)
+def assert_equal(t, x, y):
+    x_clusters = get_clusters(t[x], label=t.id)
+    y_clusters = get_clusters(t[y], label=t.id)
+    assert x_clusters == y_clusters
