@@ -38,8 +38,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install PDM
-        run: pip install --upgrade pdm
+      - name: Install UV
+        run: curl -LsSf https://astral.sh/uv/0.4.18/install.sh | sh
 
       - uses: extractions/setup-just@v2
         with:
@@ -58,7 +58,7 @@ jobs:
         run: just install
 
       - name: Run tests
-        run: pdm run just test
+        run: uv run just test
   lint-and-docs:
     name: Lint
     runs-on: ubuntu-latest
@@ -70,8 +70,8 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install PDM
-        run: pip install --upgrade pdm
+      - name: Install UV
+        run: curl -LsSf https://astral.sh/uv/0.4.18/install.sh | sh
 
       - uses: extractions/setup-just@v2
         with:
@@ -84,12 +84,12 @@ jobs:
         run: just install
 
       - name: Run linters
-        run: pdm run just lint
+        run: uv run just lint
 
       - name: Build docs
-        run: pdm run just docs-build
+        run: uv run just docs-build
       
       - name: Publish docs
         if: github.repository == 'NickCrews/mismo' && github.ref == 'refs/heads/main'  && github.event_name == 'push'
-        run: pdm run just docs-publish
+        run: uv run just docs-publish
 

@@ -1,6 +1,6 @@
 [build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "mismo"
@@ -33,15 +33,27 @@ viz = [
   "ipywidgets",
   "solara>=1.32.1",
 ]
+# If you are developing on linux or mac, you can install libpostal
+# using the `install-libpostal` justfile recipe.
+# Then, pypostal will be installed automatically by pip.
+# 
+# If you are developing on windows, you will need to install libpostal manually.
+# Then install pypostal manually:
+# `uv run python -m ensurepip && uv run python -m pip install postal`
+postal = [
+   "postal>=1.1.7; sys_platform == 'linux' or sys_platform == 'darwin'",
+]
 
 [project.urls]
 Documentation = "https://nickcrews.github.io/mismo"
 Issues = "https://github.com/NickCrews/mismo/issues"
 Source = "https://github.com/NickCrews/mismo"
 
-[tool.pdm.dev-dependencies]
-lint = ["ruff", "mypy", "pre-commit"]
-test = [
+[tool.uv]
+dev-dependencies = [
+  "ruff",
+  "mypy",
+  "pre-commit",
   "DoubleMetaphone",
   "httpx",
   "ibis-framework[duckdb,examples]>=9.0.0",
@@ -56,24 +68,13 @@ test = [
   "pytest-cov",
   "scikit-learn",
   "recordlinkage",
-]
-docs = [
   "mkdocs-git-revision-date-localized-plugin",
   "mkdocs-jupyter",
   "mkdocs-literate-nav",
   "mkdocs-material",
   "mkdocstrings[python]",
 ]
-# If you are developing on linux or mac, you can install libpostal
-# using the `install-libpostal` justfile recipe.
-# Then, pypostal will be installed automatically by pip.
-# 
-# If you are developing on windows, you will need to install libpostal manually.
-# Then install pypostal manually:
-# `pdm run python -m ensurepip && pdm run python -m pip install postal`
-postal = [
-   "postal>=1.1.7; sys_platform == 'linux' or sys_platform == 'darwin'",
-]
+
 
 [tool.pytest.ini_options]
 xfail_strict = true

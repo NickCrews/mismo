@@ -2,11 +2,11 @@
 
 ## Dependencies
 
-We use [`PDM`](https://pdm-project.org) as our package and dependency management tool. Install that 
-[per `PDM`'s instructions](https://pdm-project.org/latest/#recommended-installation-method). 
-On Mac/Linux, this is done by running:
+We use [`uv`](https://github.com/astral-sh/uv) as our package and dependency management tool. Install that 
+[per uv's instructions](https://docs.astral.sh/uv/getting-started/installation/). 
+As of this writing, this is done by running:
 ```bash
-curl -sSL https://pdm-project.org/install-pdm.py | python3 -
+curl -LsSf https://astral.sh/uv/0.4.18/install.sh | sh
 ```
 
 We use [`just`](https://just.systems/man/en/chapter_1.html) and a 
@@ -17,17 +17,11 @@ you have just installed. If you don't want to use `just`, you can manually run r
 
 ## Setup dev environemnt
 
-Once `PDM` (and optionally `just`) are installed, run `just init`. This will
-create a virtual environment in `.venv/`, install all the locked dependencies
-in `pdm.lock`.
+Once `uv` (and optionally `just`) are installed, run `just install`. This will
+create a virtual environment in `.venv/` and install all the locked dependencies
+from `uv.lock`.
 
-To enter the venv, use `. .venv/bin/activate`.
-You can exit the venv with `deactivate`, as usual.
-
-When you are in the venv, you can run common tasks such as
+Now you can run common tasks such as
 - `just test`
 - `just fmt`
 - `just lint`
-
-See the [justfile](https://github.com/NickCrews/mismo/blob/main/justfile)
-for more recipes.

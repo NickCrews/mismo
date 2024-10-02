@@ -1,6 +1,5 @@
 .benchmarks
 .coverage
-.pdm-python
 .venv
 .vscode
 dist
