@@ -3,6 +3,7 @@ from __future__ import annotations
 import dataclasses
 import os
 from typing import Any, Callable, Iterable, Protocol
+import uuid
 import warnings
 
 import ibis
@@ -37,20 +38,21 @@ def backend(request) -> ibis.BaseBackend:
         raise ValueError(f"Unsupported backend: {backend_option}")
 
 
-_count = 0
-
-
 @pytest.fixture
 def table_factory(backend: ibis.BaseBackend) -> Callable[..., ir.Table]:
+    created_tables = []
+
     def factory(data, schema=None, columns=None, **kwargs):
-        global _count
-        name = f"__mismo_test{_count}"
-        _count += 1
+        name = f"__mismo_test_{uuid.uuid4().hex}"
         mt = ibis.memtable(data, schema=schema, columns=columns)
         result = backend.create_table(name, mt, **kwargs)
+        created_tables.append(name)
         return result
 
-    return factory
+    yield factory
+
+    for name in created_tables:
+        backend.drop_table(name, force=True)
 
 
 class ColumnFactory(Protocol):
