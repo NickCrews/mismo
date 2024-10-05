@@ -183,8 +183,8 @@ def _resolve_predicate(
     # Deferred is callable, so guard against that
     if callable(raw) and not isinstance(raw, ibis.Deferred):
         return _resolve_predicate(left, right, raw(left, right, **kwargs))
-    keys_l = list(_util.bind(left, raw))
-    keys_r = list(_util.bind(right, raw))
+    keys_l = _util.bind(left, raw)
+    keys_r = _util.bind(right, raw)
     left = left.mutate(keys_l)
     right = right.mutate(keys_r)
     keys_l = [left[val.get_name()] for val in keys_l]
