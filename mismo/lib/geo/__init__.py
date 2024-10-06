@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ._address import AddressesDimension as AddressesDimension
 from ._address import AddressesMatchLevel as AddressesMatchLevel
-from ._address import featurize_address as featurize_address
+from ._address import AddressFeatures as AddressFeatures
 from ._address import match_level as match_level
 from ._census import us_census_geocode as us_census_geocode
 from ._latlon import CoordinateBlocker as CoordinateBlocker

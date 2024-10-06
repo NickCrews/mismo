@@ -11,7 +11,7 @@ This contains utilities, blockers, and comparers relevant to geospatial data.
 ## Addresses
 
 ::: mismo.lib.geo.us_census_geocode
-::: mismo.lib.geo.featurize_address
+::: mismo.lib.geo.AddressFeatures
 ::: mismo.lib.geo.AddressesDimension
 ::: mismo.lib.geo.AddressesMatchLevel
 ::: mismo.lib.geo.match_level

@@ -8,47 +8,188 @@ from mismo import _util, arrays, block, compare, sets, text
 from mismo.lib.geo._latlon import distance_km
 
 
-def featurize_address(address: ir.StructValue) -> ir.StructValue:
-    """
-    Normalize to uppercase, strip whitespace, remove punctuation, NULLify empty strings.
+class AddressFeatures:
+    """A opinionated set of normalized features for a US physical address.
 
-    If all fields are null, return NULL.
+    This is suitable for street addresses in the US, but may need to be
+    adapted for other countries.
 
-    Parameters
-    ----------
-    address : ir.StructValue
-        The address.
+    Examples
+    --------
+    >>> address = ibis.literal({
+    ...     "street1": "123   Main St ",
+    ...     "street2": "Apt 3-b",
+    ...     "city": "Springfield",
+    ...     "state": "",
+    ...     "postal_code": "12345",
+    ...     "latitude": 123.456,
+    ... })
+    >>> features = AddressFeatures(address)
 
-    Returns
-    -------
-    normalized : ir.StructValue
-        The normalized address.
-    """
+    Whitespace is normed, case is converted to uppercase:
 
-    def norm(s):
-        return s.strip().upper().re_replace(r"[^0-9A-Z\s]", "").nullif("")
+    >>> features.street1.execute()
+    '123 MAIN ST'
 
-    def street_number(street1: ir.StringValue) -> ir.StringValue:
-        return street1.re_replace(r"^(\d+)\s.*", r"\1")
+    Punctuation is removed:
 
-    def drop_street_number(street1: ir.StringValue) -> ir.StringValue:
-        return street1.re_replace(r"^\d+\s+", "")
+    >>> features.street2.execute()
+    'APT 3B'
 
-    s = ibis.struct(
-        {
-            "street1": norm(address.street1),
-            "street1_number": street_number(norm(address.street1)),
-            "street1_no_number": drop_street_number(norm(address.street1)),
-            "street2": norm(address.street2),
-            "city": norm(address.city),
-            "state": norm(address.state),
-            "postal_code": norm(address.postal_code),
-            # drop country, this is way too broad to be useful for matching
-            # "country": norm(address.country),
+    Empty strings are converted to NULL:
+
+    >>> features.state.execute() is None
+    True
+
+    We add some convenience features:
+
+    >>> features.street_number.execute()
+    '123'
+    >>> features.street_no_number.execute()
+    'MAIN ST'
+    >>> features.all_null.execute()
+    np.False_
+
+    You can still access the original fields that we didn't normalize:
+
+    >>> features.raw.latitude.execute()
+    np.float64(123.456)
+
+    For use in in preparing data for blocking, you can get all the features as a struct:
+
+    >>> features.as_struct().execute()
+    {'street1': '123 MAIN ST', 'street2': 'APT 3B', 'city': 'SPRINGFIELD', 'state': None, 'postal_code': '12345', 'street_number': '123', 'street_no_number': 'MAIN ST', 'street_ngrams': ['123 ', 'MAIN', '23 M', 'AIN ', '3 MA', 'IN S', ' MAI', 'N ST', 'APT ', 'PT 3', 'T 3B', '123 MAIN ST', 'APT 3B'], 'latitude': 123.456}
+    """  # noqa: E501
+
+    def __init__(self, raw: ir.StructValue | ir.Table, *, street_ngrams_n: int = 4):
+        """Create a set of features for an address.
+
+        Assumes the input has already been cleaned with eg a geocoder.
+        This only does simple string-based normalization and cleaning,
+        eg removing punctuation and converting to uppercase.
+
+        Parameters
+        ----------
+        raw
+            A struct or table with the following fields:
+            - street1: string
+            - street2: string
+            - city: string
+            - state: string
+            - postal_code: string
+
+            There MAY be additional fields, eg "latitude" and "longitude".
+        """
+        self.raw = raw
+        self.street_ngrams_n = street_ngrams_n
+
+    @property
+    def street1(self) -> ir.StringValue:
+        """The normalized first line of the street address."""
+        return self._norm(self.raw.street1)
+
+    @property
+    def street2(self) -> ir.StringValue:
+        """The normalized second line of the street address."""
+        return self._norm(self.raw.street2)
+
+    @property
+    def city(self) -> ir.StringValue:
+        """The normalized city."""
+        return self._norm(self.raw.city)
+
+    @property
+    def state(self) -> ir.StringValue:
+        """The normalized state."""
+        return self._norm(self.raw.state)
+
+    @property
+    def postal_code(self) -> ir.StringValue:
+        """The normalized postal code."""
+        return self._norm(self.raw.postal_code)
+
+    @property
+    def street_number(self) -> ir.StringValue:
+        """The street number from street1, eg "123" from "123 Main St"."""
+        return self.street1.re_replace(r"^(\d+)\s.*", r"\1")
+
+    @property
+    def street_no_number(self) -> ir.StringValue:
+        """
+        The street1 with the street number removed, eg "Main St" from "123 Main St".
+        """
+        return self.street1.re_replace(r"^\d+\s+", "")
+
+    @property
+    def street_ngrams(self) -> ir.ArrayValue:
+        """Ngrams of the normalized street1 and street2. Useful for blocking."""
+        return (
+            text.ngrams(self.street1.fill_null(""), n=self.street_ngrams_n)
+            + text.ngrams(self.street2.fill_null(""), n=self.street_ngrams_n)
+            + ibis.array([self.street1, self.street2])
+        )
+
+    @property
+    def all_null(self) -> ir.BooleanValue:
+        """True if all normalized fields are null."""
+        return ibis.and_(
+            self.street1.isnull(),
+            self.street2.isnull(),
+            self.city.isnull(),
+            self.state.isnull(),
+            self.postal_code.isnull(),
+        )
+
+    def as_struct(self) -> ir.StructValue:
+        """Return the normalized fields as a struct.
+
+        This also includes any fields in the input that are not one of the
+        standard address fields.
+        For example, if the input has a "latitude" field, that will be included
+        in the output.
+        """
+        d = {
+            "street1": self.street1,
+            "street2": self.street2,
+            "city": self.city,
+            "state": self.state,
+            "postal_code": self.postal_code,
+            "street_number": self.street_number,
+            "street_no_number": self.street_no_number,
+            "street_ngrams": self.street_ngrams,
         }
-    )
-    all_null = ibis.and_(*[s[field].isnull() for field in s.type().names])
-    return all_null.ifelse(ibis.null(), s)
+        fields = (
+            self.raw.type().names
+            if isinstance(self.raw, ir.StructValue)
+            else self.raw.columns
+        )
+        for field in fields:
+            if field not in d:
+                d[field] = self.raw[field]
+        return ibis.struct(d)
+
+    @staticmethod
+    def _norm(s):
+        return (
+            s.strip()
+            .upper()
+            .re_replace(r"\s+", " ")  # collapse whitespace
+            .re_replace(r"[^0-9A-Z ]", "")
+            .nullif("")
+        )
+
+
+class AddressesFeatures:
+    def __init__(self, raw: ir.ArrayValue):
+        self.raw = raw
+
+    @property
+    def all(self):
+        def f(address):
+            features = AddressFeatures(address)
+            return features.all_null.ifelse(ibis.null(), features.as_struct())
+
+        return self.raw.map(f).filter(lambda a: a.notnull())
 
 
 class AddressesMatchLevel(compare.MatchLevel):
@@ -157,6 +298,30 @@ def match_level(left: ir.StructValue, right: ir.StructValue) -> AddressesMatchLe
     )
 
 
+class TokenBlocker:
+    def __init__(
+        self, tokens_column: str = "addresses_tokens", *, max_records_frac=0.01
+    ):
+        self.tokens_column = tokens_column
+        self.max_records_frac = max_records_frac
+
+    def __call__(self, t1: ir.Table, t2: ir.Table, **kwargs) -> ir.Table:
+        def f(t):
+            return arrays.array_filter_isin_other(
+                t,
+                t[self.tokens_column],
+                sets.rare_terms(
+                    t[self.tokens_column], max_records_frac=self.max_records_frac
+                ),
+                result_format="_addresses_keywords",
+            )
+
+        t1 = f(t1)
+        t2 = f(t2)
+        blocker = block.KeyBlocker(_._addresses_keywords.unnest())
+        return blocker(t1, t2, **kwargs)
+
+
 class AddressesDimension:
     """Preps, blocks, and compares based on array<address> columns.
 
@@ -179,46 +344,45 @@ class AddressesDimension:
         column: str,
         *,
         column_featured: str = "{column}_featured",
-        column_tokens: str = "{column}_tokens",
-        column_keywords: str = "{column}_keywords",
         column_compared: str = "{column}_compared",
     ):
         self.column = column
         self.column_featured = column_featured.format(column=column)
-        self.column_tokens = column_tokens.format(column=column)
-        self.column_keywords = column_keywords.format(column=column)
         self.column_compared = column_compared.format(column=column)
 
     def prepare(self, t: ir.Table) -> ir.Table:
         """Prepares the table for blocking, adding normalized and tokenized columns."""
-        addrs = t[self.column]
-        t = t.mutate(
-            addrs.map(featurize_address)
-            .filter(lambda a: a.notnull())
-            .name(self.column_featured)
+        addrs: ir.ArrayColumn = t[self.column]
+        addrs = addrs.fill_null(ibis.literal([]))
+
+        def featurize(address: ir.StructValue) -> ir.StructValue:
+            features = AddressFeatures(address)
+            return features.all_null.ifelse(ibis.null(), features.as_struct())
+
+        addresses_featured = addrs.map(featurize).filter(lambda a: a.notnull())
+        addresses_tokens = (
+            addresses_featured.map(lambda a: a.street_ngrams).flatten().unique()
         )
-        t = t.mutate(
-            t[self.column_featured]
-            .map(lambda address: _util.struct_tokens(address, unique=False))
-            .flatten()
-            .name("_tokens_nonunique")
-        )
-        # Array.unique() results in 4 duplications of the input, so .cache it so
-        # we only execute it once. See https://github.com/ibis-project/ibis/issues/8770
-        t = t.cache()
-        t = t.mutate(t._tokens_nonunique.unique().name(self.column_tokens)).drop(
-            "_tokens_nonunique"
-        )
+        t = t.mutate(_addresses_tokens=addresses_tokens)
         t = arrays.array_filter_isin_other(
             t,
-            self.column_tokens,
-            sets.rare_terms(t[self.column_tokens], max_records_frac=0.01),
-            result_format=self.column_keywords,
+            t._addresses_tokens,
+            sets.rare_terms(addresses_tokens, max_records_n=500),
+            result_format="_addresses_keywords",
+        )
+        features = ibis.struct(
+            {
+                "addresses": addresses_featured,
+                "addresses_keywords": _._addresses_keywords,
+            }
+        )
+        t = t.mutate(features.name(self.column_featured)).drop(
+            "_addresses_tokens", "_addresses_keywords"
         )
         return t
 
     def block(self, t1: ir.Table, t2: ir.Table, **kwargs) -> ir.Table:
-        blocker = block.KeyBlocker(_[self.column_keywords].unnest())
+        blocker = block.KeyBlocker(_[self.column_featured.addresses_keywords].unnest())
         return blocker(t1, t2, **kwargs)
 
     def compare(self, t: ir.Table) -> ir.Table:
