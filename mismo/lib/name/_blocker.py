@@ -63,12 +63,12 @@ class NameBlocker:
     def __call__(
         self, left: ir.Table, right: ir.Table, **kwargs
     ) -> tuple[ir.Table, ir.Table]:
-        def predicate(left, right, **_kwargs):
-            nl: ir.StructColumn = _util.get_column(_, self.column_left)
-            tokensl = _oneline(nl).upper().re_split(r"\s+")
-            return tokensl.unnest()
+        nl: ir.StructColumn = _util.get_column(_, self.column_left)
+        nr: ir.StructColumn = _util.get_column(_, self.column_right)
+        tokensl = _oneline(nl).upper().re_split(r"\s+").unnest()
+        tokensr = _oneline(nr).upper().re_split(r"\s+").unnest()
 
-        return block.KeyBlocker(predicate)(left, right, **kwargs)
+        return block.KeyBlocker((tokensl, tokensr))(left, right, **kwargs)
 
 
 def _oneline(name: ir.StructValue) -> ir.StringValue:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Iterable, Literal, Union
+from typing import Callable, Iterable, Literal, NamedTuple, Union
 
 import ibis
 from ibis import _
@@ -17,7 +17,7 @@ _ColumnReferenceLike = Union[
 # Something that can be used as a condition in a join between two tables
 _ConditionAtom = Union[
     ir.BooleanValue,
-    Literal[True],
+    Literal[True, False],
     tuple[_ColumnReferenceLike, _ColumnReferenceLike],
 ]
 _Condition = Union[
@@ -29,13 +29,12 @@ _Condition = Union[
 def join(
     left: ir.Table,
     right: ir.Table,
-    condition: _Condition,
-    *,
+    *conditions: _Condition,
     on_slow: Literal["error", "warn", "ignore"] = "error",
     task: Literal["dedupe", "link"] | None = None,
     **kwargs,
 ) -> ir.Table:
-    """Join two tables together using the given condition.
+    """Join two tables together using the given conditions.
 
     This is a wrapper around `ibis.join` that
 
@@ -53,18 +52,22 @@ def join(
         The left table to block
     right
         The right table to block
-    condition
-        The condition that determine if two records should be blocked together.
-
-        `conditions` can be any of the following:
+    conditions
+        The conditions that determine if two records should be blocked together.
+        All conditions are ANDed together.
+        Each condition can be any of the following:
 
         - A string, which is interpreted as the name of a column in both tables.
           eg "price" is equivalent to `left.price == right.price`
         - A Deferred, which is used to reference a column in a table
           eg "_.price.fill_null(0)" is equivalent to `left.price.fill_null(0) == right.price.fill_null(0)`
-        - An iterable of the above, which is interpreted as a tuple of conditions.
-          eg `("age", _.given.upper()")` is equivalent to
-          `(left.age == right.age) & (left.given.upper() == right.given.upper())`
+        - A Callable of signature (left: Table, right: Table, args) -> one of the above
+        - A 2-tuple tuple of one of the above.
+          The first element is for the left table, the second is for the right table.
+          This is useful when the column names are different in the two tables,
+          or require some transformation/normalization.
+          For example `("last_name", _.surname.upper()")` is equivalent to
+          `left.last_name == right.surname.upper()`
         - A literal `True`, which results in a cross join.
         - A literal `False`, which results in an empty table.
         - A Table in the expected output schema, which is assumed to be
@@ -96,8 +99,9 @@ def join(
         If "dedupe", the resulting pairs will have the additional restriction that
         `record_id_l < record_id_r`.
         If "link", no additional restriction is added.
-        If None, will be assumed to be "dedupe" if `left` and `right`
-        are the same table.
+        If None, will be inferred by looking at left and right:
+        - If `id(left) == id(right) or left.equals(right)`, then "dedupe" is assumed.
+        - Otherwise, "link" is assumed.
     """  # noqa: E501
     from mismo.block import _sql_analyze
 
@@ -107,8 +111,8 @@ def join(
         right = right.view()
         if task is None:
             task = "dedupe"
-    resolved = _resolve_predicate(
-        left, right, condition, on_slow=on_slow, task=task, **kwargs
+    resolved = _resolve_conditions(
+        left, right, conditions, on_slow=on_slow, task=task, **kwargs
     )
     if isinstance(resolved, ir.Table):
         return resolved
@@ -173,21 +177,70 @@ def _ensure_suffixed(
     return t
 
 
-def _resolve_predicate(
-    left: ir.Table, right: ir.Table, raw, **kwargs
-) -> tuple[ir.Table, ir.Table, bool | ir.BooleanColumn] | ir.Table:
-    if isinstance(raw, ir.Table):
-        return raw
-    if isinstance(raw, (ir.BooleanColumn, bool)):
-        return left, right, raw
-    # Deferred is callable, so guard against that
-    if callable(raw) and not isinstance(raw, ibis.Deferred):
-        return _resolve_predicate(left, right, raw(left, right, **kwargs))
-    keys_l = _util.bind(left, raw)
-    keys_r = _util.bind(right, raw)
-    left = left.mutate(keys_l)
-    right = right.mutate(keys_r)
-    keys_l = [left[val.get_name()] for val in keys_l]
-    keys_r = [right[val.get_name()] for val in keys_r]
-    cond = ibis.and_(*[lkey == rkey for lkey, rkey in zip(keys_l, keys_r)])
-    return left, right, cond
+class _Condition(NamedTuple):
+    left_column: _ColumnReferenceLike | None = None
+    right_column: _ColumnReferenceLike | None = None
+    literal: Literal[True, False] | None = None
+    table: ir.Table | None = None
+    conditions_factory: Callable[[ibis.Table, ibis.Table], ir.BooleanValue] | None = (
+        None
+    )
+
+
+# TODO: This is a bit of a hot mess. Can we simplify this?
+def _resolve_conditions(
+    left: ir.Table, right: ir.Table, raw: tuple[_Condition], **kwargs
+) -> ir.Table | tuple[ir.Table, ir.Table, ir.BooleanValue]:
+    conditions = [
+        _resolve_condition(left, right, condition, **kwargs) for condition in raw
+    ]
+    tables = [c.table for c in conditions if c.table]
+    if tables:
+        if len(tables) > 1:
+            raise ValueError("Only one table can be returned from the conditions.")
+        if len(conditions) > 1:
+            raise ValueError("Only one table can be returned from the conditions.")
+        return tables[0]
+
+    l_cols = _util.bind(
+        left, (c.left_column for c in conditions if c.left_column is not None)
+    )
+    r_cols = _util.bind(
+        right, (c.right_column for c in conditions if c.right_column is not None)
+    )
+    left = left.mutate(l_cols)
+    right = right.mutate(r_cols)
+    equality_conditions = [
+        left[left_col.get_name()] == right[right_col.get_name()]
+        for left_col, right_col in zip(l_cols, r_cols)
+    ]
+    literals = [c.literal for c in conditions if c.literal is not None]
+    function_conditions = [
+        c.conditions_factory(left, right, **kwargs)
+        for c in conditions
+        if c.conditions_factory is not None
+    ]
+    all_conditions = equality_conditions + literals + function_conditions
+    return left, right, ibis.and_(*all_conditions)
+
+
+def _resolve_condition(
+    left: ir.Table, right: ir.Table, condition, **kwargs
+) -> _Condition:
+    if isinstance(condition, ir.Table):
+        return _Condition(table=condition)
+    if isinstance(condition, bool):
+        return _Condition(literal=condition)
+    if isinstance(condition, (str, ibis.Deferred)):
+        return _Condition(left_column=condition, right_column=condition)
+    # Deferred is callable, so this needs to come after the guard above
+    if callable(condition):
+        resolved = condition(left, right, **kwargs)
+        if isinstance(resolved, ir.BooleanValue):
+            return _Condition(conditions_factory=condition)
+        return _resolve_condition(left, right, resolved, **kwargs)
+    if isinstance(condition, tuple):
+        cl, cr = condition
+        return _Condition(left_column=cl, right_column=cr)
+    else:
+        return _Condition(conditions_factory=condition)

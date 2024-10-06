@@ -57,7 +57,7 @@ class KeyBlocker:
           AND
         - the latitudes, rounded to 1 decimal place, are the same
 
-    >>> blocker = mismo.block.KeyBlocker((_["name"][:5].upper(), _.latitude.round(1)))
+    >>> blocker = mismo.block.KeyBlocker(_["name"][:5].upper(), _.latitude.round(1))
     >>> blocker(t, t).order_by("record_id_l", "record_id_r").head()  # doctest: +SKIP
     ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
     ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l              ┃ name_r              ┃
@@ -114,31 +114,41 @@ class KeyBlocker:
 
     def __init__(
         self,
-        key: str
+        *keys: str
         | Deferred
-        | Callable[[ir.Table], ir.Column | tuple[ir.Column, ir.Column]]
-        | tuple[str | Deferred, str | Deferred],
-        *,
+        | Callable[[ibis.Table], ir.Column | str | Deferred]
+        | tuple[
+            str | Deferred | Callable[[ibis.Table], ir.Column | str | Deferred],
+            str | Deferred | Callable[[ibis.Table], ir.Column | str | Deferred],
+        ]
+        | Callable[[ibis.Table, ibis.Table], tuple[ir.Column, ir.Column]],
         name: str | None = None,
     ) -> None:
-        """Create a new key blocker.
+        """Create a KeyBlocker.
 
         Parameters
         ----------
-        key
-            The key to block on. This can be any of the following:
+        keys
+            The keys to block on.
+            The tables will be blocked together wherever they share ALL the keys.
+            Each key can be any of the following:
 
             - A string, which is interpreted as the name of a column in both tables.
               eg "price" is equivalent to `left.price == right.price`
             - A Deferred, which is used to reference a column in a table.
               eg `_.price.fill_null(0)` is equivalent to
               `left.price.fill_null(0) == right.price.fill_null(0)`
-            - An iterable of the above, which is interpreted as a tuple of conditions.
-              eg `("age", _.given.upper()")` is equivalent to
-              `(left.age == right.age) & (left.given.upper() == right.given.upper())`
+            - A Callable that takes a table and returns a Column.
+            - A 2-tuple of the above, where the first element describes the key in the
+              left table and the second element describes the key in the right table.
+              eg `("first_name", _.GivenName.upper()")` is equivalent to
+              `left.first_name == right.GivenName.upper()`
+              This is useful when the keys have different names in the two tables.
+            - A callable that takes the left and right tables and returns a tuple
+              of columns. Left and right will be joined where the columns are equal.
         """  # noqa: E501
-        self.key = key
-        self._name = name if name is not None else _util.get_name(self.key)
+        self.keys = keys
+        self._name = name if name is not None else _util.get_name(self.keys)
 
     @property
     def name(self) -> str:
@@ -153,7 +163,7 @@ class KeyBlocker:
         task: Literal["dedupe", "link"] | None = None,
         **kwargs,
     ):
-        j = join(left, right, self.key, task=task, on_slow="ignore", **kwargs)
+        j = join(left, right, *self.keys, task=task, on_slow="ignore", **kwargs)
         id_pairs = j.select("record_id_l", "record_id_r").distinct()
         return block_on_id_pairs(left, right, id_pairs)
 
@@ -200,7 +210,7 @@ class KeyBlocker:
         ... ]
         >>> letters, nums = zip(*records)
         >>> t = ibis.memtable({"letter": letters, "num": nums})
-        >>> blocker = mismo.block.KeyBlocker(("letter", "num"))
+        >>> blocker = mismo.block.KeyBlocker("letter", "num")
 
         Note how the (None, 4) record is not counted,
         since NULLs are not counted as a match during a join.
@@ -217,7 +227,7 @@ class KeyBlocker:
         │ c      │     3 │     3 │
         └────────┴───────┴───────┘
         """
-        t = t.select(self.key)
+        t = t.select(self.keys)
         t = t.drop_null(how="any")
         return t.group_by(t.columns).agg(n=_.count()).order_by(_.n.desc())
 
@@ -279,7 +289,7 @@ class KeyBlocker:
         ... ]
         >>> letters, nums = zip(*records)
         >>> t = ibis.memtable({"letter": letters, "num": nums})
-        >>> blocker = mismo.block.KeyBlocker(("letter", "num"))
+        >>> blocker = mismo.block.KeyBlocker("letter", "num")
 
         If we joined t with itself using this blocker in a link task,
         we would end up with

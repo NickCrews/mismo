@@ -58,14 +58,14 @@ def test_key_counts_letters(inp, table_factory, key):
 
 
 @pytest.mark.parametrize(
-    "key",
+    "keys",
     [
         pytest.param(("letter", "num"), id="str"),
         pytest.param((_.letter, "num"), id="deferred"),
     ],
 )
-def test_key_counts_letters_num(inp, table_factory, key):
-    blocker = KeyBlocker(key)
+def test_key_counts_letters_num(inp, table_factory, keys):
+    blocker = KeyBlocker(*keys)
     expected = table_factory(
         {
             "letter": ["c", "b", "b", "a"],

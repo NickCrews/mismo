@@ -38,48 +38,38 @@ def letter_blocked_ids(table_factory):
 
 
 @pytest.mark.parametrize(
-    "condition,name,expected_name",
+    "key,name,expected_name",
     [
-        ("letter", None, "letter"),
-        (_.letter, None, "_.letter"),
+        ("letter", None, "(letter)"),
+        (_.letter, None, "(_.letter)"),
         ("letter", "my_name", "my_name"),
     ],
 )
-def test_blocking_rule(
-    table_factory, t1: ir.Table, t2: ir.Table, condition, name, expected_name
+def test_KeyBlocker_name(
+    table_factory, t1: ir.Table, t2: ir.Table, key, name, expected_name
 ):
-    rule = KeyBlocker(condition, name=name)
-    assert rule.name == expected_name
+    blocker = KeyBlocker(key, name=name)
+    assert blocker.name == expected_name
     expected = letter_blocked_ids(table_factory)
-    assert_tables_equal(expected, rule(t1, t2)["record_id_l", "record_id_r"])
+    assert_tables_equal(expected, blocker(t1, t2)["record_id_l", "record_id_r"])
 
 
 @pytest.mark.parametrize(
-    "condition,expected_maker",
+    "keys,expected_maker",
     [
-        pytest.param("letter", blocked_on_letter, id="letter"),
+        pytest.param(("letter",), blocked_on_letter, id="letter"),
         pytest.param(("letter", "int"), blocked_on_letter_int, id="letter_int"),
-        pytest.param((_.letter, _.int + 1), blocked_on_letter_int, id="tuple_deferred"),
+        # We can pass a 2-tuple for if we want a different key from each table.
         pytest.param(
-            lambda left, right, **_: left.letter == right.letter,
-            blocked_on_letter,
-            id="lambda_bool_column",
-        ),
-        pytest.param(
-            lambda left, right, **_: "letter", blocked_on_letter, id="lambda_letter"
-        ),
-        pytest.param(
-            lambda left, right, **_kwargs: (_.letter, _.int + 1),
+            ("letter", ("int", _.int.cast(float))),
             blocked_on_letter_int,
-            id="lambda_tuple",
+            id="letter_int_lr",
         ),
-        pytest.param(
-            blocked_on_letter, blocked_on_letter, id="callable_returning_table"
-        ),
+        pytest.param((_.letter, _.int + 1), blocked_on_letter_int, id="tuple_deferred"),
     ],
 )
-def test_block(t1: ir.Table, t2: ir.Table, condition, expected_maker):
-    blocked_table = KeyBlocker(condition)(t1, t2)
+def test_KeyBlocker_keys(t1: ir.Table, t2: ir.Table, keys, expected_maker):
+    blocked_table = KeyBlocker(*keys)(t1, t2)
     blocked_ids = blocked_table["record_id_l", "record_id_r"]
     expected = expected_maker(t1, t2)
     assert_tables_equal(blocked_ids, expected)
