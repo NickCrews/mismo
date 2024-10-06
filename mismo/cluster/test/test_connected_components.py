@@ -120,6 +120,17 @@ def test_cc_single_records(table_factory, label_as):
     assert clusters == {frozenset({0, 1, 2}), frozenset({3})}
 
 
+def test_cc_no_links_but_records(table_factory, label_as):
+    """If there are no links, each record should be its own cluster."""
+    link_schema = {"record_id_l": "int64", "record_id_r": "int64"}
+    link_df = pd.DataFrame({"record_id_l": [], "record_id_r": []})
+    links = table_factory(link_df, schema=link_schema)
+    nodes = table_factory({"record_id": [0, 1, 2]})
+    labeled = connected_components(links=links, records=nodes, label_as=label_as)
+    clusters = _labels_to_clusters(labeled, label_as)
+    assert clusters == {frozenset({0}), frozenset({1}), frozenset({2})}
+
+
 def test_cc_multi_records(table_factory, label_as):
     # multiple input record tables
     links = table_factory([(0, 1), (1, 2)], columns=["record_id_l", "record_id_r"])

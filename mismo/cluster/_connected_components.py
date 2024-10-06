@@ -301,7 +301,8 @@ def _label_datasets(ds: Datasets, labels: ir.Table, *, label_as: str) -> Dataset
 def _get_additional_labels(labels: ir.Table, record_ids: ir.Column) -> ir.Table:
     nodes = record_ids.name("record_id").as_table()
     is_missing_label = nodes.record_id.notin(labels.record_id)
-    max_existing_label = labels.component.max()
+    # fill_null(0) in case labels is empty
+    max_existing_label = labels.component.max().fill_null(0)
     additional_labels = nodes.filter(is_missing_label).select(
         "record_id",
         component=(ibis.row_number() + max_existing_label + 1).cast("int64"),
