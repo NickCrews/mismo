@@ -253,7 +253,7 @@ def _is_possible_typo(left: ir.StructValue, right: ir.StructValue) -> ir.Boolean
     return ibis.or_(*cases)
 
 
-def match_level(left: ir.StructValue, right: ir.StructValue) -> AddressesMatchLevel:
+def match_level(left: ir.StructValue, right: ir.StructValue) -> ir.IntegerValue:
     """Compare two address structs, and return the match level."""
     if "latitude" in left.type().names:
         within_100km_levels = [
@@ -296,30 +296,6 @@ def match_level(left: ir.StructValue, right: ir.StructValue) -> AddressesMatchLe
         (left.state == right.state, AddressesMatchLevel.SAME_STATE.as_integer()),
         else_=AddressesMatchLevel.ELSE.as_integer(),
     )
-
-
-class TokenBlocker:
-    def __init__(
-        self, tokens_column: str = "addresses_tokens", *, max_records_frac=0.01
-    ):
-        self.tokens_column = tokens_column
-        self.max_records_frac = max_records_frac
-
-    def __call__(self, t1: ir.Table, t2: ir.Table, **kwargs) -> ir.Table:
-        def f(t):
-            return arrays.array_filter_isin_other(
-                t,
-                t[self.tokens_column],
-                sets.rare_terms(
-                    t[self.tokens_column], max_records_frac=self.max_records_frac
-                ),
-                result_format="_addresses_keywords",
-            )
-
-        t1 = f(t1)
-        t2 = f(t2)
-        blocker = block.KeyBlocker(_._addresses_keywords.unnest())
-        return blocker(t1, t2, **kwargs)
 
 
 class AddressesDimension:
