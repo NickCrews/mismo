@@ -43,6 +43,10 @@ viz = [
 postal = [
    "postal>=1.1.7; sys_platform == 'linux' or sys_platform == 'darwin'",
 ]
+spacy = [
+    "en-us-address-ner-sm",
+    "spacy>=3.8.2",
+]
 
 [project.urls]
 Documentation = "https://nickcrews.github.io/mismo"
@@ -70,6 +74,9 @@ dev-dependencies = [
   "mkdocs-material",
   "mkdocstrings[python]",
 ]
+
+[tool.uv.sources]
+en-us-address-ner-sm = { url = "https://github.com/NickCrews/spacy-address/releases/download/20241007-072524-sm/en_us_address_ner_sm-0.0.0-py3-none-any.whl" }
 
 
 [tool.pytest.ini_options]

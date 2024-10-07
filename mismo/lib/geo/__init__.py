@@ -9,3 +9,4 @@ from ._latlon import CoordinateBlocker as CoordinateBlocker
 from ._latlon import distance_km as distance_km
 from ._postal import postal_fingerprint_address as postal_fingerprint_address
 from ._postal import postal_parse_address as postal_parse_address
+from ._spacy import spacy_tag_address as spacy_tag_address
