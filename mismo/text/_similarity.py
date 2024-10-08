@@ -47,6 +47,14 @@ def damerau_levenshtein(a: str, b: str) -> int:
     """
 
 
+@ibis.udf.scalar.builtin
+def levenshtein(a: str, b: str) -> int:
+    """
+    The number of adds, deletes and substitutions to get from `a` to `b`.
+
+    """
+
+
 def levenshtein_ratio(s1: ir.StringValue, s2: ir.StringValue) -> ir.FloatingValue:
     """The levenshtein distance between two strings, normalized to be between 0 and 1.
 
@@ -86,7 +94,7 @@ def levenshtein_ratio(s1: ir.StringValue, s2: ir.StringValue) -> ir.FloatingValu
     >>> levenshtein_ratio("", "").execute()
     np.float64(nan)
     """
-    return _dist_ratio(s1, s2, lambda a, b: a.levenshtein(b))
+    return _dist_ratio(s1, s2, levenshtein)
 
 
 def damerau_levenshtein_ratio(
@@ -107,3 +115,50 @@ def _dist_ratio(s1, s2, dist):
     s2 = _util.ensure_ibis(s2, "string")
     lenmax = ibis.greatest(s1.length(), s2.length())
     return (lenmax - dist(s1, s2)) / lenmax
+
+
+@ibis.udf.scalar.builtin
+def jaro_similarity(s1: str, s2: str) -> float:
+    """The jaro similarity between `s1` and `s2`.
+
+    This is defined as
+    `sj = 1/3 * (m/l_1 + m/l_2 + (m-t)/m)`
+
+    where `m` is the number of matching characters between s1 and s2 and `t` is the
+    number of transpositions between `s1` and `s2`.
+    """
+
+
+# TODO: This isn't portable between backends
+@ibis.udf.scalar.builtin
+def jaro_winkler_similarity(s1: str, s2: str) -> float:
+    """The Jaro-Winkler similarity between `s1` and `s2`.
+
+    The Jaro-Winkler similarity is a variant of the Jaro similarity that
+    measures the number of edits between two strings
+    and places a higher importance on the prefix.
+
+    It is defined as `(sjw = sj + l * p * (1-sj)`
+    where `sj` is the Jaro similarity, `l` is the length of the common prefix  (up to a
+    maximum of 4) and `p` is a constant scaling factor (up to a maximum of 0.25, but
+    typically set to 0.1)
+    """
+
+
+@ibis.udf.scalar.builtin
+def jaccard(s1: str, s2: str) -> float:
+    """The Jaccard similarity between `s1` and `s2
+
+    This is equivalent to
+
+    ```python
+    from mismo.sets import jaccard as jaccard_set
+    from mismo.text import tokenize
+
+    t1 = tokenize(s1)
+    t2 = tokenize(s2)
+    jaccard_set(t1, t2)
+    ```
+
+    but is added here for convenience.
+    """
