@@ -47,14 +47,6 @@ def damerau_levenshtein(a: str, b: str) -> int:
     """
 
 
-@ibis.udf.scalar.builtin
-def levenshtein(a: str, b: str) -> int:
-    """
-    The number of adds, deletes and substitutions to get from `a` to `b`.
-
-    """
-
-
 def levenshtein_ratio(s1: ir.StringValue, s2: ir.StringValue) -> ir.FloatingValue:
     """The levenshtein distance between two strings, normalized to be between 0 and 1.
 
@@ -94,7 +86,7 @@ def levenshtein_ratio(s1: ir.StringValue, s2: ir.StringValue) -> ir.FloatingValu
     >>> levenshtein_ratio("", "").execute()
     np.float64(nan)
     """
-    return _dist_ratio(s1, s2, levenshtein)
+    return _dist_ratio(s1, s2, lambda a, b: a.levenshtein(b))
 
 
 def damerau_levenshtein_ratio(
