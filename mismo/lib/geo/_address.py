@@ -6,10 +6,11 @@ from ibis.expr import types as ir
 
 from mismo import _util, arrays, block, compare, sets, text
 from mismo.lib.geo._latlon import distance_km
+from mismo.lib.geo._spacy import TaggedAddress
 
 
 class AddressFeatures:
-    """A opinionated set of normalized features for a US physical address.
+    """A opinionated set of normalized features for a US mailing address.
 
     This is suitable for street addresses in the US, but may need to be
     adapted for other countries.
@@ -109,24 +110,37 @@ class AddressFeatures:
         return self._norm(self.raw.postal_code)
 
     @property
-    def street_number(self) -> ir.StringValue:
-        """The street number from street1, eg "123" from "123 Main St"."""
-        return self.street1.re_replace(r"^(\d+)\s.*", r"\1")
+    def _tagged(self) -> TaggedAddress:
+        return TaggedAddress.from_structured(self.raw)
 
     @property
-    def street_no_number(self) -> ir.StringValue:
+    def street_name(self) -> ir.StringValue:
         """
-        The street1 with the street number removed, eg "Main St" from "123 Main St".
+        The normalized street name from street1, eg "OAK TREE" from "123 oak  tree St".
         """
-        return self.street1.re_replace(r"^\d+\s+", "")
+        return self._norm(self._tagged.StreetName)
+
+    @property
+    def street_number(self) -> ir.StringValue:
+        """The normalized street number from street1, eg "132" from "132 Main St"."""
+        return self._norm(self._tagged.AddressNumber)
+
+    @property
+    def street_number_sorted(self) -> ir.StringValue:
+        """
+        The sorted normalized street number from street1, eg "123" from "132 Main St".
+
+        Useful to account for typos in the street number.
+        """
+        return self.street_number.split("").sort().join("")
 
     @property
     def street_ngrams(self) -> ir.ArrayValue:
-        """Ngrams of the normalized street1 and street2. Useful for blocking."""
+        """Ngrams of the self.street_number and street_name. Useful for blocking."""
         return (
-            text.ngrams(self.street1.fill_null(""), n=self.street_ngrams_n)
-            + text.ngrams(self.street2.fill_null(""), n=self.street_ngrams_n)
-            + ibis.array([self.street1, self.street2])
+            text.ngrams(self.street_number_sorted.fill_null(""), n=self.street_ngrams_n)
+            + text.ngrams(self.street_name.fill_null(""), n=self.street_ngrams_n)
+            + ibis.array([self.street_number_sorted, self.street_name])
         )
 
     @property
@@ -154,8 +168,10 @@ class AddressFeatures:
             "city": self.city,
             "state": self.state,
             "postal_code": self.postal_code,
+            "taggings": self._tagged.taggings,
             "street_number": self.street_number,
-            "street_no_number": self.street_no_number,
+            "street_number_sorted": self.street_number_sorted,
+            "street_name": self.street_name,
             "street_ngrams": self.street_ngrams,
         }
         fields = (
