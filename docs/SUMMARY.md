@@ -1,6 +1,7 @@
 * [Home](index.md)
 * Examples
     * [Patent Deduplication](examples/patent_deduplication.ipynb)
+    * [String Comparison Methods](examples/string_comparisons.ipynb)
 * Concepts
     * [Goals and Alternatives](concepts/goals_and_alternatives.md)
     * [Fellegi-Sunter Model](concepts/fs.md)
