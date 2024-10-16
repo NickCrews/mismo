@@ -135,22 +135,3 @@ def jaro_winkler_similarity(s1: str, s2: str) -> float:
     maximum of 4) and `p` is a constant scaling factor (up to a maximum of 0.25, but
     typically set to 0.1)
     """
-
-
-@ibis.udf.scalar.builtin
-def jaccard(s1: str, s2: str) -> float:
-    """The Jaccard similarity between `s1` and `s2
-
-    This is equivalent to
-
-    ```python
-    from mismo.sets import jaccard as jaccard_set
-    from mismo.text import tokenize
-
-    t1 = tokenize(s1)
-    t2 = tokenize(s2)
-    jaccard_set(t1, t2)
-    ```
-
-    but is added here for convenience.
-    """

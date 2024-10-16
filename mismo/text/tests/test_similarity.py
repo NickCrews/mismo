@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from mismo import sets, text
+from mismo import text
 
 
 @pytest.mark.parametrize(
@@ -56,21 +56,3 @@ def test_jaro_winkler_similarity(string1, string2, expected):
         assert np.isnan(result)
     else:
         assert result == pytest.approx(expected, 0.001)
-
-
-@pytest.mark.parametrize(
-    "string1,string2,expected",
-    [
-        ("foo", "foo", 1),
-        ("foo bar", "foo", 0.3333),  # this is currently failing
-        ("foo bar", "bar foo", 1),
-    ],
-)
-def test_jaccard_string_similarity(string1, string2, expected):
-    """Test that the string and set jaccard methods are equivalent."""
-    result = text.jaccard(string1, string2).execute()
-    tokens1 = text.tokenize(string1)
-    tokens2 = text.tokenize(string2)
-    set_result = sets.jaccard(tokens1, tokens2).execute()
-    assert result == pytest.approx(set_result, 0.001)
-    assert result == pytest.approx(expected, 0.001)
