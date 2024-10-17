@@ -18,7 +18,7 @@ class AddressFeatures:
     Examples
     --------
     >>> address = ibis.literal({
-    ...     "street1": "123   Main St ",
+    ...     "street1": "132   Main St ",
     ...     "street2": "Apt 3-b",
     ...     "city": "Springfield",
     ...     "state": "",
@@ -30,7 +30,7 @@ class AddressFeatures:
     Whitespace is normed, case is converted to uppercase:
 
     >>> features.street1.execute()
-    '123 MAIN ST'
+    '132 MAIN ST'
 
     Punctuation is removed:
 
@@ -45,9 +45,11 @@ class AddressFeatures:
     We add some convenience features:
 
     >>> features.street_number.execute()
+    '132'
+    >>> features.street_number_sorted.execute()
     '123'
-    >>> features.street_no_number.execute()
-    'MAIN ST'
+    >>> features.street_name.execute()
+    'MAIN'
     >>> features.all_null.execute()
     np.False_
 
@@ -59,7 +61,7 @@ class AddressFeatures:
     For use in in preparing data for blocking, you can get all the features as a struct:
 
     >>> features.as_struct().execute()
-    {'street1': '123 MAIN ST', 'street2': 'APT 3B', 'city': 'SPRINGFIELD', 'state': None, 'postal_code': '12345', 'street_number': '123', 'street_no_number': 'MAIN ST', 'street_ngrams': ['123 ', 'MAIN', '23 M', 'AIN ', '3 MA', 'IN S', ' MAI', 'N ST', 'APT ', 'PT 3', 'T 3B', '123 MAIN ST', 'APT 3B'], 'latitude': 123.456}
+    {'street1': '132 MAIN ST', 'street2': 'APT 3B', 'city': 'SPRINGFIELD', 'state': None, 'postal_code': '12345', 'street_number': '132', 'street_name': 'MAIN', 'street_ngrams': ['132 ', 'MAIN', '32 M', 'AIN ', '2 MA', 'IN S', ' MAI', 'N ST', 'APT ', 'PT 3', 'T 3B', '132 MAIN ST', 'APT 3B'], 'latitude': 123.456}
     """  # noqa: E501
 
     def __init__(self, raw: ir.StructValue | ir.Table, *, street_ngrams_n: int = 4):
@@ -111,7 +113,10 @@ class AddressFeatures:
 
     @property
     def _tagged(self) -> TaggedAddress:
-        return TaggedAddress.from_structured(self.raw)
+        # We only use the street name and address number, so only pass in the street1.
+        # This is both more performant, and it removes the possibility of
+        # "1-b" in "apt 1-b" being tagged as a street number (which I just saw happen).
+        return TaggedAddress.from_oneline(self.street1)
 
     @property
     def street_name(self) -> ir.StringValue:
@@ -351,26 +356,28 @@ class AddressesDimension:
             features = AddressFeatures(address)
             return features.all_null.ifelse(ibis.null(), features.as_struct())
 
-        addresses_featured = addrs.map(featurize).filter(lambda a: a.notnull())
-        addresses_tokens = (
-            addresses_featured.map(lambda a: a.street_ngrams).flatten().unique()
+        t = t.mutate(
+            _addresses_featured=addrs.map(featurize).filter(lambda a: a.notnull())
         )
-        t = t.mutate(_addresses_tokens=addresses_tokens)
+        t = t.mutate(
+            _addresses_tokens=_._addresses_featured.map(lambda a: a.street_ngrams)
+            .flatten()
+            .unique()
+        )
         t = arrays.array_filter_isin_other(
             t,
             t._addresses_tokens,
-            sets.rare_terms(addresses_tokens, max_records_n=500),
+            sets.rare_terms(t._addresses_tokens, max_records_n=500),
             result_format="_addresses_keywords",
         )
-        features = ibis.struct(
-            {
-                "addresses": addresses_featured,
-                "addresses_keywords": _._addresses_keywords,
-            }
-        )
-        t = t.mutate(features.name(self.column_featured)).drop(
-            "_addresses_tokens", "_addresses_keywords"
-        )
+        t = t.mutate(
+            ibis.struct(
+                {
+                    "addresses": t._addresses_featured,
+                    "addresses_keywords": _._addresses_keywords,
+                }
+            ).name(self.column_featured)
+        ).drop("_addresses_featured", "_addresses_tokens", "_addresses_keywords")
         return t
 
     def block(self, t1: ir.Table, t2: ir.Table, **kwargs) -> ir.Table:

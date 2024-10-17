@@ -11,7 +11,7 @@ from mismo.lib import geo
         pytest.param(
             [
                 {
-                    "street1": "123 Main St",
+                    "street1": "132 Main St",
                     "street2": "Apt    1-b",
                     "city": "Springfield",
                     "state": "",
@@ -29,29 +29,33 @@ from mismo.lib import geo
             {
                 "addresses": [
                     {
-                        "street1": "123 MAIN ST",
+                        "street1": "132 MAIN ST",
                         "street2": "APT 1B",
                         "city": "SPRINGFIELD",
                         "state": None,
                         "postal_code": "62701",
                         "country": "US",
                         "street_ngrams": [
-                            "123 ",
+                            "123",
                             "MAIN",
-                            "23 M",
-                            "AIN ",
-                            "3 MA",
-                            "IN S",
-                            " MAI",
-                            "N ST",
-                            "APT ",
-                            "PT 1",
-                            "T 1B",
-                            "123 MAIN ST",
-                            "APT 1B",
                         ],
-                        "street_no_number": "MAIN ST",
-                        "street_number": "123",
+                        "street_name": "MAIN",
+                        "street_number": "132",
+                        "street_number_sorted": "123",
+                        "taggings": [
+                            {
+                                "label": "AddressNumber",
+                                "token": "132",
+                            },
+                            {
+                                "label": "StreetName",
+                                "token": "MAIN",
+                            },
+                            {
+                                "label": "StreetNamePostType",
+                                "token": "ST",
+                            },
+                        ],
                     },
                     {
                         "street1": "1 1ST",
@@ -61,33 +65,29 @@ from mismo.lib import geo
                         "postal_code": "62701",
                         "country": None,
                         "street_ngrams": [
-                            "1 1S",
-                            " 1ST",
-                            "1 1ST",
-                            None,
+                            "1",
+                            "1ST",
                         ],
-                        "street_no_number": "1ST",
+                        "street_name": "1ST",
                         "street_number": "1",
+                        "street_number_sorted": "1",
+                        "taggings": [
+                            {
+                                "label": "AddressNumber",
+                                "token": "1",
+                            },
+                            {
+                                "label": "StreetName",
+                                "token": "1ST",
+                            },
+                        ],
                     },
                 ],
                 "addresses_keywords": [
-                    "123 ",
+                    "123",
                     "MAIN",
-                    "23 M",
-                    "AIN ",
-                    "3 MA",
-                    "IN S",
-                    " MAI",
-                    "N ST",
-                    "APT ",
-                    "PT 1",
-                    "T 1B",
-                    "123 MAIN ST",
-                    "APT 1B",
-                    "1 1S",
-                    " 1ST",
-                    "1 1ST",
-                    None,
+                    "1",
+                    "1ST",
                 ],
             },
             id="multi",
@@ -95,7 +95,7 @@ from mismo.lib import geo
         pytest.param(
             [
                 {
-                    "street1": "123 Main St",
+                    "street1": "132 Main St",
                     "street2": None,
                     "city": None,
                     "state": "IL IL",
@@ -106,39 +106,38 @@ from mismo.lib import geo
             {
                 "addresses": [
                     {
-                        "street1": "123 MAIN ST",
+                        "street1": "132 MAIN ST",
                         "street2": None,
                         "city": None,
                         "state": "IL IL",
                         "postal_code": "62701",
                         "country": "US",
                         "street_ngrams": [
-                            "123 ",
+                            "123",
                             "MAIN",
-                            "23 M",
-                            "AIN ",
-                            "3 MA",
-                            "IN S",
-                            " MAI",
-                            "N ST",
-                            "123 MAIN ST",
-                            None,
                         ],
-                        "street_no_number": "MAIN ST",
-                        "street_number": "123",
+                        "street_name": "MAIN",
+                        "street_number": "132",
+                        "street_number_sorted": "123",
+                        "taggings": [
+                            {
+                                "label": "AddressNumber",
+                                "token": "132",
+                            },
+                            {
+                                "label": "StreetName",
+                                "token": "MAIN",
+                            },
+                            {
+                                "label": "StreetNamePostType",
+                                "token": "ST",
+                            },
+                        ],
                     }
                 ],
                 "addresses_keywords": [
-                    "123 ",
-                    "23 M",
-                    "3 MA",
-                    " MAI",
+                    "123",
                     "MAIN",
-                    "AIN ",
-                    "IN S",
-                    "N ST",
-                    "123 MAIN ST",
-                    None,
                 ],
             },
             id="single-weird-state",
@@ -173,7 +172,10 @@ def test_addresses_dimension(addresses, expected, table_factory):
     t = table_factory({"addresses": [addresses]}, schema={"addresses": address_type})
     dim = geo.AddressesDimension("addresses")
     result = dim.prepare(t).addresses_featured.execute().iloc[0]
+    for address in result["addresses"]:
+        address["street_ngrams"] = set(address["street_ngrams"])
+    for address in expected["addresses"]:
+        address["street_ngrams"] = set(address["street_ngrams"])
     expected["addresses_keywords"] = set(expected["addresses_keywords"])
     result["addresses_keywords"] = set(result["addresses_keywords"])
-    print(result)
     assert result == expected

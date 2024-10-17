@@ -75,15 +75,8 @@ def array_filter_isin_other(
     filtered = temp.mutate(elem_id=ibis.row_number()).filter(
         temp.__unnested.isin(other) | temp.__unnested.isnull()
     )
-    # NULLs are dropped from Array.collect() in ibis
-    # https://github.com/ibis-project/ibis/issues/9703
-    # So we can't do this:
-    # re_agged = filtered.group_by("__id").agg(__filtered=_.__unnested.collect())
-    # Instead, we have to do some raw SQL:
-    uname = _util.unique_name("__filtered")
-    re_agged = filtered.alias(uname).sql(
-        f"SELECT __id, list(__unnested ORDER BY elem_id) as __filtered FROM {uname} GROUP BY __id",  # noqa E501
-        dialect="duckdb",
+    re_agged = filtered.group_by("__id").agg(
+        __filtered=filtered.__unnested.collect(include_null=True, order_by="elem_id")
     )
     re_joined = t.left_join(re_agged, "__id").drop("__id", "__id_right")
     # when we unnested, both [] and NULL rows disappeared.

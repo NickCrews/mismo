@@ -27,30 +27,6 @@ class TaggedAddress:
         """Create an `AddressTagging` from a single-line address string"""
         return cls(oneline, spacy_tag_address(oneline))
 
-    @classmethod
-    def from_structured(cls, structured: ir.StructValue) -> TaggedAddress:
-        """Create an `AddressTagging` from a structured address.
-
-        The structured address should have the following fields:
-        - street1
-        - street2
-        - city
-        - state
-        - postal_code
-        """
-        oneline = (
-            structured.street1
-            + ", "
-            + structured.street2
-            + ", "
-            + structured.city
-            + ", "
-            + structured.state
-            + ", "
-            + structured.postal_code
-        )
-        return cls(oneline, spacy_tag_address(oneline))
-
     @property
     def AddressNumber(self) -> ir.StringValue:
         """Merge all `AddressNumber` taggings into one string"""
