@@ -107,3 +107,22 @@ def _dist_ratio(s1, s2, dist):
     s2 = _util.ensure_ibis(s2, "string")
     lenmax = ibis.greatest(s1.length(), s2.length())
     return (lenmax - dist(s1, s2)) / lenmax
+
+
+@ibis.udf.scalar.builtin
+def jaccard(s1: str, s2: str) -> float:
+    """The Jaccard similarity between `s1` and `s2
+
+    This is equivalent to
+
+    ```python
+    from mismo.sets import jaccard as jaccard_set
+    from mismo.text import tokenize
+
+    t1 = tokenize(s1)
+    t2 = tokenize(s2)
+    jaccard_set(t1, t2)
+    ```
+
+    but is added here for convenience.
+    """
