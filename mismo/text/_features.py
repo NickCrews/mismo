@@ -6,12 +6,25 @@ from ibis.expr import types as ir
 from mismo import _util
 
 
-def tokenize(texts: ir.StringValue) -> ir.ArrayValue:
+def tokenize(text: ir.StringValue) -> ir.ArrayValue:
     """
-    Split a string into tokens by whitespace.
+    Split a string into tokens on whitespace.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> from mismo.text import tokenize
+    >>> tokenize(ibis.literal("  abc    def")).execute()
+    ['abc', 'def']
+    >>> tokenize(ibis.literal("  abc")).execute()
+    ['abc']
+    >>> tokenize(ibis.literal(" ")).execute()
+    []
+    >>> tokenize(ibis.null(str)).execute() is None
+    True
     """
-    texts = _util.ensure_ibis(texts, "string")
-    return texts.re_split(r"\s+")
+    stripped = text.strip()
+    return (stripped == "").ifelse([], stripped.re_split(r"\s+"))
 
 
 # from https://www.imperva.com/blog/fast-n-grams-extraction-and-analysis-with-sql/
