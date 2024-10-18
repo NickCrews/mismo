@@ -3,8 +3,10 @@ from __future__ import annotations
 import pytest
 
 from mismo.lib import geo
+from mismo.lib.geo.tests._util import is_spacy_installed
 
 
+@pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
 @pytest.mark.parametrize(
     "addresses, expected",
     [
