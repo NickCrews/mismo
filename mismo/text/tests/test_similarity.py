@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from mismo import sets, text
+from mismo import text
 
 
 @pytest.mark.parametrize(
@@ -44,19 +44,40 @@ def test_levenshtein_ratio(string1, string2, expected):
     "string1,string2,expected",
     [
         ("foo", "foo", 1),
-        ("foo bar", "foo", 0.3333),  # this is currently failing
+        ("foo bar", "foo", 0.3333),
         ("foo bar", "bar foo", 1),
+        ("foo foo bar", "foo baz", 0.7143),
+        ("foo", "", 0),
+        (None, "foo", np.nan),
     ],
 )
-def test_jaccard_string_similarity(string1, string2, expected):
-    """Test that the string and set jaccard methods are equivalent."""
-    result = text.jaccard(string1, string2).execute()
-    tokens1 = text.tokenize(string1)
-    tokens2 = text.tokenize(string2)
-    set_result = sets.jaccard(tokens1, tokens2).execute()
-    assert result == pytest.approx(set_result, 0.001)
-    assert result == pytest.approx(expected, 0.001)
-    
+def test_jaccard_string_similarity_character(string1, string2, expected):
+    result = text.jaccard(string1, string2, tokenize="by_character").execute()
+    if np.isnan(expected):
+        assert np.isnan(result)
+    else:
+        assert result == pytest.approx(expected, 0.001)
+
+
+@pytest.mark.parametrize(
+    "string1,string2,expected",
+    [
+        ("foo", "foo", 1),
+        ("foo bar", "foo", 0.5),
+        ("foo bar", "bar foo", 1),
+        ("foo foo bar", "foo baz", 0.333),
+        ("foo", "", 0),
+        (None, "foo", np.nan),
+    ],
+)
+def test_jaccard_string_similarity_word(string1, string2, expected):
+    result = text.jaccard(string1, string2, tokenize="on_whitespace").execute()
+    if np.isnan(expected):
+        assert np.isnan(result)
+    else:
+        assert result == pytest.approx(expected, 0.001)
+
+
 @pytest.mark.parametrize(
     "string1,string2,expected",
     [

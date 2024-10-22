@@ -150,12 +150,19 @@ def jaccard(
     ... tokenize='on_whitespace').execute()
     np.float64(0.3)
 
+    In both cases, comparing to an empty string will return a similarity of 0
+    >>> jaccard(ibis.literal("foo"), ibis.literal(""), tokenize='on_whitespace')
+    0
+    >>> jaccard(ibis.literal("foo"), ibis.literal(""), tokenize='by_character')
+
     """
     if tokenize == "by_character":
         reg = ""
     elif tokenize == "on_whitespace":
         reg = r"\s+"
     #
+    s1 = _util.ensure_ibis(s1, "string")
+    s2 = _util.ensure_ibis(s2, "string")
     t1 = s1.re_split(reg).unique()
     t2 = s2.re_split(reg).unique()
     return _jaccard(t1, t2)
