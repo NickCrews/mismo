@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ibis
 import pytest
 
 from mismo import text
@@ -28,3 +29,23 @@ def test_ngrams(inp, n, exp):
         assert result is None
     else:
         assert set(result) == set(exp)
+
+
+@pytest.mark.parametrize(
+    "inp,exp",
+    [
+        ("abc", ["abc"]),
+        ("abc def", ["abc", "def"]),
+        ("abc  def", ["abc", "def"]),
+        ("  abc  def", ["abc", "def"]),
+        (" ", []),
+        ("", []),
+        (None, None),
+    ],
+)
+def test_tokenize(inp, exp):
+    result = text.tokenize(ibis.literal(inp, type=str)).execute()
+    if exp is None:
+        assert result is None
+    else:
+        assert result == exp
