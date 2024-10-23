@@ -51,9 +51,9 @@ def distance_km(
         return (theta / 2).sin() ** 2
 
     a = haversine(lat2 - lat1) + lat1.cos() * lat2.cos() * haversine(lon2 - lon1)
-    c = 2 * a.sqrt().asin()
     R_earth = 6371.0  # km
-    return R_earth * c
+    # parens for optimization, to make sure the division happens on the python side
+    return (R_earth * 2) * a.sqrt().asin()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -232,20 +232,23 @@ def _bin_lat_lon(
 
     result = ibis.struct(
         {
-            "lat_hash": (lat // step_size_lat),
-            "lon_hash": (lon // step_size_lon),
+            # once https://github.com/ibis-project/ibis/pull/10353 is fixed
+            # we can use lat // step_size_lat
+            "lat_hash": (lat / step_size_lat).floor().cast(int),
+            "lon_hash": (lon / step_size_lon).floor().cast(int),
         }
     )
     both_null = lat.isnull() & lon.isnull()
     return both_null.ifelse(ibis.null(), result)
 
 
-def _km_per_degree(lat: ir.FloatingValue) -> tuple[ir.FloatingValue, float]:
+def _km_per_degree(lat: ir.FloatingValue) -> tuple[float, ir.FloatingValue]:
     # Radius of the Earth in kilometers
     R = 6371.0
     lat_rad = lat * (math.pi / 180)
-    # This is a constant value at any given latitude
+    # This is a constant value at any given latitude.
     km_per_lat = (math.pi * R) / 180
-    # This varies based on the latitude
-    km_per_lon = lat_rad.cos() * (math.pi * R) / 180
+    # This varies based on the latitude.
+    # Parens for optimization, to make sure the division happens on the python side.
+    km_per_lon = lat_rad.cos() * ((math.pi * R) / 180)
     return km_per_lat, km_per_lon

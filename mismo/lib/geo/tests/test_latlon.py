@@ -35,15 +35,18 @@ def test_distance_km(lat1, lon1, lat2, lon2, expected):
             (61.1582056, -150.0584552),
             1,
             True,
-            id=".6km in anchorage",
+            id=".6km-anchorage-1km",
         ),
         pytest.param(
             (61.1547800, -150.0677490),
             (61.1582056, -150.0584552),
             0.1,
             False,
-            id=".6km in anchorage",
+            id=".6km-anchorage-100m",
         ),
+        # tests for https://github.com/NickCrews/mismo/issues/74
+        pytest.param((0, 0), (0, 0.5), 1, False, id="50km-equator-1km"),
+        pytest.param((0, 0), (0, 0.5), 100, True, id="50km-equator-100km"),
     ],
 )
 @pytest.mark.parametrize(
