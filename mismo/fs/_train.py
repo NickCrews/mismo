@@ -26,7 +26,7 @@ def level_proportions(
         .group_by("level")
         .agg(n=_.count())
     )
-    counts_dict: dict = counts.execute().set_index("level")["n"].to_dict()
+    counts_dict: dict[int | ir.IntegerValue, int] = counts.execute().set_index("level")["n"].to_dict()
     # If we didn't see a level, that won't be present in the value_counts table.
     # Add it in, with a count of 1 to regularaize it.
     # If a level shows shows up 0 times among nonmatches, this would lead to an odds
@@ -59,11 +59,6 @@ def train_us_using_sampling(
     The validity of the u values rests on the assumption that nearly all of the
     resultant pairs are non-matches. For large datasets, this is typically true.
 
-    The results of estimate_u_using_random_sampling, and therefore an
-    entire splink model, can be made reproducible by setting the seed
-    parameter. Setting the seed will have performance implications as
-    additional processing is required.
-
     Args:
         max_pairs:
             The maximum number of pairwise record pairs to sample.
@@ -80,6 +75,43 @@ def train_us_using_sampling(
     return level_proportions(comparer.levels, labels)
 
 
+def train_ms_from_pairs(
+    comparer: LevelComparer,
+    matching_pairs: ir.Table,
+    *,
+    max_pairs: int | None = None,
+    seed: int | None = None,
+) -> list[float]:
+    """Estimate the m weights using the provided matching pairs.
+
+    The m parameter represent the proportion of record pairs
+    that fall into each MatchLevel amongst truly matching pairs.
+
+    Parameters
+    ----------
+    comparer
+        The comparer to train.
+    matching_pairs:
+        The pairs of matching records.
+    max_pairs
+        The maximum number of pairs to sample.
+    seed
+        The random seed to use for sampling.
+
+    Returns
+    -------
+    list[float]
+        The estimated m weights.
+    """
+
+    if max_pairs is None:
+        max_pairs = 1_000_000_000
+    n_pairs = min(matching_pairs.count().execute(), max_pairs)
+    sample = sample_table(matching_pairs, n_pairs, seed=seed)
+    labels = comparer(sample)[comparer.name]
+    return level_proportions(comparer.levels, labels)
+
+
 def train_ms_from_labels(
     comparer: LevelComparer,
     left: ir.Table,
@@ -88,7 +120,7 @@ def train_ms_from_labels(
     max_pairs: int | None = None,
     seed: int | None = None,
 ) -> list[float]:
-    """Using the true labels in the dataset, estimate the m weight.
+    """Estimate the m weights using the true labels in the dataset.
 
     The m parameter represent the proportion of record pairs
     that fall into each MatchLevel amongst truly matching pairs.
@@ -123,13 +155,8 @@ def train_ms_from_labels(
     list[float]
         The estimated m weights.
     """
-    pairs = _true_pairs_from_labels(left, right)
-    if max_pairs is None:
-        max_pairs = 1_000_000_000
-    n_pairs = min(pairs.count().execute(), max_pairs)
-    sample = sample_table(pairs, n_pairs, seed=seed)
-    labels = comparer(sample)[comparer.name]
-    return level_proportions(comparer.levels, labels)
+    matching_pairs = _true_pairs_from_labels(left, right)
+    return train_ms_from_pairs(comparer, matching_pairs, max_pairs=max_pairs, seed=seed)
 
 
 def _true_pairs_from_labels(left: ir.Table, right: ir.Table) -> ir.Table:
@@ -169,7 +196,34 @@ def train_using_labels(
     )
 
 
-def make_weights(comparer: LevelComparer, ms: list[float], us: list[float]):
+def _train_using_pairs(
+    comparer: LevelComparer,
+    left: ir.Table,
+    right: ir.Table,
+    pairs: ir.Table,
+    *,
+    max_pairs: int | None = None,
+) -> ComparerWeights:
+    ms = train_ms_from_pairs(comparer, pairs, max_pairs=max_pairs)
+    us = train_us_using_sampling(comparer, left, right, max_pairs=max_pairs)
+    return make_weights(comparer, ms, us)
+
+
+def train_using_pairs(
+    comparers: Iterable[LevelComparer],
+    left: ir.Table,
+    right: ir.Table,
+    matching_pairs: ir.Table,
+    *,
+    max_pairs: int | None = None,
+) -> Weights:
+    """Estimate all Weights for a set of LevelComparers using matching pairs."""
+    return Weights(
+        [_train_using_pairs(c, left, right, matching_pairs, max_pairs=max_pairs) for c in comparers]
+    )
+
+
+def make_weights(comparer: LevelComparer, ms: list[float], us: list[float]) -> ComparerWeights:
     levels = comparer.levels
     assert len(ms) == len(us) == len(levels)
     level_weights = [
