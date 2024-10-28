@@ -144,7 +144,34 @@ def train_using_labels(
     *,
     max_pairs: int = 1_000_000_000,
 ) -> Weights:
-    """Estimate all Weights for a set of LevelComparers using labeled data."""
+    """Estimate all Weights for a set of LevelComparers using labeled records.
+
+    The m parameters represent the proportion of record pairs
+    that fall into each MatchLevel amongst truly matching pairs.
+    This function estimates the m parameters using the `label_true` columns
+    in the input datasets.
+
+    The u parameters represent the proportion of record pairs
+    that fall into each MatchLevel amongst truly non-matching records.
+    This function estimates the u parameters using random sampling.
+
+    Parameters
+    ----------
+    comparers
+        The comparers to train.
+    left
+        The left dataset.
+    right
+        The right dataset.
+    max_pairs
+        The maximum number of pairs to sample.
+        This is used for both the m and u estimates.
+
+    Returns
+    -------
+    Weights
+        The estimated weights for each comparer.
+    """
 
     def f(comparer: LevelComparer) -> ComparerWeights:
         ms = train_ms_from_labels(comparer, left, right, max_pairs=max_pairs)
