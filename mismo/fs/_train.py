@@ -40,7 +40,7 @@ def level_proportions(
     return [counts_dict[lev] / n_total for lev in int_levels]
 
 
-def train_us_using_sampling(
+def _train_us_using_sampling(
     comparer: LevelComparer,
     left: ir.Table,
     right: ir.Table,
@@ -74,7 +74,46 @@ def train_us_using_sampling(
     return level_proportions(comparer.levels, labels)
 
 
-def train_ms_from_labels(
+def _train_ms_from_pairs(
+    comparer: LevelComparer,
+    true_pairs: ir.Table,
+    *,
+    max_pairs: int = 1_000_000_000,
+    seed: int | None = None,
+) -> list[float]:
+    """Estimate the m weights using the provided matching pairs.
+
+    The m parameter represent the proportion of record pairs
+    that fall into each MatchLevel amongst truly matching pairs.
+
+    This function expects a table with columns `record_id_l` and `record_id_r`.
+    Each row represents a pair of matching records. Non-matching pairs should
+    not be included in this table.
+
+    Parameters
+    ----------
+    comparer
+        The comparer to train.
+    true_pairs:
+        Record pairs that are true matches.
+    max_pairs
+        The maximum number of pairs to sample.
+    seed
+        The random seed to use for sampling.
+
+    Returns
+    -------
+    list[float]
+        The estimated m weights.
+    """
+
+    n_pairs = min(true_pairs.count().execute(), max_pairs)
+    sample = sample_table(true_pairs, n_pairs, seed=seed)
+    labels = comparer(sample)[comparer.name]
+    return level_proportions(comparer.levels, labels)
+
+
+def _train_ms_from_labels(
     comparer: LevelComparer,
     left: ir.Table,
     right: ir.Table,
@@ -119,10 +158,7 @@ def train_ms_from_labels(
         The estimated m weights.
     """
     pairs = _true_pairs_from_labels(left, right)
-    n_pairs = min(pairs.count().execute(), max_pairs)
-    sample = sample_table(pairs, n_pairs, seed=seed)
-    labels = comparer(sample)[comparer.name]
-    return level_proportions(comparer.levels, labels)
+    return _train_ms_from_pairs(comparer, pairs, max_pairs=max_pairs, seed=seed)
 
 
 def _true_pairs_from_labels(left: ir.Table, right: ir.Table) -> ir.Table:
@@ -135,6 +171,55 @@ def _true_pairs_from_labels(left: ir.Table, right: ir.Table) -> ir.Table:
             f"Right dataset must have a label_true column. Found: {right.columns}"
         )
     return KeyBlocker("label_true")(left, right)
+
+
+def train_using_pairs(
+    comparers: Iterable[LevelComparer],
+    left: ir.Table,
+    right: ir.Table,
+    *,
+    true_pairs: ir.Table,
+    max_pairs: int = 1_000_000_000,
+) -> Weights:
+    """Estimate all Weights for a set of LevelComparers using true pairs.
+
+    The m parameters represent the proportion of record pairs
+    that fall into each MatchLevel amongst truly matching pairs.
+    This function estimates the m parameters using the provided true pairs.
+
+    The u parameters represent the proportion of record pairs
+    that fall into each MatchLevel amongst truly non-matching records.
+    This function estimates the u parameters using random sampling.
+
+    Parameters
+    ----------
+    comparers
+        The comparers to train.
+    left
+        The left dataset.
+    right
+        The right dataset.
+    true_pairs
+        Record pairs that are true matches.
+        This should be a table with columns `record_id_l` and `record_id_r`.
+        Each row represents a pair of matching records.
+        Non-matching pairs should not be included in this table.
+    max_pairs
+        The maximum number of pairs to sample.
+        This is used for both the m and u estimates.
+
+    Returns
+    -------
+    Weights
+        The estimated weights for each comparer.
+    """
+
+    def f(comparer: LevelComparer) -> ComparerWeights:
+        ms = _train_ms_from_pairs(comparer, true_pairs, max_pairs=max_pairs)
+        us = _train_us_using_sampling(comparer, left, right, max_pairs=max_pairs)
+        return make_weights(comparer, ms, us)
+
+    return Weights(f(c) for c in comparers)
 
 
 def train_using_labels(
@@ -174,8 +259,8 @@ def train_using_labels(
     """
 
     def f(comparer: LevelComparer) -> ComparerWeights:
-        ms = train_ms_from_labels(comparer, left, right, max_pairs=max_pairs)
-        us = train_us_using_sampling(comparer, left, right, max_pairs=max_pairs)
+        ms = _train_ms_from_labels(comparer, left, right, max_pairs=max_pairs)
+        us = _train_us_using_sampling(comparer, left, right, max_pairs=max_pairs)
         return make_weights(comparer, ms, us)
 
     return Weights(f(c) for c in comparers)
