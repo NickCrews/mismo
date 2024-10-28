@@ -45,7 +45,7 @@ def train_us_using_sampling(
     left: ir.Table,
     right: ir.Table,
     *,
-    max_pairs: int | None = None,
+    max_pairs: int = 1_000_000_000,
 ) -> list[float]:
     """Estimate the u weight using random sampling.
 
@@ -59,17 +59,16 @@ def train_us_using_sampling(
     The validity of the u values rests on the assumption that nearly all of the
     resultant pairs are non-matches. For large datasets, this is typically true.
 
-    Args:
-        max_pairs:
-            The maximum number of pairwise record pairs to sample.
-            Larger will give more accurate estimates but lead to longer runtimes.
-            In our experience at least 1e9 (one billion)
-            gives best results but can take a long time to compute.
-            1e7 (ten million) is often adequate whilst testing different model
-            specifications, before the final model is estimated.
+    Parameters
+    ----------
+    max_pairs
+        The maximum number of pairwise record pairs to sample.
+        Larger will give more accurate estimates but lead to longer runtimes.
+        In our experience at least 1e9 (one billion)
+        gives best results but can take a long time to compute.
+        1e7 (ten million) is often adequate whilst testing different model
+        specifications, before the final model is estimated.
     """
-    if max_pairs is None:
-        max_pairs = 1_000_000_000
     sample = sample_all_pairs(left, right, max_pairs=max_pairs)
     labels = comparer(sample)[comparer.name]
     return level_proportions(comparer.levels, labels)
@@ -80,7 +79,7 @@ def train_ms_from_labels(
     left: ir.Table,
     right: ir.Table,
     *,
-    max_pairs: int | None = None,
+    max_pairs: int = 1_000_000_000,
     seed: int | None = None,
 ) -> list[float]:
     """Estimate the m weights using labeled records.
@@ -120,8 +119,6 @@ def train_ms_from_labels(
         The estimated m weights.
     """
     pairs = _true_pairs_from_labels(left, right)
-    if max_pairs is None:
-        max_pairs = 1_000_000_000
     n_pairs = min(pairs.count().execute(), max_pairs)
     sample = sample_table(pairs, n_pairs, seed=seed)
     labels = comparer(sample)[comparer.name]
@@ -145,7 +142,7 @@ def train_using_labels(
     left: ir.Table,
     right: ir.Table,
     *,
-    max_pairs: int | None = None,
+    max_pairs: int = 1_000_000_000,
 ) -> Weights:
     """Estimate all Weights for a set of LevelComparers using labeled data."""
 
