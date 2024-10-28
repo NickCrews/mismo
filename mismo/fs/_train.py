@@ -140,18 +140,6 @@ def _true_pairs_from_labels(left: ir.Table, right: ir.Table) -> ir.Table:
     return KeyBlocker("label_true")(left, right)
 
 
-def _train_using_labels(
-    comparer: LevelComparer,
-    left: ir.Table,
-    right: ir.Table,
-    *,
-    max_pairs: int | None = None,
-) -> ComparerWeights:
-    ms = train_ms_from_labels(comparer, left, right, max_pairs=max_pairs)
-    us = train_us_using_sampling(comparer, left, right, max_pairs=max_pairs)
-    return make_weights(comparer, ms, us)
-
-
 def train_using_labels(
     comparers: Iterable[LevelComparer],
     left: ir.Table,
@@ -160,12 +148,18 @@ def train_using_labels(
     max_pairs: int | None = None,
 ) -> Weights:
     """Estimate all Weights for a set of LevelComparers using labeled data."""
-    return Weights(
-        [_train_using_labels(c, left, right, max_pairs=max_pairs) for c in comparers]
-    )
+
+    def f(comparer: LevelComparer) -> ComparerWeights:
+        ms = train_ms_from_labels(comparer, left, right, max_pairs=max_pairs)
+        us = train_us_using_sampling(comparer, left, right, max_pairs=max_pairs)
+        return make_weights(comparer, ms, us)
+
+    return Weights(f(c) for c in comparers)
 
 
-def make_weights(comparer: LevelComparer, ms: list[float], us: list[float]):
+def make_weights(
+    comparer: LevelComparer, ms: list[float], us: list[float]
+) -> ComparerWeights:
     levels = comparer.levels
     assert len(ms) == len(us) == len(levels)
     level_weights = [
