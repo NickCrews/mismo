@@ -26,7 +26,7 @@ def level_proportions(
         .group_by("level")
         .agg(n=_.count())
     )
-    counts_dict: dict = counts.execute().set_index("level")["n"].to_dict()
+    counts_dict: dict[int, int] = counts.execute().set_index("level")["n"].to_dict()
     # If we didn't see a level, that won't be present in the value_counts table.
     # Add it in, with a count of 1 to regularaize it.
     # If a level shows shows up 0 times among nonmatches, this would lead to an odds
@@ -59,11 +59,6 @@ def train_us_using_sampling(
     The validity of the u values rests on the assumption that nearly all of the
     resultant pairs are non-matches. For large datasets, this is typically true.
 
-    The results of estimate_u_using_random_sampling, and therefore an
-    entire splink model, can be made reproducible by setting the seed
-    parameter. Setting the seed will have performance implications as
-    additional processing is required.
-
     Args:
         max_pairs:
             The maximum number of pairwise record pairs to sample.
@@ -88,11 +83,12 @@ def train_ms_from_labels(
     max_pairs: int | None = None,
     seed: int | None = None,
 ) -> list[float]:
-    """Using the true labels in the dataset, estimate the m weight.
+    """Estimate the m weights using labeled records.
 
     The m parameter represent the proportion of record pairs
     that fall into each MatchLevel amongst truly matching pairs.
 
+    This function expects a table of records with a column `label_true`.
     The `label_true` column is used to generate true-match record pairs.
 
     For example, if the entity being matched is persons, and your
