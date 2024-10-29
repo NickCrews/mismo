@@ -70,7 +70,7 @@ dev-dependencies = [
 ]
 
 [tool.uv.sources]
-en-us-address-ner-sm = { url = "https://github.com/NickCrews/spacy-address/releases/download/20241007-072524-sm/en_us_address_ner_sm-0.0.0-py3-none-any.whl" }
+en-us-address-ner-sm = { url = "https://github.com/NickCrews/spacy-address/releases/download/20241029-205717-sm/en_us_address_ner_sm-0.0.0-py3-none-any.whl" }
 
 
 [tool.pytest.ini_options]
