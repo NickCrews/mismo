@@ -18,9 +18,9 @@ class AddressFeatures:
     Examples
     --------
     >>> address = ibis.literal({
-    ...     "street1": "132   Main St ",
+    ...     "street1": "132 w  elmore St ",
     ...     "street2": "Apt 3-b",
-    ...     "city": "Springfield",
+    ...     "city": "Anchorage",
     ...     "state": "",
     ...     "postal_code": "12345",
     ...     "latitude": 123.456,
@@ -30,7 +30,7 @@ class AddressFeatures:
     Whitespace is normed, case is converted to uppercase:
 
     >>> features.street1.execute()
-    '132 MAIN ST'
+    '132 W ELMORE ST'
 
     Punctuation is removed:
 
@@ -49,7 +49,9 @@ class AddressFeatures:
     >>> features.street_number_sorted.execute()
     '123'
     >>> features.street_name.execute()
-    'MAIN'
+    'ELMORE'
+    >>> features.street_ngrams.execute()
+    ['123', 'MORE', 'ELMORE', 'LMOR', 'ELMO']
     >>> features.all_null.execute()
     np.False_
 
@@ -61,7 +63,7 @@ class AddressFeatures:
     For use in in preparing data for blocking, you can get all the features as a struct:
 
     >>> features.as_struct().execute()
-    {'street1': '132 MAIN ST', 'street2': 'APT 3B', 'city': 'SPRINGFIELD', 'state': None, 'postal_code': '12345', 'street_number': '132', 'street_name': 'MAIN', 'street_ngrams': ['132 ', 'MAIN', '32 M', 'AIN ', '2 MA', 'IN S', ' MAI', 'N ST', 'APT ', 'PT 3', 'T 3B', '132 MAIN ST', 'APT 3B'], 'latitude': 123.456}
+    {'street1': '132 W ELMORE ST', 'street2': 'APT 3B', 'city': 'ANCHORAGE', 'state': None, 'postal_code': '12345', 'taggings': [{'token': '132', 'label': 'AddressNumber'}, {'token': 'W', 'label': 'StreetNamePreDirectional'}, {'token': 'ELMORE', 'label': 'StreetName'}, {'token': 'ST', 'label': 'StreetNamePostType'}], 'street_number': '132', 'street_number_sorted': '123', 'street_name': 'ELMORE', 'street_ngrams': ['123', 'MORE', 'ELMORE', 'LMOR', 'ELMO'], 'latitude': 123.456}
     """  # noqa: E501
 
     def __init__(self, raw: ir.StructValue | ir.Table, *, street_ngrams_n: int = 4):
@@ -112,7 +114,7 @@ class AddressFeatures:
         return self._norm(self.raw.postal_code)
 
     @property
-    def _tagged(self) -> TaggedAddress:
+    def tagged(self) -> TaggedAddress:
         # We only use the street name and address number, so only pass in the street1.
         # This is both more performant, and it removes the possibility of
         # "1-b" in "apt 1-b" being tagged as a street number (which I just saw happen).
@@ -123,12 +125,12 @@ class AddressFeatures:
         """
         The normalized street name from street1, eg "OAK TREE" from "123 oak  tree St".
         """
-        return self._norm(self._tagged.StreetName)
+        return self._norm(self.tagged.StreetName)
 
     @property
     def street_number(self) -> ir.StringValue:
         """The normalized street number from street1, eg "132" from "132 Main St"."""
-        return self._norm(self._tagged.AddressNumber)
+        return self._norm(self.tagged.AddressNumber)
 
     @property
     def street_number_sorted(self) -> ir.StringValue:
@@ -146,7 +148,7 @@ class AddressFeatures:
             text.ngrams(self.street_number_sorted.fill_null(""), n=self.street_ngrams_n)
             + text.ngrams(self.street_name.fill_null(""), n=self.street_ngrams_n)
             + ibis.array([self.street_number_sorted, self.street_name])
-        )
+        ).unique()
 
     @property
     def all_null(self) -> ir.BooleanValue:
@@ -173,7 +175,7 @@ class AddressFeatures:
             "city": self.city,
             "state": self.state,
             "postal_code": self.postal_code,
-            "taggings": self._tagged.taggings,
+            "taggings": self.tagged.taggings,
             "street_number": self.street_number,
             "street_number_sorted": self.street_number_sorted,
             "street_name": self.street_name,
