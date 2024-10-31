@@ -236,43 +236,27 @@ class AddressesMatchLevel(compare.MatchLevel):
 
 
 def _is_possible_typo(left: ir.StructValue, right: ir.StructValue) -> ir.BooleanValue:
-    if "street1_no_number" in left.type().names:
-        street_simple_col = "street1_no_number"
-    else:
-        street_simple_col = "street1"
     cases = [
         ibis.and_(
             left.street1 == right.street1,
             left.street1.length() >= 5,
         ),
         ibis.and_(
-            text.damerau_levenshtein_ratio(
-                left[street_simple_col], right[street_simple_col]
-            )
-            > 0.9,
+            text.damerau_levenshtein_ratio(left.street_name, right.street_name) > 0.9,
             text.damerau_levenshtein_ratio(left.city, right.city) > 0.9,
         ),
         ibis.and_(
-            text.damerau_levenshtein_ratio(
-                left[street_simple_col], right[street_simple_col]
-            )
-            > 0.9,
+            text.damerau_levenshtein_ratio(left.street_name, right.street_name) > 0.9,
             # >=.8 so that a transposition in a 5digit zipcode match,
             # eg "12345" and "12354"
             text.damerau_levenshtein_ratio(left.postal_code, right.postal_code) >= 0.8,
         ),
+        ibis.and_(
+            left.street_number == right.street_number,
+            text.damerau_levenshtein_ratio(left.street_name, right.street_name) > 0.4,
+            text.damerau_levenshtein_ratio(left.city, right.city) > 0.9,
+        ),
     ]
-    if "street1_number" in left.type().names:
-        cases.append(
-            ibis.and_(
-                left.street1_number == right.street1_number,
-                text.damerau_levenshtein_ratio(
-                    left[street_simple_col], right[street_simple_col]
-                )
-                > 0.4,
-                text.damerau_levenshtein_ratio(left.city, right.city) > 0.9,
-            )
-        )
     return ibis.or_(*cases)
 
 
