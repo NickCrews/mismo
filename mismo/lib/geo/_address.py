@@ -22,7 +22,17 @@ def _featurize_many(t: ibis.Table) -> ibis.Table:
 
 
 def _featurize(t: ibis.Table) -> ibis.Table:
-    """Add a StructColumn named "address_featured" to the table."""
+    """Add a StructColumn named "address_featured" to the table.
+
+    The input table must have a column named "address" of type
+    struct<
+        street1: string,
+        street2: string,
+        city: string,
+        state: string,
+        postal_code: string,
+    >
+    """
     # we have this Table -> Table API for performance reasons:
     # by doing all these operations in a much of sequential .mutate()s,
     # it compiles to a bunch of chained CTEs in the SQL.
@@ -35,6 +45,10 @@ def _featurize(t: ibis.Table) -> ibis.Table:
     # for every time it appears in the SQL. See https://github.com/duckdb/duckdb/discussions/14649.
     # So, if we did one .mutate(), we would end up with like literally 100 regex
     # evaluations in the SQL, which is 100x slower than evaluating the regex once.
+    if "address" not in t.columns:
+        raise ValueError("Table must have a column named 'address'.")
+    if not isinstance(t.address, ir.StructValue):
+        raise ValueError("Column 'address' must be a struct.")
 
     def _norm(s: ir.StringValue) -> ir.StringValue:
         return (
@@ -253,8 +267,8 @@ class AddressesDimension:
         return blocker(t1, t2, **kwargs)
 
     def compare(self, t: ir.Table) -> ir.Table:
-        left = t[self.column_featured + "_l"]
-        right = t[self.column_featured + "_r"]
+        left = t[self.column_featured + "_l"].addresses
+        right = t[self.column_featured + "_r"].addresses
         combos = arrays.array_combinations(left, right)
         levels = combos.map(lambda pair: match_level(pair.l, pair.r))
         best = arrays.array_min(levels)
