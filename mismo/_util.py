@@ -340,8 +340,6 @@ def join_lookup(
     In that case, you can provide a `defaults` to provide default values that
     will get added to the lookup table.
 
-    See also: `best_in_group`.
-
     Parameters
     ----------
     t:
