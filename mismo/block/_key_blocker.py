@@ -273,6 +273,7 @@ class KeyBlocker:
         id_pairs = j.select("record_id_l", "record_id_r").distinct()
         return block_on_id_pairs(left, right, id_pairs)
 
+    @functools.cache
     def key_counts(self, t: ir.Table, /) -> CountsTable:
         """Count the join keys in a table.
 
@@ -347,6 +348,7 @@ class KeyBlocker:
         t = t.group_by(t.columns).agg(n=_.count()).order_by(_.n.desc())
         return CountsTable(t, hist_spec=_KEY_COUNTS_SPEC)
 
+    @functools.cache
     def pair_counts(
         self,
         left: ir.Table,
