@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import functools
-from typing import Callable, Literal
+from typing import TYPE_CHECKING, Callable, Literal, NamedTuple
 
 import ibis
 from ibis import Deferred, _
@@ -9,6 +9,23 @@ from ibis.expr import types as ir
 
 from mismo import _util
 from mismo.block._core import block_on_id_pairs, join
+
+if TYPE_CHECKING:
+    import altair as alt
+
+
+class _HistSpec(NamedTuple):
+    n_title: str
+    chart_title: str
+    chart_subtitle: str
+
+
+_KEY_COUNTS_SPEC = _HistSpec(
+    "Number of Records", "Number of Records by Key", "{n_total:,} Total Records"
+)
+_PAIR_COUNTS_SPEC = _HistSpec(
+    "Number of Pairs", "Number of Pairs by Key", "{n_total:,} Total Pairs"
+)
 
 
 class CountsTable(ibis.Table):
@@ -24,8 +41,9 @@ class CountsTable(ibis.Table):
     n: ir.IntegerColumn
     """The column containing the count."""
 
-    def __init__(self, t: ibis.Table) -> None:
+    def __init__(self, t: ibis.Table, *, hist_spec: _HistSpec) -> None:
         object.__setattr__(self, "_t", t)
+        object.__setattr__(self, "_hist_spec", hist_spec)
 
     def __getattr__(self, key: str):
         return getattr(self._t, key)
@@ -35,6 +53,64 @@ class CountsTable(ibis.Table):
     def n_total(self) -> int:
         """n.sum(), just here for convenience."""
         return int(self.n.sum().execute())
+
+    def chart(self, *, n_most_common: int = 50, n_least_common: int = 10) -> alt.Chart:
+        """Create an Altair histogram chart."""
+        return _counts_chart(
+            self,
+            hist_spec=self._hist_spec,
+            n_most_common=n_most_common,
+            n_least_common=n_least_common,
+        )
+
+
+def _counts_chart(
+    counts: CountsTable,
+    *,
+    hist_spec: _HistSpec,
+    n_most_common: int,
+    n_least_common: int,
+):
+    import altair as alt
+
+    key_cols = [c for c in counts.columns if c != "n"]
+    val = "(" + ibis.literal(", ").join(counts[c] for c in key_cols) + ")"
+    key_and_n = counts.mutate(val.name("key"), "n")
+    key_and_n = key_and_n.filter(_.n > 0)
+    most_common = key_and_n.order_by(_.n.desc()).head(n_most_common)
+    least_common = key_and_n.order_by(_.n.asc()).head(n_least_common)
+    subset = ibis.union(most_common, least_common, distinct=False).cache()
+    n_keys_shown = subset.count().execute()
+    n_keys_total = key_and_n.count().execute()
+    key_title = "(" + ", ".join(key_cols) + ")"
+    chart = (
+        alt.Chart(subset)
+        .properties(
+            title=alt.TitleParams(
+                hist_spec.chart_title,
+                subtitle=[
+                    hist_spec.chart_subtitle.format(n_total=counts.n_total),
+                    f"Showing the {n_keys_shown:,} most and least common keys out of {n_keys_total:,}",  # noqa: E501
+                ],
+                anchor="middle",
+            ),
+            width=alt.Step(10),
+        )
+        .mark_bar()
+        .encode(
+            alt.X("key:O", title=key_title, sort="-y"),
+            alt.Y(
+                "n:Q",
+                title=hist_spec.n_title,
+                # scale=alt.Scale(type="log", domainMin=10),
+            ),
+            tooltip=[
+                alt.Tooltip("n:Q", title=hist_spec.n_title, format=","),
+                *[alt.Tooltip(col) for col in key_cols],
+            ],
+        )
+    )
+    return chart
 
 
 class KeyBlocker:
@@ -268,7 +344,7 @@ class KeyBlocker:
         t = t.select(self.keys)
         t = t.drop_null(how="any")
         t = t.group_by(t.columns).agg(n=_.count()).order_by(_.n.desc())
-        return CountsTable(t)
+        return CountsTable(t, hist_spec=_KEY_COUNTS_SPEC)
 
     def pair_counts(
         self,
@@ -390,7 +466,7 @@ class KeyBlocker:
             k = [c for c in kcl.columns if c != "n"]
             by_key = ibis.join(kcl, kcr, k).mutate(n=_.n * _.n_right).drop("n_right")
         by_key = by_key.order_by(_.n.desc())
-        return CountsTable(by_key)
+        return CountsTable(by_key, hist_spec=_PAIR_COUNTS_SPEC)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.name})"
