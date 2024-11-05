@@ -63,10 +63,10 @@ class MinhashLshBlocker:
             The column that holds the terms to compare.
         band_size :
             The number of terms in each band.
-            See [plot_lsh_curves](#mismo.block.plot_lsh_curves) for guidance.
+            See [plot_lsh_curves][mismo.block.plot_lsh_curves] for guidance.
         n_bands :
             The number of bands.
-            See [plot_lsh_curves](#mismo.block.plot_lsh_curves) for guidance.
+            See [plot_lsh_curves][mismo.block.plot_lsh_curves] for guidance.
         keys_column :
             The name of the column that will hold the LSH keys.
         """
