@@ -52,7 +52,8 @@ class CountsTable(ibis.Table):
     @functools.cache
     def n_total(self) -> int:
         """n.sum(), just here for convenience."""
-        return int(self.n.sum().execute())
+        raw = self.n.sum().execute()
+        return int(raw) if raw is not None else 0
 
     def chart(self, *, n_most_common: int = 50, n_least_common: int = 10) -> alt.Chart:
         """Create an Altair histogram chart."""

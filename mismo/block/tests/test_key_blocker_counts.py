@@ -98,3 +98,11 @@ def test_counts_letters_num(inp, table_factory, keys):
 
     c = blocker.pair_counts(inp, inp, task="link")
     assert_tables_equal(c, expected.select("letter", "num", n=_.expected_pairs_link))
+
+
+def test_counts_empty(inp, table_factory):
+    # null keys will never get blocked with any others
+    blocker = KeyBlocker(ibis.null(int))
+    c = blocker.pair_counts(inp, inp)
+    assert c.count().execute() == 0
+    assert c.n_total == 0
