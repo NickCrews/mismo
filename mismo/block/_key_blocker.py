@@ -438,8 +438,8 @@ class KeyBlocker:
         - 0 pairs in the (a, 1) block due to record 0 not getting blocked with itself
         - 0 pairs in the (b, 2) block due to record 4 not getting blocked with itself
 
-        >>> counts = blocker.pair_counts(t, t).order_by("letter", "num")
-        >>> counts
+        >>> counts = blocker.pair_counts(t, t)
+        >>> counts.order_by("letter", "num")
         ┏━━━━━━━━┳━━━━━━━┳━━━━━━━┓
         ┃ letter ┃ num   ┃ n     ┃
         ┡━━━━━━━━╇━━━━━━━╇━━━━━━━┩
