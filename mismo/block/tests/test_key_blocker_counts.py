@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ibis
 from ibis import _
 import pytest
 
@@ -31,7 +32,7 @@ def inp(table_factory):
         pytest.param(_.letter, id="deferred"),
     ],
 )
-def test_key_counts_letters(inp, table_factory, key):
+def test_counts_letters(inp, table_factory, key):
     blocker = KeyBlocker(key)
     expected = table_factory(
         {
@@ -41,20 +42,24 @@ def test_key_counts_letters(inp, table_factory, key):
             "expected_pairs_dedupe": [3, 3, 0],
         }
     )
-    result = blocker.key_counts(inp)
-    assert_tables_equal(result, expected.select("letter", n=_.expected_keys))
+    c = blocker.key_counts(inp)
+    assert_tables_equal(c, expected.select("letter", n=_.expected_keys))
+    assert c.n_total == 7
+    # we need the CountsTable instance to be indistinguishable from a regular Table
+    assert isinstance(c, ibis.Table)
 
-    result2 = blocker.pair_counts(inp, inp)
-    assert_tables_equal(result2, expected.select("letter", n=_.expected_pairs_dedupe))
+    c = blocker.pair_counts(inp, inp)
+    assert_tables_equal(c, expected.select("letter", n=_.expected_pairs_dedupe))
+    assert c.n_total == 6
 
-    result2 = blocker.pair_counts(inp, inp, task="dedupe")
-    assert_tables_equal(result2, expected.select("letter", n=_.expected_pairs_dedupe))
+    c = blocker.pair_counts(inp, inp, task="dedupe")
+    assert_tables_equal(c, expected.select("letter", n=_.expected_pairs_dedupe))
 
-    result2 = blocker.pair_counts(inp, inp.view())
-    assert_tables_equal(result2, expected.select("letter", n=_.expected_pairs_link))
+    c = blocker.pair_counts(inp, inp.view())
+    assert_tables_equal(c, expected.select("letter", n=_.expected_pairs_link))
 
-    result2 = blocker.pair_counts(inp, inp, task="link")
-    assert_tables_equal(result2, expected.select("letter", n=_.expected_pairs_link))
+    c = blocker.pair_counts(inp, inp, task="link")
+    assert_tables_equal(c, expected.select("letter", n=_.expected_pairs_link))
 
 
 @pytest.mark.parametrize(
@@ -64,7 +69,7 @@ def test_key_counts_letters(inp, table_factory, key):
         pytest.param((_.letter, "num"), id="deferred"),
     ],
 )
-def test_key_counts_letters_num(inp, table_factory, keys):
+def test_counts_letters_num(inp, table_factory, keys):
     blocker = KeyBlocker(*keys)
     expected = table_factory(
         {
@@ -75,17 +80,21 @@ def test_key_counts_letters_num(inp, table_factory, keys):
             "expected_pairs_dedupe": [3, 1, 0, 0],
         }
     )
-    r = blocker.key_counts(inp)
-    assert_tables_equal(r, expected.select("letter", "num", n=_.expected_keys))
+    c = blocker.key_counts(inp)
+    assert_tables_equal(c, expected.select("letter", "num", n=_.expected_keys))
+    assert c.n_total == 7
+    # we need the CountsTable instance to be indistinguishable from a regular Table
+    assert isinstance(c, ibis.Table)
 
-    r = blocker.pair_counts(inp, inp)
-    assert_tables_equal(r, expected.select("letter", "num", n=_.expected_pairs_dedupe))
+    c = blocker.pair_counts(inp, inp)
+    assert_tables_equal(c, expected.select("letter", "num", n=_.expected_pairs_dedupe))
+    assert c.n_total == 4
 
-    r = blocker.pair_counts(inp, inp, task="dedupe")
-    assert_tables_equal(r, expected.select("letter", "num", n=_.expected_pairs_dedupe))
+    c = blocker.pair_counts(inp, inp, task="dedupe")
+    assert_tables_equal(c, expected.select("letter", "num", n=_.expected_pairs_dedupe))
 
-    r = blocker.pair_counts(inp, inp.view())
-    assert_tables_equal(r, expected.select("letter", "num", n=_.expected_pairs_link))
+    c = blocker.pair_counts(inp, inp.view())
+    assert_tables_equal(c, expected.select("letter", "num", n=_.expected_pairs_link))
 
-    r = blocker.pair_counts(inp, inp, task="link")
-    assert_tables_equal(r, expected.select("letter", "num", n=_.expected_pairs_link))
+    c = blocker.pair_counts(inp, inp, task="link")
+    assert_tables_equal(c, expected.select("letter", "num", n=_.expected_pairs_link))

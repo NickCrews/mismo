@@ -20,6 +20,7 @@ becomes intractable for datasets much larger than a few thousand.
 Generate pairs where records share a single key, eg "first_name"
 
 ::: mismo.block.KeyBlocker
+::: mismo.block.CountsTable
 
 ## Ensemble Blockers
 Blockers that use other Blockers
