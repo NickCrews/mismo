@@ -13,6 +13,36 @@ from mismo.lib import geo
         ("BARRACKS ST UNIT 2", None),
         ("4602 CR 673", None),
         ("6473 FM 1798", None),
+        pytest.param(
+            "1 1ST",
+            {
+                "AddressNumber": "1",
+                "StreetName": "1ST",
+                "StreetNamePostDirectional": "",
+                "StreetNamePostType": "",
+                "StreetNamePreDirectional": "",
+                "USPSBoxGroupType": "",
+                "USPSBoxGroupID": "",
+                "USPSBoxID": "",
+            },
+            marks=pytest.mark.xfail(
+                raises=AssertionError,
+                reason="We don't currently handle inputs with no street type",
+            ),
+        ),
+        (
+            "1 1ST ST",
+            {
+                "AddressNumber": "1",
+                "StreetName": "1ST",
+                "StreetNamePostDirectional": "",
+                "StreetNamePostType": "ST",
+                "StreetNamePreDirectional": "",
+                "USPSBoxGroupType": "",
+                "USPSBoxGroupID": "",
+                "USPSBoxID": "",
+            },
+        ),
         (
             "7100 RIDGE MANOR LN",
             {

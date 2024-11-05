@@ -9,15 +9,20 @@ from mismo.lib.geo._latlon import distance_km
 from mismo.lib.geo._regex_parse import parse_street1_re
 
 
-def _featurize_many(t: ibis.Table) -> ibis.Table:
+def _featurize_many(t: ibis.Table, column: str) -> ibis.Table:
     """Given a table with column addresses:Array<Struct>, add a column address_featured:Array<Struct>."""  # noqa: E501
     with_id = t.mutate(__id=ibis.row_number())
     lookup = (
-        _featurize(with_id.select("__id", address=_.addresses.unnest()))
+        _featurize(with_id.select("__id", address=_[column].unnest()))
         .group_by("__id")
         .agg(addresses_featured=_.address_featured.collect())
     )
-    rejoined = _util.join_lookup(with_id, lookup, "__id").drop("__id")
+    rejoined = _util.join_lookup(
+        with_id, lookup, "__id", defaults={"addresses_featured": []}
+    ).drop("__id")
+    rejoined = rejoined.mutate(
+        addresses_featured=_[column].isnull().ifelse(None, _.addresses_featured)
+    )
     return rejoined
 
 
@@ -106,9 +111,21 @@ def _featurize(t: ibis.Table) -> ibis.Table:
             ),
         )
     )
-    # Do this as a separate step since visit_ArrayDistinct() in duckdb causes
+    # Do these as a separate step since visit_ArrayDistinct() in duckdb causes
     # the argument to be copy-pasted 4 times, which causes the regex to be execute
     # 4 times, which is slow.
+    t = t.mutate(
+        address_featured=_structs.mutate(
+            t.address_featured,
+            street_ngrams=ibis.and_(
+                _.address_featured.street_name.isnull(),
+                _.address_featured.street_number_sorted.isnull(),
+            ).ifelse(
+                ibis.null(),
+                _.address_featured.street_ngrams,
+            ),
+        )
+    )
     t = t.mutate(
         address_featured=_structs.mutate(
             t.address_featured,
@@ -238,9 +255,7 @@ class AddressesDimension:
 
     def prepare(self, t: ir.Table) -> ir.Table:
         """Prepares the table for blocking, adding normalized and tokenized columns."""
-        addrs: ir.ArrayColumn = t[self.column]
-        t = t.mutate(addresses=addrs.fill_null([]))
-        t = _featurize_many(t)
+        t = _featurize_many(t, self.column)
         t = t.mutate(
             _addresses_tokens=_.addresses_featured.map(lambda a: a.street_ngrams)
             .flatten()
