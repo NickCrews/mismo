@@ -342,15 +342,13 @@ class KeyBlocker:
             task = "dedupe" if left is right else "link"
         kcl = self.key_counts(left)
         kcr = self.key_counts(right)
-        k = [c for c in kcl.columns if c != "n"]
-        j = ibis.join(kcl, kcr, k)
         if task == "dedupe":
-            n_pairs = (_.n * (_.n_right - 1) / 2).cast(int)
+            by_key = kcl.mutate(n=(_.n * (_.n - 1) / 2).cast(int))
         else:
-            n_pairs = _.n * _.n_right
-        j = j.mutate(n=n_pairs).drop("n_right")
-        j = j.order_by(_.n.desc())
-        return j
+            k = [c for c in kcl.columns if c != "n"]
+            by_key = ibis.join(kcl, kcr, k).mutate(n=_.n * _.n_right).drop("n_right")
+        by_key = by_key.order_by(_.n.desc())
+        return by_key
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.name})"
