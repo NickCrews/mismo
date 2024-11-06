@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 from textwrap import dedent
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 import warnings
 
 import ibis
@@ -10,6 +10,62 @@ from ibis import _
 from ibis.expr import types as ir
 
 from mismo import _util
+
+if TYPE_CHECKING:
+    import altair as alt
+
+
+class LinkCountsTable(_util.TableWrapper):
+    """A table representing the number of records by the number of matches.
+
+    eg "There were 700 records with 0 matches, 300 with 1 match, 20 with 2 matches, ..."
+    """
+
+    n: ir.IntegerColumn
+    """The number of records."""
+    n_matches: ir.IntegerColumn
+    """The number of matches."""
+
+    def chart(self) -> alt.Chart:
+        """A bar chart of the number of records by the number of matches."""
+        import altair as alt
+
+        n_title = "Number of Records"
+        key_title = "Number of Matches"
+        mins = self.order_by(_.n.desc()).limit(2).execute()
+        if len(mins) > 1:
+            subtitle = f"eg '{mins.n[0]:,} records had {mins.n_matches[0]} matches, {mins.n[1]:,} had {mins.n_matches[1]} matches, ...'"  # noqa: E501
+        elif len(mins) == 1:
+            subtitle = (
+                f"eg '{mins.n[0]:,} records had {mins.n_matches[0]} matches', ..."
+            )
+        else:
+            subtitle = "eg 'there were 1000 records with 0 matches, 500 with 1 match, 100 with 2 matches, ...'"  # noqa: E501
+        chart = (
+            alt.Chart(self)
+            .properties(
+                title=alt.TitleParams(
+                    "Number of Records by Match Count",
+                    subtitle=subtitle,
+                    anchor="middle",
+                ),
+                width=alt.Step(10),
+            )
+            .mark_bar()
+            .encode(
+                alt.X("n_matches:O", title=key_title, sort="x"),
+                alt.Y(
+                    "n:Q",
+                    title=n_title,
+                    axis=alt.Axis(),
+                ),
+                tooltip=[
+                    alt.Tooltip("n:Q", title=n_title, format=","),
+                    alt.Tooltip("n_matches:O", title=key_title),
+                ],
+            )
+        )
+        return chart
 
 
 class LabeledTable(ibis.Table):
@@ -121,6 +177,28 @@ class FindResults:
     def needle_labeled_many(self) -> LabeledTable:
         """The subset of needle_labeled with more than one match."""
         return self.needle_labeled().filter(_.record_ids.length() > 1)
+
+    def needle_match_counts(self) -> LinkCountsTable:
+        """A histogram of the number of matches in the the needle.
+
+        e.g. "There were 700 records with 0 matches, 300 with 1 match,
+        20 with 2 matches, ..."
+        """
+        n_matches_by_needle_record = self.links().record_id_r.value_counts(name="n")
+        counts = n_matches_by_needle_record.group_by(n_matches=_.n).agg(n=_.count())
+        n_not_linked = (
+            self.needle()
+            .select("record_id")
+            .distinct()
+            .filter(_.record_id.notin(self.links().record_id_r))
+            .count()
+        )
+        extra = (
+            n_not_linked.name("n").as_table().mutate(n_matches=0).cast(counts.schema())
+        )
+        counts = counts.union(extra)
+        counts = counts.order_by(_.n_matches)
+        return LinkCountsTable(counts)
 
     def haystack_labeled(self) -> LabeledTable:
         """The haystack, with a `record_ids` column added of matches from the needle."""

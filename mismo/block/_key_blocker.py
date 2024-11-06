@@ -20,15 +20,7 @@ class _HistSpec(NamedTuple):
     chart_subtitle: str
 
 
-_KEY_COUNTS_SPEC = _HistSpec(
-    "Number of Records", "Number of Records by Key", "{n_total:,} Total Records"
-)
-_PAIR_COUNTS_SPEC = _HistSpec(
-    "Number of Pairs", "Number of Pairs by Key", "{n_total:,} Total Pairs"
-)
-
-
-class CountsTable(ibis.Table):
+class CountsTable(_util.TableWrapper):
     """A table with at least an Integer column named `n`.
 
     There will also be variable number of other columns that act as identifiers.
@@ -41,12 +33,8 @@ class CountsTable(ibis.Table):
     n: ir.IntegerColumn
     """The column containing the count."""
 
-    def __init__(self, t: ibis.Table, *, hist_spec: _HistSpec) -> None:
-        object.__setattr__(self, "_t", t)
-        object.__setattr__(self, "_hist_spec", hist_spec)
-
-    def __getattr__(self, key: str):
-        return getattr(self._t, key)
+    # This MUST be set in subclasses
+    _KEY_COUNTS_SPEC: _HistSpec
 
     @property
     @functools.cache
@@ -56,13 +44,24 @@ class CountsTable(ibis.Table):
         return int(raw) if raw is not None else 0
 
     def chart(self, *, n_most_common: int = 50, n_least_common: int = 10) -> alt.Chart:
-        """Create an Altair histogram chart."""
         return _counts_chart(
             self,
-            hist_spec=self._hist_spec,
+            hist_spec=self._KEY_COUNTS_SPEC,
             n_most_common=n_most_common,
             n_least_common=n_least_common,
         )
+
+
+class KeyCountsTable(CountsTable):
+    _KEY_COUNTS_SPEC = _HistSpec(
+        "Number of Records", "Number of Records by Key", "{n_total:,} Total Records"
+    )
+
+
+class PairCountsTable(CountsTable):
+    _PAIR_COUNTS_SPEC = _HistSpec(
+        "Number of Pairs", "Number of Pairs by Key", "{n_total:,} Total Pairs"
+    )
 
 
 def _counts_chart(
@@ -75,7 +74,7 @@ def _counts_chart(
     import altair as alt
 
     key_cols = [c for c in counts.columns if c != "n"]
-    val = "(" + ibis.literal(", ").join(counts[c] for c in key_cols) + ")"
+    val = "(" + ibis.literal(", ").join(counts[c].cast(str) for c in key_cols) + ")"
     key_and_n = counts.mutate(val.name("key"), "n")
     key_and_n = key_and_n.filter(_.n > 0)
     most_common = key_and_n.order_by(_.n.desc()).head(n_most_common)
@@ -103,7 +102,7 @@ def _counts_chart(
             alt.Y(
                 "n:Q",
                 title=hist_spec.n_title,
-                # scale=alt.Scale(type="log", domainMin=10),
+                scale=alt.Scale(type="symlog"),
             ),
             tooltip=[
                 alt.Tooltip("n:Q", title=hist_spec.n_title, format=","),
@@ -346,7 +345,7 @@ class KeyBlocker:
         t = t.select(self.keys)
         t = t.drop_null(how="any")
         t = t.group_by(t.columns).agg(n=_.count()).order_by(_.n.desc())
-        return CountsTable(t, hist_spec=_KEY_COUNTS_SPEC)
+        return KeyCountsTable(t)
 
     @functools.cache
     def pair_counts(
@@ -469,7 +468,7 @@ class KeyBlocker:
             k = [c for c in kcl.columns if c != "n"]
             by_key = ibis.join(kcl, kcr, k).mutate(n=_.n * _.n_right).drop("n_right")
         by_key = by_key.order_by(_.n.desc())
-        return CountsTable(by_key, hist_spec=_PAIR_COUNTS_SPEC)
+        return PairCountsTable(by_key)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.name})"

@@ -12,6 +12,26 @@ from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 
 
+class TableWrapper(ibis.Table):
+    """A wrapper around an ibis Table that allows you to access its attributes.
+
+    This allows the user to pretend that they are working with an ibis Table:
+
+    - `isinstance(obj, ibis.Table)` is True
+    - users can call all normal methods `t.distinct()`
+    - can access columns, eg `t.column_name` or `t["column_name"]`
+
+    but it also allows use as developers to extend the functionality of the table,
+    eg adding custom methods or attributes.
+    """
+
+    def __init__(self, t: ibis.Table) -> None:
+        object.__setattr__(self, "_t", t)
+
+    def __getattr__(self, key: str):
+        return getattr(self._t, key)
+
+
 def cases(
     *case_result_pairs: tuple[ir.BooleanValue, ir.Value],
     else_: ir.Value | None = None,
