@@ -49,7 +49,7 @@ class LinkCountsTable(_util.TableWrapper):
                     subtitle=subtitle,
                     anchor="middle",
                 ),
-                width=alt.Step(10),
+                width=alt.Step(12) if self.count().execute() <= 20 else alt.Step(8),
             )
             .mark_bar()
             .encode(
@@ -57,7 +57,7 @@ class LinkCountsTable(_util.TableWrapper):
                 alt.Y(
                     "n:Q",
                     title=n_title,
-                    axis=alt.Axis(),
+                    scale=alt.Scale(type="symlog"),
                 ),
                 tooltip=[
                     alt.Tooltip("n:Q", title=n_title, format=","),
@@ -179,13 +179,14 @@ class FindResults:
         return self.needle_labeled().filter(_.record_ids.length() > 1)
 
     def needle_match_counts(self) -> LinkCountsTable:
-        """A histogram of the number of matches in the the needle.
+        """
+        A histogram of the number of records in the needle, binned by number of matches.
 
         e.g. "There were 700 records with 0 matches, 300 with 1 match,
         20 with 2 matches, ..."
         """
-        n_matches_by_needle_record = self.links().record_id_r.value_counts(name="n")
-        counts = n_matches_by_needle_record.group_by(n_matches=_.n).agg(n=_.count())
+        n_matches_by_record = self.links().record_id_r.value_counts(name="n")
+        counts = n_matches_by_record.group_by(n_matches=_.n).agg(n=_.count())
         n_not_linked = (
             self.needle()
             .select("record_id")
@@ -240,6 +241,29 @@ class FindResults:
     def haystack_labeled_many(self) -> LabeledTable:
         """The subset of haystack with more than one match."""
         return self.haystack_labeled().filter(_.record_ids.length() > 1)
+
+    def haystack_match_counts(self) -> LinkCountsTable:
+        """
+        A histogram of the records in the haystack, binned by number of matches.
+
+        e.g. "There were 700 records with 0 matches, 300 with 1 match,
+        20 with 2 matches, ..."
+        """
+        n_matches_by_record = self.links().record_id_l.value_counts(name="n")
+        counts = n_matches_by_record.group_by(n_matches=_.n).agg(n=_.count())
+        n_not_linked = (
+            self.haystack()
+            .select("record_id")
+            .distinct()
+            .filter(_.record_id.notin(self.links().record_id_l))
+            .count()
+        )
+        extra = (
+            n_not_linked.name("n").as_table().mutate(n_matches=0).cast(counts.schema())
+        )
+        counts = counts.union(extra)
+        counts = counts.order_by(_.n_matches)
+        return LinkCountsTable(counts)
 
     @functools.cache
     def __str__(self) -> str:
