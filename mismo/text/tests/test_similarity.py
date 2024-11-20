@@ -65,7 +65,7 @@ def test_jaccard_string_similarity_character(string1, string2, expected):
         ("foo", "foo", 1),
         ("foo bar", "foo", 0.5),
         ("foo bar", "bar foo", 1),
-        ("foo foo bar", "foo baz", 0.333),
+        ("foo foo bar", "foo baz", 0.3333),
         ("foo", "", 0),
         (None, "foo", np.nan),
     ],
