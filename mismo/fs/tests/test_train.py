@@ -83,6 +83,22 @@ def test_train_comparer_from_labels(backend, name_comparer):
     (weights,) = fs.train_using_labels(
         [name_comparer], patents, patents, max_pairs=100_000
     )
+    _check_name_weights(weights)
+
+
+def test_train_comparer_from_pairs(backend, name_comparer):
+    """Test that finding the weights for a Comparer works."""
+    patents = playdata.load_patents(backend)
+    pairs = patents.join(
+        patents.view(), "label_true", lname="{name}_l", rname="{name}_r"
+    )
+    (weights,) = fs.train_using_pairs(
+        [name_comparer], patents, patents, true_pairs=pairs, max_pairs=100_000
+    )
+    _check_name_weights(weights)
+
+
+def _check_name_weights(weights):
     assert weights.name == "name"
     assert len(weights) == 3
 

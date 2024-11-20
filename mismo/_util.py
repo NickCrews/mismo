@@ -2,13 +2,34 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from contextlib import contextmanager
-from typing import Any, Callable, Iterable, Literal, TypeVar
+from typing import Any, Callable, Iterable, Literal, Mapping, TypeVar
+import warnings
 
 import ibis
 from ibis import _
 from ibis.common.deferred import Deferred
 from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
+
+
+class TableWrapper(ibis.Table):
+    """A wrapper around an ibis Table that allows you to access its attributes.
+
+    This allows the user to pretend that they are working with an ibis Table:
+
+    - `isinstance(obj, ibis.Table)` is True
+    - users can call all normal methods `t.distinct()`
+    - can access columns, eg `t.column_name` or `t["column_name"]`
+
+    but it also allows use as developers to extend the functionality of the table,
+    eg adding custom methods or attributes.
+    """
+
+    def __init__(self, t: ibis.Table) -> None:
+        object.__setattr__(self, "_t", t)
+
+    def __getattr__(self, key: str):
+        return getattr(self._t, key)
 
 
 def cases(
@@ -322,3 +343,109 @@ def struct_tokens(struct: ir.StructValue, *, unique: bool = True) -> ir.ArrayVal
     if unique:
         tokens = tokens.unique()
     return tokens
+
+
+def join_lookup(
+    t: ibis.Table,
+    lookup: ibis.Table,
+    on: str,
+    *,
+    defaults: Mapping[str, ir.Expr] | Iterable[ir.Expr] | None = None,
+    augment_as: str | Callable[[str], str] | Literal[False] = "{name}",
+    on_collision: Literal["error", "warn", "ignore"] = "error",
+) -> ibis.Table:
+    """Join a lookup table to the input table.
+
+    Sometimes, there for a row in `t` there is no corresponding row in the lookup table.
+    In that case, you can provide a `defaults` to provide default values that
+    will get added to the lookup table.
+
+    Parameters
+    ----------
+    t:
+        Table to join with the lookup table.
+    lookup:
+        Table with one row per group.
+    on:
+        The column that will be used to join the two tables.
+        The lookup table should have one row per group.
+        The table `t` can have multiple rows per group.
+        For each row in `t`, we will look up the corresponding row in the lookup table.
+    defaults:
+        If `lookup` doesn't contain a row for a group in `t`,
+        add a row with these defaults.
+        For any fields not given, we will fill in with NULL.
+    augment_as:
+        How to rename the columns in the lookup table before joining.
+        If a string, use that as a format string to rename the columns.
+        If a callable, use the callable to rename the columns.
+        If False, then *we don't actually do any joining*,
+        and just simply return the lookup table directly, after adding in any defaults.
+
+        For example, if `rename_as` is "{name}_canonical",
+        then the lookup table's "email" column will be renamed to "email_canonical"
+        before being joined to the input table.
+        If you want to overwrite the columns in the input table with the lookup table,
+        you can use `rename_as="{name}"`.
+
+        You could also pass `lambda col: col.upper()` to make all the
+        added columns uppercase.
+    on_collision:
+        What to do if there are columns in `t` that will be overwritten by the join.
+        If `rename_as` is the special value "{name}", then this parameter is ignored,
+        since it is assumed you want to overwrite the columns.
+    """
+    if defaults is None:
+        defaults = {col: ibis.null() for col in lookup.columns if col != on}
+    if not isinstance(defaults, Mapping):
+        defaults = {col.get_name(): col for col in defaults}
+    # Ensure that the types are mergable. eg we want to support passing in
+    # {"emails": ibis.literal([])} as a default (which has no concrete type)
+    # First ensure all are expressions:
+    defaults = {
+        col: val if isinstance(val, ir.Expr) else ibis.literal(val)
+        for col, val in defaults.items()
+    }
+    defaults = {col: val.cast(lookup[col].type()) for col, val in defaults.items()}
+
+    lookup = ibis.union(
+        lookup,
+        t.select(on, **defaults).distinct().anti_join(lookup, on),
+    )
+
+    if augment_as is False:
+        return lookup
+
+    def rename(col: str) -> str:
+        if col == on:
+            return col
+        if isinstance(augment_as, str):
+            return augment_as.format(name=col)
+        return augment_as(col)
+
+    lookup = lookup.rename(rename)
+    collisions = (set(t.columns) & set(lookup.columns)) - {on}
+    _check_collisions(collisions, on_collision, augment_as, t.columns)
+    t = t.drop(*collisions)
+    return t.left_join(lookup, on).drop(on + "_right")
+
+
+def _check_collisions(collisions, on_collision, rename_as, columns):
+    msg = f"Columns {collisions} will be overwritten in table with {columns}"
+
+    def _err():
+        raise ValueError(msg)
+
+    def _warn():
+        warnings.warn(msg)
+
+    if on_collision == "error":
+        f = _err
+    elif on_collision == "warn":
+        f = _warn
+    elif on_collision == "ignore":
+        f = lambda: None  # noqa: E731
+    else:
+        raise ValueError(f"Unknown on_collision: {on_collision}")
+    if collisions and rename_as != "{name}":
+        f()

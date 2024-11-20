@@ -167,7 +167,11 @@ class EmailsDimension:
         """Add a column with the parsed and normalized email addresses."""
         return t.mutate(
             get_column(t, self.column)
-            .map(lambda email: ParsedEmail(clean_email(email, normalize=True)))
+            .map(
+                lambda email: ParsedEmail(
+                    clean_email(email, normalize=True)
+                ).as_struct()
+            )
             .name(self.column_parsed)
         )
 

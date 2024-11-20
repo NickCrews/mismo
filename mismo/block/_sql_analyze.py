@@ -142,7 +142,7 @@ def _to_sql_and_backend(duckdb_expr: ir.Expr | str) -> tuple[str, DuckDBBackend]
         con = ibis.duckdb.connect()
     else:
         try:
-            con = duckdb_expr._find_backend()
+            con = duckdb_expr._find_backend(use_default=True)
         except AttributeError:
             raise NotImplementedError("The given expression must have a backend.")
         if not isinstance(con, DuckDBBackend):

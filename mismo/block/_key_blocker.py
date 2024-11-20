@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Callable, Literal
+import functools
+from typing import TYPE_CHECKING, Callable, Literal, NamedTuple
 
 import ibis
 from ibis import Deferred, _
@@ -8,6 +9,108 @@ from ibis.expr import types as ir
 
 from mismo import _util
 from mismo.block._core import block_on_id_pairs, join
+
+if TYPE_CHECKING:
+    import altair as alt
+
+
+class _HistSpec(NamedTuple):
+    n_title: str
+    chart_title: str
+    chart_subtitle: str
+
+
+class CountsTable(_util.TableWrapper):
+    """A table with at least an Integer column named `n`.
+
+    There will also be variable number of other columns that act as identifiers.
+
+    You won't create this directly, it will be returned to you
+    from eg [KeyBlocker.key_counts()][mismo.block.KeyBlocker.key_counts] or
+    [KeyBlocker.pair_counts()][mismo.block.KeyBlocker.pair_counts].
+    """
+
+    n: ir.IntegerColumn
+    """The column containing the count."""
+
+    # This MUST be set in subclasses
+    _KEY_COUNTS_SPEC: _HistSpec
+
+    @property
+    @functools.cache
+    def n_total(self) -> int:
+        """n.sum(), just here for convenience."""
+        raw = self.n.sum().execute()
+        return int(raw) if raw is not None else 0
+
+    def chart(self, *, n_most_common: int = 50, n_least_common: int = 10) -> alt.Chart:
+        return _counts_chart(
+            self,
+            hist_spec=self._KEY_COUNTS_SPEC,
+            n_most_common=n_most_common,
+            n_least_common=n_least_common,
+        )
+
+
+class KeyCountsTable(CountsTable):
+    _KEY_COUNTS_SPEC = _HistSpec(
+        "Number of Records", "Number of Records by Key", "{n_total:,} Total Records"
+    )
+
+
+class PairCountsTable(CountsTable):
+    _PAIR_COUNTS_SPEC = _HistSpec(
+        "Number of Pairs", "Number of Pairs by Key", "{n_total:,} Total Pairs"
+    )
+
+
+def _counts_chart(
+    counts: CountsTable,
+    *,
+    hist_spec: _HistSpec,
+    n_most_common: int,
+    n_least_common: int,
+):
+    import altair as alt
+
+    key_cols = [c for c in counts.columns if c != "n"]
+    val = "(" + ibis.literal(", ").join(counts[c].cast(str) for c in key_cols) + ")"
+    key_and_n = counts.mutate(val.name("key"), "n")
+    key_and_n = key_and_n.filter(_.n > 0)
+    most_common = key_and_n.order_by(_.n.desc()).head(n_most_common)
+    least_common = key_and_n.order_by(_.n.asc()).head(n_least_common)
+    subset = ibis.union(most_common, least_common, distinct=False).cache()
+    n_keys_shown = subset.count().execute()
+    n_keys_total = key_and_n.count().execute()
+    key_title = "(" + ", ".join(key_cols) + ")"
+    chart = (
+        alt.Chart(subset)
+        .properties(
+            title=alt.TitleParams(
+                hist_spec.chart_title,
+                subtitle=[
+                    hist_spec.chart_subtitle.format(n_total=counts.n_total),
+                    f"Showing the {n_keys_shown:,} most and least common keys out of {n_keys_total:,}",  # noqa: E501
+                ],
+                anchor="middle",
+            ),
+            width=alt.Step(10),
+        )
+        .mark_bar()
+        .encode(
+            alt.X("key:O", title=key_title, sort="-y"),
+            alt.Y(
+                "n:Q",
+                title=hist_spec.n_title,
+                scale=alt.Scale(type="symlog"),
+            ),
+            tooltip=[
+                alt.Tooltip("n:Q", title=hist_spec.n_title, format=","),
+                *[alt.Tooltip(col) for col in key_cols],
+            ],
+        )
+    )
+    return chart
 
 
 class KeyBlocker:
@@ -53,9 +156,10 @@ class KeyBlocker:
     └─────────────┴─────────────┴────────────┴────────────┴────────────────┴────────────────┘
 
     Arbitrary blocking keys are supported. For example, block the table wherever
-        - the first 5 characters of the name in uppercase, are the same
-          AND
-        - the latitudes, rounded to 1 decimal place, are the same
+
+    - the first 5 characters of the name in uppercase, are the same
+        AND
+    - the latitudes, rounded to 1 decimal place, are the same
 
     >>> blocker = mismo.block.KeyBlocker(_["name"][:5].upper(), _.latitude.round(1))
     >>> blocker(t, t).order_by("record_id_l", "record_id_r").head()  # doctest: +SKIP
@@ -75,7 +179,7 @@ class KeyBlocker:
     significant tokens:
 
     >>> tokens = _.name.upper().split(" ").filter(lambda x: x.length() > 4)
-    >>> tokens.resolve(t)
+    >>> t.select(tokens)
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     ┃ ArrayFilter(StringSplit(Uppercase(name), ' '), Greater(StringLength(x), 4)) ┃
     ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -96,6 +200,7 @@ class KeyBlocker:
 
     Now, block the tables together wherever two records share a token.
     Note that this blocked `* SCHLUMBERGER LIMITED` with `* SCHLUMBERGER TECHNOLOGY BV`.
+    because they both share the `SCHLUMBERGER` token.
 
     >>> blocker = mismo.block.KeyBlocker(tokens.unnest())
     >>> blocker(t, t).filter(_.name_l != _.name_r).order_by("record_id_l", "record_id_r").head()  # doctest: +SKIP
@@ -167,7 +272,8 @@ class KeyBlocker:
         id_pairs = j.select("record_id_l", "record_id_r").distinct()
         return block_on_id_pairs(left, right, id_pairs)
 
-    def key_counts(self, t: ir.Table, /):
+    @functools.cache
+    def key_counts(self, t: ir.Table, /) -> CountsTable:
         """Count the join keys in a table.
 
         This is very similar to `t.group_by(key).count()`, except that counts NULLs,
@@ -190,8 +296,8 @@ class KeyBlocker:
 
         Returns
         -------
-        ir.Table
-            A table with a column(s) for `key` and a column `n` with the count.
+        CountsTable
+            Will have column(s) for each `key` and a column `n` with the count.
 
         Examples
         --------
@@ -215,7 +321,8 @@ class KeyBlocker:
         Note how the (None, 4) record is not counted,
         since NULLs are not counted as a match during a join.
 
-        >>> blocker.key_counts(t).order_by("letter", "num")
+        >>> counts = blocker.key_counts(t)
+        >>> counts.order_by("letter", "num")
         ┏━━━━━━━━┳━━━━━━━┳━━━━━━━┓
         ┃ letter ┃ num   ┃ n     ┃
         ┡━━━━━━━━╇━━━━━━━╇━━━━━━━┩
@@ -226,18 +333,28 @@ class KeyBlocker:
         │ b      │     2 │     1 │
         │ c      │     3 │     3 │
         └────────┴───────┴───────┘
+
+        The returned CountsTable is a subclass of an Ibis Table
+        with a special `n_total` property for convenience:
+
+        >>> counts.n_total
+        7
+        >>> isinstance(counts, ibis.Table)
+        True
         """
         t = t.select(self.keys)
         t = t.drop_null(how="any")
-        return t.group_by(t.columns).agg(n=_.count()).order_by(_.n.desc())
+        t = t.group_by(t.columns).agg(n=_.count()).order_by(_.n.desc())
+        return KeyCountsTable(t)
 
+    @functools.cache
     def pair_counts(
         self,
         left: ir.Table,
         right: ir.Table,
         *,
         task: Literal["dedupe", "link"] | None = None,
-    ):
+    ) -> CountsTable:
         """Count the number of pairs that would be generated by each key.
 
         If you were to use this blocker to join `left` with `right`,
@@ -269,8 +386,8 @@ class KeyBlocker:
 
         Returns
         -------
-        ir.Table
-            A table with a column(s) for `key` and a column `n` with the count.
+        CountsTable
+            Will have column(s) for each `key` and a column `n` with the count.
 
         Examples
         --------
@@ -320,8 +437,8 @@ class KeyBlocker:
         - 0 pairs in the (a, 1) block due to record 0 not getting blocked with itself
         - 0 pairs in the (b, 2) block due to record 4 not getting blocked with itself
 
-        >>> counts = blocker.pair_counts(t, t).order_by("letter", "num")
-        >>> counts
+        >>> counts = blocker.pair_counts(t, t)
+        >>> counts.order_by("letter", "num")
         ┏━━━━━━━━┳━━━━━━━┳━━━━━━━┓
         ┃ letter ┃ num   ┃ n     ┃
         ┡━━━━━━━━╇━━━━━━━╇━━━━━━━┩
@@ -333,24 +450,25 @@ class KeyBlocker:
         │ c      │     3 │     3 │
         └────────┴───────┴───────┘
 
-        The total number of pairs that would be generated is easy to find:
+        The returned CountsTable is a subclass of an Ibis Table
+        with a special `n_total` property for convenience:
 
-        >>> counts.n.sum().execute()
-        np.int64(4)
+        >>> counts.n_total
+        4
+        >>> isinstance(counts, ibis.Table)
+        True
         """  # noqa: E501
         if task is None:
             task = "dedupe" if left is right else "link"
         kcl = self.key_counts(left)
         kcr = self.key_counts(right)
-        k = [c for c in kcl.columns if c != "n"]
-        j = ibis.join(kcl, kcr, k)
         if task == "dedupe":
-            n_pairs = (_.n * (_.n_right - 1) / 2).cast(int)
+            by_key = kcl.mutate(n=(_.n * (_.n - 1) / 2).cast(int))
         else:
-            n_pairs = _.n * _.n_right
-        j = j.mutate(n=n_pairs).drop("n_right")
-        j = j.order_by(_.n.desc())
-        return j
+            k = [c for c in kcl.columns if c != "n"]
+            by_key = ibis.join(kcl, kcr, k).mutate(n=_.n * _.n_right).drop("n_right")
+        by_key = by_key.order_by(_.n.desc())
+        return PairCountsTable(by_key)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.name})"

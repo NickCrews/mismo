@@ -21,7 +21,25 @@ def train_using_em(
     *,
     max_pairs: int | None = None,
 ) -> Weights:
-    """Train weights on unlabeled data using an expectation maximization algorithm."""
+    """Train weights on unlabeled data using an expectation maximization algorithm.
+
+    Parameters
+    ----------
+    comparers
+        The comparers to train.
+    left
+        The left dataset.
+    right
+        The right dataset.
+    max_pairs
+        The maximum number of pairs to sample.
+        If None, all pairs are used.
+
+    Returns
+    -------
+    Weights
+        The estimated weights for each comparer.
+    """
     pairs = _train.sample_all_pairs(left, right, max_pairs=max_pairs)
     for c in comparers:
         pairs = c(pairs)

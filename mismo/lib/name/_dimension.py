@@ -48,8 +48,6 @@ class NameDimension:
             The prepped table.
         """
         t = t.mutate(_clean.normalize_name(t[self.column]).name(self.column_normed))
-        # workaround for https://github.com/ibis-project/ibis/issues/8484
-        t = t.cache()
         t = t.mutate(_clean.name_tokens(t[self.column_normed]).name(self.column_tokens))
         return t
 

@@ -23,23 +23,17 @@ classifiers = [
 dependencies = [
     "ibis-framework>=9.1.0",
     # "ibis-framework[duckdb] @ git+https://github.com/ibis-project/ibis.git@42f45fe59da492897f0449468a3036384be34214",
-    "typing-extensions ; python_version < \"3.11\"", # needed for Self
+    # Needed for Self, which was added in 4.0.0 according to
+    # https://github.com/python/typing_extensions/blob/82d512ae1082b9c7c82678771746753a583cc64b/CHANGELOG.md
+    "typing-extensions>=4.0.0 ; python_version < \"3.11\"", 
 ]
 
 [project.optional-dependencies]
 viz = [
   "altair>=5.0.0",
-  "anywidget",
-  "ipywidgets",
+  "ipywidgets>=7.5.1",
   "solara>=1.32.1",
 ]
-# If you are developing on linux or mac, you can install libpostal
-# using the `install-libpostal` justfile recipe.
-# Then, pypostal will be installed automatically by pip.
-# 
-# If you are developing on windows, you will need to install libpostal manually.
-# Then install pypostal manually:
-# `uv run python -m ensurepip && uv run python -m pip install postal`
 postal = [
    "postal>=1.1.7; sys_platform == 'linux' or sys_platform == 'darwin'",
 ]
@@ -55,28 +49,28 @@ Source = "https://github.com/NickCrews/mismo"
 
 [tool.uv]
 dev-dependencies = [
-  "ruff",
-  "mypy",
-  "pre-commit",
-  "DoubleMetaphone",
-  "httpx",
-  "ibis-framework[duckdb,examples]>=9.0.0",
-  "duckdb>=1.0.0",
-  "nicknames",
-  "pytest",
-  "pytest-benchmark>=3.4.1",
-  "pytest-cov",
-  "scikit-learn",
-  "recordlinkage",
-  "mkdocs-git-revision-date-localized-plugin",
-  "mkdocs-jupyter",
-  "mkdocs-literate-nav",
-  "mkdocs-material",
-  "mkdocstrings[python]",
+    "doublemetaphone>=1.1",
+    "duckdb>=1.1.1",
+    "httpx>=0.27.2",
+    "ibis-framework[duckdb,examples]>=9.5.0",
+    "mkdocs-git-revision-date-localized-plugin>=1.2.9",
+    "mkdocs-jupyter>=0.25.0",
+    "mkdocs-literate-nav>=0.6.1",
+    "mkdocs-material>=9.5.39",
+    "mkdocstrings[python]>=0.26.1",
+    "mypy>=1.11.2",
+    "nicknames>=0.1.10",
+    "pre-commit>=4.0.0",
+    "pytest>=8.3.3",
+    "pytest-benchmark>=4.0.0",
+    "pytest-cov>=5.0.0",
+    "recordlinkage>=0.16",
+    "ruff>=0.6.9",
+    "scikit-learn>=1.5.2",
 ]
 
 [tool.uv.sources]
-en-us-address-ner-sm = { url = "https://github.com/NickCrews/spacy-address/releases/download/20241007-072524-sm/en_us_address_ner_sm-0.0.0-py3-none-any.whl" }
+en-us-address-ner-sm = { url = "https://github.com/NickCrews/spacy-address/releases/download/20241029-205717-sm/en_us_address_ner_sm-0.0.0-py3-none-any.whl" }
 
 
 [tool.pytest.ini_options]

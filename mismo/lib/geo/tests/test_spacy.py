@@ -39,7 +39,7 @@ from mismo.lib import geo
             "PO Box 4-b, Adak, alaksa 99546",  # alaska is misspelled
             [
                 {"token": "PO Box", "label": "USPSBoxType"},
-                {"token": "4-b", "label": "AddressNumber"},
+                {"token": "4-b", "label": "USPSBoxID"},
                 {"token": "Adak", "label": "PlaceName"},
                 {"token": "alaksa", "label": "StateName"},
                 {"token": "99546", "label": "ZipCode"},

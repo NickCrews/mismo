@@ -19,7 +19,7 @@ from mismo.lib import geo
                     "country": "US",
                 },
                 {
-                    "street1": "1 1st",
+                    "street1": "1 1st Ave",
                     "street2": None,
                     "city": "Springfield",
                     "state": "",
@@ -34,7 +34,6 @@ from mismo.lib import geo
                         "city": "SPRINGFIELD",
                         "state": None,
                         "postal_code": "62701",
-                        "country": "US",
                         "street_ngrams": [
                             "123",
                             "MAIN",
@@ -42,28 +41,13 @@ from mismo.lib import geo
                         "street_name": "MAIN",
                         "street_number": "132",
                         "street_number_sorted": "123",
-                        "taggings": [
-                            {
-                                "label": "AddressNumber",
-                                "token": "132",
-                            },
-                            {
-                                "label": "StreetName",
-                                "token": "MAIN",
-                            },
-                            {
-                                "label": "StreetNamePostType",
-                                "token": "ST",
-                            },
-                        ],
                     },
                     {
-                        "street1": "1 1ST",
+                        "street1": "1 1ST AVE",
                         "street2": None,
                         "city": "SPRINGFIELD",
                         "state": None,
                         "postal_code": "62701",
-                        "country": None,
                         "street_ngrams": [
                             "1",
                             "1ST",
@@ -71,16 +55,6 @@ from mismo.lib import geo
                         "street_name": "1ST",
                         "street_number": "1",
                         "street_number_sorted": "1",
-                        "taggings": [
-                            {
-                                "label": "AddressNumber",
-                                "token": "1",
-                            },
-                            {
-                                "label": "StreetName",
-                                "token": "1ST",
-                            },
-                        ],
                     },
                 ],
                 "addresses_keywords": [
@@ -111,7 +85,6 @@ from mismo.lib import geo
                         "city": None,
                         "state": "IL IL",
                         "postal_code": "62701",
-                        "country": "US",
                         "street_ngrams": [
                             "123",
                             "MAIN",
@@ -119,20 +92,6 @@ from mismo.lib import geo
                         "street_name": "MAIN",
                         "street_number": "132",
                         "street_number_sorted": "123",
-                        "taggings": [
-                            {
-                                "label": "AddressNumber",
-                                "token": "132",
-                            },
-                            {
-                                "label": "StreetName",
-                                "token": "MAIN",
-                            },
-                            {
-                                "label": "StreetNamePostType",
-                                "token": "ST",
-                            },
-                        ],
                     }
                 ],
                 "addresses_keywords": [
@@ -154,7 +113,19 @@ from mismo.lib import geo
                 }
             ],
             {
-                "addresses": [],
+                "addresses": [
+                    {
+                        "city": None,
+                        "postal_code": None,
+                        "state": None,
+                        "street1": None,
+                        "street2": None,
+                        "street_name": None,
+                        "street_ngrams": None,
+                        "street_number": None,
+                        "street_number_sorted": None,
+                    },
+                ],
                 "addresses_keywords": [],
             },
             id="all_null",
@@ -164,7 +135,7 @@ from mismo.lib import geo
             {"addresses": [], "addresses_keywords": []},
             id="empty",
         ),
-        pytest.param(None, {"addresses": [], "addresses_keywords": []}, id="null"),
+        pytest.param(None, {"addresses": None, "addresses_keywords": None}, id="null"),
     ],
 )
 def test_addresses_dimension(addresses, expected, table_factory):
@@ -172,10 +143,16 @@ def test_addresses_dimension(addresses, expected, table_factory):
     t = table_factory({"addresses": [addresses]}, schema={"addresses": address_type})
     dim = geo.AddressesDimension("addresses")
     result = dim.prepare(t).addresses_featured.execute().iloc[0]
-    for address in result["addresses"]:
-        address["street_ngrams"] = set(address["street_ngrams"])
-    for address in expected["addresses"]:
-        address["street_ngrams"] = set(address["street_ngrams"])
-    expected["addresses_keywords"] = set(expected["addresses_keywords"])
-    result["addresses_keywords"] = set(result["addresses_keywords"])
+
+    def setify(x):
+        return set(x) if x is not None else None
+
+    if result["addresses"] is not None:
+        for address in result["addresses"]:
+            address["street_ngrams"] = setify(address["street_ngrams"])
+    if expected["addresses"] is not None:
+        for address in expected["addresses"]:
+            address["street_ngrams"] = setify(address["street_ngrams"])
+    expected["addresses_keywords"] = setify(expected["addresses_keywords"])
+    result["addresses_keywords"] = setify(result["addresses_keywords"])
     assert result == expected

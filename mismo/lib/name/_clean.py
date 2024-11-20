@@ -20,8 +20,7 @@ def normalize_name_field(field: ir.StringValue) -> ir.StringValue:
         The normalized name.
     """
     field = field.upper()
-    field = field.re_replace(r"[^A-Za-z0-9]+", " ")
-    field = field.re_replace(r"\s+", " ")
+    field = field.re_replace(r"[^A-Z0-9]+|\s+", " ")
     field = field.strip()
     return field
 
