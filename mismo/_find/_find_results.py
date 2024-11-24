@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+from pathlib import Path
 from textwrap import dedent
 from typing import TYPE_CHECKING, Literal
 import warnings
@@ -136,6 +137,30 @@ class FindResults:
     def links(self) -> ir.Table:
         """The pairs of matches between the needle and the haystack."""
         return self._links
+
+    def to_parquets(self, directory: str | Path, /) -> None:
+        """
+        Write the needle, haystack, and links to parquet files in the given directory.
+        """
+        d = Path(directory)
+        d.mkdir(parents=True, exist_ok=True)
+        self.haystack().to_parquet(d / "haystack.parquet")
+        self.needle().to_parquet(d / "needle.parquet")
+        self.links().to_parquet(d / "links.parquet")
+
+    @classmethod
+    def from_parquets(
+        cls, directory: str | Path, /, backend: ibis.BaseBackend | None = None
+    ) -> None:
+        """Create a FindResults by reading parquets from the given directory."""
+        if backend is None:
+            backend = ibis
+        d = Path(directory)
+        return cls(
+            haystack=backend.read_parquet(d / "haystack.parquet"),
+            needle=backend.read_parquet(d / "needle.parquet"),
+            links=backend.read_parquet(d / "links.parquet"),
+        )
 
     def needle_labeled(self) -> LabeledTable:
         """The needle, with a `record_ids` column added of matches from the haystack."""
