@@ -162,38 +162,43 @@ class FindResults:
             links=backend.read_parquet(d / "links.parquet"),
         )
 
-    def needle_labeled(self) -> LabeledTable:
+    def needle_labeled(self, *, name: str = "record_ids") -> LabeledTable:
         """The needle, with a `record_ids` column added of matches from the haystack."""
         n = self.needle()
-        if "record_ids" in n.columns:
-            warnings.warn("Column 'record_ids' will be overwritten in needle.")
-            n = n.drop("record_ids")
+        if name in n.columns:
+            warnings.warn(f"Column '{name}' will be overwritten in needle.")
+            n = n.drop(name)
 
         lookup = (
             self.links()
             .group_by(record_id=_.record_id_r)
-            .agg(record_ids=_.record_id_l.collect())
+            .agg(_.record_id_l.collect().name(name))
         )
-        return _util.join_lookup(n, lookup, "record_id", defaults={"record_ids": []})
+        return _util.join_lookup(n, lookup, "record_id", defaults={name: []})
 
     def needle_labeled_none(self) -> LabeledTable:
         """The subset of needle_labeled with no matches."""
         return self.needle_labeled().filter(_.record_ids.length() == 0)
 
     def needle_labeled_single(
-        self, *, format: Literal["single", "array"] = "single"
+        self,
+        *,
+        name: str = "record_id",
+        format: Literal["single", "array"] = "single",
     ) -> ir.Table:
         """The subset of needle_labeled with exactly one match.
 
         Parameters
         ----------
+        name:
+            How to name the column.
         format
             - "single": Return a table with a `record_id` column, without the `record_ids` column.
             - "array": Return the table as-is.
         """  # noqa: E501
         raw = self.needle_labeled().filter(_.record_ids.length() == 1)
         if format == "single":
-            return raw.mutate(record_id=_.record_ids[0]).drop("record_ids")
+            return raw.mutate(_.record_ids[0].name(name)).drop("record_ids")
         elif format == "array":
             return raw
         else:
@@ -226,38 +231,43 @@ class FindResults:
         counts = counts.order_by(_.n_matches)
         return LinkCountsTable(counts)
 
-    def haystack_labeled(self) -> LabeledTable:
+    def haystack_labeled(self, *, name: str = "record_ids") -> LabeledTable:
         """The haystack, with a `record_ids` column added of matches from the needle."""
         h = self.haystack()
-        if "record_ids" in h.columns:
-            warnings.warn("Column 'record_ids' will be overwritten in haystack.")
-            h = h.drop("record_ids")
+        if name in h.columns:
+            warnings.warn(f"Column '{name}' will be overwritten in haystack.")
+            h = h.drop(name)
 
         lookup = (
             self.links()
             .group_by(record_id=_.record_id_l)
-            .agg(record_ids=_.record_id_r.collect())
+            .agg(_.record_id_r.collect().name(name))
         )
-        return _util.join_lookup(h, lookup, "record_id", defaults={"record_ids": []})
+        return _util.join_lookup(h, lookup, "record_id", defaults={name: []})
 
     def haystack_labeled_none(self) -> LabeledTable:
         """The subset of haystack with no matches."""
         return self.haystack_labeled().filter(_.record_ids.length() == 0)
 
     def haystack_labeled_single(
-        self, *, format: Literal["single", "array"] = "single"
+        self,
+        *,
+        name: str = "record_id",
+        format: Literal["single", "array"] = "single",
     ) -> ir.Table:
         """The subset of haystack_labeled with exactly one match.
 
         Parameters
         ----------
+        name:
+            How to name the column.
         format
-            - "single": Return a table with a `record_id` column, without the `record_ids` column.
+            - "single": Return a table with a {name} column, without the `record_ids` column.
             - "array": Return the table as-is.
         """  # noqa: E501
         raw = self.haystack_labeled().filter(_.record_ids.length() == 1)
         if format == "single":
-            return raw.mutate(record_id=_.record_ids[0]).drop("record_ids")
+            return raw.mutate(_.record_ids[0].name(name)).drop("record_ids")
         elif format == "array":
             return raw
         else:
