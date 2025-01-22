@@ -16,13 +16,13 @@ if TYPE_CHECKING:
     import altair as alt
 
 
-class LinkCountsTable(_util.TableWrapper):
+class MatchCountsTable(_util.TableWrapper):
     """A table representing the number of records by the number of matches.
 
     eg "There were 700 records with 0 matches, 300 with 1 match, 20 with 2 matches, ..."
     """
 
-    n: ir.IntegerColumn
+    n_records: ir.IntegerColumn
     """The number of records."""
     n_matches: ir.IntegerColumn
     """The number of matches."""
@@ -33,13 +33,11 @@ class LinkCountsTable(_util.TableWrapper):
 
         n_title = "Number of Records"
         key_title = "Number of Matches"
-        mins = self.order_by(_.n.desc()).limit(2).execute()
+        mins = self.order_by(_.n_records.desc()).limit(2).execute()
         if len(mins) > 1:
-            subtitle = f"eg '{mins.n[0]:,} records had {mins.n_matches[0]} matches, {mins.n[1]:,} had {mins.n_matches[1]} matches, ...'"  # noqa: E501
+            subtitle = f"eg '{mins.n_records[0]:,} records had {mins.n_matches[0]} matches, {mins.n_records[1]:,} had {mins.n_matches[1]} matches, ...'"  # noqa: E501
         elif len(mins) == 1:
-            subtitle = (
-                f"eg '{mins.n[0]:,} records had {mins.n_matches[0]} matches', ..."
-            )
+            subtitle = f"eg '{mins.n_records[0]:,} records had {mins.n_matches[0]} matches', ..."  # noqa: E501
         else:
             subtitle = "eg 'there were 1000 records with 0 matches, 500 with 1 match, 100 with 2 matches, ...'"  # noqa: E501
         chart = (
@@ -56,12 +54,12 @@ class LinkCountsTable(_util.TableWrapper):
             .encode(
                 alt.X("n_matches:O", title=key_title, sort="x"),
                 alt.Y(
-                    "n:Q",
+                    "n_records:Q",
                     title=n_title,
                     scale=alt.Scale(type="symlog"),
                 ),
                 tooltip=[
-                    alt.Tooltip("n:Q", title=n_title, format=","),
+                    alt.Tooltip("n_records:Q", title=n_title, format=","),
                     alt.Tooltip("n_matches:O", title=key_title),
                 ],
             )
@@ -208,15 +206,15 @@ class FindResults:
         """The subset of needle_labeled with more than one match."""
         return self.needle_labeled().filter(_.record_ids.length() > 1)
 
-    def needle_match_counts(self) -> LinkCountsTable:
+    def needle_match_counts(self) -> MatchCountsTable:
         """
         A histogram of the number of records in the needle, binned by number of matches.
 
         e.g. "There were 700 records with 0 matches, 300 with 1 match,
         20 with 2 matches, ..."
         """
-        n_matches_by_record = self.links().record_id_r.value_counts(name="n")
-        counts = n_matches_by_record.group_by(n_matches=_.n).agg(n=_.count())
+        n_matches_by_record = self.links().record_id_r.value_counts(name="n_matches")
+        counts = n_matches_by_record.group_by("n_matches").agg(n_records=_.count())
         n_not_linked = (
             self.needle()
             .select("record_id")
@@ -225,11 +223,14 @@ class FindResults:
             .count()
         )
         extra = (
-            n_not_linked.name("n").as_table().mutate(n_matches=0).cast(counts.schema())
+            n_not_linked.name("n_records")
+            .as_table()
+            .mutate(n_matches=0)
+            .cast(counts.schema())
         )
         counts = counts.union(extra)
         counts = counts.order_by(_.n_matches)
-        return LinkCountsTable(counts)
+        return MatchCountsTable(counts)
 
     def haystack_labeled(self, *, name: str = "record_ids") -> LabeledTable:
         """The haystack, with a `record_ids` column added of matches from the needle."""
@@ -277,15 +278,15 @@ class FindResults:
         """The subset of haystack with more than one match."""
         return self.haystack_labeled().filter(_.record_ids.length() > 1)
 
-    def haystack_match_counts(self) -> LinkCountsTable:
+    def haystack_match_counts(self) -> MatchCountsTable:
         """
         A histogram of the records in the haystack, binned by number of matches.
 
         e.g. "There were 700 records with 0 matches, 300 with 1 match,
         20 with 2 matches, ..."
         """
-        n_matches_by_record = self.links().record_id_l.value_counts(name="n")
-        counts = n_matches_by_record.group_by(n_matches=_.n).agg(n=_.count())
+        n_matches_by_record = self.links().record_id_l.value_counts(name="n_matches")
+        counts = n_matches_by_record.group_by("n_matches").agg(n_records=_.count())
         n_not_linked = (
             self.haystack()
             .select("record_id")
@@ -294,11 +295,14 @@ class FindResults:
             .count()
         )
         extra = (
-            n_not_linked.name("n").as_table().mutate(n_matches=0).cast(counts.schema())
+            n_not_linked.name("n_records")
+            .as_table()
+            .mutate(n_matches=0)
+            .cast(counts.schema())
         )
         counts = counts.union(extra)
         counts = counts.order_by(_.n_matches)
-        return LinkCountsTable(counts)
+        return MatchCountsTable(counts)
 
     @functools.cache
     def __str__(self) -> str:
