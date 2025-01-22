@@ -20,7 +20,7 @@ _ConditionAtom = Union[
     Literal[True, False],
     tuple[_ColumnReferenceLike, _ColumnReferenceLike],
 ]
-_Condition = Union[
+_IntoCondition = Union[
     _ConditionAtom,
     Callable[[ir.Table, ir.Table], _ConditionAtom],
 ]
@@ -29,7 +29,7 @@ _Condition = Union[
 def join(
     left: ir.Table,
     right: ir.Table,
-    *conditions: _Condition,
+    *conditions: _IntoCondition,
     on_slow: Literal["error", "warn", "ignore"] = "error",
     task: Literal["dedupe", "link"] | None = None,
     **kwargs,
@@ -189,7 +189,7 @@ class _Condition(NamedTuple):
 
 # TODO: This is a bit of a hot mess. Can we simplify this?
 def _resolve_conditions(
-    left: ir.Table, right: ir.Table, raw: tuple[_Condition], **kwargs
+    left: ir.Table, right: ir.Table, raw: tuple[_IntoCondition], **kwargs
 ) -> ir.Table | tuple[ir.Table, ir.Table, ir.BooleanValue]:
     conditions = [
         _resolve_condition(left, right, condition, **kwargs) for condition in raw
