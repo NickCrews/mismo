@@ -33,7 +33,7 @@ class MatchCountsTable(_util.TableWrapper):
 
         n_title = "Number of Records"
         key_title = "Number of Matches"
-        mins = self.order_by(_.n_records.desc()).limit(2).execute()
+        mins = self.order_by(_.n_matches.asc()).limit(2).execute()
         if len(mins) > 1:
             subtitle = f"eg '{mins.n_records[0]:,} records had {mins.n_matches[0]} matches, {mins.n_records[1]:,} had {mins.n_matches[1]} matches, ...'"  # noqa: E501
         elif len(mins) == 1:
@@ -52,6 +52,8 @@ class MatchCountsTable(_util.TableWrapper):
             )
             .mark_bar()
             .encode(
+                # if we ever change this sorting, keep the subtitle example
+                # to be in sync of the same order as the bars go left to right.
                 alt.X("n_matches:O", title=key_title, sort="x"),
                 alt.Y(
                     "n_records:Q",
