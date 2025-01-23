@@ -326,7 +326,7 @@ class FindResults:
             haystack.count()={self.haystack().count().execute():,},
             haystack_labeled_none().count()={self.haystack_labeled_none().count().execute():,},
             haystack_labeled_single().count()={self.haystack_labeled_single().count().execute():,},
-            haystack_labeled_any().count()={self.haystack_labeled_single().count().execute():,},
+            haystack_labeled_many().count()={self.haystack_labeled_many().count().execute():,},
             needle.count()={self.needle().count().execute():,},
             needle_labeled.count()={self.needle_labeled().count().execute():,})
             needle_labeled_none.count()={self.needle_labeled_none().count().execute():,},
