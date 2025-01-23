@@ -17,6 +17,8 @@ if TYPE_CHECKING:
 class LinkedTable(TableWrapper):
     """A table of records that are linked to another table.
 
+    Each record here can be linked to 0-N records in the `other_`.
+
     This acts just like an Ibis Table, but it has a few extra attributes
     and methods that make it more ergonomic to work with,
     eg to add data from the linked table.
@@ -355,7 +357,24 @@ class LinkedTable(TableWrapper):
 
 
 class Linkage:
-    """Two tables of records and links between them."""
+    """Two tables of records and links between them.
+
+    This is semantically similar to a [Diff][mismo.types.Diff] object,
+    except in a Diff object every row in `left` is linked
+    to either 0 or 1 rows in `right`.
+    Because there can't be many-to- relationships,
+    Diffs allow for the semantics of insertions, updates, and deletions.
+    eg "this row changed in these ways between these two tables".
+
+    On the other hand, a Linkage object is more general.
+    It supports the semantics of a many-to-many relationship between two tables.
+    Say you have a clean database of records.
+    You just got a new batch of dirty data that might contain duplicates.
+    Each record in the clean database might match multiple records in the dirty data.
+    This makes it difficult to use a Diff object, because each clean record
+    can't be paired up nicely with a single dirty record.
+    A Linkage object is more appropriate in this case.
+    """
 
     def __init__(self, left: ibis.Table, right: ibis.Table, links: ibis.Table):
         if len(links.columns) != 2:

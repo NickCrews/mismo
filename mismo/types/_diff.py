@@ -6,7 +6,16 @@ from mismo.types._updates import Updates
 
 
 class Diff:
-    """A set of insertions, updates, and deletions between two tables."""
+    """A set of insertions, updates, and deletions between two tables.
+
+    This can only semantically represent 1-1 relationships,
+    eg a row in the `before` table corresponds to only 0 or 1 row in the `after` table,
+    and vice versa.
+
+    To represent a more general relationship, use a [Linkage](mismo.types.Linkage).
+    This can support 1-N relationships,
+    eg a row in the `before` table corresponds to 0 or more rows in the `after` table.
+    """
 
     def __init__(
         self, before: ibis.Table, after: ibis.Table, *, join_on: str | None = None

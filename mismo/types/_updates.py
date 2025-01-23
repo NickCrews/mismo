@@ -74,22 +74,14 @@ class Filters:
 class Updates(TableWrapper):
     """A Table representing how individual rows were updated.
 
-    This is a Table of structs, each struct having 'before' and 'after' fields.
-    It only represents rows that were present in both tables.
-    This is because consider these two situations:
-
-    1. A row was in the before table, but not in the after table.
-    2. A row was in both tables, but was all NULL in the after table.
-
-    In both cases, a good representation would be to have {before: ..., after: NULL}.
-    But this makes it impossible to distinguish between the two cases.
-    So, we only consider rows that were present in both tables.
-    Insertions and deletions should be handled separately.
+    This only represents differences in rows that exist both before and after the changes.
+    To represent a general difference between two tables, eg with insertions and deletions,
+    use [Diff](mismo.types.Diff).
 
     This represents how each column has changed between two tables.
-    If a column only has a 'before' field, this means it was removed.
-    If a column only has an 'after' field, this means it was added.
-    If a column has both 'before' and 'after' fields, this means it was present in both tables.
+    If a column only has a 'before' field, it means this column was removed.
+    If a column only has an 'after' field, it means this column was added.
+    If a column has both 'before' and 'after' fields, it means this column was present in both tables.
     """  # noqa: E501
 
     filters = Filters
