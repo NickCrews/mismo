@@ -60,9 +60,9 @@ def test_LinkedTable_link_counts():
     # ┡━━━━━━━━━╇━━━━━━━━━━━┩
     # │ int64   │ int64     │
     # ├─────────┼───────────┤
+    # │       2 │         1 │  # there was 1 record in tl that matched 2 in tr
     # │       0 │         1 │  # there was 1 record in tl that didn't match any in tr
     # │       1 │         1 │  # there was 1 record in tl that matched 1 in tr
-    # │       2 │         1 │  # there was 1 record in tl that matched 2 in tr
     # └─────────┴───────────┘
     expected = ibis.memtable(
         {
@@ -78,13 +78,12 @@ def test_LinkedTable_link_counts():
     # ┡━━━━━━━━━╇━━━━━━━━━━━┩
     # │ int64   │ int64     │
     # ├─────────┼───────────┤
-    # │       0 │         0 │  # there were 0 records in tr that didn't match any in tl  # noqa: E501
     # │       1 │         3 │  # there were 3 records in tr that matched 1 in tl
     # └─────────┴───────────┘
     expected = ibis.memtable(
         {
-            "n_records": [0, 3],
-            "n_links": [0, 1],
+            "n_records": [3],
+            "n_links": [1],
         }
     )
     assert_tables_equal(expected, actual)
@@ -104,6 +103,20 @@ def test_LinkedTable_filter(linkage: Linkage):
 
     expected_links = ibis.memtable({"idl": [5], "idr": [9]})
     assert_tables_equal(expected_links, filtered.links_)
+
+
+# My first implementation had a bug in it where this would always be empty
+def test_LinkedTable_filter_0(linkage: Linkage):
+    filtered = linkage.left.filter_by_n_links(_ == 0)
+    assert isinstance(filtered, LinkedTable)
+
+    expected = ibis.memtable({"idl": [6]})
+    assert_tables_equal(expected, filtered)
+
+    expected_links = ibis.memtable({"idl": [], "idr": []})
+    assert_tables_equal(
+        expected_links, filtered.links_, on_schema_mismatch="cast_to_left"
+    )
 
 
 def test_LinkedTable_with_many_linked_values(linkage: Linkage, table_factory):

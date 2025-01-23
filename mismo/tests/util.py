@@ -13,8 +13,18 @@ def assert_tables_equal(
     right: ir.Table,
     *,
     column_order: Literal["ignore", "exact"] = "exact",
+    on_schema_mismatch: Literal["error", "cast_to_left", "cast_to_right"] = "error",
     order_by=None,
 ) -> None:
+    if left.schema() != right.schema():
+        if on_schema_mismatch == "error":
+            assert dict(left.schema()) == dict(right.schema())
+        if on_schema_mismatch == "cast_to_left":
+            right = right.cast(left.schema())
+        elif on_schema_mismatch == "cast_to_right":
+            left = left.cast(right.schema())
+        else:
+            raise ValueError(f"Invalid on_schema_mismatch: {on_schema_mismatch}")
     assert dict(left.schema()) == dict(right.schema())
     if column_order == "exact":
         assert left.columns == right.columns

@@ -52,7 +52,7 @@ class LinkedTable(TableWrapper):
         self,
         *values: ibis.Deferred | Callable[[ibis.Table], ir.Value] | None,
         **named_values: ibis.Deferred | Callable[[ibis.Table], ir.Value] | None,
-    ) -> LinkedTable:
+    ) -> _typing.Self:
         """
         This table, with `array<>` columns of values from linked records in `other`
 
@@ -156,7 +156,7 @@ class LinkedTable(TableWrapper):
         self,
         *values: ibis.Deferred | Callable[[ibis.Table], ir.Value] | None,
         **named_values: ibis.Deferred | Callable[[ibis.Table], ir.Value] | None,
-    ) -> LinkedTable:
+    ) -> _typing.Self:
         """
         This table filtered to single matches, with values from the linked record.
 
@@ -249,7 +249,7 @@ class LinkedTable(TableWrapper):
         return self.__class__(with_other, self.other_, self.links_)
 
     # I'm not positive that filtering links is the right thing to do...
-    def filter_by_n_links(self, condition: ibis.Deferred) -> LinkedTable:
+    def filter_by_n_links(self, condition: ibis.Deferred) -> _typing.Self:
         """
         Filter this LinkedTable to records that have a certain number of links.
 
@@ -285,80 +285,121 @@ class LinkedTable(TableWrapper):
         │     5 │
         └───────┘
         """
-        self_ids_to_n: ir.Table = self.links_[self._self_id].value_counts(
-            name="n_links"
-        )
-        resolved_condition = condition.resolve(self_ids_to_n.n_links)
-        filtered_self_ids = self_ids_to_n.filter(resolved_condition)[self._self_id]
+        n_by_id: ir.Table = _n_links_by_id(self.select(self._self_id), self.links_)
+        resolved_condition = condition.resolve(n_by_id.n_links)
+        filtered_self_ids = n_by_id.filter(resolved_condition)[self._self_id]
         filtered_links = self.links_.filter(_[self._self_id].isin(filtered_self_ids))
         filtered_self = self.filter(_[self._self_id].isin(filtered_self_ids))
         return self.__class__(filtered_self, self.other_, filtered_links)
 
-    def link_counts(self) -> LinkCountsTable:
+    @property
+    def _n_links_by_id(self) -> ir.Table:
+        return _n_links_by_id(self.select(self._self_id), self.links_)
+
+    def with_n_links(self, name: str = "n_links") -> _typing.Self:
         """
-        Describes 'There are `n_records` in self that linked to `n_links` in `other'.
+        Add a column to this table with the number of links each record has.
+
+        Parameters
+        ----------
+        name
+            The name of the new column.
+
+        Returns
+        -------
+        A new LinkedTable with the new column.
 
         Examples
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> this = ibis.memtable({"idl": [4, 5, 6]})
-        >>> other = ibis.memtable({"idr": [7, 8, 9]})
+        >>> left = ibis.memtable({"idl": [4, 5, 6]})
+        >>> right = ibis.memtable({"idr": [7, 8, 9]})
         >>> links = ibis.memtable({"idl": [4, 4, 5], "idr": [7, 8, 9]})
-        >>> lt = LinkedTable(this, other, links)
-        >>> lt.link_counts()
+        >>> linkage = Linkage(left, right, links)
+        >>> linkage.left.with_n_links().order_by("idl")
+        ┏━━━━━━━┳━━━━━━━━━┓
+        ┃ idl   ┃ n_links ┃
+        ┡━━━━━━━╇━━━━━━━━━┩
+        │ int64 │ int64   │
+        ├───────┼─────────┤
+        │     4 │       2 │
+        │     5 │       1 │
+        │     6 │       0 │
+        └───────┴─────────┘
+        >>> linkage.right.with_n_links().order_by("idr")
+        ┏━━━━━━━┳━━━━━━━━━┓
+        ┃ idr   ┃ n_links ┃
+        ┡━━━━━━━╇━━━━━━━━━┩
+        │ int64 │ int64   │
+        ├───────┼─────────┤
+        │     7 │       1 │
+        │     8 │       1 │
+        │     9 │       1 │
+        └───────┴─────────┘
+        """
+        n_by_id = self._n_links_by_id.rename(**{name: "n_links"})
+        t = self
+        if name in t.columns:
+            t = t.drop(name)
+        added = _util.join_lookup(t, n_by_id, self._self_id)
+        return self.__class__(added, self.other_, self.links_)
+
+    def link_counts(self) -> LinkCountsTable:
+        """
+        Describes 'There are `n_records` in self that linked to `n_links` in `other'.
+
+        This is basically a histogram of `self.with_n_links()`
+
+        See Also
+        --------
+        with_n_links
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> left = ibis.memtable({"idl": [4, 5, 6]})
+        >>> right = ibis.memtable({"idr": [7, 8, 9]})
+        >>> links = ibis.memtable({"idl": [4, 4, 5], "idr": [7, 8, 9]})
+        >>> linkage = Linkage(left, right, links)
+
+        There is 1 record in left (6) that didn't match any in right.
+        There is 1 record in left (5) that matched 1 in right.
+        There is 1 record in left (4) that matched 2 in right.
+
+        >>> linkage.left.link_counts()
         ┏━━━━━━━━━━━┳━━━━━━━━━┓
         ┃ n_records ┃ n_links ┃
         ┡━━━━━━━━━━━╇━━━━━━━━━┩
         │ int64     │ int64   │
         ├───────────┼─────────┤
-        │         1 │       0 │
-        │         1 │       1 │
         │         1 │       2 │
+        │         1 │       1 │
+        │         1 │       0 │
+        └───────────┴─────────┘
+
+        All 3 records in right matched 1 in left.
+
+        >>> linkage.right.link_counts()
+        ┏━━━━━━━━━━━┳━━━━━━━━━┓
+        ┃ n_records ┃ n_links ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━┩
+        │ int64     │ int64   │
+        ├───────────┼─────────┤
+        │         3 │       1 │
         └───────────┴─────────┘
         """
-        return _link_counts(self.select(self._self_id), self.links_)
+        counts = (
+            self._n_links_by_id.n_links.value_counts(name="n_records")
+            .order_by(_.n_links.desc())
+            .select("n_records", "n_links")
+        )
+        return LinkCountsTable(counts)
 
 
 class Linkage:
-    """Two tables of records and links between them.
-
-    Examples
-    --------
-    >>> import ibis
-    >>> ibis.options.interactive = True
-    >>> tl = ibis.memtable({"x": [1, 2, 3]})
-    >>> tr = ibis.memtable({"x": [1, 2, 2]})
-    >>> linkage = Linkage.from_predicates(tl, tr, "x")
-
-    There is 1 record in tl that didn't match any in tr.
-    There is 1 record in tl that matched 1 in tr.
-    There is 1 record in tl that matched 2 in tr.
-
-    >>> linkage.left.link_counts()
-    ┏━━━━━━━━━━━┳━━━━━━━━━┓
-    ┃ n_records ┃ n_links ┃
-    ┡━━━━━━━━━━━╇━━━━━━━━━┩
-    │ int64     │ int64   │
-    ├───────────┼─────────┤
-    │         1 │       0 │
-    │         1 │       1 │
-    │         1 │       2 │
-    └───────────┴─────────┘
-
-    There are 3 records in tr that matched 1 in tl.
-    There are 0 records in tr that didn't match any in tl.
-
-    >>> linkage.right.link_counts()
-    ┏━━━━━━━━━━━┳━━━━━━━━━┓
-    ┃ n_records ┃ n_links ┃
-    ┡━━━━━━━━━━━╇━━━━━━━━━┩
-    │ int64     │ int64   │
-    ├───────────┼─────────┤
-    │         3 │       1 │
-    │         0 │       0 │
-    └───────────┴─────────┘
-    """
+    """Two tables of records and links between them."""
 
     def __init__(self, left: ibis.Table, right: ibis.Table, links: ibis.Table):
         if len(links.columns) != 2:
@@ -598,7 +639,7 @@ class LinkCountsTable(TableWrapper):
         return chart
 
 
-def _link_counts(ids: ir.Table, links: ir.Table) -> LinkCountsTable:
+def _n_links_by_id(ids: ir.Table, links: ir.Table) -> ibis.Table:
     if len(ids.columns) != 1:
         raise ValueError("ids must have exactly one column")
     id_col = ids.columns[0]
@@ -609,24 +650,18 @@ def _link_counts(ids: ir.Table, links: ir.Table) -> LinkCountsTable:
         raise ValueError(f"{id_col} not in links")
     other_id = links.columns[0] if links.columns[1] == id_col else links.columns[1]
 
-    n_links_by_left = links.group_by(id_col).aggregate(n_links=_[other_id].nunique())
-    counts = (
-        n_links_by_left.n_links.value_counts(name="n_records")
-        .order_by(_.n_links.desc())
-        .select("n_records", "n_links")
+    n_links_by_id = links.group_by(id_col).aggregate(n_links=_[other_id].nunique())
+    # The above misses records with no entries in the links table (eg unlinked records)
+    records_not_linked = (
+        ids.distinct().filter(_[id_col].notin(links[id_col])).mutate(n_links=0)
     )
-    n_records_not_linked = ids.distinct().filter(_[id_col].notin(links[id_col])).count()
-    extra = (
-        n_records_not_linked.name("n_records")
-        .as_table()
-        .mutate(n_links=0)
-        .cast(counts.schema())
-    )
-    t = ibis.union(counts, extra).order_by(_.n_records.desc(), _.n_links.asc())
-    return LinkCountsTable(t)
+    # the default of 0 is an int8, which isn't unionable with the int64 of other table
+    records_not_linked = records_not_linked.cast(n_links_by_id.schema())
+    n_links_by_id = ibis.union(n_links_by_id, records_not_linked)
+    return n_links_by_id
 
 
-def resolve(t: ibis.Table, resolver) -> ir.Value:
+def _resolve(t: ibis.Table, resolver) -> ir.Value:
     if isinstance(resolver, ibis.Deferred):
         return resolver.resolve(t)
     elif isinstance(resolver, str):
