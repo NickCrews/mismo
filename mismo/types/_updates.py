@@ -16,7 +16,9 @@ class FieldUpdateDict(TypedDict):
     after: Any
 
 
-class filters:
+class Filters:
+    """A simple namespace for filter functions."""
+
     @staticmethod
     def all_different(subset: Iterable[str] | None = None):
         """
@@ -30,8 +32,8 @@ class filters:
 
         Examples
         --------
-        >>> u = Updates.from_tables(before, after, join_on="id")
-        >>> u.filter(u.filters.all_different(["name", "age"]))
+        >>> u = Updates.from_tables(before, after, join_on="id")  # doctest: +SKIP
+        >>> u.filter(u.filters.all_different(["name", "age"]))  # doctest: +SKIP
         """
 
         def filter_func(table: ir.Table):
@@ -55,8 +57,8 @@ class filters:
 
         Examples
         --------
-        >>> u = Updates.from_tables(before, after, join_on="id")
-        >>> u.filter(u.filters.any_different(["name", "age"]))
+        >>> u = Updates.from_tables(before, after, join_on="id")  # doctest: +SKIP
+        >>> u.filter(u.filters.any_different(["name", "age"]))  # doctest: +SKIP
         """
 
         def filter_func(table: ir.Table):
@@ -90,8 +92,14 @@ class Updates(TableWrapper):
     If a column has both 'before' and 'after' fields, this means it was present in both tables.
     """  # noqa: E501
 
-    filters = filters
-    """A set of filters for convenience."""
+    filters = Filters
+    """A set of filters for convenience.
+    
+    Examples
+    --------
+    >>> u = Updates.from_tables(before, after, join_on="id")  # doctest: +SKIP
+    >>> u.filter(u.filters.all_different(["name", "age"]))  # doctest: +SKIP
+    """
 
     def __init__(
         self,
