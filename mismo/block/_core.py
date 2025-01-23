@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from typing import Callable, Iterable, Literal, NamedTuple, Union
+from typing import Callable, Literal, NamedTuple, Union
 
 import ibis
-from ibis import _
 from ibis.expr import types as ir
 
 from mismo import _util
@@ -126,7 +125,7 @@ def join(
 
     _sql_analyze.check_join_algorithm(left, right, pred, on_slow=on_slow)
     j = ibis.join(left, right, pred, lname="{name}_l", rname="{name}_r")
-    j = _ensure_suffixed(left.columns, right.columns, j)
+    j = _util.ensure_join_suffixed(left.columns, right.columns, j)
     j = fix_blocked_column_order(j)
     return j
 
@@ -153,28 +152,6 @@ def fix_blocked_column_order(t: ir.Table) -> ir.Table:
     cols = set(t.columns) - {"record_id_l", "record_id_r"}
     cols_in_order = ["record_id_l", "record_id_r", *sorted(cols)]
     return t[cols_in_order]
-
-
-def _ensure_suffixed(
-    original_left_cols: Iterable[str], original_right_cols: Iterable[str], t: ir.Table
-) -> ir.Table:
-    """Ensure that all columns in `t` have a "_l" or "_r" suffix."""
-    lc = set(original_left_cols)
-    rc = set(original_right_cols)
-    just_left = lc - rc
-    just_right = rc - lc
-    m = {c + "_l": c for c in just_left} | {c + "_r": c for c in just_right}
-    t = t.rename(m)
-
-    # If the condition is an equality condition, like `left.name == right.name`,
-    # then since we are doing an inner join ibis doesn't add suffixes to these
-    # columns. So we need duplicate these columns and add suffixes.
-    un_suffixed = [
-        c for c in t.columns if not c.endswith("_l") and not c.endswith("_r")
-    ]
-    m = {c + "_l": _[c] for c in un_suffixed} | {c + "_r": _[c] for c in un_suffixed}
-    t = t.mutate(**m).drop(*un_suffixed)
-    return t
 
 
 class _Condition(NamedTuple):

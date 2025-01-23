@@ -30,28 +30,14 @@ class LinkedTable(TableWrapper):
     links_: ibis.Table
     """The table of links between this table and `other`.
     Trailing underscore to avoid name conflicts with column names.
-    
-    The first two columns of this table are the id column for self and other.
     """
 
-    # Not public, just putting them here for IDE type hints
-    _self_id: str
-    _other_id: str
-
     def __init__(self, table: ibis.Table, other: ibis.Table, links: ibis.Table):
-        if len(links.columns) < 2:
-            raise ValueError("links must have at least two columns")
-        self_id, other_id = links.columns[:2]
-        if self_id not in table.columns:
-            raise ValueError(f"{self_id} not in table")
-        if other_id not in other.columns:
-            raise ValueError(f"{other_id} not in other")
+        _check_tables_and_links(table, other, links)
 
         super().__init__(table)
         object.__setattr__(self, "other_", other)
         object.__setattr__(self, "links_", links)
-        object.__setattr__(self, "_other_id", other_id)
-        object.__setattr__(self, "_self_id", self_id)
 
     def with_many_linked_values(
         self,
@@ -89,47 +75,47 @@ class LinkedTable(TableWrapper):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> this = ibis.memtable({"idl": [4, 5, 6]})
-        >>> other = ibis.memtable({"idr": [7, 8, 9]})
-        >>> links = ibis.memtable({"idl": [4, 4, 5], "idr": [7, 8, 9]})
+        >>> this = ibis.memtable({"record_id": [4, 5, 6]})
+        >>> other = ibis.memtable({"record_id": [7, 8, 9]})
+        >>> links = ibis.memtable({"record_id_l": [4, 4, 5], "record_id_r": [7, 8, 9]})
         >>> lt = LinkedTable(this, other, links)
         >>> lt
-        ┏━━━━━━━┓
-        ┃ idl   ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     4 │
-        │     5 │
-        │     6 │
-        └───────┘
+        ┏━━━━━━━━━━━┓
+        ┃ record_id ┃
+        ┡━━━━━━━━━━━┩
+        │ int64     │
+        ├───────────┤
+        │         4 │
+        │         5 │
+        │         6 │
+        └───────────┘
 
         Get the "idr" values from all the linked records,
         as well as create a derived value "plus_one" that is "idr" + 1:
 
-        >>> lt.with_many_linked_values("idr", plus_one=_.idr + 1)  # doctest: +SKIP
-        ┏━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
-        ┃ idl   ┃ idr          ┃ plus_one     ┃
-        ┡━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━┩
-        │ int64 │ array<int64> │ array<int64> │
-        ├───────┼──────────────┼──────────────┤
-        │     4 │ [7, 8]       │ [8, 9]       │
-        │     5 │ [9]          │ [10]         │
-        │     6 │ []           │ []           │
-        └───────┴──────────────┴──────────────┘
+        >>> lt.with_many_linked_values(plus_one=_.record_id + 1)
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ record_id ┃ plus_one             ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+        │ int64     │ array<int64>         │
+        ├───────────┼──────────────────────┤
+        │         4 │ [8, 9]               │
+        │         5 │ [10]                 │
+        │         6 │ []                   │
+        └───────────┴──────────────────────┘
 
         Default is to pack everything into array<struct<all columns from other>>:
 
         >>> lt.with_many_linked_values()
-        ┏━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ idl   ┃ other                     ┃
-        ┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ int64 │ array<struct<idr: int64>> │
-        ├───────┼───────────────────────────┤
-        │     4 │ [{'idr': 7}, {'idr': 8}]  │
-        │     5 │ [{'idr': 9}]              │
-        │     6 │ []                        │
-        └───────┴───────────────────────────┘
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ record_id ┃ other                                ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ int64     │ array<struct<record_id: int64>>      │
+        ├───────────┼──────────────────────────────────────┤
+        │         4 │ [{'record_id': 7}, {'record_id': 8}] │
+        │         5 │ [{'record_id': 9}]                   │
+        │         6 │ []                                   │
+        └───────────┴──────────────────────────────────────┘
         """
         if not values and not named_values:
             values = (
@@ -137,12 +123,19 @@ class LinkedTable(TableWrapper):
             )
 
         uname = _util.unique_name()
-        o = self.other_.select(_[self._other_id].name(uname), *values, **named_values)
-        self_id_to_other_vals = (
-            self.links_.rename(**{uname: self._other_id}).join(o, uname).drop(uname)
+        o = self.other_.select(_.record_id.name(uname), *values, **named_values)
+        id_to_other_vals = (
+            self.links_.rename(
+                **{
+                    "record_id": "record_id_l",
+                    uname: "record_id_r",
+                }
+            )
+            .join(o, uname)
+            .drop(uname)
         )
-        value_names = [c for c in self_id_to_other_vals.columns if c != self._self_id]
-        self_id_to_other_array_vals = self_id_to_other_vals.group_by(self._self_id).agg(
+        value_names = [c for c in id_to_other_vals.columns if c != "record_id"]
+        self_id_to_other_array_vals = id_to_other_vals.group_by("record_id").agg(
             *[_[c].collect().name(c) for c in value_names]
         )
 
@@ -150,9 +143,9 @@ class LinkedTable(TableWrapper):
         need_to_drop = [c for c in value_names if c in t.columns]
         t = t.drop(*need_to_drop)
         with_other = _util.join_lookup(
-            self,
+            t,
             self_id_to_other_array_vals,
-            self._self_id,
+            "record_id",
             defaults={c: [] for c in value_names},
         )
         return self.__class__(with_other, self.other_, self.links_)
@@ -194,32 +187,32 @@ class LinkedTable(TableWrapper):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> this = ibis.memtable({"idl": [4, 5, 6]})
-        >>> other = ibis.memtable({"idr": [7, 8, 9]})
-        >>> links = ibis.memtable({"idl": [4, 4, 5], "idr": [7, 8, 9]})
+        >>> this = ibis.memtable({"record_id": [4, 5, 6]})
+        >>> other = ibis.memtable({"record_id": [7, 8, 9]})
+        >>> links = ibis.memtable({"record_id_l": [4, 4, 5], "record_id_r": [7, 8, 9]})
         >>> lt = LinkedTable(this, other, links)
         >>> lt
-        ┏━━━━━━━┓
-        ┃ idl   ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     4 │
-        │     5 │
-        │     6 │
-        └───────┘
+        ┏━━━━━━━━━━━┓
+        ┃ record_id ┃
+        ┡━━━━━━━━━━━┩
+        │ int64     │
+        ├───────────┤
+        │         4 │
+        │         5 │
+        │         6 │
+        └───────────┘
 
         Get the "idr" value from the linked record,
         as well as create a derived value "plus_one" that is "idr" + 1:
 
-        >>> lt.with_single_linked_values("idr", plus_one=_.idr + 1)
-        ┏━━━━━━━┳━━━━━━━┳━━━━━━━━━━┓
-        ┃ idl   ┃ idr   ┃ plus_one ┃
-        ┡━━━━━━━╇━━━━━━━╇━━━━━━━━━━┩
-        │ int64 │ int64 │ int64    │
-        ├───────┼───────┼──────────┤
-        │     5 │     9 │       10 │
-        └───────┴───────┴──────────┘
+        >>> lt.with_single_linked_values(plus_one=_.record_id + 1)
+        ┏━━━━━━━━━━━┳━━━━━━━━━━┓
+        ┃ record_id ┃ plus_one ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━┩
+        │ int64     │ int64    │
+        ├───────────┼──────────┤
+        │         5 │       10 │
+        └───────────┴──────────┘
 
         Default is to pack everything into a struct:
 
@@ -239,23 +232,27 @@ class LinkedTable(TableWrapper):
 
         uname = _util.unique_name()
         t = self.with_n_links(uname).filter(_[uname] == 1).drop(uname)
-        o = self.other_.select(_[self._other_id].name(uname), *values, **named_values)
-        self_id_to_other_vals = (
-            self.links_.rename(**{uname: self._other_id}).join(o, uname).drop(uname)
+        o = self.other_.select(_.record_id.name(uname), *values, **named_values)
+        id_to_other_vals = (
+            self.links_.rename(
+                **{
+                    "record_id": "record_id_l",
+                    uname: "record_id_r",
+                }
+            )
+            .join(o, uname)
+            .drop(uname)
         )
 
         need_to_drop = [
-            c
-            for c in self_id_to_other_vals.columns
-            if c in t.columns and c != self._self_id
+            c for c in id_to_other_vals.columns if c in t.columns and c != "record_id"
         ]
         t = t.drop(*need_to_drop)
-        with_other = _util.join_lookup(t, self_id_to_other_vals, self._self_id)
+        with_other = _util.join_lookup(t, id_to_other_vals, "record_id")
         return self.__class__(with_other, self.other_, self.links_)
 
-    @property
     def _n_links_by_id(self) -> ir.Table:
-        return _n_links_by_id(self.select(self._self_id), self.links_)
+        return _n_links_by_id(self.select("record_id"), self.links_)
 
     def with_n_links(self, name: str = "n_links") -> _typing.Self:
         """
@@ -274,36 +271,36 @@ class LinkedTable(TableWrapper):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> left = ibis.memtable({"idl": [4, 5, 6]})
-        >>> right = ibis.memtable({"idr": [7, 8, 9]})
-        >>> links = ibis.memtable({"idl": [4, 4, 5], "idr": [7, 8, 9]})
+        >>> left = ibis.memtable({"record_id": [4, 5, 6]})
+        >>> right = ibis.memtable({"record_id": [7, 8, 9]})
+        >>> links = ibis.memtable({"record_id_l": [4, 4, 5], "record_id_r": [7, 8, 9]})
         >>> linkage = Linkage(left, right, links)
-        >>> linkage.left.with_n_links().order_by("idl")
-        ┏━━━━━━━┳━━━━━━━━━┓
-        ┃ idl   ┃ n_links ┃
-        ┡━━━━━━━╇━━━━━━━━━┩
-        │ int64 │ int64   │
-        ├───────┼─────────┤
-        │     4 │       2 │
-        │     5 │       1 │
-        │     6 │       0 │
-        └───────┴─────────┘
-        >>> linkage.right.with_n_links().order_by("idr")
-        ┏━━━━━━━┳━━━━━━━━━┓
-        ┃ idr   ┃ n_links ┃
-        ┡━━━━━━━╇━━━━━━━━━┩
-        │ int64 │ int64   │
-        ├───────┼─────────┤
-        │     7 │       1 │
-        │     8 │       1 │
-        │     9 │       1 │
-        └───────┴─────────┘
+        >>> linkage.left.with_n_links().order_by("record_id")
+        ┏━━━━━━━━━━━┳━━━━━━━━━┓
+        ┃ record_id ┃ n_links ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━┩
+        │ int64     │ int64   │
+        ├───────────┼─────────┤
+        │         4 │       2 │
+        │         5 │       1 │
+        │         6 │       0 │
+        └───────────┴─────────┘
+        >>> linkage.right.with_n_links().order_by("record_id")
+        ┏━━━━━━━━━━━┳━━━━━━━━━┓
+        ┃ record_id ┃ n_links ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━┩
+        │ int64     │ int64   │
+        ├───────────┼─────────┤
+        │         7 │       1 │
+        │         8 │       1 │
+        │         9 │       1 │
+        └───────────┴─────────┘
         """
-        n_by_id = self._n_links_by_id.rename(**{name: "n_links"})
+        n_by_id = self._n_links_by_id().rename(**{name: "n_links"})
         t = self
         if name in t.columns:
             t = t.drop(name)
-        added = _util.join_lookup(t, n_by_id, self._self_id)
+        added = _util.join_lookup(t, n_by_id, "record_id")
         return self.__class__(added, self.other_, self.links_)
 
     def link_counts(self) -> LinkCountsTable:
@@ -320,9 +317,9 @@ class LinkedTable(TableWrapper):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> left = ibis.memtable({"idl": [4, 5, 6]})
-        >>> right = ibis.memtable({"idr": [7, 8, 9]})
-        >>> links = ibis.memtable({"idl": [4, 4, 5], "idr": [7, 8, 9]})
+        >>> left = ibis.memtable({"record_id": [4, 5, 6]})
+        >>> right = ibis.memtable({"record_id": [7, 8, 9]})
+        >>> links = ibis.memtable({"record_id_l": [4, 4, 5], "record_id_r": [7, 8, 9]})
         >>> linkage = Linkage(left, right, links)
 
         There is 1 record in left (6) that didn't match any in right.
@@ -352,7 +349,8 @@ class LinkedTable(TableWrapper):
         └───────────┴─────────┘
         """
         counts = (
-            self._n_links_by_id.n_links.value_counts(name="n_records")
+            self._n_links_by_id()
+            .n_links.value_counts(name="n_records")
             .order_by(_.n_links.desc())
             .select("n_records", "n_links")
         )
@@ -380,19 +378,15 @@ class Linkage:
     """
 
     def __init__(self, left: ibis.Table, right: ibis.Table, links: ibis.Table):
-        if len(links.columns) < 2:
-            raise ValueError("links must have at least two columns")
-        left_id, right_id = links.columns[:2]
-        if left_id not in left.columns:
-            raise ValueError(f"{left_id} not in left")
-        if right_id not in right.columns:
-            raise ValueError(f"{right_id} not in right")
+        _check_tables_and_links(left, right, links)
 
-        self._left = LinkedTable(left, right, links.relocate(left_id, right_id))
-        self._right = LinkedTable(right, left, links.relocate(right_id, left_id))
+        self._left = LinkedTable(left, right, links)
+        self._right = LinkedTable(
+            right,
+            left,  # TODO: is this a huge footgun since the other cols aren't renamed??
+            links.rename(record_id_l="record_id_r", record_id_r="record_id_l"),
+        )
         self._links = links
-        self._left_id = left_id
-        self._right_id = right_id
 
     @property
     def left(self) -> LinkedTable:
@@ -407,19 +401,9 @@ class Linkage:
     @property
     def links(self) -> ibis.Table:
         """
-        A table of (<left id>, <right id>, <other attributes>...) that link `left` and `right`.
+        A table of (record_id_l, record_id_r, <other attributes>...) that link `left` and `right`.
         """  # noqa: E501
         return self._links
-
-    @property
-    def left_id(self) -> str:
-        """The column that serves as a record ID in `left`."""
-        return self._left_id
-
-    @property
-    def right_id(self) -> str:
-        """The column that serves as a record ID in `right`."""
-        return self._right_id
 
     @classmethod
     def from_predicates(
@@ -427,9 +411,6 @@ class Linkage:
         left: ibis.Table,
         right: ibis.Table,
         predicates,
-        *,
-        left_id: str | None = None,
-        right_id: str | None = None,
     ) -> _typing.Self:
         """
         Create a Linkage from join predicates.
@@ -437,7 +418,8 @@ class Linkage:
         This is useful if you don't already have a table of links.
         This will create a table of links by joining the left and right tables
         on the given predicates.
-        It will either use the existing id columns in the tables or create new unique ones.
+        It will either use the existing `record_id` columns in the tables,
+        or create new ones if they don't exist.
 
         Parameters
         ----------
@@ -459,58 +441,33 @@ class Linkage:
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> tl = ibis.memtable({"x": [1, 2, 3]})
-        >>> tr = ibis.memtable({"x": [1, 2, 2]})
-        >>> linkage = Linkage.from_predicates(tl, tr, "x")
-
-        We added an id column automatically:
-
-        >>> linkage.left  # doctest: +SKIP
-        ┏━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ x     ┃ id_l_6K9WXYNTN0ZK0OXFCLR3M3Q6S ┃
-        ┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ int64 │ int64                          │
-        ├───────┼────────────────────────────────┤
-        │     1 │                              0 │
-        │     2 │                              1 │
-        │     3 │                              2 │
-        └───────┴────────────────────────────────┘
-
-        and it's in the links table:
-
-        >>> linkage.links  # doctest: +SKIP
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ id_l_6K9WXYNTN0ZK0OXFCLR3M3Q6S ┃ id_r_77IJWQ0DV0QRAF5JCQIB5VAIE ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ int64                          │ int64                          │
-        ├────────────────────────────────┼────────────────────────────────┤
-        │                              0 │                              0 │
-        │                              1 │                              2 │
-        │                              1 │                              1 │
-        └────────────────────────────────┴────────────────────────────────┘
-
-        We can pass the name we want:
-
-        >>> Linkage.from_predicates(tl, tr, "x", left_id="my_id_l").left
-        ┏━━━━━━━┳━━━━━━━━━┓
-        ┃ x     ┃ my_id_l ┃
-        ┡━━━━━━━╇━━━━━━━━━┩
-        │ int64 │ int64   │
-        ├───────┼─────────┤
-        │     1 │       0 │
-        │     2 │       1 │
-        │     3 │       2 │
-        └───────┴─────────┘
-        """  # noqa: E501
-        if left_id is None:
-            left_id = _util.unique_name("id_l")
-        if right_id is None:
-            right_id = _util.unique_name("id_r")
-        if left_id not in left.columns:
-            left = left.mutate(ibis.row_number().name(left_id))
-        if right_id not in right.columns:
-            right = right.mutate(ibis.row_number().name(right_id))
-        links = ibis.join(left, right, predicates).select(left_id, right_id)
+        >>> tl = ibis.memtable({"record_id": [1, 2, 3]})
+        >>> tr = ibis.memtable({"record_id": [1, 2, 2]})
+        >>> linkage = Linkage.from_predicates(tl, tr, "record_id")
+        >>> linkage.links
+        ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
+        ┃ record_id_l ┃ record_id_r ┃
+        ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
+        │ int64       │ int64       │
+        ├─────────────┼─────────────┤
+        │           1 │           1 │
+        │           2 │           2 │
+        │           2 │           2 │
+        └─────────────┴─────────────┘
+        """
+        if "record_id" not in left.columns:
+            left = left.mutate(ibis.row_number().name("record_id"))
+        if "record_id" not in right.columns:
+            right = right.mutate(ibis.row_number().name("record_id"))
+        links = ibis.join(
+            left,
+            right,
+            predicates,
+            lname="{name}_l",
+            rname="{name}_r",
+        )
+        links = _util.ensure_join_suffixed(left.columns, right.columns, links)
+        links = links.select("record_id_l", "record_id_r")
         return cls(left, right, links)
 
     def link_counts_chart(self) -> alt.Chart:
@@ -618,20 +575,39 @@ class LinkCountsTable(TableWrapper):
 
 
 def _n_links_by_id(ids: ir.Table, links: ir.Table) -> ibis.Table:
-    id_col, other_id = links.columns[:2]
-    if len(ids.columns) != 1:
-        raise ValueError("ids must have exactly one column")
-    if id_col != ids.columns[0]:
-        raise ValueError(
-            f"{id_col} found as id columns but {ids.columns[0]} expected from links"
-        )
-
-    n_links_by_id = links.group_by(id_col).aggregate(n_links=_[other_id].nunique())
+    n_links_by_id = links.group_by(record_id="record_id_l").aggregate(
+        n_links=_.record_id_r.nunique()
+    )
     # The above misses records with no entries in the links table (eg unlinked records)
     records_not_linked = (
-        ids.distinct().filter(_[id_col].notin(links[id_col])).mutate(n_links=0)
+        ids.distinct().filter(_.record_id.notin(links.record_id_l)).mutate(n_links=0)
     )
     # the default of 0 is an int8, which isn't unionable with the int64 of other table
     records_not_linked = records_not_linked.cast(n_links_by_id.schema())
     n_links_by_id = ibis.union(n_links_by_id, records_not_linked)
     return n_links_by_id
+
+
+def _check_tables_and_links(
+    left: ibis.Table, right: ibis.Table, links: ibis.Table
+) -> None:
+    if "record_id" not in left.columns:
+        raise ValueError("column 'record_id' not in table")
+    if "record_id" not in right.columns:
+        raise ValueError("column 'record_id' not in other")
+    if "record_id_l" not in links.columns:
+        raise ValueError("column 'record_id_l' not in links")
+    if "record_id_r" not in links.columns:
+        raise ValueError("column 'record_id_r' not in links")
+    try:
+        left.record_id == links.record_id_l
+    except Exception:
+        raise ValueError(
+            f"left.record_id of type {left.record_id.type()} is not comparable with links.record_id_l of type {links.record_id_l.type()}"  # noqa: E501
+        )
+    try:
+        right.record_id == links.record_id_r
+    except Exception:
+        raise ValueError(
+            f"right.record_id of type {right.record_id.type()} is not comparable with links.record_id_r of type {links.record_id_r.type()}"  # noqa: E501
+        )

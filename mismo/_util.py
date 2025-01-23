@@ -420,3 +420,31 @@ def _check_collisions(collisions, on_collision, rename_as, columns):
         raise ValueError(f"Unknown on_collision: {on_collision}")
     if collisions and rename_as != "{name}":
         f()
+
+
+def ensure_join_suffixed(
+    original_left_cols: Iterable[str],
+    original_right_cols: Iterable[str],
+    t: ir.Table,
+    lsuffix: str = "_l",
+    rsuffix: str = "_r",
+) -> ir.Table:
+    """Ensure that all columns in `t` have a "_l" or "_r" suffix."""
+    lc = set(original_left_cols)
+    rc = set(original_right_cols)
+    just_left = lc - rc
+    just_right = rc - lc
+    m = {c + lsuffix: c for c in just_left} | {c + rsuffix: c for c in just_right}
+    t = t.rename(m)
+
+    # If the condition is an equality condition, like `left.name == right.name`,
+    # then since we are doing an inner join ibis doesn't add suffixes to these
+    # columns. So we need duplicate these columns and add suffixes.
+    un_suffixed = [
+        c for c in t.columns if not c.endswith(lsuffix) and not c.endswith(rsuffix)
+    ]
+    m = {c + lsuffix: _[c] for c in un_suffixed} | {
+        c + rsuffix: _[c] for c in un_suffixed
+    }
+    t = t.mutate(**m).drop(*un_suffixed)
+    return t
