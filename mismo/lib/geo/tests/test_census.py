@@ -43,6 +43,7 @@ def make_expected(table_factory, records):
     return t
 
 
+@pytest.mark.network
 def test_us_census_geocode(table_factory):
     GIRDWOOD = {
         "census_is_match": True,
@@ -219,6 +220,7 @@ def test_us_census_geocode(table_factory):
         1000,
     ],
 )
+@pytest.mark.network
 def test_benchmark_us_census_geocode(benchmark, table_factory, n: int):
     records = [
         {"street": f"{random.randint(1, 1000)} N 43RD ST", "zipcode": "98103"}

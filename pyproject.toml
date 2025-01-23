@@ -92,6 +92,9 @@ doctest_optionflags = [
   "IGNORE_EXCEPTION_DETAIL",
   "ELLIPSIS",
 ]
+markers = [
+    "network: requires internet access to work (deselect with '-m \"not network\"')",
+]
 
 [tool.coverage.run]
 branch = true
