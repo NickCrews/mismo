@@ -33,7 +33,7 @@ class Factorizer:
         """
         self.t = t
         self.column = column
-        self._int_column = _util.unique_column_name(t)
+        self._int_column = _util.unique_name()
         self.dtype = ibis.dtype(dtype)
         # The input column is already the right dtype, so the mapping
         # is simply the identity function. This is an optimization.

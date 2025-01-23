@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import base64
 from collections.abc import Sequence
 from contextlib import contextmanager
 from typing import Any, Callable, Iterable, Literal, Mapping, TypeVar
+import uuid
 import warnings
 
 import ibis
@@ -169,25 +171,14 @@ def group_id(
     return ibis.dense_rank().over(ibis.window(order_by=keys)).cast(dtype)
 
 
-_i = 0
-
-
 def unique_name(prefix: str | None = None) -> str:
     """Find a universally unique name"""
-    global _i
     if prefix is None:
-        prefix = "__temp_"
-    return f"{prefix}{_i}"
+        prefix = "__temp__"
 
+    uid = base64.b32encode(uuid.uuid4().bytes).decode().rstrip("=").lower()
 
-def unique_column_name(t: ir.Table) -> str:
-    """Return a column name that is not already in the table"""
-    i = 0
-    while True:
-        name = f"__unique_column_name_{i}__"
-        if name not in t.columns:
-            return name
-        i += 1
+    return f"{prefix}_{uid}"
 
 
 def intify_column(
@@ -202,7 +193,7 @@ def intify_column(
     if t[column].type().is_integer():
         return t, lambda x: x
 
-    int_col_name = unique_column_name(t)
+    int_col_name = unique_name("int_col")
     augmented = t.mutate(group_id(column).name(int_col_name))
     mapping = augmented.select(int_col_name, column).distinct()
     augmented = augmented.mutate(**{column: _[int_col_name]}).drop(int_col_name)
