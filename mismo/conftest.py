@@ -140,5 +140,6 @@ def set_env(monkeypatch):
     # reset interactive mode to False for doctests
     starting_opts = ibis.options
     ibis.options.repr.interactive.max_columns = 1000
+    ibis.options.repr.interactive.max_depth = 3
     yield
     ibis.options = starting_opts
