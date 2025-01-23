@@ -12,7 +12,9 @@ from mismo.types import Linkage, LinkedTable
 def linkage() -> Linkage:
     left = ibis.memtable({"record_id": [4, 5, 6]})
     right = ibis.memtable({"record_id": [7, 8, 9]})
-    links = ibis.memtable({"record_id_l": [4, 4, 5], "record_id_r": [7, 8, 9]})
+    links = ibis.memtable(
+        {"record_id_l": [4, 4, 5], "record_id_r": [7, 8, 9], "extra": [1, 2, 3]}
+    )
     return Linkage(left, right, links)
 
 

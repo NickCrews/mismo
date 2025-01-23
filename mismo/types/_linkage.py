@@ -125,7 +125,7 @@ class LinkedTable(TableWrapper):
         uname = _util.unique_name()
         o = self.other_.select(_.record_id.name(uname), *values, **named_values)
         id_to_other_vals = (
-            self.links_.rename(
+            self.links_.select(
                 **{
                     "record_id": "record_id_l",
                     uname: "record_id_r",
@@ -234,7 +234,7 @@ class LinkedTable(TableWrapper):
         t = self.with_n_links(uname).filter(_[uname] == 1).drop(uname)
         o = self.other_.select(_.record_id.name(uname), *values, **named_values)
         id_to_other_vals = (
-            self.links_.rename(
+            self.links_.select(
                 **{
                     "record_id": "record_id_l",
                     uname: "record_id_r",
