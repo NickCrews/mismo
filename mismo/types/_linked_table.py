@@ -232,8 +232,8 @@ class LinkedTable(TableWrapper):
                 lambda t: ibis.struct({c: t[c] for c in t.columns}).name("other"),
             )
 
-        t = self.filter_by_n_links(_ == 1)
         uname = _util.unique_name()
+        t = self.with_n_links(uname).filter(_[uname] == 1).drop(uname)
         o = self.other_.select(_[self._other_id].name(uname), *values, **named_values)
         self_id_to_other_vals = (
             self.links_.rename(**{uname: self._other_id}).join(o, uname).drop(uname)
@@ -247,50 +247,6 @@ class LinkedTable(TableWrapper):
         t = t.drop(*need_to_drop)
         with_other = _util.join_lookup(t, self_id_to_other_vals, self._self_id)
         return self.__class__(with_other, self.other_, self.links_)
-
-    # I'm not positive that filtering links is the right thing to do...
-    def filter_by_n_links(self, condition: ibis.Deferred) -> _typing.Self:
-        """
-        Filter this LinkedTable to records that have a certain number of links.
-
-        Both `self` and `links` will be filtered. `other` will not be affected.
-
-        Parameters
-        ----------
-        condition
-            A condition that will be resolved with the number of links each record has.
-
-        Returns
-        -------
-        A new LinkedTable with the filtered records and links.
-
-        Examples
-        --------
-        >>> import ibis
-        >>> ibis.options.interactive = True
-        >>> this = ibis.memtable({"idl": [4, 5, 6]})
-        >>> other = ibis.memtable({"idr": [7, 8, 9]})
-        >>> links = ibis.memtable({"idl": [4, 4, 5], "idr": [7, 8, 9]})
-        >>> this = LinkedTable(this, other, links)
-
-        Filter to only include records that have exactly 1 link.
-        This is record with idl=5, which is linked to idr=9.
-
-        >>> this.filter_by_n_links(_ == 1)
-        ┏━━━━━━━┓
-        ┃ idl   ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     5 │
-        └───────┘
-        """
-        n_by_id: ir.Table = _n_links_by_id(self.select(self._self_id), self.links_)
-        resolved_condition = condition.resolve(n_by_id.n_links)
-        filtered_self_ids = n_by_id.filter(resolved_condition)[self._self_id]
-        filtered_links = self.links_.filter(_[self._self_id].isin(filtered_self_ids))
-        filtered_self = self.filter(_[self._self_id].isin(filtered_self_ids))
-        return self.__class__(filtered_self, self.other_, filtered_links)
 
     @property
     def _n_links_by_id(self) -> ir.Table:

@@ -50,6 +50,33 @@ def test_Linkage_from_predicates():
     assert linkage.links.count().execute() == 3
 
 
+def test_LinkedTable_with_n_links():
+    left = ibis.memtable({"idl": [4, 5, 6]})
+    right = ibis.memtable({"idr": [7, 8, 9]})
+    links = ibis.memtable({"idl": [4, 4, 5], "idr": [7, 8, 9]})
+    linkage = Linkage(left, right, links)
+
+    assert tuple(linkage.left.with_n_links("foo").columns) == ("idl", "foo")
+
+    actual = linkage.left.with_n_links()
+    expected = ibis.memtable(
+        {
+            "idl": [4, 5, 6],
+            "n_links": [2, 1, 0],
+        }
+    )
+    assert_tables_equal(expected, actual)
+
+    actual = linkage.right.with_n_links()
+    expected = ibis.memtable(
+        {
+            "idr": [7, 8, 9],
+            "n_links": [1, 1, 1],
+        }
+    )
+    assert_tables_equal(expected, actual)
+
+
 def test_LinkedTable_link_counts():
     tl = ibis.memtable({"x": [1, 2, 3]})
     tr = ibis.memtable({"x": [1, 2, 2]})
@@ -92,31 +119,6 @@ def test_LinkedTable_link_counts():
 def test_Linkage_link_counts_chart(linkage: Linkage):
     # just a smoketest that it doesn't crash
     linkage.link_counts_chart()
-
-
-def test_LinkedTable_filter(linkage: Linkage):
-    filtered = linkage.left.filter_by_n_links(_ == 1)
-    assert isinstance(filtered, LinkedTable)
-
-    expected = ibis.memtable({"idl": [5]})
-    assert_tables_equal(expected, filtered)
-
-    expected_links = ibis.memtable({"idl": [5], "idr": [9]})
-    assert_tables_equal(expected_links, filtered.links_)
-
-
-# My first implementation had a bug in it where this would always be empty
-def test_LinkedTable_filter_0(linkage: Linkage):
-    filtered = linkage.left.filter_by_n_links(_ == 0)
-    assert isinstance(filtered, LinkedTable)
-
-    expected = ibis.memtable({"idl": [6]})
-    assert_tables_equal(expected, filtered)
-
-    expected_links = ibis.memtable({"idl": [], "idr": []})
-    assert_tables_equal(
-        expected_links, filtered.links_, on_schema_mismatch="cast_to_left"
-    )
 
 
 def test_LinkedTable_with_many_linked_values(linkage: Linkage, table_factory):
