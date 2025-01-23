@@ -25,6 +25,9 @@ class TableWrapper(ibis.Table):
     eg adding custom methods or attributes.
     """
 
+    _t: ibis.Table
+    """The underlying Table that this is a proxy for."""
+
     def __init__(self, t: ibis.Table) -> None:
         object.__setattr__(self, "_t", t)
 
