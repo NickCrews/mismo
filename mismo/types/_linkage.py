@@ -635,12 +635,3 @@ def _n_links_by_id(ids: ir.Table, links: ir.Table) -> ibis.Table:
     records_not_linked = records_not_linked.cast(n_links_by_id.schema())
     n_links_by_id = ibis.union(n_links_by_id, records_not_linked)
     return n_links_by_id
-
-
-def _resolve(t: ibis.Table, resolver) -> ir.Value:
-    if isinstance(resolver, ibis.Deferred):
-        return resolver.resolve(t)
-    elif isinstance(resolver, str):
-        return t[resolver]
-    else:
-        return resolver(t)
