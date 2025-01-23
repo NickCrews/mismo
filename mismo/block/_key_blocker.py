@@ -9,6 +9,7 @@ from ibis.expr import types as ir
 
 from mismo import _util
 from mismo.block._core import block_on_id_pairs, join
+from mismo.types._table_wrapper import TableWrapper
 
 if TYPE_CHECKING:
     import altair as alt
@@ -20,7 +21,7 @@ class _HistSpec(NamedTuple):
     chart_subtitle: str
 
 
-class CountsTable(_util.TableWrapper):
+class CountsTable(TableWrapper):
     """A table with at least an Integer column named `n`.
 
     There will also be variable number of other columns that act as identifiers.

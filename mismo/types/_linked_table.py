@@ -7,13 +7,14 @@ import ibis
 from ibis import _
 
 from mismo import _typing, _util
+from mismo.types._table_wrapper import TableWrapper
 
 if TYPE_CHECKING:
     import altair as alt
     from ibis.expr import types as ir
 
 
-class LinkedTable(_util.TableWrapper):
+class LinkedTable(TableWrapper):
     """A table of records that are linked to another table.
 
     This acts just like an Ibis Table, but it has a few extra attributes
@@ -432,7 +433,7 @@ class Linkage:
         )
 
 
-class LinkCountsTable(_util.TableWrapper):
+class LinkCountsTable(TableWrapper):
     """A table representing the number of records binned by number of links.
 
     eg "There were 700 records with 0 links, 300 with 1 link, 20 with 2 links, ..."

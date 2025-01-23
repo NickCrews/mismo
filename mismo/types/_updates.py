@@ -6,7 +6,7 @@ import ibis
 from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 
-from mismo import _util
+from mismo.types._table_wrapper import TableWrapper
 
 
 class FieldUpdateDict(TypedDict):
@@ -69,7 +69,7 @@ class filters:
         return filter_func
 
 
-class Updates(_util.TableWrapper):
+class Updates(TableWrapper):
     """A Table representing how individual rows were updated.
 
     This is a Table of structs, each struct having 'before' and 'after' fields.
