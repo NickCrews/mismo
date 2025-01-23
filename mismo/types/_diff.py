@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ibis
 
-from mismo.types import Updates
+from mismo.types._updates import Updates
 
 
 class Diff:
