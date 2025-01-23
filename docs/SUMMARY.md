@@ -15,6 +15,7 @@
         * [Datasets](reference/datasets.md)
         * [Play Data](reference/playdata.md)
     * By Data Type
+        * [Util Classes](reference/types.md)
         * [Text Utils](reference/text.md)
         * [Array Utils](reference/arrays.md)
         * [Set Utils](reference/sets.md)
