@@ -29,16 +29,19 @@ class LinkedTable(TableWrapper):
     Trailing underscore to avoid name conflicts with column names."""
     links_: ibis.Table
     """The table of links between this table and `other`.
-    Trailing underscore to avoid name conflicts with column names."""
+    Trailing underscore to avoid name conflicts with column names.
+    
+    The first two columns of this table are the id column for self and other.
+    """
 
     # Not public, just putting them here for IDE type hints
     _self_id: str
     _other_id: str
 
     def __init__(self, table: ibis.Table, other: ibis.Table, links: ibis.Table):
-        if len(links.columns) != 2:
-            raise ValueError("links must have exactly two columns")
-        self_id, other_id = links.columns
+        if len(links.columns) < 2:
+            raise ValueError("links must have at least two columns")
+        self_id, other_id = links.columns[:2]
         if self_id not in table.columns:
             raise ValueError(f"{self_id} not in table")
         if other_id not in other.columns:
@@ -377,18 +380,16 @@ class Linkage:
     """
 
     def __init__(self, left: ibis.Table, right: ibis.Table, links: ibis.Table):
-        if len(links.columns) != 2:
-            raise ValueError("links must have exactly two columns")
-        left_id = links.columns[0]
-        right_id = links.columns[1]
-
+        if len(links.columns) < 2:
+            raise ValueError("links must have at least two columns")
+        left_id, right_id = links.columns[:2]
         if left_id not in left.columns:
             raise ValueError(f"{left_id} not in left")
         if right_id not in right.columns:
             raise ValueError(f"{right_id} not in right")
 
-        self._left = LinkedTable(left, right, links.select(left_id, right_id))
-        self._right = LinkedTable(right, left, links.select(right_id, left_id))
+        self._left = LinkedTable(left, right, links.relocate(left_id, right_id))
+        self._right = LinkedTable(right, left, links.relocate(right_id, left_id))
         self._links = links
         self._left_id = left_id
         self._right_id = right_id
@@ -405,7 +406,9 @@ class Linkage:
 
     @property
     def links(self) -> ibis.Table:
-        """A table of (<left id>, <right id>) pairs that link `left` and `right`."""
+        """
+        A table of (<left id>, <right id>, <other attributes>...) that link `left` and `right`.
+        """  # noqa: E501
         return self._links
 
     @property
@@ -615,15 +618,13 @@ class LinkCountsTable(TableWrapper):
 
 
 def _n_links_by_id(ids: ir.Table, links: ir.Table) -> ibis.Table:
+    id_col, other_id = links.columns[:2]
     if len(ids.columns) != 1:
         raise ValueError("ids must have exactly one column")
-    id_col = ids.columns[0]
-
-    if len(links.columns) != 2:
-        raise ValueError("links must have exactly two columns")
-    if id_col not in links.columns:
-        raise ValueError(f"{id_col} not in links")
-    other_id = links.columns[0] if links.columns[1] == id_col else links.columns[1]
+    if id_col != ids.columns[0]:
+        raise ValueError(
+            f"{id_col} found as id columns but {ids.columns[0]} expected from links"
+        )
 
     n_links_by_id = links.group_by(id_col).aggregate(n_links=_[other_id].nunique())
     # The above misses records with no entries in the links table (eg unlinked records)

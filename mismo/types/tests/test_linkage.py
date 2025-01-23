@@ -21,6 +21,14 @@ def linkage() -> Linkage:
     return Linkage(left, right, links)
 
 
+def test_Linkage_init():
+    left = ibis.memtable({"idl": [4, 5, 6]})
+    right = ibis.memtable({"idr": [7, 8, 9]})
+    links = ibis.memtable({"idl": [4, 4, 5], "idr": [7, 8, 9], "extra": [1, 2, 3]})
+    # no error on extra column
+    Linkage(left, right, links)
+
+
 def test_Linkage_from_predicates():
     tl = ibis.memtable({"x": [1, 2, 3]})
     tr = ibis.memtable({"x": [1, 2, 2]})
