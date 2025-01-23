@@ -18,7 +18,8 @@ class LinkedTable(TableWrapper):
     """A table of records that are linked to another table.
 
     This acts just like an Ibis Table, but it has a few extra attributes
-    and methods that make it more ergonomic to work with.
+    and methods that make it more ergonomic to work with,
+    eg to add data from the linked table.
     """
 
     other_: ibis.Table
@@ -55,10 +56,25 @@ class LinkedTable(TableWrapper):
         """
         This table, with `array<>` columns of values from linked records in `other`
 
+        This is very similar to `with_single_linked_values`, except:
+
+        - This includes values from all linked records, not just the single match.
+        - Here, the values from the N linked records are returned in an array.
+          There, since there is only one linked record, we return it directly,
+          not as a length-1 array.
+
+        This uses the same semantics as `ibis.Table.select(*values, **named_values)`
+        to choose which values from `other` to add to `self`
+
+        If no values are provided, we will by default add a column named `other`
+        with all the values from other packed into a struct.
+
         Parameters
         ----------
-        name
-            The name of the new column. Must not conflict with any existing columns.
+        values
+            unnamed values
+        named_values
+            named values
 
         Returns
         -------
@@ -72,6 +88,33 @@ class LinkedTable(TableWrapper):
         >>> other = ibis.memtable({"idr": [7, 8, 9]})
         >>> links = ibis.memtable({"idl": [4, 4, 5], "idr": [7, 8, 9]})
         >>> lt = LinkedTable(this, other, links)
+        >>> lt
+        ┏━━━━━━━┓
+        ┃ idl   ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     4 │
+        │     5 │
+        │     6 │
+        └───────┘
+
+        Get the "idr" values from all the linked records,
+        as well as create a derived value "plus_one" that is "idr" + 1:
+
+        >>> lt.with_many_linked_values("idr", plus_one=_.idr + 1)  # doctest: +SKIP
+        ┏━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
+        ┃ idl   ┃ idr          ┃ plus_one     ┃
+        ┡━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━┩
+        │ int64 │ array<int64> │ array<int64> │
+        ├───────┼──────────────┼──────────────┤
+        │     4 │ [7, 8]       │ [8, 9]       │
+        │     5 │ [9]          │ [10]         │
+        │     6 │ []           │ []           │
+        └───────┴──────────────┴──────────────┘
+
+        Default is to pack everything into array<struct<all columns from other>>:
+
         >>> lt.with_many_linked_values()
         ┏━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ idl   ┃ other                     ┃
@@ -117,8 +160,19 @@ class LinkedTable(TableWrapper):
         """
         This table filtered to single matches, with values from the linked record.
 
+        This is very similar to `with_many_linked_values`, except:
+
+        - It filters to only include records that have exactly 1 link.
+        - In `with_many_linked_values` the values from the N linked records are
+          returned in an array.
+          Here, since there is only one linked record, we return it directly,
+          not as a length-1 array.
+
         This uses the same semantics as `ibis.Table.select(*values, **named_values)`
         to choose which values from `other` to add to `self`
+
+        If no values are provided, we will by default add a column named `other`
+        with all the values from other packed into a struct.
 
         Parameters
         ----------
@@ -139,6 +193,20 @@ class LinkedTable(TableWrapper):
         >>> other = ibis.memtable({"idr": [7, 8, 9]})
         >>> links = ibis.memtable({"idl": [4, 4, 5], "idr": [7, 8, 9]})
         >>> lt = LinkedTable(this, other, links)
+        >>> lt
+        ┏━━━━━━━┓
+        ┃ idl   ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     4 │
+        │     5 │
+        │     6 │
+        └───────┘
+
+        Get the "idr" value from the linked record,
+        as well as create a derived value "plus_one" that is "idr" + 1:
+
         >>> lt.with_single_linked_values("idr", plus_one=_.idr + 1)
         ┏━━━━━━━┳━━━━━━━┳━━━━━━━━━━┓
         ┃ idl   ┃ idr   ┃ plus_one ┃
@@ -147,7 +215,23 @@ class LinkedTable(TableWrapper):
         ├───────┼───────┼──────────┤
         │     5 │     9 │       10 │
         └───────┴───────┴──────────┘
-        """
+
+        Default is to pack everything into a struct:
+
+        >>> lt.with_single_linked_values()  # doctest: +SKIP
+        ┏━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
+        ┃ idl   ┃ other              ┃
+        ┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
+        │ int64 │ struct<idr: int64> │
+        ├───────┼────────────────────┤
+        │     5 │ {'idr': 9}         │
+        └───────┴────────────────────┘
+        """  # noqa: E501
+        if not values and not named_values:
+            values = (
+                lambda t: ibis.struct({c: t[c] for c in t.columns}).name("other"),
+            )
+
         t = self.filter_by_n_links(_ == 1)
         uname = _util.unique_name()
         o = self.other_.select(_[self._other_id].name(uname), *values, **named_values)
@@ -213,6 +297,25 @@ class LinkedTable(TableWrapper):
     def link_counts(self) -> LinkCountsTable:
         """
         Describes 'There are `n_records` in self that linked to `n_links` in `other'.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> this = ibis.memtable({"idl": [4, 5, 6]})
+        >>> other = ibis.memtable({"idr": [7, 8, 9]})
+        >>> links = ibis.memtable({"idl": [4, 4, 5], "idr": [7, 8, 9]})
+        >>> lt = LinkedTable(this, other, links)
+        >>> lt.link_counts()
+        ┏━━━━━━━━━━━┳━━━━━━━━━┓
+        ┃ n_records ┃ n_links ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━┩
+        │ int64     │ int64   │
+        ├───────────┼─────────┤
+        │         1 │       0 │
+        │         1 │       1 │
+        │         1 │       2 │
+        └───────────┴─────────┘
         """
         return _link_counts(self.select(self._self_id), self.links_)
 
