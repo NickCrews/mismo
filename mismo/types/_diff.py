@@ -12,8 +12,7 @@ class Diff:
     eg a row in the `before` table corresponds to only 0 or 1 row in the `after` table,
     and vice versa.
 
-    To represent a more general relationship, use a [Linkage](mismo.types.Linkage).
-    This can support 1-N relationships,
+    To represent more general 1-N relationships, use a [Linkage](mismo.types.Linkage).
     eg a row in the `before` table corresponds to 0 or more rows in the `after` table.
     """
 
@@ -21,15 +20,27 @@ class Diff:
         raise NotImplementedError("Use Diff.from_deltas() to create a Diff object.")
 
     @classmethod
-    def _new(cls, *args, **kwargs):
+    def _new(
+        cls,
+        before: ibis.Table,
+        after: ibis.Table,
+        insertions: ibis.Table,
+        updates: Updates,
+        deletions: ibis.Table,
+    ):
+        assert isinstance(before, ibis.Table)
+        assert isinstance(after, ibis.Table)
+        assert isinstance(insertions, ibis.Table)
+        assert updates.__class__.__name__ == "Updates"  # isinstance doesn't work??
+        assert isinstance(deletions, ibis.Table)
         obj = super().__new__(cls)
-        obj.__init__(*args, **kwargs)
+        obj.__init__()
+        obj._before = before
+        obj._after = after
+        obj._insertions = insertions
+        obj._updates = updates
+        obj._deletions = deletions
         return obj
-
-    def __init__(self, before: ibis.Table, after: ibis.Table, *, join_on: str):
-        self._before = before
-        self._after = after
-        self._join_on = join_on
 
     @classmethod
     def from_deltas(
@@ -37,26 +48,63 @@ class Diff:
         *,
         before: ibis.Table,
         insertions: ibis.Table | None = None,
-        updates: ibis.Table | None = None,
+        updates: Updates | None = None,
         deletions: ibis.Table | None = None,
-        join_on: str,
     ):
         """Create from a starting point and a set of transformations."""
         after = before
         if deletions is not None:
-            after = before.anti_join(deletions, join_on)
+            after = before.difference(deletions, distinct=False)
+        else:
+            deletions = before.limit(0)
+
         if updates is not None:
-            after = ibis.union(after.anti_join(updates, join_on), updates)
+            after = after.difference(updates.before(), distinct=False)
+            after = after.union(updates.after())
+        else:
+            updates = Updates.from_tables(before, after, join_on=False)
+
         if insertions is not None:
-            after = ibis.union(after, insertions)
-        return cls._new(before=before, after=after, join_on=join_on)
+            after = after.union(insertions)
+        else:
+            insertions = after.limit(0)
+
+        return cls._new(
+            before=before,
+            after=after,
+            insertions=insertions,
+            updates=updates,
+            deletions=deletions,
+        )
+
+    @classmethod
+    def from_before_after(
+        cls,
+        before: ibis.Table,
+        after: ibis.Table,
+        *,
+        join_on: str,
+    ):
+        """Create from a before and after table."""
+        insertions = after.difference(before, distinct=False)
+        deletions = before.difference(after, distinct=False)
+        updates = Updates.from_tables(before, after, join_on=join_on)
+        return cls._new(
+            before=before,
+            after=after,
+            insertions=insertions,
+            updates=updates,
+            deletions=deletions,
+        )
 
     def cache(self) -> Diff:
         """Cache the tables in the changes."""
         return Diff._new(
-            before=self._before.cache(),
-            after=self._after.cache(),
-            join_on=self.join_on(),
+            before=self.before().cache(),
+            after=self.after().cache(),
+            insertions=self.insertions().cache(),
+            updates=Updates(self.updates().cache(), schema="lax"),
+            deletions=self.deletions().cache(),
         )
 
     def before(self) -> ibis.Table:
@@ -67,18 +115,14 @@ class Diff:
         """The table after the changes."""
         return self._after
 
-    def join_on(self) -> str:
-        """The key to join the before and after tables."""
-        return self._join_on
-
     def updates(self) -> Updates:
         """Rows that were updated between `before` and `after`."""
-        return Updates.from_tables(self._before, self._after, join_on=self.join_on())
+        return self._updates
 
     def insertions(self) -> ibis.Table:
         """Rows that were in `after` but not in `before`."""
-        return self._after.anti_join(self._before, self.join_on())
+        return self._insertions
 
     def deletions(self) -> ibis.Table:
         """Rows that were in `before` but not in `after`."""
-        return self._before.anti_join(self._after, self.join_on())
+        return self._deletions
