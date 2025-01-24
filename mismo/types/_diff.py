@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import functools
+from textwrap import dedent
+
 import ibis
 
 from mismo.types._updates import Updates
@@ -125,6 +128,8 @@ class Diff:
         """The table after the changes."""
         return self._after
 
+    # TODO: this requires before and after to have same schema.
+    # We don't enforce that elsewhere, is that actually a restriction we want?
     def unchanged(self) -> Updates:
         """Rows that were unchanged between `before` and `after`."""
         return self.before().intersect(self.after())
@@ -141,6 +146,11 @@ class Diff:
         """Rows that were changed between `before` and `after`."""
         return self._updates
 
+    @property
+    def stats(self) -> DiffStats:
+        """Statistics about this Diff."""
+        return DiffStats(self)
+
 
 def _check_schemas_equal(table1: ibis.Table, table2: ibis.Table):
     pairs1 = set(dict(table1.schema()).items())
@@ -151,3 +161,49 @@ def _check_schemas_equal(table1: ibis.Table, table2: ibis.Table):
     only1 = pairs1 - pairs2
     only2 = pairs2 - pairs1
     raise ValueError(f"Schemas are not equal: {same=}, {only1=}, {only2=}")
+
+
+class DiffStats:
+    def __init__(self, diff: Diff):
+        self._diff = diff
+
+    @functools.cache
+    def n_before(self) -> int:
+        """Number of rows in `before`."""
+        return int(self._diff.before().count().execute())
+
+    @functools.cache
+    def n_unchanged(self) -> int:
+        """Number of rows that were unchanged between `before` and `after`."""
+        return int(self._diff.unchanged().count().execute())
+
+    @functools.cache
+    def n_insertions(self) -> int:
+        """Number of rows that were in `after` but not in `before`."""
+        return int(self._diff.insertions().count().execute())
+
+    @functools.cache
+    def n_deletions(self) -> int:
+        """Number of rows that were in `before` but not in `after`."""
+        return int(self._diff.deletions().count().execute())
+
+    @functools.cache
+    def n_updates(self) -> int:
+        """Number of rows that were changed between `before` and `after`."""
+        return int(self._diff.updates().count().execute())
+
+    @functools.cache
+    def n_after(self) -> int:
+        """Number of rows in `after`."""
+        return int(self._diff.after().count().execute())
+
+    def __repr__(self):
+        return dedent(f"""
+        DiffStats({{
+            before={self.n_before():_},
+            after={self.n_after():_},
+            unchanged={self.n_unchanged():_},
+            insertions={self.n_insertions():_},
+            deletions={self.n_deletions():_},
+            updates={self.n_updates():_},
+        }})""")
