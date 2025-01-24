@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+from pathlib import Path
 from textwrap import dedent
 from typing import TYPE_CHECKING
 
@@ -10,6 +11,8 @@ from mismo.types._updates import Updates
 
 if TYPE_CHECKING:
     import altair as alt
+
+    from mismo import _typing
 
 
 class Diff:
@@ -122,6 +125,30 @@ class Diff:
             insertions=self.insertions().cache(),
             updates=Updates(self.updates().cache(), schema="lax"),
             deletions=self.deletions().cache(),
+        )
+
+    def to_parquets(self, directory: str | Path, /) -> None:
+        """Write the tables in the changes to parquet files."""
+        directory = Path(directory)
+        directory.mkdir(parents=True, exist_ok=True)
+        self.before().to_parquet(directory / "before.parquet")
+        self.insertions().to_parquet(directory / "insertions.parquet")
+        self.deletions().to_parquet(directory / "deletions.parquet")
+        self.updates().to_parquet(directory / "updates.parquet")
+
+    @classmethod
+    def from_parquets(
+        cls, directory: str | Path, /, *, backend: ibis.BaseBackend | None = None
+    ) -> _typing.Self:
+        """Create a Diff by reading parquets from the given directory."""
+        if backend is None:
+            backend = ibis
+        d = Path(directory)
+        return cls.from_deltas(
+            before=backend.read_parquet(d / "before.parquet"),
+            insertions=backend.read_parquet(d / "insertions.parquet"),
+            deletions=backend.read_parquet(d / "deletions.parquet"),
+            updates=backend.read_parquet(d / "updates.parquet"),
         )
 
     def before(self) -> ibis.Table:

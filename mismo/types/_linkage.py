@@ -501,7 +501,7 @@ class Linkage:
     def from_parquets(
         cls, directory: str | Path, /, *, backend: ibis.BaseBackend | None = None
     ) -> _typing.Self:
-        """Create a FindResults by reading parquets from the given directory."""
+        """Create a Linkage by reading parquets from the given directory."""
         if backend is None:
             backend = ibis
         d = Path(directory)
