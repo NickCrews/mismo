@@ -17,10 +17,16 @@ class Diff:
     eg a row in the `before` table corresponds to 0 or more rows in the `after` table.
     """
 
-    def __init__(
-        self, before: ibis.Table, after: ibis.Table, *, join_on: str | None = None
-    ):
-        """Create a set of changes between two tables."""
+    def __new__(*args, **kwargs):
+        raise NotImplementedError("Use Diff.from_deltas() to create a Diff object.")
+
+    @classmethod
+    def _new(cls, *args, **kwargs):
+        obj = super().__new__(cls)
+        obj.__init__(*args, **kwargs)
+        return obj
+
+    def __init__(self, before: ibis.Table, after: ibis.Table, *, join_on: str):
         self._before = before
         self._after = after
         self._join_on = join_on
@@ -33,7 +39,7 @@ class Diff:
         insertions: ibis.Table | None = None,
         updates: ibis.Table | None = None,
         deletions: ibis.Table | None = None,
-        join_on: str | None = None,
+        join_on: str,
     ):
         """Create from a starting point and a set of transformations."""
         after = before
@@ -43,11 +49,11 @@ class Diff:
             after = ibis.union(after.anti_join(updates, join_on), updates)
         if insertions is not None:
             after = ibis.union(after, insertions)
-        return cls(before, after=after, join_on=join_on)
+        return cls._new(before=before, after=after, join_on=join_on)
 
     def cache(self) -> Diff:
         """Cache the tables in the changes."""
-        return Diff(
+        return Diff._new(
             before=self._before.cache(),
             after=self._after.cache(),
             join_on=self.join_on(),
