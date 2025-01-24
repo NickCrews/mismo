@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import functools
 from textwrap import dedent
+from typing import TYPE_CHECKING
 
 import ibis
 
 from mismo.types._updates import Updates
+
+if TYPE_CHECKING:
+    import altair as alt
 
 
 class Diff:
@@ -207,3 +211,118 @@ class DiffStats:
             deletions={self.n_deletions():_},
             updates={self.n_updates():_},
         }})""")
+
+    def chart(self) -> alt.Chart:
+        """Create a chart that shows the flow of rows through the diff.
+
+        Rows
+        800,000 |                                 ▓▓  Inserted (50,000)
+                |                                 ▒▒  Deleted (100,000)
+        700,000 |                                 ░░  Updated (200,000)
+                |                                 ██  Unchanged (300,000)
+        600,000 |      ▒▒▒▒
+                |      ▒▒▒▒             ▓▓▓▓
+        500,000 |      ░░░░             ░░░░
+                |      ░░░░             ░░░░
+        400,000 |      ░░░░             ░░░░
+                |      ░░░░             ░░░░
+        300,000 |      ████             ████
+                |      ████             ████
+        200,000 |      ████             ████
+                |      ████             ████
+        100,000 |      ████             ████
+                |      ████             ████
+              0 | Before (600,000)  After (550,000)
+        """
+        import altair as alt
+
+        unchanged_type = f"Unchanged ({self.n_unchanged():,})"
+        inserted_type = f"Inserted ({self.n_insertions():,})"
+        deleted_type = f"Deleted ({self.n_deletions():,})"
+        updated_type = f"Updated ({self.n_updates():,})"
+
+        before = f"Before ({self.n_before():,})"
+        after = f"After ({self.n_after():,})"
+
+        data = [
+            {
+                "table": before,
+                "type": "Unchanged",
+                "type_order": 1,
+                "type_detailed": unchanged_type,
+                "count": self.n_unchanged(),
+                "fraction": self.n_unchanged() / self.n_before(),
+            },
+            {
+                "table": before,
+                "type": "Deleted",
+                "type_order": 3,
+                "type_detailed": deleted_type,
+                "count": self.n_deletions(),
+                "fraction": self.n_deletions() / self.n_before(),
+            },
+            {
+                "table": before,
+                "type": "Updated",
+                "type_order": 2,
+                "type_detailed": updated_type,
+                "count": self.n_updates(),
+                "fraction": self.n_updates() / self.n_before(),
+            },
+            {
+                "table": after,
+                "type": "Unchanged",
+                "type_order": 1,
+                "type_detailed": unchanged_type,
+                "count": self.n_unchanged(),
+                "fraction": self.n_unchanged() / self.n_after(),
+            },
+            {
+                "table": after,
+                "type": "Inserted",
+                "type_order": 3,
+                "type_detailed": inserted_type,
+                "count": self.n_insertions(),
+                "fraction": self.n_insertions() / self.n_after(),
+            },
+            {
+                "table": after,
+                "type": "Updated",
+                "type_order": 2,
+                "type_detailed": updated_type,
+                "count": self.n_updates(),
+                "fraction": self.n_updates() / self.n_after(),
+            },
+        ]
+        data = ibis.memtable(data)
+        chart = (
+            alt.Chart(data)
+            .mark_bar()
+            .encode(
+                alt.X(
+                    "table",
+                    title=None,
+                    sort=[before, after],
+                    # axis=alt.Axis(labelAngle=0),
+                ),
+                alt.Y("count", title="Rows"),
+                # Make the unchanged sit on bottom, then updates, deletions insertions
+                alt.Order("type_order"),
+                alt.Color(
+                    "type_detailed",
+                    title=None,
+                    sort=[
+                        inserted_type,
+                        deleted_type,
+                        updated_type,
+                        unchanged_type,
+                    ],
+                ),
+                tooltip=[
+                    "type",
+                    alt.Tooltip("count", format=","),
+                    alt.Tooltip("fraction", format=".2%"),
+                ],
+            )
+        )
+        return chart
