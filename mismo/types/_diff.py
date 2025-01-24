@@ -148,7 +148,7 @@ class Diff:
             before=backend.read_parquet(d / "before.parquet"),
             insertions=backend.read_parquet(d / "insertions.parquet"),
             deletions=backend.read_parquet(d / "deletions.parquet"),
-            updates=backend.read_parquet(d / "updates.parquet"),
+            updates=Updates(backend.read_parquet(d / "updates.parquet"), schema="lax"),
         )
 
     def before(self) -> ibis.Table:
