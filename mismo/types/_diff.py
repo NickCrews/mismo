@@ -33,6 +33,16 @@ class Diff:
         assert isinstance(insertions, ibis.Table)
         assert updates.__class__.__name__ == "Updates"  # isinstance doesn't work??
         assert isinstance(deletions, ibis.Table)
+
+        _check_schemas_equal(before, deletions)
+        _check_schemas_equal(before, updates.before())
+        _check_schemas_equal(after, insertions)
+        _check_schemas_equal(after, updates.after())
+        # before and after may have different schemas.
+
+        # only keep updates that actually change something
+        updates = updates.filter(updates.filters.any_different())
+
         obj = super().__new__(cls)
         obj.__init__()
         obj._before = before
@@ -60,12 +70,12 @@ class Diff:
 
         if updates is not None:
             after = after.difference(updates.before(), distinct=False)
-            after = after.union(updates.after())
+            after = after.union(updates.after(), distinct=False)
         else:
             updates = Updates.from_tables(before, after, join_on=False)
 
         if insertions is not None:
-            after = after.union(insertions)
+            after = after.union(insertions, distinct=False)
         else:
             insertions = after.limit(0)
 
@@ -115,9 +125,9 @@ class Diff:
         """The table after the changes."""
         return self._after
 
-    def updates(self) -> Updates:
-        """Rows that were updated between `before` and `after`."""
-        return self._updates
+    def unchanged(self) -> Updates:
+        """Rows that were unchanged between `before` and `after`."""
+        return self.before().intersect(self.after())
 
     def insertions(self) -> ibis.Table:
         """Rows that were in `after` but not in `before`."""
@@ -126,3 +136,18 @@ class Diff:
     def deletions(self) -> ibis.Table:
         """Rows that were in `before` but not in `after`."""
         return self._deletions
+
+    def updates(self) -> Updates:
+        """Rows that were changed between `before` and `after`."""
+        return self._updates
+
+
+def _check_schemas_equal(table1: ibis.Table, table2: ibis.Table):
+    pairs1 = set(dict(table1.schema()).items())
+    pairs2 = set(dict(table2.schema()).items())
+    if pairs1 == pairs2:
+        return
+    same = pairs1.intersection(pairs2)
+    only1 = pairs1 - pairs2
+    only2 = pairs2 - pairs1
+    raise ValueError(f"Schemas are not equal: {same=}, {only1=}, {only2=}")
