@@ -30,18 +30,26 @@ class Filters:
         subset : Iterable[str] | None
             The columns to consider.
             If None, we consider all columns in both before and after tables.
+            If you joined on an eg id column, you almost definitely want to exclude it here.
 
         Examples
         --------
         >>> u = Updates.from_tables(before, after, join_on="id")  # doctest: +SKIP
         >>> u.filter(u.filters.all_different(["name", "age"]))  # doctest: +SKIP
-        """
+        >>> u.filter(u.filters.all_different([c for c in u.columns if c != "my_id"]))  # doctest: +SKIP
+        """  # noqa: E501
 
         def filter_func(table: ir.Table):
             nonlocal subset
             if subset is None:
                 subset = _columns_in_both(table)
-            preds = [table[col].before != table[col].after for col in subset]
+            preds = [
+                ibis.or_(
+                    table[col].before != table[col].after,
+                    table[col].before.isnull() != table[col].after.isnull(),
+                )
+                for col in subset
+            ]
             return ibis.and_(*preds)
 
         return filter_func
@@ -66,7 +74,13 @@ class Filters:
             nonlocal subset
             if subset is None:
                 subset = _columns_in_both(table)
-            preds = [table[col].before != table[col].after for col in subset]
+            preds = [
+                ibis.or_(
+                    table[col].before != table[col].after,
+                    table[col].before.isnull() != table[col].after.isnull(),
+                )
+                for col in subset
+            ]
             return ibis.or_(*preds)
 
         return filter_func
