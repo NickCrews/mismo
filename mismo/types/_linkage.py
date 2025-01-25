@@ -377,7 +377,22 @@ class Linkage:
     A Linkage object is more appropriate in this case.
     """
 
-    def __init__(self, left: ibis.Table, right: ibis.Table, links: ibis.Table):
+    def __init__(self, left: ibis.Table, right: ibis.Table, links: ibis.Table) -> None:
+        """Create from two tables and a table of links between them.
+
+        Parameters
+        ----------
+        left
+            A Table of records, with at least a column 'record_id'.
+        right
+            A Table of records, with at least a column 'record_id'.
+        links
+            A Table of links between the two tables.
+            Must have columns 'record_id_l' and 'record_id_r', which refer to the
+            'record_id' columns in `left` and `right`, respectively.
+            May have other columns.
+            May not have duplicate (record_id_l, record_id_r) pairs.
+        """
         _check_tables_and_links(left, right, links)
 
         self._left = LinkedTable(left, right, links)
@@ -429,13 +444,6 @@ class Linkage:
             The right table.
         predicates
             The join predicates. Anything that ibis.join() accepts.
-        left_id
-            The name of the id column in the left table.
-            If None, a new unique name will be generated.
-            If this column is present in the left table, nothing will be done.
-            If it's not present, a new ID column will be created.
-        right_id
-            Same as left_id, but for the right table.
 
         Examples
         --------
@@ -473,6 +481,24 @@ class Linkage:
     def link_counts_chart(self) -> alt.Chart:
         """
         A side by side altair Chart of `left.link_counts(`)` and `right.link_counts()`
+
+        ```plaintext
+        Number of           Left Table               Number of    Right Table
+          Records                                      Records
+                |    █                                       |    █
+        100,000 | █  █                                       |    █
+                | █  █                                10,000 |    █
+                | █  █  █                                    |    █
+         10,000 | █  █  █                                    |    █  █
+                | █  █  █                                    | █  █  █
+                | █  █  █                              1,000 | █  █  █
+          1,000 | █  █  █  █                                 | █  █  █
+                | █  █  █  █  █  █                           | █  █  █
+                | █  █  █  █  █  █  █                        | █  █  █  █
+            100 | █  █  █  █  █  █  █  █  █              100 | █  █  █  █
+                | 0  1  2  3  4 10 12 14 23                  | 0  1  2  3
+                Number of Links                              Number of Links
+        ```
         """
         import altair as alt
 
@@ -523,7 +549,14 @@ class LinkCountsTable(TableWrapper):
     n_links: ir.IntegerColumn
     """The number of links."""
 
-    def __init__(self, t):
+    def __init__(self, t: ibis.Table) -> None:
+        """Create from an ibis table with exactly columns 'n_records' and 'n_links'.
+
+        Parameters
+        ----------
+        t
+            The table with exactly columns 'n_records' and 'n_links'.
+        """
         if set(t.columns) != {"n_records", "n_links"}:
             raise ValueError(
                 "LinkCountsTable must have exactly columns 'n_records' and 'n_links'"
@@ -531,7 +564,27 @@ class LinkCountsTable(TableWrapper):
         super().__init__(t)
 
     def chart(self) -> alt.Chart:
-        """A bar chart of the number of records by the number of links."""
+        """A bar chart of the number of records by the number of links.
+
+        ```plaintext
+                         Number of Records
+        Number of          By Link Count
+          Records
+                |    █
+        100,000 | █  █
+                | █  █
+                | █  █  █
+         10,000 | █  █  █
+                | █  █  █
+                | █  █  █
+          1,000 | █  █  █  █
+                | █  █  █  █  █  █
+                | █  █  █  █  █  █  █
+            100 | █  █  █  █  █  █  █  █  █
+                | 0  1  2  3  4 10 12 14 23
+                Number of Links
+        ```
+        """
         import altair as alt
 
         n_title = "Number of Records"
