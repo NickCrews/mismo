@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from ibis import _
 import pytest
 
 from mismo.types import Updates
@@ -51,3 +52,15 @@ def test_all_different_subset(updates: Updates):
     actual_ids = set(actual.after().id.execute())
     expected_ids = {4}
     assert actual_ids == expected_ids
+
+
+def test_filter(updates: Updates):
+    f = updates.filter(_.id.before == 3)
+    assert isinstance(f, Updates)
+    assert f.count().execute() == 1
+
+
+def test_cache(updates: Updates):
+    f = updates.cache()
+    assert isinstance(f, Updates)
+    assert (f.execute() == updates.execute()).all().all()
