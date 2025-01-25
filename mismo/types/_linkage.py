@@ -90,20 +90,6 @@ class LinkedTable(TableWrapper):
         │         6 │
         └───────────┘
 
-        Get the "idr" values from all the linked records,
-        as well as create a derived value "plus_one" that is "idr" + 1:
-
-        >>> lt.with_many_linked_values(plus_one=_.record_id + 1)
-        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ record_id ┃ plus_one             ┃
-        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
-        │ int64     │ array<int64>         │
-        ├───────────┼──────────────────────┤
-        │         4 │ [8, 9]               │
-        │         5 │ [10]                 │
-        │         6 │ []                   │
-        └───────────┴──────────────────────┘
-
         Default is to pack everything into array<struct<all columns from other>>:
 
         >>> lt.with_many_linked_values()
@@ -116,7 +102,21 @@ class LinkedTable(TableWrapper):
         │         5 │ [{'record_id': 9}]                   │
         │         6 │ []                                   │
         └───────────┴──────────────────────────────────────┘
-        """
+
+        Or you can select exactly which values you want.
+        They will be returned in an array, one for each linked record:
+
+        >>> lt.with_many_linked_values(_.record_id.name("idrs"), plus_ones=_.record_id + 1)
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ record_id ┃ idrs                 ┃ plus_ones            ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+        │ int64     │ array<int64>         │ array<int64>         │
+        ├───────────┼──────────────────────┼──────────────────────┤
+        │         4 │ [7, 8]               │ [8, 9]               │
+        │         5 │ [9]                  │ [10]                 │
+        │         6 │ []                   │ []                   │
+        └───────────┴──────────────────────┴──────────────────────┘
+        """  # noqa: E501
         if not values and not named_values:
             values = (
                 lambda t: ibis.struct({c: t[c] for c in t.columns}).name("other"),
@@ -187,10 +187,10 @@ class LinkedTable(TableWrapper):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> this = ibis.memtable({"record_id": [4, 5, 6]})
-        >>> other = ibis.memtable({"record_id": [7, 8, 9]})
+        >>> left = ibis.memtable({"record_id": [4, 5, 6]})
+        >>> right = ibis.memtable({"record_id": [7, 8, 9]})
         >>> links = ibis.memtable({"record_id_l": [4, 4, 5], "record_id_r": [7, 8, 9]})
-        >>> lt = LinkedTable(this, other, links)
+        >>> lt = LinkedTable(left, right, links)
         >>> lt
         ┏━━━━━━━━━━━┓
         ┃ record_id ┃
@@ -202,28 +202,29 @@ class LinkedTable(TableWrapper):
         │         6 │
         └───────────┘
 
-        Get the "idr" value from the linked record,
-        as well as create a derived value "plus_one" that is "idr" + 1:
-
-        >>> lt.with_single_linked_values(plus_one=_.record_id + 1)
-        ┏━━━━━━━━━━━┳━━━━━━━━━━┓
-        ┃ record_id ┃ plus_one ┃
-        ┡━━━━━━━━━━━╇━━━━━━━━━━┩
-        │ int64     │ int64    │
-        ├───────────┼──────────┤
-        │         5 │       10 │
-        └───────────┴──────────┘
-
+        We only include record with id 5, because it has exactly 1 link.
+        Record 4 is linked to 2 records (7 and 8), and record 6 is linked to 0 records.
         Default is to pack everything into a struct:
 
-        >>> lt.with_single_linked_values()  # doctest: +SKIP
-        ┏━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
-        ┃ idl   ┃ other              ┃
-        ┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
-        │ int64 │ struct<idr: int64> │
-        ├───────┼────────────────────┤
-        │     5 │ {'idr': 9}         │
-        └───────┴────────────────────┘
+        >>> lt.with_single_linked_values()
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ record_id ┃ other                    ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ int64     │ struct<record_id: int64> │
+        ├───────────┼──────────────────────────┤
+        │         5 │ {'record_id': 9}         │
+        └───────────┴──────────────────────────┘
+
+        Or you can select exactly which values you want:
+
+        >>> lt.with_single_linked_values(_.record_id.name("idr"), plus_one=_.record_id + 1)
+        ┏━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━┓
+        ┃ record_id ┃ idr   ┃ plus_one ┃
+        ┡━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━┩
+        │ int64     │ int64 │ int64    │
+        ├───────────┼───────┼──────────┤
+        │         5 │     9 │       10 │
+        └───────────┴───────┴──────────┘
         """  # noqa: E501
         if not values and not named_values:
             values = (
