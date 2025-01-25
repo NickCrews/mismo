@@ -22,12 +22,17 @@ class Diff:
     eg a row in the `before` table corresponds to only 0 or 1 row in the `after` table,
     and vice versa.
 
-    To represent more general 1-N relationships, use a [Linkage](mismo.types.Linkage).
-    eg a row in the `before` table corresponds to 0 or more rows in the `after` table.
+    To represent more general 0-N relationships, use a [Linkage](mismo.types.Linkage).
+    eg many rows in a "dirty" dataset are linked to a single row in a "clean" dataset.
+
+    This is able to represent a difference between two tables with different schemas,
+    eg if a column is added or removed.
     """
 
     def __new__(*args, **kwargs):
-        raise NotImplementedError("Use Diff.from_deltas() to create a Diff object.")
+        raise NotImplementedError(
+            "Use one of the Diff.from_*() factory methods to create a Diff object."
+        )
 
     @classmethod
     def _new(
@@ -70,11 +75,27 @@ class Diff:
         insertions: ibis.Table | None = None,
         updates: Updates | None = None,
         deletions: ibis.Table | None = None,
-    ):
-        """TODO: this is buggy, the use of set differences here doesn't handle NULLs correctly, since NULLs are treated as unequal.
+    ) -> _typing.Self:
+        """Create from a starting point and a set of transformations.
 
-        Create from a starting point and a set of transformations.
-        """  # noqa: E501
+        Parameters
+        ----------
+        before
+            The table before the changes.
+        insertions
+            Rows that were in `after` but not in `before`.
+            If None, we assume there are no insertions.
+        updates
+            Rows that were changed between `before` and `after`.
+            If None, we assume there are no updates.
+        deletions
+            Rows that were in `before` but not in `after`.
+            If None, we assume there are no deletions.
+
+        Returns
+        -------
+        Diff
+        """
         after = before
         if deletions is not None:
             after = before.difference(deletions, distinct=False)
@@ -107,10 +128,15 @@ class Diff:
         after: ibis.Table,
         *,
         join_on: str,
-    ):
+    ) -> _typing.Self:
         """Create from a before and after table."""
-        insertions = after.difference(before, distinct=False)
-        deletions = before.difference(after, distinct=False)
+        # We have to be careful here.
+        # If a row (Bob, 123, 456) is updated to (Bob, 123, 789),
+        # Then is this a deletion and insertion, or an update?
+        # We have to rely on the join key to determine this,
+        # using set-based difference(), intersection(), etc would not work.
+        insertions = after.anti_join(before, join_on)
+        deletions = before.anti_join(after, join_on)
         updates = Updates.from_tables(before, after, join_on=join_on)
         return cls._new(
             before=before,
@@ -121,7 +147,7 @@ class Diff:
         )
 
     def cache(self) -> Diff:
-        """Cache the tables in the changes."""
+        """Return a new Diff with all tables cached."""
         return Diff._new(
             before=self.before().cache(),
             after=self.after().cache(),
@@ -169,21 +195,32 @@ class Diff:
         return self.before().intersect(self.after())
 
     def insertions(self) -> ibis.Table:
-        """Rows that were in `after` but not in `before`."""
+        """Rows that were in `after` but not in `before`.
+
+        This has the same schema as `after`."""
         return self._insertions
 
     def deletions(self) -> ibis.Table:
-        """Rows that were in `before` but not in `after`."""
+        """Rows that were in `before` but not in `after`.
+
+        This has the same schema as `before`.
+        """
         return self._deletions
 
     def updates(self) -> Updates:
-        """Rows that were changed between `before` and `after`."""
+        """Rows that were changed between `before` and `after`.
+
+        `self.updates().before()` and `self.updates().after()` have the same schemas
+        as `before` and `after`, respectively."""
         return self._updates
 
     @property
     def stats(self) -> DiffStats:
         """Statistics about this Diff."""
         return DiffStats(self)
+
+    def __repr__(self):
+        return repr(self.stats).replace("DiffStats", "Diff")
 
 
 def _check_schemas_equal(table1: ibis.Table, table2: ibis.Table):
@@ -198,7 +235,10 @@ def _check_schemas_equal(table1: ibis.Table, table2: ibis.Table):
 
 
 class DiffStats:
-    def __init__(self, diff: Diff):
+    """Summary statistics about a Diff, such as number of insertions, deletions, etc."""
+
+    def __init__(self, diff: Diff) -> None:
+        """Create from a Diff."""
         self._diff = diff
 
     @functools.cache
@@ -233,18 +273,19 @@ class DiffStats:
 
     def __repr__(self):
         return dedent(f"""
-        DiffStats({{
+        DiffStats(
             before={self.n_before():_},
             after={self.n_after():_},
             unchanged={self.n_unchanged():_},
+            updates={self.n_updates():_},
             insertions={self.n_insertions():_},
             deletions={self.n_deletions():_},
-            updates={self.n_updates():_},
-        }})""")
+        )""")
 
     def chart(self) -> alt.Chart:
         """Create a chart that shows the flow of rows through the diff.
 
+        ```plaintext
         Rows
         800,000 |                                 ▓▓  Inserted (50,000)
                 |                                 ▒▒  Deleted (100,000)
@@ -263,6 +304,7 @@ class DiffStats:
         100,000 |      ████             ████
                 |      ████             ████
               0 | Before (600,000)  After (550,000)
+        ```
         """
         import altair as alt
 
