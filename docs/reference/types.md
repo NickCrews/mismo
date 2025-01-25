@@ -8,3 +8,4 @@ I tried to make them be simple and open to extension.
 :::mismo.types.LinkCountsTable
 :::mismo.types.Updates
 :::mismo.types.Diff
+:::mismo.types.DiffStats
