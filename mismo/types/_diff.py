@@ -71,7 +71,10 @@ class Diff:
         updates: Updates | None = None,
         deletions: ibis.Table | None = None,
     ):
-        """Create from a starting point and a set of transformations."""
+        """TODO: this is buggy, the use of set differences here doesn't handle NULLs correctly, since NULLs are treated as unequal.
+
+        Create from a starting point and a set of transformations.
+        """  # noqa: E501
         after = before
         if deletions is not None:
             after = before.difference(deletions, distinct=False)
