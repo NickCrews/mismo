@@ -316,6 +316,9 @@ class DiffStats:
         before = f"Before ({self.n_before():,})"
         after = f"After ({self.n_after():,})"
 
+        def _percent(a, b) -> float:
+            return a / b if b else float("nan")
+
         data = [
             {
                 "table": before,
@@ -323,7 +326,7 @@ class DiffStats:
                 "type_order": 1,
                 "type_detailed": unchanged_type,
                 "count": self.n_unchanged(),
-                "fraction": self.n_unchanged() / self.n_before(),
+                "fraction": _percent(self.n_unchanged(), self.n_before()),
             },
             {
                 "table": before,
@@ -331,7 +334,7 @@ class DiffStats:
                 "type_order": 3,
                 "type_detailed": deleted_type,
                 "count": self.n_deletions(),
-                "fraction": self.n_deletions() / self.n_before(),
+                "fraction": _percent(self.n_deletions(), self.n_before()),
             },
             {
                 "table": before,
@@ -339,7 +342,7 @@ class DiffStats:
                 "type_order": 2,
                 "type_detailed": updated_type,
                 "count": self.n_updates(),
-                "fraction": self.n_updates() / self.n_before(),
+                "fraction": _percent(self.n_updates(), self.n_before()),
             },
             {
                 "table": after,
@@ -347,7 +350,7 @@ class DiffStats:
                 "type_order": 1,
                 "type_detailed": unchanged_type,
                 "count": self.n_unchanged(),
-                "fraction": self.n_unchanged() / self.n_after(),
+                "fraction": _percent(self.n_unchanged(), self.n_after()),
             },
             {
                 "table": after,
@@ -355,7 +358,7 @@ class DiffStats:
                 "type_order": 3,
                 "type_detailed": inserted_type,
                 "count": self.n_insertions(),
-                "fraction": self.n_insertions() / self.n_after(),
+                "fraction": _percent(self.n_insertions(), self.n_after()),
             },
             {
                 "table": after,
@@ -363,7 +366,7 @@ class DiffStats:
                 "type_order": 2,
                 "type_detailed": updated_type,
                 "count": self.n_updates(),
-                "fraction": self.n_updates() / self.n_after(),
+                "fraction": _percent(self.n_updates(), self.n_after()),
             },
         ]
         data = ibis.memtable(data)
