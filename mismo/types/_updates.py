@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Iterable, Literal, TypedDict
+from typing import Iterable, Literal
 
 import ibis
 from ibis.expr import datatypes as dt
@@ -8,13 +8,6 @@ from ibis.expr import types as ir
 
 from mismo import _util
 from mismo.types._table_wrapper import TableWrapper
-
-
-class FieldUpdateDict(TypedDict):
-    """A dict representing how a field in a row changed"""
-
-    before: Any
-    after: Any
 
 
 class Filters:
@@ -215,13 +208,6 @@ class Updates(TableWrapper):
 
     def cache(self):
         return self.__class__(self._t.cache(), schema="lax")
-
-    def as_row_update_dicts(
-        self, chunk_size: int = 1000000
-    ) -> Iterable[dict[str, FieldUpdateDict]]:
-        """Iterate through how every row changed."""
-        for batch in self.to_pyarrow_batches(chunk_size=chunk_size):
-            yield from batch.to_pylist()
 
 
 def _columns_in_both(t: ibis.Table) -> tuple[str]:
