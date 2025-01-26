@@ -14,6 +14,17 @@ from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 
 
+class NotSet:
+    def __repr__(self):
+        return "NOT SET"
+
+    def __str__(self):
+        return "NOT SET"
+
+
+NOT_SET = NotSet
+
+
 def cases(
     *case_result_pairs: tuple[ir.BooleanValue, ir.Value],
     else_: ir.Value | None = None,
@@ -448,3 +459,23 @@ def ensure_join_suffixed(
     }
     t = t.mutate(**m).drop(*un_suffixed)
     return t
+
+
+def check_schemas_equal(a: ibis.Schema | ibis.Table, b: ibis.Schema | ibis.Table):
+    if isinstance(a, ibis.Table):
+        a = a.schema()
+    if isinstance(b, ibis.Table):
+        b = b.schema()
+
+    errs = ["Schemas are not equal"]
+    if missing_a := set(b) - set(a):
+        errs.append(f"Missing columns from left: {missing_a}")
+    if missing_b := set(a) - set(b):
+        errs.append(f"Missing columns from right: {missing_b}")
+    if conflicting := [c for c in set(b) & set(a) if a[c] != b[c]]:
+        errs.extend(
+            f"Conflicting dtype for column {c}: {a[c]} != {b[c]}" for c in conflicting
+        )
+
+    if len(errs) != 1:
+        raise ValueError("\n".join(errs))

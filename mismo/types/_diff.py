@@ -3,10 +3,11 @@ from __future__ import annotations
 import functools
 from pathlib import Path
 from textwrap import dedent
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal
 
 import ibis
 
+from mismo import _util
 from mismo.types._updates import Updates
 
 if TYPE_CHECKING:
@@ -75,6 +76,7 @@ class Diff:
         insertions: ibis.Table | None = None,
         updates: Updates | None = None,
         deletions: ibis.Table | None = None,
+        updates_defaults: None | Any | Literal[_util.NOT_SET] = _util.NOT_SET,
     ) -> _typing.Self:
         """Create from a starting point and a set of transformations.
 
@@ -103,8 +105,7 @@ class Diff:
             deletions = before.limit(0)
 
         if updates is not None:
-            after = after.difference(updates.before(), distinct=False)
-            after = after.union(updates.after(), distinct=False)
+            after = updates.apply_to(after, defaults=updates_defaults)
         else:
             updates = Updates.from_tables(before, after, join_on=False)
 
@@ -188,11 +189,12 @@ class Diff:
         """The table after the changes."""
         return self._after
 
-    # TODO: this requires before and after to have same schema.
-    # We don't enforce that elsewhere, is that actually a restriction we want?
     def unchanged(self) -> Updates:
         """Rows that were unchanged between `before` and `after`."""
-        return self.before().intersect(self.after())
+        return self.before().difference(
+            self.updates().before(),
+            self.deletions(),
+        )
 
     def insertions(self) -> ibis.Table:
         """Rows that were in `after` but not in `before`.

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, Literal
+from typing import Any, Iterable, Literal
 
 import ibis
 from ibis.expr import datatypes as dt
@@ -22,7 +22,14 @@ class Filters:
         ----------
         subset : Iterable[str] | None
             The columns to consider.
-            If None, we consider all columns in both before and after tables.
+
+            If None, and the schemas of the before and after tables are dufferent,
+            then we return True (ie, keep all rows), because by definition
+            every row is different, since the schemas are different.
+
+            If None, and the schemas of the before and after tables are the same,
+            then we consider all columns in both before and after tables.
+
             If you joined on an eg id column, you almost definitely want to exclude it here.
 
         Examples
@@ -35,7 +42,10 @@ class Filters:
         def filter_func(table: ir.Table):
             nonlocal subset
             if subset is None:
-                subset = _columns_in_both(table)
+                u = Updates(table, schema="lax")
+                if u.before().schema() != u.after().schema():
+                    return True
+                subset = table.columns
             preds = [
                 ibis.or_(
                     table[col].before != table[col].after,
@@ -55,7 +65,13 @@ class Filters:
         ----------
         subset : Iterable[str] | None
             The columns to consider.
-            If None, we consider all columns in both before and after tables.
+
+            If None, and the schemas of the before and after tables are dufferent,
+            then we return True (ie, keep all rows), because by definition
+            every row is different, since the schemas are different.
+
+            If None, and the schemas of the before and after tables are the same,
+            then we consider all columns in both before and after tables.
 
         Examples
         --------
@@ -66,7 +82,10 @@ class Filters:
         def filter_func(table: ir.Table):
             nonlocal subset
             if subset is None:
-                subset = _columns_in_both(table)
+                u = Updates(table, schema="lax")
+                if u.before().schema() != u.after().schema():
+                    return True
+                subset = table.columns
             preds = [
                 ibis.or_(
                     table[col].before != table[col].after,
@@ -158,7 +177,7 @@ class Updates(TableWrapper):
         # Prefer a column order of
         # 1. all the columns in after
         # 2. any extra columns in before are tacked on the end
-        all_columns = (dict(after.schema()) | dict(after.schema())).keys()
+        all_columns = (dict(before.schema()) | dict(after.schema())).keys()
         joined = ibis.join(
             before,
             after,
@@ -209,11 +228,55 @@ class Updates(TableWrapper):
     def cache(self):
         return self.__class__(self._t.cache(), schema="lax")
 
+    def apply_to(
+        self,
+        t: ibis.Table,
+        *,
+        defaults: None | Literal[_util.NOT_SET] | Any = _util.NOT_SET,
+    ) -> ibis.Table:
+        """Return the input table with these updates applied to it.
 
-def _columns_in_both(t: ibis.Table) -> tuple[str]:
-    """The columns that were in both the original and new table."""
-    return tuple(
-        name
-        for name, typ in t.schema().items()
-        if "before" in typ.names and "after" in typ.names
-    )
+        Parameters
+        ----------
+        t
+            The table to apply the updates to.
+        defaults
+            If the after table has more columns than the before table, you must provide defaults.
+            This is because there might be some rows in `t` that are not touched by this
+            Updates. We need to know what to put in those columns for the untouched rows.
+            This accepts anything that `ibis.Table.mutate()` accepts.
+
+            If None, as convenience, we will use `null` as the default for all new columns.
+            If _util.NOT_SET, an error is raised if the after table has more columns than the before table.
+        """  # noqa: E501
+        _util.check_schemas_equal(t, self.before())
+
+        t = t.difference(self.before(), distinct=False)
+
+        if self.before().schema() == self.after().schema():
+            # easy, we don't have to worry about adding defaults
+            return t.union(self.after(), distinct=False)
+
+        missing_cols = [
+            c for c in self.after().schema() if c not in self.before().schema()
+        ]
+        if missing_cols:
+            if defaults is _util.NOT_SET:
+                raise ValueError(
+                    "If the after table has more columns than the before table, you must provide defaults"  # noqa: E501
+                )
+            if defaults is None:
+                defaults = {c: None for c in missing_cols}
+
+            defaults_cols = t.select(defaults).columns
+            already_there = [c for c in defaults_cols if c in t.columns]
+            if already_there:
+                raise ValueError(
+                    f"default value {already_there} already exist in the input table"
+                )
+
+            t = t.mutate(defaults)
+
+        t = t.select(self.after().columns)
+        t = t.union(self.after(), distinct=False)
+        return t
