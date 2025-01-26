@@ -189,7 +189,7 @@ class Diff:
         """The table after the changes."""
         return self._after
 
-    def unchanged(self) -> Updates:
+    def unchanged(self) -> ibis.Table:
         """Rows that were unchanged between `before` and `after`."""
         return self.before().difference(
             self.updates().before(),
