@@ -49,3 +49,32 @@ def test_tokenize(inp, exp):
         assert result is None
     else:
         assert result == exp
+
+
+@pytest.mark.parametrize(
+    "inp,expected",
+    [
+        ("müller", "muller"),
+        ("Muñoz", "Munoz"),
+        ("François", "Francois"),
+        ("pérez", "perez"),
+        ("à", "a"),
+        ("á", "a"),
+        ("â", "a"),
+        ("ä", "a"),
+        ("ã", "a"),
+        ("å", "a"),
+        ("Žižek", "Zizek"),
+        ("Øslo", "Øslo"),  # unchanged
+        ("østergaard", "østergaard"),  # unchanged
+        ("æ", "æ"),  # unchanged
+        ("ɑɽⱤoW", "ɑɽⱤoW"),  # unchanged
+        ("aAaz;ZæÆ&", "aAaz;ZæÆ&"),  # unchanged
+        ("ıI", "ıI"),  # unchanged
+        ("", ""),
+        (None, None),
+    ],
+)
+def test_strip_accents(inp, expected):
+    result = text.strip_accents(ibis.literal(inp, type="string")).execute()
+    assert expected == result

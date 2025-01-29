@@ -14,3 +14,4 @@ from mismo.text._similarity import jaro_similarity as jaro_similarity
 from mismo.text._similarity import jaro_winkler_similarity as jaro_winkler_similarity
 from mismo.text._similarity import levenshtein_ratio as levenshtein_ratio
 from mismo.text._strings import norm_whitespace as norm_whitespace
+from mismo.text._strings import strip_accents as strip_accents

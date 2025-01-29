@@ -1,6 +1,7 @@
 # Text API
 
 ::: mismo.text.norm_whitespace
+::: mismo.text.strip_accents
 ::: mismo.text.ngrams
 ::: mismo.text.tokenize
 ::: mismo.text.double_metaphone

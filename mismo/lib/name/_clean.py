@@ -3,11 +3,11 @@ from __future__ import annotations
 import ibis
 from ibis.expr import types as ir
 
-from mismo import _util
+from mismo import _util, text
 
 
 def normalize_name_field(field: ir.StringValue) -> ir.StringValue:
-    """Convert to uppercase, normalize whitespace, and remove non-alphanumeric.
+    """Convert to uppercase, norm whitespace, strip accents, remove non-alphanumeric.
 
     Parameters
     ----------
@@ -20,8 +20,10 @@ def normalize_name_field(field: ir.StringValue) -> ir.StringValue:
         The normalized name.
     """
     field = field.upper()
+    field = text.strip_accents(field)
     field = field.re_replace(r"[^A-Z0-9]+|\s+", " ")
     field = field.strip()
+    field = text.norm_whitespace(field)
     return field
 
 
