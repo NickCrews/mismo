@@ -514,6 +514,20 @@ class Linkage:
             )
         )
 
+    def cache(self) -> _typing.Self:
+        """
+        Cache the left, right, and links tables.
+
+        Returns
+        -------
+        A new Linkage with the cached tables.
+        """
+        return self.__class__(
+            left=self.left.cache(),
+            right=self.right.cache(),
+            links=self.links.cache(),
+        )
+
     def to_parquets(self, directory: str | Path, /) -> None:
         """
         Write the needle, haystack, and links to parquet files in the given directory.
