@@ -33,7 +33,7 @@ def equal_forgiving_typo(
     edit_distance = damerau_levenshtein(left, right)
     return ibis.or_(
         edit_distance <= 1,
-        ibis.and_(edit_distance <= 2, left.length() >= 5),
+        ibis.and_(edit_distance <= 2, left.length() > 5),
         _substring_match(left, right),
     )
 
