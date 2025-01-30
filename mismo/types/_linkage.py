@@ -602,19 +602,24 @@ class LinkCountsTable(TableWrapper):
         """
         import altair as alt
 
-        n_title = "Number of Records"
+        total_records = self.n_records.sum().execute()
+        n_title = ["Number of Records", f"({total_records:_} total)"]
         key_title = "Number of Links"
         mins = self.order_by(_.n_links.asc()).limit(2).execute()
         if len(mins) > 1:
-            subtitle = f"eg '{mins.n_records[0]:,} records had {mins.n_links[0]} links, {mins.n_records[1]:,} had {mins.n_links[1]} links, ...'"  # noqa: E501
+            subtitle = f"eg '{mins.n_records[0]:_} records had {mins.n_links[0]:_} links, {mins.n_records[1]:_} had {mins.n_links[1]:_} links, ...'"  # noqa: E501
         elif len(mins) == 1:
             subtitle = (
-                f"eg '{mins.n_records[0]:,} records had {mins.n_links[0]} links', ..."  # noqa: E501
+                f"eg '{mins.n_records[0]:_} records had {mins.n_links[0]:_} links', ..."  # noqa: E501
             )
         else:
             subtitle = "eg 'there were 1000 records with 0 links, 500 with 1 link, 100 with 2 links, ...'"  # noqa: E501
+
+        t = self.mutate(
+            frac_records=_.n_records / total_records if total_records > 0 else 0
+        )
         chart = (
-            alt.Chart(self)
+            alt.Chart(t)
             .properties(
                 title=alt.TitleParams(
                     "Number of Records by Link Count",
@@ -635,6 +640,9 @@ class LinkCountsTable(TableWrapper):
                 ),
                 tooltip=[
                     alt.Tooltip("n_records:Q", title=n_title, format=","),
+                    alt.Tooltip(
+                        "frac_records:Q", title="Fraction of Records", format=".2%"
+                    ),
                     alt.Tooltip("n_links:O", title=key_title),
                 ],
             )
