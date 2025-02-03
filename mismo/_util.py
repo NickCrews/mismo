@@ -433,32 +433,67 @@ def _check_collisions(collisions, on_collision, rename_as, columns):
         f()
 
 
-def ensure_join_suffixed(
-    original_left_cols: Iterable[str],
-    original_right_cols: Iterable[str],
-    t: ir.Table,
-    lsuffix: str = "_l",
-    rsuffix: str = "_r",
-) -> ir.Table:
-    """Ensure that all columns in `t` have a "_l" or "_r" suffix."""
-    lc = set(original_left_cols)
-    rc = set(original_right_cols)
-    just_left = lc - rc
-    just_right = rc - lc
-    m = {c + lsuffix: c for c in just_left} | {c + rsuffix: c for c in just_right}
-    t = t.rename(m)
+def join_ensure_named(
+    left: ir.Table,
+    right: ir.Table,
+    predicates: str
+    | Sequence[
+        str
+        | ir.BooleanColumn
+        | tuple[str | ir.Column | Deferred, str | ir.Column | Deferred]
+        | bool
+    ] = (),
+    how: str = "inner",
+    *,
+    lname: str = "{name}",
+    rname: str = "{name}_right",
+):
+    """
+    Ibis.join, but AWLAYS apply lname and rname to all columns, not just on conflict.
+    """
+    joined = ibis.join(
+        left,
+        right,
+        how=how,
+        lname=lname,
+        rname=rname,
+        predicates=predicates,
+    )
 
-    # If the condition is an equality condition, like `left.name == right.name`,
-    # then since we are doing an inner join ibis doesn't add suffixes to these
-    # columns. So we need duplicate these columns and add suffixes.
-    un_suffixed = [
-        c for c in t.columns if not c.endswith(lsuffix) and not c.endswith(rsuffix)
-    ]
-    m = {c + lsuffix: _[c] for c in un_suffixed} | {
-        c + rsuffix: _[c] for c in un_suffixed
-    }
-    t = t.mutate(**m).drop(*un_suffixed)
-    return t
+    def _rename(spec: str, name: str):
+        return spec.format(name=name)
+
+    selections = []
+    for col in left.columns:
+        new_name = _rename(lname, col)
+        if new_name in joined.columns:
+            selections.append((new_name, new_name))
+        else:
+            assert col in joined.columns
+            selections.append((new_name, col))
+    for col in right.columns:
+        new_name = _rename(rname, col)
+        if new_name in joined.columns:
+            selections.append((new_name, new_name))
+        else:
+            assert col in joined.columns
+            selections.append((new_name, col))
+
+    # check for dupe output columns
+    by_new_name = {}
+    for new_name, old_name in selections:
+        if new_name not in by_new_name:
+            by_new_name[new_name] = [old_name]
+        else:
+            by_new_name[new_name].append(old_name)
+    dupes = []
+    for new_name, old_names in by_new_name.items():
+        if len(old_names) > 1:
+            dupes.append(f"Column {new_name} is produced by {old_names}")
+    if dupes:
+        raise ValueError("\n".join(dupes))
+
+    return joined.select(**{new_name: old_name for new_name, old_name in selections})
 
 
 def check_schemas_equal(a: ibis.Schema | ibis.Table, b: ibis.Schema | ibis.Table):

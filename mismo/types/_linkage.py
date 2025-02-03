@@ -468,14 +468,11 @@ class Linkage:
             left = left.mutate(ibis.row_number().name("record_id"))
         if "record_id" not in right.columns:
             right = right.mutate(ibis.row_number().name("record_id"))
-        links = ibis.join(
-            left,
-            right,
-            predicates,
-            lname="{name}_l",
-            rname="{name}_r",
+        if isinstance(predicates, tuple) and len(predicates) == 2:
+            predicates = [predicates]
+        links = _util.join_ensure_named(
+            left, right, predicates, lname="{name}_l", rname="{name}_r"
         )
-        links = _util.ensure_join_suffixed(left.columns, right.columns, links)
         links = links.select("record_id_l", "record_id_r")
         return cls(left, right, links)
 

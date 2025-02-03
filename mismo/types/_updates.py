@@ -178,15 +178,9 @@ class Updates(TableWrapper):
         # 1. all the columns in after
         # 2. any extra columns in before are tacked on the end
         all_columns = (dict(before.schema()) | dict(after.schema())).keys()
-        joined = ibis.join(
-            before,
-            after,
-            how="inner",
-            lname="{name}_l",
-            rname="{name}_r",
-            predicates=join_on,
+        joined = _util.join_ensure_named(
+            before, after, join_on, lname="{name}_l", rname="{name}_r"
         )
-        joined = _util.ensure_join_suffixed(before.columns, after.columns, joined)
 
         def make_diff_col(col: str) -> ir.StructColumn:
             d = {}

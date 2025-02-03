@@ -124,8 +124,7 @@ def join(
         pred = pred & (left.record_id < right.record_id)
 
     _sql_analyze.check_join_algorithm(left, right, pred, on_slow=on_slow)
-    j = ibis.join(left, right, pred, lname="{name}_l", rname="{name}_r")
-    j = _util.ensure_join_suffixed(left.columns, right.columns, j)
+    j = _util.join_ensure_named(left, right, pred, lname="{name}_l", rname="{name}_r")
     j = fix_blocked_column_order(j)
     return j
 
