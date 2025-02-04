@@ -116,6 +116,13 @@ def test_Linkage_link_counts_chart(linkage: Linkage):
     linkage.link_counts_chart()
 
 
+def test_Linkage_empty_link_counts_chart(linkage: Linkage):
+    empty_linkage = Linkage(
+        left=linkage.left, right=linkage.right, links=linkage.links.limit(0)
+    )
+    empty_linkage.link_counts_chart()
+
+
 def test_LinkedTable_with_many_linked_values(linkage: Linkage, table_factory):
     result = linkage.left.with_many_linked_values(x="record_id", y=_.record_id + 1)
     assert isinstance(result, LinkedTable)

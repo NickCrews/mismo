@@ -599,7 +599,7 @@ class LinkCountsTable(TableWrapper):
         """
         import altair as alt
 
-        total_records = self.n_records.sum().execute()
+        total_records = self.n_records.sum().fill_null(0).execute()
         n_title = ["Number of Records", f"({total_records:_} total)"]
         key_title = "Number of Links"
         mins = self.order_by(_.n_links.asc()).limit(2).execute()
