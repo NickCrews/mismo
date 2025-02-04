@@ -525,15 +525,22 @@ class Linkage:
             links=self.links.cache(),
         )
 
-    def to_parquets(self, directory: str | Path, /) -> None:
+    def to_parquets(self, directory: str | Path, /, *, overwrite: bool = False) -> None:
         """
         Write the needle, haystack, and links to parquet files in the given directory.
         """
         d = Path(directory)
         d.mkdir(parents=True, exist_ok=True)
-        self.left.to_parquet(d / "left.parquet")
-        self.right.to_parquet(d / "right.parquet")
-        self.links.to_parquet(d / "links.parquet")
+
+        def write(t: ir.Table, name: str):
+            p = d / f"{name}.parquet"
+            if p.exists() and not overwrite:
+                raise FileExistsError(f"{p} already exists")
+            t.to_parquet(p)
+
+        write(self.left, "left")
+        write(self.right, "right")
+        write(self.links, "links")
 
     @classmethod
     def from_parquets(
