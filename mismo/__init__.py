@@ -12,4 +12,5 @@ from mismo import sets as sets
 from mismo import text as text
 from mismo import vector as vector
 from mismo._datasets import Datasets as Datasets
+from mismo._labellink import LabelLinker as LabelLinker
 from mismo._recipe import PRecipe as PRecipe
