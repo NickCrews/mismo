@@ -157,14 +157,22 @@ class Diff:
             deletions=self.deletions().cache(),
         )
 
-    def to_parquets(self, directory: str | Path, /) -> None:
+    def to_parquets(self, directory: str | Path, /, *, overwrite: bool = False) -> None:
         """Write the tables in the changes to parquet files."""
         directory = Path(directory)
         directory.mkdir(parents=True, exist_ok=True)
-        self.before().to_parquet(directory / "before.parquet")
-        self.insertions().to_parquet(directory / "insertions.parquet")
-        self.deletions().to_parquet(directory / "deletions.parquet")
-        self.updates().to_parquet(directory / "updates.parquet")
+
+        def write(table, name):
+            p = directory / f"{name}.parquet"
+            if not overwrite and p.exists():
+                raise FileExistsError(f"{p} already exists")
+            table.to_parquet(p)
+
+        # TODO: this isn't atomic, if one fails, the others will still be written.
+        write(self.before(), "before")
+        write(self.insertions(), "insertions")
+        write(self.deletions(), "deletions")
+        write(self.updates(), "updates")
 
     @classmethod
     def from_parquets(
