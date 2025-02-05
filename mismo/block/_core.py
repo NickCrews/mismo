@@ -164,6 +164,7 @@ class _Condition(NamedTuple):
 
 
 # TODO: This is a bit of a hot mess. Can we simplify this?
+# TODO: use the shared logic in _resolve.py
 def _resolve_conditions(
     left: ir.Table, right: ir.Table, raw: tuple[_IntoCondition], **kwargs
 ) -> ir.Table | tuple[ir.Table, ir.Table, ir.BooleanValue]:

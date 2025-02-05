@@ -13,6 +13,8 @@ from ibis.common.deferred import Deferred
 from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 
+from mismo import _resolve
+
 
 class NotSet:
     def __repr__(self):
@@ -433,6 +435,35 @@ def _check_collisions(collisions, on_collision, rename_as, columns):
         f()
 
 
+def join(
+    left: ir.Table,
+    right: ir.Table,
+    predicates: str
+    | Sequence[
+        str
+        | ir.BooleanColumn
+        | tuple[str | ir.Column | ibis.Deferred, str | ir.Column | ibis.Deferred]
+        | bool
+    ] = (),
+    how: str = "inner",
+    *,
+    lname: str = "{name}",
+    rname: str = "{name}_right",
+):
+    """
+    Ibis.join, but with enhanced condition resolution.
+    """
+    conditions = _resolve.resolve_conditions(predicates, left, right)
+    return ibis.join(
+        left,
+        right,
+        how=how,
+        lname=lname,
+        rname=rname,
+        predicates=conditions,
+    )
+
+
 def join_ensure_named(
     left: ir.Table,
     right: ir.Table,
@@ -451,7 +482,7 @@ def join_ensure_named(
     """
     Ibis.join, but AWLAYS apply lname and rname to all columns, not just on conflict.
     """
-    joined = ibis.join(
+    joined = join(
         left,
         right,
         how=how,
