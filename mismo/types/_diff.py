@@ -216,6 +216,34 @@ class Diff:
         as `before` and `after`, respectively."""
         return self._updates
 
+    def chart(self) -> alt.Chart:
+        """Create a chart that shows the flow of rows through the diff.
+
+        This is just a convenience method that calls `self.stats.chart()`.
+
+        ```plaintext
+        Rows
+        800,000 |                                 ▓▓  Inserted (50,000)
+                |                                 ▒▒  Deleted (100,000)
+        700,000 |                                 ░░  Updated (200,000)
+                |                                 ██  Unchanged (300,000)
+        600,000 |      ▒▒▒▒
+                |      ▒▒▒▒             ▓▓▓▓
+        500,000 |      ░░░░             ░░░░
+                |      ░░░░             ░░░░
+        400,000 |      ░░░░             ░░░░
+                |      ░░░░             ░░░░
+        300,000 |      ████             ████
+                |      ████             ████
+        200,000 |      ████             ████
+                |      ████             ████
+        100,000 |      ████             ████
+                |      ████             ████
+              0 | Before (600,000)  After (550,000)
+        ```
+        """
+        return self.stats.chart()
+
     @property
     def stats(self) -> DiffStats:
         """Statistics about this Diff."""
