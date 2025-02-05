@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Literal, Protocol, runtime_checkable
+from typing import Literal, Protocol, runtime_checkable
 
 from ibis.expr import types as ir
 
@@ -69,8 +69,7 @@ class ConditionBlocker:
 
     def __init__(
         self,
-        condition: Callable[[ir.Table, ir.Table], ir.BooleanValue],
-        *,
+        *conditions,
         name: str | None = None,
     ):
         """Create a Blocker that blocks based on a join condition.
@@ -82,8 +81,8 @@ class ConditionBlocker:
         name
             The name of the rule, if any.
         """
-        self.condition = condition
+        self.conditions = conditions
         self.name = name
 
     def __call__(self, left: ir.Table, right: ir.Table, **kwargs) -> ir.Table:
-        return join(left, right, self.condition, **kwargs)
+        return join(left, right, *self.conditions, **kwargs)
