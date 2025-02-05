@@ -61,7 +61,7 @@ class LabelLinker:
         )
         return (
             left,
-            right.filter(label_needle.notin(label_haystack)),
+            right.filter(label_needle.notin(label_haystack).fill_null(True)),
         )
 
     def indefinite_join_condition(
