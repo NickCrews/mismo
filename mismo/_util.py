@@ -319,16 +319,6 @@ def struct_join(struct: ir.StructValue, sep: str) -> ir.StringValue:
     return struct.isnull().ifelse(None, regular)
 
 
-def struct_tokens(struct: ir.StructValue, *, unique: bool = True) -> ir.ArrayValue:
-    """Get all the tokens from a struct."""
-    oneline = struct_join(struct, " ")
-    tokens = oneline.re_split(r"\s+")
-    tokens = tokens.filter(lambda x: x != "")
-    if unique:
-        tokens = tokens.unique()
-    return tokens
-
-
 def join_lookup(
     t: ibis.Table,
     lookup: ibis.Table,

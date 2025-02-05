@@ -3,7 +3,7 @@ from __future__ import annotations
 import ibis
 from ibis.expr import types as ir
 
-from mismo import _util, text
+from mismo import text
 
 
 def normalize_name_field(field: ir.StringValue) -> ir.StringValue:
@@ -54,4 +54,10 @@ def normalize_name(name: ir.StructValue) -> ir.StructValue:
 
 def name_tokens(name: ir.StructValue, *, unique: bool = True) -> ir.ArrayValue:
     """Get all the tokens from a name."""
-    return _util.struct_tokens(name, unique=unique)
+    tokens = ibis.array(
+        [text.tokenize(name[field].strip()) for field in name.names]
+    ).flatten()
+    tokens = tokens.filter(lambda x: x != "")
+    if unique:
+        tokens = tokens.unique()
+    return tokens
