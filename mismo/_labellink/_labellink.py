@@ -65,11 +65,15 @@ class LabelLinker:
         )
 
     def indefinite_join_condition(
-        self, a: ibis.Table, b: ibis.Table
+        self, a: ibis.Table, b: ibis.Table, **kwargs
     ) -> ir.BooleanColumn:
+        """Select any pairs where at least one record has a null label.
+
+        If both records have a non-null label, then either
+        1. the labels match, which means we don't need to block/compare/etc
+           (the records are a match!)
+        2. the labels don't match, which means we know the records are NOT a match.
+           Don't need to block/compare/etc.
+        """
         label_a, label_b = _resolve.resolve_columns(self.labels, a, b)
-        return ibis.or_(
-            label_a != label_b,
-            label_a.isnull(),
-            label_b.isnull(),
-        )
+        return label_a.isnull() | label_b.isnull()
