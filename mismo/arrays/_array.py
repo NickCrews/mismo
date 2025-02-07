@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Callable
 
 import ibis
 from ibis import _
+from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 
 from mismo import _util
@@ -106,9 +108,9 @@ def _list_select(x: ir.ArrayValue, indexes: ir.ArrayValue) -> ir.ArrayValue:
 
 @ibis.udf.scalar.builtin(
     name="list_grade_up",
-    signature=(("array<float64>",), "array<int64>"),
+    # signature=(("array<float64>",), "array<int64>"),
 )
-def _list_grade_up(x):
+def _list_grade_up(x) -> dt.Array(value_type=dt.Int64()):
     """Works like sort, but returns the indexes instead of the actual values."""
 
 
@@ -124,16 +126,35 @@ def array_choice(a: ir.ArrayValue, n: int) -> ir.ArrayValue:
 
 
 def array_sort(
-    arr: ir.ArrayValue, *, key: Callable[[ir.Value], ir.Value] | None = None
+    arr: ir.ArrayValue,
+    /,
+    *,
+    key: ibis.Deferred
+    | Callable[[ir.Value], ir.Value | Iterable[ir.Value]]
+    | Iterable[ibis.Deferred]
+    | None = None,
 ) -> ir.ArrayValue:
-    """Sort an array, optionally using a key function.
+    """Sort an array, optionally using a key.
 
-    The builtin ArrayValue.sort() method doesn't support a key function.
-    This function is a workaround for that.
+    The builtin ArrayValue.sort() method doesn't support a key.
+    This is a workaround for that.
 
     See https://github.com/duckdb/duckdb/discussions/10417
     """
     if key is None:
         return arr.sort()
-    keys = arr.map(key)
+
+    def resolve_key(elem: ir.Value, k):
+        if isinstance(k, ir.Value):
+            return k
+        if isinstance(k, ibis.Deferred):
+            return k.resolve(elem)
+        if callable(k):
+            return resolve_key(elem, k(elem))
+        # assume iterable of values
+        return ibis.struct(
+            {f"f{i}": resolve_key(elem, subkey) for i, subkey in enumerate(k)}
+        )
+
+    keys = arr.map(lambda x: resolve_key(x, key))
     return _list_select(arr, _list_grade_up(keys))

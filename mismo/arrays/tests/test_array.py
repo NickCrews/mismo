@@ -129,18 +129,35 @@ def test_array_any(backend, inp, exp):
     assert r == exp
 
 
-def test_array_sort():
+@pytest.mark.parametrize(
+    "key,exp",
+    [
+        pytest.param(None, ["a", "a", "b", "c"], id="none"),
+        pytest.param((lambda x: x.date), ["b", "a", "c", "a"], id="lambda"),
+        pytest.param(
+            (lambda x: [x.date, x.email]), ["b", "a", "c", "a"], id="lambda_multiple"
+        ),
+        pytest.param(ibis._.date, ["b", "a", "c", "a"], id="deferred"),
+        pytest.param(
+            [ibis._.date, ibis._.email], ["b", "a", "c", "a"], id="date_then_email"
+        ),
+        pytest.param(
+            [ibis._.email, ibis._.date], ["a", "a", "b", "c"], id="email_then_date"
+        ),
+    ],
+)
+def test_array_sort(key, exp):
     emails = ibis.array(
         [
             ibis.struct({"email": "b", "date": 1}),
             ibis.struct({"email": "c", "date": 3}),
             ibis.struct({"email": "a", "date": 2}),
+            ibis.struct({"email": "a", "date": 4}),
         ]
     )
-    result = arrays.array_sort(emails, key=lambda x: x.date)
+    result = arrays.array_sort(emails, key=key)
     emails = result.map(lambda x: x.email)
-    expected = ["b", "a", "c"]
-    assert emails.execute() == expected
+    assert emails.execute() == exp
 
 
 @pytest.mark.parametrize(
