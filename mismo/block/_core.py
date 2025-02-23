@@ -150,7 +150,7 @@ def fix_blocked_column_order(t: ir.Table) -> ir.Table:
         return t
     cols = set(t.columns) - {"record_id_l", "record_id_r"}
     cols_in_order = ["record_id_l", "record_id_r", *sorted(cols)]
-    return t[cols_in_order]
+    return t.select(cols_in_order)
 
 
 class _Condition(NamedTuple):
