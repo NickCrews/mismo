@@ -13,20 +13,24 @@ def _resolve_column(spec, t: ir.Table) -> ir.Column:
     return values[0]
 
 
-def resolve_columns(
+def resolve_column_pair(
     spec, left: ir.Table, right: ir.Table
 ) -> tuple[ir.Column, ir.Column]:
     if isinstance(spec, (str, ibis.Deferred)):
         return left[spec], right[spec]
-    if isinstance(spec, tuple) and len(spec) == 2:
+    if isinstance(spec, tuple):
+        if len(spec) != 2:
+            raise ValueError(
+                f"Column spec, when a tuple, must be of form (left, right), got {spec}"
+            )
         return (_resolve_column(spec[0], left), _resolve_column(spec[1], right))
     try:
-        return resolve_condition(spec(left, right), left, right)
+        return resolve_column_pair(spec(left, right), left, right)
     except TypeError:
         pass
     lcol = spec(left)
     rcol = spec(right)
-    return resolve_condition((lcol, rcol), left, right)
+    return resolve_column_pair((lcol, rcol), left, right)
 
 
 def resolve_condition(spec, left: ir.Table, right: ir.Table) -> ir.BooleanValue | bool:

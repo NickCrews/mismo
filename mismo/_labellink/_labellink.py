@@ -56,7 +56,7 @@ class LabelLinker:
     ) -> tuple[ibis.Table, ibis.Table]:
         if task == "dedupe" or task == "link":
             return left, right
-        label_haystack, label_needle = _resolve.resolve_columns(
+        label_haystack, label_needle = _resolve.resolve_column_pair(
             self.labels, left, right
         )
         return (
@@ -75,5 +75,5 @@ class LabelLinker:
         2. the labels don't match, which means we know the records are NOT a match.
            Don't need to block/compare/etc.
         """
-        label_a, label_b = _resolve.resolve_columns(self.labels, a, b)
+        label_a, label_b = _resolve.resolve_column_pair(self.labels, a, b)
         return label_a.isnull() | label_b.isnull()
