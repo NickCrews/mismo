@@ -13,8 +13,8 @@ from mismo.block._blocker import CrossBlocker as CrossBlocker
 from mismo.block._blocker import EmptyBlocker as EmptyBlocker
 from mismo.block._blocker import PBlocker as PBlocker
 from mismo.block._core import join as join
+from mismo.block._counts_table import CountsTable as CountsTable
 from mismo.block._ensemble import UnionBlocker as UnionBlocker
-from mismo.block._key_blocker import CountsTable as CountsTable
 from mismo.block._key_blocker import KeyBlocker as KeyBlocker
 from mismo.block._metrics import n_naive_comparisons as n_naive_comparisons
 from mismo.block._sql_analyze import JOIN_ALGORITHMS as JOIN_ALGORITHMS
