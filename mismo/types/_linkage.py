@@ -232,7 +232,7 @@ class LinkedTable(TableWrapper):
             )
 
         uname = _util.unique_name()
-        t = self.with_n_links(uname).filter(_[uname] == 1).drop(uname)
+        t = self.with_n_links(name=uname).filter(_[uname] == 1).drop(uname)
         o = self.other_.select(_.record_id.name(uname), *values, **named_values)
         id_to_other_vals = (
             self.links_.select(
@@ -252,10 +252,7 @@ class LinkedTable(TableWrapper):
         with_other = _util.join_lookup(t, id_to_other_vals, "record_id")
         return self.__class__(with_other, self.other_, self.links_)
 
-    def _n_links_by_id(self) -> ir.Table:
-        return _n_links_by_id(self.select("record_id"), self.links_)
-
-    def with_n_links(self, name: str = "n_links") -> _typing.Self:
+    def with_n_links(self, /, *, name: str = "n_links") -> _typing.Self:
         """
         Add a column to this table with the number of links each record has.
 
@@ -286,22 +283,27 @@ class LinkedTable(TableWrapper):
         │         5 │       1 │
         │         6 │       0 │
         └───────────┴─────────┘
-        >>> linkage.right.with_n_links().order_by("record_id")
-        ┏━━━━━━━━━━━┳━━━━━━━━━┓
-        ┃ record_id ┃ n_links ┃
-        ┡━━━━━━━━━━━╇━━━━━━━━━┩
-        │ int64     │ int64   │
-        ├───────────┼─────────┤
-        │         7 │       1 │
-        │         8 │       1 │
-        │         9 │       1 │
-        └───────────┴─────────┘
+        >>> linkage.right.with_n_links(name="link_count").order_by("record_id")
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━┓
+        ┃ record_id ┃ link_count ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━┩
+        │ int64     │ int64      │
+        ├───────────┼────────────┤
+        │         7 │          1 │
+        │         8 │          1 │
+        │         9 │          1 │
+        └───────────┴────────────┘
         """
-        n_by_id = self._n_links_by_id().rename(**{name: "n_links"})
+        # this doesn't include counts for ids that aren't in links
+        # (eg those that aren't linked at all)
+        # So make sure these get added back in during the join_lookup()
+        n_by_id = self.links_.group_by(record_id="record_id_l").aggregate(
+            _.record_id_r.nunique().name(name)
+        )
         t = self
         if name in t.columns:
             t = t.drop(name)
-        added = _util.join_lookup(t, n_by_id, "record_id")
+        added = _util.join_lookup(t, n_by_id, "record_id", defaults={name: 0})
         return self.__class__(added, self.other_, self.links_)
 
     def link_counts(self) -> LinkCountsTable:
@@ -350,7 +352,7 @@ class LinkedTable(TableWrapper):
         └───────────┴─────────┘
         """
         counts = (
-            self._n_links_by_id()
+            _n_links_by_id(self.select("record_id"), self.links_)
             .n_links.value_counts(name="n_records")
             .order_by(_.n_links.desc())
             .select("n_records", "n_links")

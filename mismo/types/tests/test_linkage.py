@@ -54,8 +54,6 @@ def test_Linkage_from_predicates():
 
 
 def test_LinkedTable_with_n_links(linkage):
-    assert tuple(linkage.left.with_n_links("foo").columns) == ("record_id", "foo")
-
     actual = linkage.left.with_n_links()
     expected = ibis.memtable(
         {
@@ -65,11 +63,11 @@ def test_LinkedTable_with_n_links(linkage):
     )
     assert_tables_equal(expected, actual)
 
-    actual = linkage.right.with_n_links()
+    actual = linkage.right.with_n_links(name="foo")
     expected = ibis.memtable(
         {
             "record_id": [7, 8, 9],
-            "n_links": [1, 1, 1],
+            "foo": [1, 1, 1],
         }
     )
     assert_tables_equal(expected, actual)
