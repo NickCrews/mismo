@@ -78,24 +78,24 @@ class KeyBlocker:
     significant tokens:
 
     >>> tokens = _.name.upper().split(" ").filter(lambda x: x.length() > 4)
-    >>> t.select(tokens)
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ ArrayFilter(StringSplit(Uppercase(name), ' '), Greater(StringLength(x), 4)) ┃
-    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-    │ array<string>                                                               │
-    ├─────────────────────────────────────────────────────────────────────────────┤
-    │ ['AGILENT', 'TECHNOLOGIES,']                                                │
-    │ ['NOBEL']                                                                   │
-    │ ['NOBEL']                                                                   │
-    │ ['ALCATEL']                                                                 │
-    │ ['ALCATEL']                                                                 │
-    │ ['ALCATEL']                                                                 │
-    │ ['CANON', 'EUROPA']                                                         │
-    │ ['CANON', 'EUROPA']                                                         │
-    │ ['CANON', 'EUROPA']                                                         │
-    │ []                                                                          │
-    │ …                                                                           │
-    └─────────────────────────────────────────────────────────────────────────────┘
+    >>> t.select(tokens.name("tokens"))
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ tokens                       ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ array<string>                │
+    ├──────────────────────────────┤
+    │ ['AGILENT', 'TECHNOLOGIES,'] │
+    │ ['NOBEL']                    │
+    │ ['NOBEL']                    │
+    │ ['ALCATEL']                  │
+    │ ['ALCATEL']                  │
+    │ ['ALCATEL']                  │
+    │ ['CANON', 'EUROPA']          │
+    │ ['CANON', 'EUROPA']          │
+    │ ['CANON', 'EUROPA']          │
+    │ []                           │
+    │ …                            │
+    └──────────────────────────────┘
 
     Now, block the tables together wherever two records share a token.
     Note that this blocked `* SCHLUMBERGER LIMITED` with `* SCHLUMBERGER TECHNOLOGY BV`.
