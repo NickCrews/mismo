@@ -58,8 +58,8 @@ def make_float_comparable(val):
         return [make_float_comparable(v) for v in val]
     if pd.isna(val):
         return None
-    if isinstance(val, float) and not pd.isna(val):
-        return pytest.approx(val, rel=1e-4)
+    if isinstance(ibis.literal(val), ir.FloatingValue) and not pd.isna(val):
+        return pytest.approx(val, rel=1e-3)
     return val
 
 

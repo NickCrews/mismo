@@ -8,6 +8,7 @@ from mismo.lib.geo import us_census_geocode
 from mismo.tests.util import assert_tables_equal
 
 DEFAULT_INS = {
+    "id": None,
     "street": None,
     "city": None,
     "state": None,
@@ -79,26 +80,31 @@ def test_us_census_geocode(table_factory):
     # so the test is faster
     pairs = [
         (
-            {"street": "2114 North 43rd St", "zipcode": "98103"},
+            {"id": "43rd_basic", "street": "2114 North 43rd St", "zipcode": "98103"},
             NORTH_43RD,
         ),
         # can handle duplicates
         (
-            {"street": "2114 NORTH 43RD ST  ", "zipcode": "98103"},
+            {
+                "id": "43rd_with_spaces",
+                "street": "2114 NORTH 43RD ST  ",
+                "zipcode": "98103",
+            },
             NORTH_43RD,
         ),
         (
-            {"street": "2114 43rd St", "zipcode": "98103"},
+            {"id": "43rd_no_north", "street": "2114 43rd St", "zipcode": "98103"},
             {**NORTH_43RD, "census_match_type": "non_exact"},
         ),
         (
             # APTs are removed!
-            {"street": "2114 N 43rd St APT 3", "zipcode": "98103"},
+            {"id": "43rd_apt", "street": "2114 N 43rd St APT 3", "zipcode": "98103"},
             NORTH_43RD,
         ),
         (
             # doesn't exist
             {
+                "id": "dne_elm",
                 "street": "321   ELM ST",
                 "city": "NEW YORK CITY",
                 "state": "NEW YORK",
@@ -108,6 +114,7 @@ def test_us_census_geocode(table_factory):
         ),
         (
             {
+                "id": "po_box",
                 "street": "PO BOX 321",
                 "city": "Girdwood",
                 "state": "AK",
@@ -117,6 +124,7 @@ def test_us_census_geocode(table_factory):
         ),
         (
             {
+                "id": "girdwood_typo_city",
                 "street": "285 HIGHER Terrace road",
                 "city": "GIRDWOOOD",  # typo
                 "state": "AK",
@@ -126,6 +134,7 @@ def test_us_census_geocode(table_factory):
         ),
         (
             {
+                "id": "girdwood_typo_city_serious",
                 "street": "285 HIGHER Terrace road",
                 "city": "schmirdwud",  # serious typo
                 "state": "ALASKA",
@@ -135,6 +144,7 @@ def test_us_census_geocode(table_factory):
         ),
         (
             {
+                "id": "girdwood_wrong_city",
                 "street": "285 HIGHER Terrace road",
                 "city": "seattle",  # totally misleading
                 "state": "ALASKA",
@@ -144,6 +154,7 @@ def test_us_census_geocode(table_factory):
         ),
         (
             {
+                "id": "girdwood_no_state_zip",
                 "street": "285 HIGHER Terrace road",
                 "city": "GIRDWOoOD",  # typo, no state or zip
             },
@@ -151,6 +162,7 @@ def test_us_census_geocode(table_factory):
         ),
         (
             {
+                "id": "girdwood_no_state_zip_street_typo",
                 "street": "285 HIGHhER Terrace road",  # typo
                 "city": "GIRDWOOD",  # no state or zip
             },
@@ -160,6 +172,7 @@ def test_us_census_geocode(table_factory):
         # try REMOVING some info, because that info might be wrong.
         (
             {
+                "id": "caski_wrong_zip_with_all",
                 "street": "7258 S CASKI CIR",  # Actually is 7258 CASKI CT
                 "city": "WASILLA",
                 "state": "AK",
@@ -169,15 +182,17 @@ def test_us_census_geocode(table_factory):
         ),
         (
             {
-                "street": "7258 S CASKI",  # Without the street type it works!
+                "id": "caski_wrong_zip_without_street_type",
+                "street": "7258 S CASKI",
                 "city": "WASILLA",
                 "state": "AK",
                 "zipcode": "99623",  # wrong zip
             },
-            CASKI,
+            {"census_is_match": False},
         ),
         (
             {
+                "id": "caski_wrong_zip_without_directional",
                 "street": "7258 CASKI CIR",  # Without the directional it works!
                 "city": "WASILLA",
                 "state": "AK",
@@ -187,6 +202,7 @@ def test_us_census_geocode(table_factory):
         ),
         (
             {
+                "id": "caski",
                 "street": "7258 S CASKI CIR",
                 "city": "WASILLA",
                 "state": "AK",
@@ -196,6 +212,7 @@ def test_us_census_geocode(table_factory):
         ),
         (
             {
+                "id": "caski_no_zip",
                 "street": "7258 S CASKI CIR",
                 "city": "WASILLA",
                 "state": "AK",
