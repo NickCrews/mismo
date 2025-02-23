@@ -34,7 +34,11 @@ def resolve_condition(spec, left: ir.Table, right: ir.Table) -> ir.BooleanValue 
         return spec
     if isinstance(spec, (str, ibis.Deferred)):
         return left[spec] == right[spec]
-    if isinstance(spec, tuple) and len(spec) == 2:
+    if isinstance(spec, tuple):
+        if len(spec) != 2:
+            raise ValueError(
+                f"Tuple join conditions must be of form (left, right), got {spec}"
+            )
         return _resolve_column(spec[0], left) == _resolve_column(spec[1], right)
     try:
         return resolve_condition(spec(left, right), left, right)
