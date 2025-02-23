@@ -123,6 +123,7 @@ class Updates(TableWrapper):
     def __init__(
         self,
         diff_table: ibis.Table,
+        /,
         *,
         schema: Literal["exactly", "names", "lax"] = "exactly",
     ) -> None:
@@ -177,6 +178,8 @@ class Updates(TableWrapper):
         # Prefer a column order of
         # 1. all the columns in after
         # 2. any extra columns in before are tacked on the end
+        if after is before:
+            after = after.view()
         all_columns = (dict(before.schema()) | dict(after.schema())).keys()
         joined = _util.join_ensure_named(
             before, after, join_on, lname="{name}_l", rname="{name}_r"
@@ -225,8 +228,9 @@ class Updates(TableWrapper):
     def apply_to(
         self,
         t: ibis.Table,
+        /,
         *,
-        defaults: None | Literal[_util.NOT_SET] | Any = _util.NOT_SET,
+        defaults: None | Any = _util.NOT_SET,
     ) -> ibis.Table:
         """Return the input table with these updates applied to it.
 

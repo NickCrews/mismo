@@ -29,8 +29,8 @@ def resolve_columns(
     return resolve_condition((lcol, rcol), left, right)
 
 
-def resolve_condition(spec, left: ir.Table, right: ir.Table) -> ir.BooleanValue:
-    if isinstance(spec, ir.BooleanValue):
+def resolve_condition(spec, left: ir.Table, right: ir.Table) -> ir.BooleanValue | bool:
+    if isinstance(spec, (ir.BooleanValue, bool)):
         return spec
     if isinstance(spec, (str, ibis.Deferred)):
         return left[spec] == right[spec]
