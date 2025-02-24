@@ -74,7 +74,7 @@ class _LevelsMeta(ABCMeta):
         >>> NameMatchLevel[ibis.literal(1)].execute()
         'NEAR'
         >>> NameMatchLevel[ibis.literal("NEAR")].execute()
-        np.int8(1)
+        1
         >>> NameMatchLevel[100]
         Traceback (most recent call last):
             ...
@@ -147,7 +147,7 @@ class MatchLevel(metaclass=_LevelsMeta):
     >>> NameMatchLevel[ibis.literal(1)].execute()
     'NEAR'
     >>> NameMatchLevel[ibis.literal("NEAR")].execute()
-    np.int8(1)
+    1
 
     You can construct your own values, both from python literals...
 

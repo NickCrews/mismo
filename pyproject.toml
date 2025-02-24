@@ -95,6 +95,7 @@ doctest_optionflags = [
 markers = [
     "network: requires internet access to work (deselect with '-m \"not network\"')",
 ]
+testpaths = ["mismo"]
 
 [tool.coverage.run]
 branch = true

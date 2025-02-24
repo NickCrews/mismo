@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import sys
 
+import duckdb
 import ibis
 from ibis import _
+from ibis.common.exceptions import IntegrityError
 import pytest
 
 from mismo import _util
@@ -53,18 +55,35 @@ def test_intify_column(table_factory):
     assert (restored.vals == restored.original).all().execute()
 
 
+@pytest.mark.xfail(
+    duckdb.__version__ == "1.2.0",
+    reason="seed is broken in this version of duckdb. https://github.com/duckdb/duckdb/issues/16373",
+)
 def test_sample_table_big_pop_small_sample(table_factory):
-    t = table_factory({"v": range(25_000)})
-    rowwise_expected = {19799, 24015, 24536}
+    t = table_factory({"v": range(20_000)})
+
+    rowwise_expected = {
+        11213,
+        12268,
+        14596,
+        17735,
+        18599,
+        19016,
+    }
     rowwise = set(_util.sample_table(t, 5, method="row", seed=42).v.execute())
-    blockwise = set(_util.sample_table(t, 5, method="block", seed=42).v.execute())
-    blockwise2 = set(_util.sample_table(t, 5, method="block", seed=205).v.execute())
     no_method = set(_util.sample_table(t, 5, seed=42).v.execute())
     assert rowwise == rowwise_expected
     assert no_method == rowwise_expected
-    assert blockwise2 != blockwise
-    assert len(blockwise2) == 2048
-    assert blockwise == set()
+
+    blockwise42_e = _util.sample_table(t, 10_000, method="block", seed=42).v
+    blockwise43_e = _util.sample_table(t, 10_000, method="block", seed=43).v
+    blockwise42 = set(blockwise42_e.execute())
+    blockwise42_2 = set(blockwise42_e.execute())
+    blockwise43 = set(blockwise43_e.execute())
+    assert blockwise42 == blockwise42_2
+    assert blockwise43 != blockwise42
+    assert len(blockwise42) == 10240
+    assert len(blockwise43) == 8192
 
 
 def test_sample_table_big_pop_big_sample(table_factory):
@@ -73,9 +92,7 @@ def test_sample_table_big_pop_big_sample(table_factory):
     s2 = set(_util.sample_table(t, 10_000, method="row", seed=42).v.execute())
     assert len(s1) > 9_000
     assert len(s1) < 11_000
-    # It's not a simple range 0, 1, 2, ...
-    assert 0 not in s1
-    assert 3 in s1
+    assert sorted(s1)[:5] != [0, 1, 2, 3, 4]
     assert s1 == s2
     s3 = set(_util.sample_table(t, 10_000, method="row", seed=43).v.execute())
     assert s1 != s3
@@ -142,5 +159,5 @@ def test_join_ensure_named():
         _util.join_ensure_named(a, b, a.a > b.a, lname="{name}_l", rname="{name}")
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(IntegrityError):
         _util.join_ensure_named(a, b, a.a > b.a, lname="{name}_x", rname="{name}_x")

@@ -78,13 +78,13 @@ def levenshtein_ratio(s1: ir.StringValue, s2: ir.StringValue) -> ir.FloatingValu
     --------
     >>> from mismo.text import levenshtein_ratio
     >>> levenshtein_ratio("mile", "mike").execute()
-    np.float64(0.75)
+    0.75
     >>> levenshtein_ratio("mile", "mile").execute()
-    np.float64(1.0)
+    1.0
     >>> levenshtein_ratio("mile", "").execute()
-    np.float64(0.0)
+    0.0
     >>> levenshtein_ratio("", "").execute()
-    np.float64(nan)
+    nan
     """
     return _dist_ratio(s1, s2, lambda a, b: a.levenshtein(b))
 
@@ -127,18 +127,18 @@ def jaro_similarity(s1: ir.StringValue, s2: ir.StringValue) -> ir.FloatingValue:
     >>> import ibis
     >>> from mismo.text import jaro_similarity
     >>> jaro_similarity(ibis.literal("foo"), ibis.literal("foo")).execute()
-    np.float64(1.0)
+    1.0
     >>> jaro_similarity(ibis.literal("foo"), ibis.literal("food")).execute()
-    np.float64(0.9166666666666666)
+    0.9166666666666666
     >>> jaro_similarity(ibis.null(str), ibis.literal("food")).execute()
-    np.float64(nan)
+    nan
 
     Be aware: comparing to an empty string always has a similarity of 0:
 
     >>> jaro_similarity(ibis.literal("a"), ibis.literal("")).execute()
-    np.float64(0.0)
+    0.0
     >>> jaro_similarity(ibis.literal(""), ibis.literal("")).execute()
-    np.float64(0.0)
+    0.0
     """
     return _jaro_similarity(s1, s2)
 
@@ -165,17 +165,17 @@ def jaro_winkler_similarity(s1: ir.StringValue, s2: ir.StringValue) -> ir.Floati
     >>> import ibis
     >>> from mismo.text import jaro_winkler_similarity
     >>> jaro_winkler_similarity(ibis.literal("foo"), ibis.literal("foo")).execute()
-    np.float64(1.0)
+    1.0
     >>> jaro_winkler_similarity(ibis.literal("foo"), ibis.literal("food")).execute()
-    np.float64(0.9416666666666667)
+    0.9416666666666667
     >>> jaro_winkler_similarity(ibis.null(str), ibis.literal("food")).execute()
-    np.float64(nan)
+    nan
 
     Be aware: comparing to an empty string always has a similarity of 0:
 
     >>> jaro_winkler_similarity(ibis.literal("a"), ibis.literal("")).execute()
-    np.float64(0.0)
+    0.0
     >>> jaro_winkler_similarity(ibis.literal(""), ibis.literal("")).execute()
-    np.float64(0.0)
+    0.0
     """
     return _jaro_winkler_similarity(s1, s2)

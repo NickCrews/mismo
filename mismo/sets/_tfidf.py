@@ -178,7 +178,7 @@ def add_array_value_counts(
         __n=_.count(),
     )
     by_terms = counts.group_by("__terms").agg(
-        __result=ibis.map(keys=_.__term.collect(), values=_.__n.collect()),
+        __result=ibis.map(_.__term.collect(), _.__n.collect()),
     )
     result = t.left_join(by_terms, "__terms").drop("__terms", "__terms_right")
 

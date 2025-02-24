@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Iterable, Iterator, overload
 
 import altair as alt
+import ibis
 from ibis.expr import types as ir
 
 from mismo import _util
@@ -307,7 +308,9 @@ class Weights:
         return self._score(t, results)
 
     def _score(self, t: ir.Table, compare_results) -> ir.Table:
-        total_odds = 1
+        # workaround for https://github.com/ibis-project/ibis/issues/10890
+        # to ensure that duckdb treats the literal as a float64
+        total_odds = ibis.literal("1").cast("float64")
         m = {}
         naming = {}
         for name, label, odds in compare_results:
