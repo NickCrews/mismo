@@ -5,7 +5,7 @@ from typing import Literal
 import ibis
 from ibis.expr import types as ir
 
-from mismo._util import get_column
+from mismo._util import cases, get_column
 from mismo.arrays import array_combinations, array_min
 from mismo.block import KeyBlocker
 from mismo.compare import MatchLevel
@@ -122,14 +122,12 @@ def match_level(
         else:
             return level.as_integer()
 
-    raw = (
-        ibis.case()
-        .when(e1.full == e2.full, f(EmailMatchLevel.FULL_EXACT))
-        .when(damerau_levenshtein(e1.full, e2.full) <= 1, f(EmailMatchLevel.FULL_NEAR))
-        .when(e1.user == e2.user, f(EmailMatchLevel.USER_EXACT))
-        .when(damerau_levenshtein(e1.user, e2.user) <= 1, f(EmailMatchLevel.USER_NEAR))
-        .else_(f(EmailMatchLevel.ELSE))
-        .end()
+    raw = cases(
+        (e1.full == e2.full, f(EmailMatchLevel.FULL_EXACT)),
+        (damerau_levenshtein(e1.full, e2.full) <= 1, f(EmailMatchLevel.FULL_NEAR)),
+        (e1.user == e2.user, f(EmailMatchLevel.USER_EXACT)),
+        (damerau_levenshtein(e1.user, e2.user) <= 1, f(EmailMatchLevel.USER_NEAR)),
+        else_=f(EmailMatchLevel.ELSE),
     )
     return EmailMatchLevel(raw)
 

@@ -32,10 +32,15 @@ def cases(
     else_: ir.Value | None = None,
 ) -> ir.Value:
     """A more concise way to write a case statement."""
-    builder = ibis.case()
-    for case, result in case_result_pairs:
-        builder = builder.when(case, result)
-    return builder.else_(else_).end()
+    try:
+        # ibis.cases() was added in ibis 10.0.0
+        cases = getattr(ibis, "cases")
+        return cases(*case_result_pairs, else_=else_)
+    except AttributeError:
+        builder = ibis.case()
+        for case, result in case_result_pairs:
+            builder = builder.when(case, result)
+        return builder.else_(else_).end()
 
 
 def bind(t: ir.Table, ref: Any) -> tuple[ir.Value]:

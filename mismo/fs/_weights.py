@@ -181,14 +181,14 @@ class ComparerWeights:
         if isinstance(labels, (int, str)):
             return self[labels].odds
         if isinstance(labels, ir.StringValue):
-            cases = [(lw.name, lw.odds) for lw in self]
+            cases = [(labels == lw.name, lw.odds) for lw in self]
         elif isinstance(labels, ir.IntegerValue):
-            cases = [(i, lw.odds) for i, lw in enumerate(self)]  # type: ignore # noqa: E501
+            cases = [(labels == i, lw.odds) for i, lw in enumerate(self)]  # type: ignore # noqa: E501
         else:
             raise TypeError(
                 f"Expected int, str, StringValue, or IntegerValue, got {type(labels)}"
             )
-        return labels.cases(cases)
+        return _util.cases(*cases)
 
     @overload
     def match_probability(self, labels: str | int) -> float: ...

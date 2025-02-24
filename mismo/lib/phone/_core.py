@@ -5,7 +5,7 @@ from typing import Literal, overload
 import ibis
 from ibis.expr import types as ir
 
-from mismo._util import get_column
+from mismo._util import cases, get_column
 from mismo.arrays import array_combinations, array_min
 from mismo.block import KeyBlocker
 from mismo.compare import MatchLevel
@@ -124,12 +124,10 @@ def match_level(
         else:
             return level.as_integer()
 
-    raw = (
-        ibis.case()
-        .when(p1 == p2, f(PhoneMatchLevel.EXACT))
-        .when(damerau_levenshtein(p1, p2) <= 1, f(PhoneMatchLevel.NEAR))
-        .else_(f(PhoneMatchLevel.ELSE))
-        .end()
+    raw = cases(
+        (p1 == p2, f(PhoneMatchLevel.EXACT)),
+        (damerau_levenshtein(p1, p2) <= 1, f(PhoneMatchLevel.NEAR)),
+        else_=f(PhoneMatchLevel.ELSE),
     )
     return PhoneMatchLevel(raw)
 
