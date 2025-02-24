@@ -10,13 +10,18 @@ import pytest
 from mismo.lib.geo import postal_parse_address
 from mismo.lib.geo._postal import _ADDRESS_SCHEMA
 
-try:
-    from postal.parser import parse_address as _parse_address
-except ImportError:
+
+def _raw_parse_address(x):
     # Need to make it so that pytest can at least collect the tests on CI on windows
     # (or wherever postal is not available).
     # Of course, actually running the tests will explode things.
-    pass
+    # And, if we put this at the top level, then the import happens at
+    # test collection time, and the actual importing is quite slow because it
+    # loads a bunch of files
+    from postal.parser import parse_address as _parse_address
+
+    return _parse_address(x)
+
 
 _NOOP_ADDRESS = {
     "street1": None,
@@ -72,7 +77,7 @@ def python_only(address_string: str | None) -> dict:
 
 @udf
 def postal_only(address_string: str | None) -> dict:
-    _parse_address(address_string or "")
+    _raw_parse_address(address_string or "")
     return _NOOP_ADDRESS
 
 
@@ -92,7 +97,7 @@ def complete(address_string: str | None) -> dict | None:
         "country": None,
     }
 
-    parsed_fields = _parse_address(address_string)
+    parsed_fields = _raw_parse_address(address_string)
     for value, label in parsed_fields:
         # Pypostal returns more fields than the ones we actually need.
         # Here `False` is used as a placeholder under the assumption that
