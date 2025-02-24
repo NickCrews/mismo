@@ -359,6 +359,28 @@ class LinkedTable(TableWrapper):
         )
         return LinkCountsTable(counts)
 
+    @classmethod
+    def make_pair(
+        cls, left: ir.Table, right: ir.Table, links: ir.Table
+    ) -> tuple[_typing.Self, _typing.Self]:
+        """
+        Create a pair of LinkedTables from left, right, and links.
+
+        This basically just wraps the logic to make it so that
+        the the _l and _r suffixes in the links table are consistent.
+        """
+
+        def _swap_l_and_r(name: str):
+            if name.endswith("_l"):
+                return name[:-2] + "_r"
+            if name.endswith("_r"):
+                return name[:-2] + "_l"
+            return name
+
+        left = cls(left, right, links)
+        right = cls(right, left, links.rename(_swap_l_and_r))
+        return left, right
+
 
 class Linkage:
     """Two tables of records and links between them.
@@ -398,12 +420,7 @@ class Linkage:
         """
         _check_tables_and_links(left, right, links)
 
-        self._left = LinkedTable(left, right, links)
-        self._right = LinkedTable(
-            right,
-            left,  # TODO: is this a huge footgun since the other cols aren't renamed??
-            links.rename(record_id_l="record_id_r", record_id_r="record_id_l"),
-        )
+        self._left, self._right = LinkedTable.make_pair(left, right, links)
         self._links = links
 
     @property
