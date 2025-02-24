@@ -112,7 +112,7 @@ def sample_table(
     table: ir.Table,
     n_approx: int,
     *,
-    method: Literal["row", "block"] | None = None,
+    method: Literal["row", "block", "hash"] | None = None,
     seed: int | None = None,
 ) -> ir.Table:
     """Sample a table to approximately n rows.
@@ -142,6 +142,12 @@ def sample_table(
         The sampling method to use. If None, use "row" for small tables and "block" for
         large tables.
 
+        If "hash", use a pseudorandom sample based on a hash of the rows.
+        This requires hashing every row, and then sorting by the hash,
+        so it can be slow, but it is guaranteed to be deterministic.
+        See https://duckdb.org/2024/08/19/duckdb-tricks-part-1.html#shuffling-data
+        for more information.
+
         See [Ibis's documentation on .sample()](https://ibis-project.org/reference/expression-tables.html#ibis.expr.types.relations.Table.sample)
         for more details.
     seed
@@ -149,9 +155,33 @@ def sample_table(
     """
     if method is None:
         method = "row" if n_approx <= 2048 * 8 else "block"
+    if method == "hash":
+        return table.order_by(row_hash(table, seed=seed)).limit(n_approx)
     n_available = table.count().execute()
     fraction = n_approx / n_available
     return table.sample(fraction, method=method, seed=seed)
+
+
+def row_hash(t: ir.Table, *, seed: int | None = None) -> ir.IntegerColumn:
+    """Get a pseudorandom hash of each row in the table.
+
+    This is useful for creating a unique identifier for each row
+    that is stable across different runs of the same code.
+
+    Based on the method described at
+    https://duckdb.org/2024/08/19/duckdb-tricks-part-1.html#shuffling-data
+    """
+    # TODO: get this optimization to work
+    # if t.get_name() in t._find_backend(use_default=True).tables:
+    #     # This is a physical table, we can use the rowid
+    #     key = t.rowid()
+    #     if seed is not None:
+    #         key = key + seed
+    #     return key.hash()
+    fields = {col: t[col].hash() for col in t.columns}
+    if seed is not None:
+        fields[unique_name()] = ibis.literal(seed)
+    return ibis.struct(fields).hash()
 
 
 def group_id(
