@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 from pathlib import Path
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any
 
 import ibis
 
@@ -76,7 +76,7 @@ class Diff:
         insertions: ibis.Table | None = None,
         updates: Updates | None = None,
         deletions: ibis.Table | None = None,
-        updates_defaults: None | Any | Literal[_util.NOT_SET] = _util.NOT_SET,
+        updates_defaults: None | Any = _util.NOT_SET,
     ) -> _typing.Self:
         """Create from a starting point and a set of transformations.
 

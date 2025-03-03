@@ -5,17 +5,17 @@ from ibis import _
 import pytest
 
 from mismo.tests.util import assert_tables_equal
-from mismo.types import Linkage, LinkedTable
+from mismo.types import BaseLinkage, LinkedTable
 
 
 @pytest.fixture
-def linkage() -> Linkage:
+def linkage() -> BaseLinkage:
     left = ibis.memtable({"record_id": [4, 5, 6]})
     right = ibis.memtable({"record_id": [7, 8, 9]})
     links = ibis.memtable(
         {"record_id_l": [4, 4, 5], "record_id_r": [7, 8, 9], "extra": [1, 2, 3]}
     )
-    return Linkage(left, right, links)
+    return BaseLinkage(left, right, links)
 
 
 def test_Linkage_init():
@@ -25,13 +25,13 @@ def test_Linkage_init():
         {"record_id_l": [4, 4, 5], "record_id_r": [7, 8, 9], "extra": [1, 2, 3]}
     )
     # no error on extra column
-    Linkage(left, right, links)
+    BaseLinkage(left, right, links)
 
 
 def test_Linkage_from_predicates():
     tl = ibis.memtable({"foo": [1, 2, 3]})
     tr = ibis.memtable({"bar": [1, 2, 3]})
-    linkage = Linkage.from_predicates(tl, tr, tl.foo == tr.bar)
+    linkage = BaseLinkage.from_predicates(tl, tr, tl.foo == tr.bar)
     assert tuple(linkage.left.columns) == ("foo", "record_id")
     assert tuple(linkage.right.columns) == ("bar", "record_id")
 
@@ -109,19 +109,19 @@ def test_LinkedTable_link_counts(linkage):
     assert_tables_equal(expected, actual)
 
 
-def test_Linkage_link_counts_chart(linkage: Linkage):
+def test_Linkage_link_counts_chart(linkage: BaseLinkage):
     # just a smoketest that it doesn't crash
     linkage.link_counts_chart()
 
 
-def test_Linkage_empty_link_counts_chart(linkage: Linkage):
-    empty_linkage = Linkage(
+def test_Linkage_empty_link_counts_chart(linkage: BaseLinkage):
+    empty_linkage = BaseLinkage(
         left=linkage.left, right=linkage.right, links=linkage.links.limit(0)
     )
     empty_linkage.link_counts_chart()
 
 
-def test_LinkedTable_with_many_linked_values(linkage: Linkage, table_factory):
+def test_LinkedTable_with_many_linked_values(linkage: BaseLinkage, table_factory):
     result = linkage.left.with_many_linked_values(x="record_id", y=_.record_id + 1)
     assert isinstance(result, LinkedTable)
 
@@ -136,7 +136,7 @@ def test_LinkedTable_with_many_linked_values(linkage: Linkage, table_factory):
     assert_tables_equal(expected, result)
 
 
-def test_LinkedTable_with_single_linked_values(linkage: Linkage, table_factory):
+def test_LinkedTable_with_single_linked_values(linkage: BaseLinkage, table_factory):
     result = linkage.left.with_single_linked_values(x="record_id", y=_.record_id + 1)
     assert isinstance(result, LinkedTable)
 

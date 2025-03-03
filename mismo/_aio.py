@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import closing, contextmanager
-from typing import AsyncIterable, Iterable, TypeVar
+from typing import AsyncIterable, Iterable, Iterator, TypeVar
 
 T = TypeVar("T")
 
@@ -46,7 +46,7 @@ def run_until_complete(future, loop: asyncio.AbstractEventLoop):
 @contextmanager
 def with_event_loop(
     loop: asyncio.AbstractEventLoop | None = None,
-) -> asyncio.AbstractEventLoop:
+) -> Iterator[asyncio.AbstractEventLoop]:
     if loop is not None:
         yield loop
     else:
