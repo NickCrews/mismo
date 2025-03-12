@@ -7,7 +7,7 @@ from ibis.expr import types as ir
 
 from mismo import _resolve
 from mismo._util import join_ensure_named
-from mismo.linkage._linkage import BaseLinkage
+from mismo.linkage._linkage import LinkTableLinkage
 
 
 class LabelLinker:
@@ -34,8 +34,8 @@ class LabelLinker:
         """
         self.labels = labels
 
-    def definite_linkage(self, left: ibis.Table, right: ibis.Table) -> BaseLinkage:
-        return BaseLinkage(
+    def definite_linkage(self, left: ibis.Table, right: ibis.Table) -> LinkTableLinkage:
+        return LinkTableLinkage(
             left=left,
             right=right,
             links=join_ensure_named(

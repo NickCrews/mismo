@@ -12,7 +12,17 @@ if TYPE_CHECKING:
 
 
 class LinksTable(TableWrapper):
-    """A table of links between two tables."""
+    """A table of links between two tables.
+
+    This acts like an ibis table, guaranteed to have at least the
+    columns record_id_l and record_id_r.
+    It may have more columns, such as `address_match_level`,
+    that describe the relationship between two records.
+
+    In addition to the columns, this table has two properties, `left_` and `right_`,
+    each of which is a [LinkedTable][mismo.LinkedTable] object,
+    which is a wrapper around the left and right tables respectively.
+    """
 
     # TODO:
     # Need to define whether or not it is allowed to have more than

@@ -6,6 +6,7 @@
     * [Fellegi-Sunter Model](concepts/fs.md)
     * [Versioning Policy](concepts/versioning.md)
 * Reference
+    * [Core API](reference/core.md)
     * By Task
         * [EDA](reference/eda.md)
         * [Blocking](reference/block.md)
@@ -15,7 +16,6 @@
         * [Datasets](reference/datasets.md)
         * [Play Data](reference/playdata.md)
     * By Data Type
-        * [Util Classes](reference/types.md)
         * [Text Utils](reference/text.md)
         * [Array Utils](reference/arrays.md)
         * [Set Utils](reference/sets.md)

@@ -103,7 +103,7 @@ class Updates(TableWrapper):
 
     This only represents differences in rows that exist both before and after the changes.
     To represent a general difference between two tables, eg with insertions and deletions,
-    use [Diff](mismo.types.Diff).
+    use [Diff](mismo.Diff).
 
     This represents how each column has changed between two tables.
     If a column only has a 'before' field, it means this column was removed.

@@ -21,10 +21,16 @@ class Diff:
 
     This can only semantically represent 1-1 relationships,
     eg a row in the `before` table corresponds to only 0 or 1 row in the `after` table,
-    and vice versa.
+    and vice versa. eg "this row changed in these ways between these two tables".
 
-    To represent more general 0-N relationships, use a [Linkage](mismo.types.Linkage).
+    To represent more general 0-N relationships, use a [Linkage](mismo.Linkage).
     eg many rows in a "dirty" dataset are linked to a single row in a "clean" dataset.
+    Say you have a clean database of records.
+    You just got a new batch of dirty data that might contain duplicates.
+    Each record in the clean database might match multiple records in the dirty data.
+    This makes it difficult to use a Diff object, because each clean record
+    can't be paired up nicely with a single dirty record.
+    A Linkage object is more appropriate in this case.
 
     This is able to represent a difference between two tables with different schemas,
     eg if a column is added or removed.

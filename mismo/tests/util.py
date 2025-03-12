@@ -16,7 +16,7 @@ def assert_tables_equal(
     on_schema_mismatch: Literal["error", "cast_to_left", "cast_to_right"] = "error",
     order_by=None,
 ) -> None:
-    if left.schema() != right.schema():
+    if dict(left.schema()) != dict(right.schema()):
         if on_schema_mismatch == "error":
             assert dict(left.schema()) == dict(right.schema())
         if on_schema_mismatch == "cast_to_left":

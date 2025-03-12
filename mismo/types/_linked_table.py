@@ -91,6 +91,10 @@ class LinkedTable(TableWrapper):
         >>> links = ibis.memtable({"record_id_l": [4, 4, 5], "record_id_r": [7, 8, 9]})
         >>> lt = LinkedTable(this, other=other, links=links)
         >>> lt
+        LinkedTable(
+            3 records,
+            3 links
+        )
         ┏━━━━━━━━━━━┓
         ┃ record_id ┃
         ┡━━━━━━━━━━━┩
@@ -104,6 +108,10 @@ class LinkedTable(TableWrapper):
         Default is to pack everything into array<struct<all columns from other>>:
 
         >>> lt.with_many_linked_values()
+        LinkedTable(
+            3 records,
+            3 links
+        )
         ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ record_id ┃ other                                ┃
         ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -118,6 +126,10 @@ class LinkedTable(TableWrapper):
         They will be returned in an array, one for each linked record:
 
         >>> lt.with_many_linked_values(_.record_id.name("idrs"), plus_ones=_.record_id + 1)
+        LinkedTable(
+            3 records,
+            3 links
+        )
         ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ record_id ┃ idrs                 ┃ plus_ones            ┃
         ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
@@ -203,6 +215,10 @@ class LinkedTable(TableWrapper):
         >>> links = ibis.memtable({"record_id_l": [4, 4, 5], "record_id_r": [7, 8, 9]})
         >>> lt = LinkedTable(left, other=right, links=links)
         >>> lt
+        LinkedTable(
+            3 records,
+            3 links
+        )
         ┏━━━━━━━━━━━┓
         ┃ record_id ┃
         ┡━━━━━━━━━━━┩
@@ -218,6 +234,10 @@ class LinkedTable(TableWrapper):
         Default is to pack everything into a struct:
 
         >>> lt.with_single_linked_values()
+        LinkedTable(
+            1 records,
+            3 links
+        )
         ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ record_id ┃ other                    ┃
         ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -229,6 +249,10 @@ class LinkedTable(TableWrapper):
         Or you can select exactly which values you want:
 
         >>> lt.with_single_linked_values(_.record_id.name("idr"), plus_one=_.record_id + 1)
+        LinkedTable(
+            1 records,
+            3 links
+        )
         ┏━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━┓
         ┃ record_id ┃ idr   ┃ plus_one ┃
         ┡━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━┩
@@ -279,11 +303,12 @@ class LinkedTable(TableWrapper):
         Examples
         --------
         >>> import ibis
+        >>> import mismo
         >>> ibis.options.interactive = True
         >>> left = ibis.memtable({"record_id": [4, 5, 6]})
         >>> right = ibis.memtable({"record_id": [7, 8, 9]})
         >>> links = ibis.memtable({"record_id_l": [4, 4, 5], "record_id_r": [7, 8, 9]})
-        >>> linkage = Linkage(left, right, links)
+        >>> linkage = mismo.LinkTableLinkage(left, right, links)
         >>> linkage.left.with_n_links().order_by("record_id")
         ┏━━━━━━━━━━━┳━━━━━━━━━┓
         ┃ record_id ┃ n_links ┃
@@ -330,44 +355,39 @@ class LinkedTable(TableWrapper):
         Examples
         --------
         >>> import ibis
+        >>> import mismo
         >>> ibis.options.interactive = True
         >>> left = ibis.memtable({"record_id": [4, 5, 6]})
         >>> right = ibis.memtable({"record_id": [7, 8, 9]})
         >>> links = ibis.memtable({"record_id_l": [4, 4, 5], "record_id_r": [7, 8, 9]})
-        >>> linkage = Linkage(left, right, links)
+        >>> linkage = mismo.LinkTableLinkage(left, right, links)
 
         There is 1 record in left (6) that didn't match any in right.
         There is 1 record in left (5) that matched 1 in right.
         There is 1 record in left (4) that matched 2 in right.
 
-        >>> linkage.left.link_counts()
-        ┏━━━━━━━━━━━┳━━━━━━━━━┓
-        ┃ n_records ┃ n_links ┃
-        ┡━━━━━━━━━━━╇━━━━━━━━━┩
-        │ int64     │ int64   │
-        ├───────────┼─────────┤
-        │         1 │       2 │
-        │         1 │       1 │
-        │         1 │       0 │
-        └───────────┴─────────┘
+        >>> linkage.left.link_counts().order_by("n_links")
+        ┏━━━━━━━━━┳━━━━━━━━━━━┓
+        ┃ n_links ┃ n_records ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━┩
+        │ int64   │ int64     │
+        ├─────────┼───────────┤
+        │       0 │         1 │
+        │       1 │         1 │
+        │       2 │         1 │
+        └─────────┴───────────┘
 
         All 3 records in right matched 1 in left.
 
         >>> linkage.right.link_counts()
-        ┏━━━━━━━━━━━┳━━━━━━━━━┓
-        ┃ n_records ┃ n_links ┃
-        ┡━━━━━━━━━━━╇━━━━━━━━━┩
-        │ int64     │ int64   │
-        ├───────────┼─────────┤
-        │         3 │       1 │
-        └───────────┴─────────┘
+        ┏━━━━━━━━━┳━━━━━━━━━━━┓
+        ┃ n_links ┃ n_records ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━┩
+        │ int64   │ int64     │
+        ├─────────┼───────────┤
+        │       1 │         3 │
+        └─────────┴───────────┘
         """
-        # counts = (
-        #     _n_links_by_id(self.select("record_id"), self.links_)
-        #     .n_links.value_counts(name="n_records")
-        #     .order_by(_.n_links.desc())
-        #     .select("n_records", "n_links")
-        # )
         basic_counts = self.links_.group_by(record_id="record_id_l").aggregate(
             n_links=_.record_id_r.nunique()
         )
@@ -375,7 +395,6 @@ class LinkedTable(TableWrapper):
             "record_id", n_links=ibis.literal(0, type="int64")
         )
         n_links_by_id = ibis.union(basic_counts, zero_counts)
-        print(n_links_by_id.count().execute())
         counts = n_links_by_id.group_by("n_links").aggregate(
             n_records=_.record_id.count()
         )

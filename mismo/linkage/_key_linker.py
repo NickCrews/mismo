@@ -10,12 +10,12 @@ from ibis.expr import types as ir
 from mismo import _typing, _util
 from mismo.block._core import join
 from mismo.block._counts_table import KeyCountsTable, PairCountsTable
-from mismo.linkage import BaseLinkage
+from mismo.linkage._linkage import BaseLinkage
 from mismo.types import LinkedTable, LinksTable
 
 
 class KeyLinker:
-    """Blocks records together wherever they share a key, eg "emails match."
+    """Links records together wherever they share a key, eg "emails match."
 
     This is one of the most basic blocking rules, used very often in record linkage.
     This is what is used in `splink`.

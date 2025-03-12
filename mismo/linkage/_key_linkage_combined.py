@@ -5,13 +5,13 @@ from typing import Iterable
 import ibis
 
 from mismo import _typing
-from mismo.block._key_linker import KeyLinkage
 from mismo.linkage import union
 from mismo.linkage._combine import check_share_left_and_right
-from mismo.linkage._linkage import BaseLinkage
+from mismo.linkage._key_linker import KeyLinkage
+from mismo.linkage._linkage import Linkage
 
 
-class UnionKeyLinkage(BaseLinkage):
+class UnionKeyLinkage(Linkage):
     """A Linkage based on the union of KeyLinkages."""
 
     def __init__(self, key_linkages: Iterable[KeyLinkage], labels: bool = False):
@@ -65,7 +65,7 @@ class UnionKeyLinkage(BaseLinkage):
         return self
 
 
-def _all_are_key_linkages(*linkages: BaseLinkage) -> bool:
+def _all_are_key_linkages(*linkages: Linkage) -> bool:
     return all(isinstance(linkage, KeyLinkage) for linkage in linkages)
 
 

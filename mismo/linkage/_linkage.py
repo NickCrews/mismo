@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 import ibis
 
@@ -15,46 +15,40 @@ if TYPE_CHECKING:
     from ibis.expr import types as ir
 
 
-class BaseLinkage(abc.ABC):
-    """Two tables of records and links between them.
+@runtime_checkable
+class Linkage(Protocol):
+    """A simple dataclass containing two tables of records ([LinkedTables][mismo.LinkedTable]) and links ([LinksTable][mismo.LinksTable]) between them.
 
-    This is semantically similar to a [Diff][mismo.types.Diff] object,
-    except in a Diff object every row in `left` is linked
-    to either 0 or 1 rows in `right`.
-    Because there can't be many-to- relationships,
-    Diffs allow for the semantics of insertions, updates, and deletions.
-    eg "this row changed in these ways between these two tables".
+    This is a protocol, you as a user will interact with concrete implementations
+    of a Linkage, such as a [LinkTableLinkage][mismo.LinkTableLinkage]
+    or a [KeyLinkage][mismo.KeyLinkage].
 
-    On the other hand, a Linkage object is more general.
-    It supports the semantics of a many-to-many relationship between two tables.
-    Say you have a clean database of records.
-    You just got a new batch of dirty data that might contain duplicates.
-    Each record in the clean database might match multiple records in the dirty data.
-    This makes it difficult to use a Diff object, because each clean record
-    can't be paired up nicely with a single dirty record.
-    A Linkage object is more appropriate in this case.
-    """
+    See Also
+    --------
+    The [Diff][mismo.Diff] dataclass, for representing the special case
+    where each record is linked to at most one other record.
+    """  # noqa: E501
 
     @property
-    @abc.abstractmethod
     def left(self) -> LinkedTable:
         """The left Table."""
+        raise NotImplementedError
 
     @property
-    @abc.abstractmethod
     def right(self) -> LinkedTable:
         """The right Table."""
+        raise NotImplementedError
 
     @property
-    @abc.abstractmethod
     def links(self) -> LinksTable:
         """
         A table of (record_id_l, record_id_r, <other attributes>...) that link `left` and `right`.
         """  # noqa: E501
+        raise NotImplementedError
 
     def link_counts_chart(self) -> alt.Chart:
         """
-        A side by side altair Chart of `left.link_counts(`)` and `right.link_counts()`
+        A side by side altair Chart of `left.link_counts()` and `right.link_counts()`
 
         ```plaintext
         Number of           Left Table               Number of    Right Table
@@ -74,6 +68,40 @@ class BaseLinkage(abc.ABC):
                 Number of Links                              Number of Links
         ```
         """
+        raise NotImplementedError
+
+    def cache(self) -> _typing.Self:
+        """
+        Cache the left, right, and links tables.
+
+        Returns
+        -------
+        A new Linkage with the cached tables.
+        """
+        raise NotImplementedError
+
+
+class BaseLinkage(abc.ABC, Linkage):
+    """
+    An abstract base class provided as convenience for those implementing Linkage's.
+    """
+
+    @property
+    @abc.abstractmethod
+    def left(self) -> LinkedTable:
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def right(self) -> LinkedTable:
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def links(self) -> LinksTable:
+        raise NotImplementedError
+
+    def link_counts_chart(self) -> alt.Chart:
         import altair as alt
 
         left = self.left.link_counts().chart()
@@ -89,13 +117,6 @@ class BaseLinkage(abc.ABC):
 
     @abc.abstractmethod
     def cache(self) -> _typing.Self:
-        """
-        Cache the left, right, and links tables.
-
-        Returns
-        -------
-        A new Linkage with the cached tables.
-        """
         raise NotImplementedError
 
 

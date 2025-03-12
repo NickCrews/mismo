@@ -15,3 +15,15 @@ from mismo import types as types
 from mismo import vector as vector
 from mismo._datasets import Datasets as Datasets
 from mismo._recipe import PRecipe as PRecipe
+from mismo.linkage import BaseLinkage as BaseLinkage
+from mismo.linkage import KeyLinkage as KeyLinkage
+from mismo.linkage import KeyLinker as KeyLinker
+from mismo.linkage import Linkage as Linkage
+from mismo.linkage import LinkTableLinkage as LinkTableLinkage
+from mismo.linkage import UnionKeyLinkage as UnionKeyLinkage
+from mismo.types import Diff as Diff
+from mismo.types import DiffStats as DiffStats
+from mismo.types import LinkCountsTable as LinkCountsTable
+from mismo.types import LinkedTable as LinkedTable
+from mismo.types import LinksTable as LinksTable
+from mismo.types import Updates as Updates

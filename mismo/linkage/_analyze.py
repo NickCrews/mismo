@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Iterable
 
-from mismo.linkage._linkage import BaseLinkage
+from mismo.linkage._linkage import Linkage
 
 
-def _pair_counts_chart(linkages: Iterable[BaseLinkage]):
+def _pair_counts_chart(linkages: Iterable[Linkage]):
     # Need to flesh out this API before I expose it
     import altair as alt
 

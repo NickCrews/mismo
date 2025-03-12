@@ -4,8 +4,7 @@ from typing import Callable, Tuple
 
 import ibis
 
-from mismo.linkage._linkage import BaseLinkage as BaseLinkage
-from mismo.linkage._linkage import LinkTableLinkage
+from mismo.linkage._linkage import Linkage, LinkTableLinkage
 
 
 class Combiner:
@@ -13,8 +12,8 @@ class Combiner:
         self,
         implementations: list[
             Tuple[
-                Callable[[tuple[BaseLinkage, ...]], bool],
-                Callable[[tuple[BaseLinkage, ...]], BaseLinkage],
+                Callable[[tuple[Linkage, ...]], bool],
+                Callable[[tuple[Linkage, ...]], Linkage],
             ]
         ] = [],
     ) -> None:
@@ -23,15 +22,13 @@ class Combiner:
 
     def register(
         self,
-        is_match: Callable[[tuple[BaseLinkage, ...]], bool],
-        implementation: Callable[[tuple[BaseLinkage, ...]], BaseLinkage],
+        is_match: Callable[[tuple[Linkage, ...]], bool],
+        implementation: Callable[[tuple[Linkage, ...]], Linkage],
     ) -> None:
         """Register a new implementation of the Combiner."""
         self._implementations = [(is_match, implementation), *self._implementations]
 
-    def find(
-        self, *linkages: BaseLinkage
-    ) -> Callable[[tuple[BaseLinkage, ...]], BaseLinkage]:
+    def find(self, *linkages: Linkage) -> Callable[[tuple[Linkage, ...]], Linkage]:
         """Find the first implementation that matches the given Linkages."""
         linkages = tuple(linkages)
         check_share_left_and_right(*linkages)
@@ -46,11 +43,11 @@ class Combiner:
                 return implementation
         raise NotImplementedError
 
-    def __call__(self, *linkages: BaseLinkage) -> BaseLinkage:
+    def __call__(self, *linkages: Linkage) -> Linkage:
         """Combine two Linkages."""
         return self.find(*linkages)(*linkages)
 
-    def default(self, first: BaseLinkage, *linkages: BaseLinkage) -> BaseLinkage:
+    def default(self, first: Linkage, *linkages: Linkage) -> Linkage:
         raise NotImplementedError
 
 
@@ -58,7 +55,7 @@ class Union(Combiner):
     """Return a Linkage that contains links that are in either input Linkages."""
 
     @staticmethod
-    def default(first: BaseLinkage, *linkages: BaseLinkage) -> BaseLinkage:
+    def default(first: Linkage, *linkages: Linkage) -> Linkage:
         links = [first.links, *[x.links for x in linkages]]
         return LinkTableLinkage(
             left=linkages[0].left,
@@ -71,7 +68,7 @@ class Intersect(Combiner):
     """Return a Linkage that contains links that are in both input Linkages."""
 
     @staticmethod
-    def default(first: BaseLinkage, *linkages: BaseLinkage) -> BaseLinkage:
+    def default(first: Linkage, *linkages: Linkage) -> Linkage:
         links = [first.links, *[x.links for x in linkages]]
         return LinkTableLinkage(
             left=linkages[0].left,
@@ -86,7 +83,7 @@ class Difference(Combiner):
     """
 
     @staticmethod
-    def default(first: BaseLinkage, *linkages: BaseLinkage) -> BaseLinkage:
+    def default(first: Linkage, *linkages: Linkage) -> Linkage:
         links = [first.links, *[x.links for x in linkages]]
         return LinkTableLinkage(
             left=linkages[0].left,
@@ -105,7 +102,7 @@ Return a Linkage that contains links that are in the left Linkage but not the ri
 """
 
 
-def check_share_left_and_right(*linkages: BaseLinkage) -> None:
+def check_share_left_and_right(*linkages: Linkage) -> None:
     if not linkages:
         raise ValueError("No linkages provided")
     first_left = linkages[0].left
