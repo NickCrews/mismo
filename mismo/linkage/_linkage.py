@@ -46,6 +46,23 @@ class Linkage(Protocol):
         """  # noqa: E501
         raise NotImplementedError
 
+    def adjust(
+        self,
+        *,
+        left: LinkedTable | None = None,
+        right: LinkedTable | None = None,
+        links: LinksTable | None = None,
+    ) -> Linkage:
+        """
+        Create a new Linkage, optionally replacing the left, right, and links tables.
+
+        The result is not guaranteed to be the same type as the original Linkage.
+        For example, if the original Linkage is a [KeyLinkage][mismo.KeyLinkage],
+        then if you adjust the links table, it would be impossible for the
+        result to be represented as a KeyLinkage, so we return a LinkTableLinkage
+        """
+        raise NotImplementedError
+
     def link_counts_chart(self) -> alt.Chart:
         """
         A side by side altair Chart of `left.link_counts()` and `right.link_counts()`
@@ -113,6 +130,19 @@ class BaseLinkage(abc.ABC, Linkage):
             title=alt.TitleParams(
                 "Number of Records by Link Count", subtitle=subtitle, anchor="middle"
             )
+        )
+
+    def adjust(
+        self,
+        *,
+        left: LinkedTable | None = None,
+        right: LinkedTable | None = None,
+        links: LinksTable | None = None,
+    ) -> Linkage:
+        return self.__class__(
+            left=left if left is not None else self.left,
+            right=right if right is not None else self.right,
+            links=links if links is not None else self.links,
         )
 
     @abc.abstractmethod

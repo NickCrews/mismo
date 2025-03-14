@@ -10,7 +10,7 @@ from ibis.expr import types as ir
 from mismo import _typing, _util
 from mismo.block._core import join
 from mismo.block._counts_table import KeyCountsTable, PairCountsTable
-from mismo.linkage._linkage import BaseLinkage
+from mismo.linkage._linkage import BaseLinkage, LinkTableLinkage
 from mismo.types import LinkedTable, LinksTable
 
 
@@ -432,6 +432,19 @@ class KeyLinkage(BaseLinkage):
             right=self.right,
             keys=self.keys,
             task=self.task,
+        )
+
+    def adjust(
+        self,
+        *,
+        left: LinkedTable | None = None,
+        right: LinkedTable | None = None,
+        links: LinksTable | None = None,
+    ) -> LinkTableLinkage:
+        return LinkTableLinkage(
+            left=left if left is not None else self.left,
+            right=right if right is not None else self.right,
+            links=links if links is not None else self.links,
         )
 
     def cache(self) -> _typing.Self:
