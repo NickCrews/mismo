@@ -16,5 +16,6 @@ from mismo.linkage._label_linker import LabelLinker as LabelLinker
 from mismo.linkage._linkage import BaseLinkage as BaseLinkage
 from mismo.linkage._linkage import Linkage as Linkage
 from mismo.linkage._linkage import LinkTableLinkage as LinkTableLinkage
+from mismo.linkage._linkage import filter_links as filter_links
 
 _register_combiners()
