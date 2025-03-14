@@ -6,7 +6,6 @@ import ibis
 
 from mismo import _typing
 from mismo.linkage import union
-from mismo.linkage._combine import check_share_left_and_right
 from mismo.linkage._key_linker import KeyLinkage
 from mismo.linkage._linkage import Linkage
 
@@ -29,7 +28,6 @@ class UnionKeyLinkage(Linkage):
             right.
         """
         self.key_linkages = tuple(key_linkages)
-        check_share_left_and_right(*self.key_linkages)
         self.labels = labels
 
     @property

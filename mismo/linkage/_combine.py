@@ -1,10 +1,15 @@
 from __future__ import annotations
 
-from typing import Callable, Tuple
+from typing import Callable, Protocol, Tuple, runtime_checkable
 
 import ibis
 
 from mismo.linkage._linkage import Linkage, LinkTableLinkage
+
+
+@runtime_checkable
+class PCombiner(Protocol):
+    def __call__(self, first: Linkage, /, *linkages: Linkage) -> Linkage: ...
 
 
 class Combiner:
@@ -13,7 +18,7 @@ class Combiner:
         implementations: list[
             Tuple[
                 Callable[[tuple[Linkage, ...]], bool],
-                Callable[[tuple[Linkage, ...]], Linkage],
+                PCombiner,
             ]
         ] = [],
     ) -> None:
@@ -23,18 +28,17 @@ class Combiner:
     def register(
         self,
         is_match: Callable[[tuple[Linkage, ...]], bool],
-        implementation: Callable[[tuple[Linkage, ...]], Linkage],
+        implementation: PCombiner,
     ) -> None:
         """Register a new implementation of the Combiner."""
         self._implementations = [(is_match, implementation), *self._implementations]
 
-    def find(self, *linkages: Linkage) -> Callable[[tuple[Linkage, ...]], Linkage]:
+    def find(self, first: Linkage, /, *linkages: Linkage) -> PCombiner:
         """Find the first implementation that matches the given Linkages."""
         linkages = tuple(linkages)
-        check_share_left_and_right(*linkages)
         for is_match, implementation in self._implementations:
             try:
-                im = is_match(*linkages)
+                im = is_match(first, *linkages)
             except NotImplementedError:
                 continue
             if im is NotImplementedError:
@@ -43,11 +47,12 @@ class Combiner:
                 return implementation
         raise NotImplementedError
 
-    def __call__(self, *linkages: Linkage) -> Linkage:
+    def __call__(self, first: Linkage, /, *linkages: Linkage) -> Linkage:
         """Combine two Linkages."""
-        return self.find(*linkages)(*linkages)
+        # Should we verify that all the linkages share the same left and right tables?
+        return self.find(first, *linkages)(first, *linkages)
 
-    def default(self, first: Linkage, *linkages: Linkage) -> Linkage:
+    def default(self, first: Linkage, /, *linkages: Linkage) -> Linkage:
         raise NotImplementedError
 
 
@@ -102,13 +107,26 @@ Return a Linkage that contains links that are in the left Linkage but not the ri
 """
 
 
-def check_share_left_and_right(*linkages: Linkage) -> None:
-    if not linkages:
-        raise ValueError("No linkages provided")
-    first_left = linkages[0].left
-    first_right = linkages[0].right
-    for linkage in linkages[1:]:
-        if linkage.left is not first_left:
-            raise ValueError("left tables do not match")
-        if linkage.right is not first_right:
-            raise ValueError("right tables do not match")
+def unify_links_min_intersection(*linkages: Linkage) -> tuple[Linkage, ...]:
+    """
+    Given some Linkages, simplify each links to only include the columns that are in all Linkages.
+
+    In order to combine all the `LinksTable`s into a single `LinkTable`,
+    we need all their schemas to be the same.
+    This is one strategy to do that.
+
+    Another strategy would be to include the columns that are in any of the link tables,
+    and fill in the missing columns with nulls.
+    """  # noqa: E501
+    all_links = [linkage.links for linkage in linkages]
+    shared, *rest = [
+        set((name, dtype) for name, dtype in link.schema().items())
+        for link in all_links
+    ]
+    for column_set in rest:
+        shared &= column_set
+    shared_columns = [name for name, _ in shared]
+    return tuple(
+        linkage.adjust(links=linkage.links.select(*shared_columns))
+        for linkage in linkages
+    )
