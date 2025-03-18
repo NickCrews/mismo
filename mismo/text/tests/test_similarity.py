@@ -44,6 +44,44 @@ def test_levenshtein_ratio(string1, string2, expected):
     "string1,string2,expected",
     [
         ("foo", "foo", 1),
+        ("foo bar", "foo", 0.3333),
+        ("foo bar", "bar foo", 1),
+        ("foo foo bar", "foo baz", 0.7143),
+        ("foo", "", 0),
+        (None, "foo", np.nan),
+    ],
+)
+def test_jaccard_string_similarity_character(string1, string2, expected):
+    result = text.jaccard(string1, string2, tokenize="by_character").execute()
+    if np.isnan(expected):
+        assert np.isnan(result)
+    else:
+        assert result == pytest.approx(expected, 0.001)
+
+
+@pytest.mark.parametrize(
+    "string1,string2,expected",
+    [
+        ("foo", "foo", 1),
+        ("foo bar", "foo", 0.5),
+        ("foo bar", "bar foo", 1),
+        ("foo foo bar", "foo baz", 0.3333),
+        ("foo", "", 0),
+        (None, "foo", np.nan),
+    ],
+)
+def test_jaccard_string_similarity_word(string1, string2, expected):
+    result = text.jaccard(string1, string2, tokenize="on_whitespace").execute()
+    if np.isnan(expected):
+        assert np.isnan(result)
+    else:
+        assert result == pytest.approx(expected, 0.001)
+
+
+@pytest.mark.parametrize(
+    "string1,string2,expected",
+    [
+        ("foo", "foo", 1),
         ("foo", "food", 0.942),
         ("bar", "bim", 0.5555),
         ("a", "", 0),
