@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 import ibis
+from ibis import _
 
-from mismo import _typing
+from mismo import _typing, _util
 from mismo.types._table_wrapper import TableWrapper
 
 if TYPE_CHECKING:
@@ -44,16 +45,106 @@ class LinksTable(TableWrapper):
         object.__setattr__(self, "_left_raw", left)
         object.__setattr__(self, "_right_raw", right)
 
-    def with_left(self) -> _typing.Self:
-        """Join the left table to this table of links."""
-        left_renamed = self.left_.rename("{name}_l")
-        joined = self.inner_join(left_renamed, "record_id_l")
+    def with_left(
+        self,
+        *values: ibis.Deferred | Callable[[ibis.Table], ibis.Value] | None,
+        **named_values: ibis.Deferred | Callable[[ibis.Table], ibis.Value] | None,
+    ) -> _typing.Self:
+        """Add columns from the left table to this table of links.
+
+        This allows you to add specific columns from the left table,
+        renaming or modifying them as needed, following the `ibis.Table` pattern of
+        `my_table.select("my_col", new_col=my_table.foo)`,
+        except here we choose from the left table.
+
+        Parameters
+        ----------
+        values
+            The columns to add from the left table.
+            Support string names, Deferreds, etc, just like `ibis.Table.select`.
+        named_values
+            Like values, but with names, just like `ibis.Table.select`.
+
+        Examples
+        --------
+        >>> left = ibis.memtable({"record_id": [1, 2, 3], "address": ["a", "b", "c"]})
+        >>> right = ibis.memtable({"record_id": [8, 9], "address": ["x", "y"]})
+        >>> links_raw = ibis.memtable({"record_id_l": [1, 3], "record_id_r": [8, 9]})
+        >>> links = LinksTable(links_raw, left=left, right=right)
+        >>> links.with_left(
+        ...    "address",
+        ...    ibis._.address.upper().name("address_upper"),
+        ...    left_address=ibis._.address,
+        ... )
+        ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
+        ┃ record_id_l ┃ record_id_r ┃ address ┃ address_upper ┃ left_address ┃
+        ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━┩
+        │ int64       │ int64       │ string  │ string        │ string       │
+        ├─────────────┼─────────────┼─────────┼───────────────┼──────────────┤
+        │           1 │           8 │ a       │ A             │ a            │
+        │           3 │           9 │ c       │ C             │ c            │
+        └─────────────┴─────────────┴─────────┴───────────────┴──────────────┘
+        """
+        if not values and not named_values:
+            values = self.left_.columns
+
+        uname = _util.unique_name()
+        left = self.left_.select(_.record_id.name(uname), *values, **named_values)
+        conflicts = [c for c in left.columns if c in self.columns]
+        if conflicts:
+            raise ValueError(f"conflicting columns: {conflicts}")
+        joined = self.left_join(left, self.record_id_l == left[uname]).drop(uname)
         return self.__class__(joined, left=self._left_raw, right=self._right_raw)
 
-    def with_right(self) -> _typing.Self:
-        """Join the right table to this table of links."""
-        right_renamed = self.right_.rename("{name}_r")
-        joined = self.inner_join(right_renamed, "record_id_r")
+    def with_right(
+        self,
+        *values: ibis.Deferred | Callable[[ibis.Table], ibis.Value] | None,
+        **named_values: ibis.Deferred | Callable[[ibis.Table], ibis.Value] | None,
+    ) -> _typing.Self:
+        """Add columns from the right table to this table of links.
+
+        This allows you to add specific columns from the right table,
+        renaming or modifying them as needed, following the `ibis.Table` pattern of
+        `my_table.select("my_col", new_col=my_table.foo)`,
+        except here we choose from the right table.
+
+        Parameters
+        ----------
+        values
+            The columns to add from the right table.
+            Support string names, Deferreds, etc, just like `ibis.Table.select`.
+        named_values
+            Like values, but with names, just like `ibis.Table.select`.
+
+        Examples
+        --------
+        >>> left = ibis.memtable({"record_id": [1, 2, 3], "address": ["a", "b", "c"]})
+        >>> right = ibis.memtable({"record_id": [8, 9], "address": ["x", "y"]})
+        >>> links_raw = ibis.memtable({"record_id_l": [1, 3], "record_id_r": [8, 9]})
+        >>> links = LinksTable(links_raw, left=left, right=right)
+        >>> links.with_right(
+        ...    "address",
+        ...    ibis._.address.upper().name("address_upper"),
+        ...    right_address=ibis._.address,
+        ... )
+        ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+        ┃ record_id_l ┃ record_id_r ┃ address ┃ address_upper ┃ right_address ┃
+        ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+        │ int64       │ int64       │ string  │ string        │ string        │
+        ├─────────────┼─────────────┼─────────┼───────────────┼───────────────┤
+        │           1 │           8 │ x       │ X             │ x             │
+        │           3 │           9 │ y       │ Y             │ y             │
+        └─────────────┴─────────────┴─────────┴───────────────┴───────────────┘
+        """
+        if not values and not named_values:
+            values = self.left_.columns
+
+        uname = _util.unique_name()
+        right = self.right_.select(_.record_id.name(uname), *values, **named_values)
+        conflicts = [c for c in right.columns if c in self.columns]
+        if conflicts:
+            raise ValueError(f"conflicting columns: {conflicts}")
+        joined = self.left_join(right, self.record_id_r == right[uname]).drop(uname)
         return self.__class__(joined, left=self._left_raw, right=self._right_raw)
 
     @property
