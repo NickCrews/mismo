@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import dataclasses
 import os
+from pathlib import Path
 from typing import Any, Callable, Iterable, Protocol
 
 import ibis
+from ibis import _
 from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 import pytest
@@ -143,3 +145,38 @@ def set_env(monkeypatch):
     ibis.options.repr.interactive.max_depth = 3
     yield
     ibis.options = starting_opts
+
+
+def download_test_data() -> ir.Table:
+    # download test data from https://github.com/NickCrews/apoc-data/releases/tag/20240717-111158
+    URL_TEMPLATE = "https://github.com/NickCrews/apoc-data/releases/download/20240717-111158/income_{year}.csv"
+    conn = ibis.duckdb.connect()
+    sub_tables = [
+        conn.read_csv(
+            (URL_TEMPLATE.format(year=year) for year in range(2011, 2024)),
+            all_varchar=True,
+        )
+    ]
+    t = ibis.union(*sub_tables)
+    t = t.select(
+        full_address=_.Address
+        + ", "
+        + _.City
+        + ", "
+        + _.State
+        + ", "
+        + _.Zip
+        + ", "
+        + _.Country
+    )
+    return t
+
+
+@pytest.fixture
+def addresses_1M(backend: ibis.BaseBackend) -> ir.Table:
+    pq = Path(__file__).parent / "apoc_addresses_1M.parquet"
+    if not pq.exists():
+        download_test_data().to_parquet(pq)
+    t = backend.read_parquet(pq)
+    t = t.cache()  # ensure in memory, we don't want to benchmark disk IO
+    return t
