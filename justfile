@@ -38,7 +38,7 @@ docs-publish:
 # run the timing benchmark suite
 # just bench -k test_benchmark_us_census_geocode[100]
 bench *args:
-    uv run pytest --benchmark-only --benchmark-enable --benchmark-autosave {{args}}
+    uv run pytest --benchmark-only --benchmark-enable --benchmark-autosave --benchmark-group-by=func {{args}}
 
 benchmark *args:
     uv run bench {{args}}

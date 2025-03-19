@@ -14,6 +14,8 @@ import pytest
 # we want to have pytest assert introspection in the helpers
 pytest.register_assert_rewrite("mismo.tests.util")
 
+DATA_DIR = Path(__file__).parent.parent / "data"
+
 
 @pytest.fixture
 def backend() -> ibis.BaseBackend:
@@ -174,7 +176,7 @@ def download_test_data() -> ir.Table:
 
 @pytest.fixture
 def addresses_1M(backend: ibis.BaseBackend) -> ir.Table:
-    pq = Path(__file__).parent / "apoc_addresses_1M.parquet"
+    pq = DATA_DIR / "apoc_addresses_1M.parquet"
     if not pq.exists():
         download_test_data().to_parquet(pq)
     t = backend.read_parquet(pq)
