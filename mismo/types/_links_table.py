@@ -72,9 +72,9 @@ class LinksTable(TableWrapper):
         >>> links_raw = ibis.memtable({"record_id_l": [1, 3], "record_id_r": [8, 9]})
         >>> links = LinksTable(links_raw, left=left, right=right)
         >>> links.with_left(
-        ...    "address",
-        ...    ibis._.address.upper().name("address_upper"),
-        ...    left_address=ibis._.address,
+        ...     "address",
+        ...     ibis._.address.upper().name("address_upper"),
+        ...     left_address=ibis._.address,
         ... )
         ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
         ┃ record_id_l ┃ record_id_r ┃ address ┃ address_upper ┃ left_address ┃
@@ -123,9 +123,9 @@ class LinksTable(TableWrapper):
         >>> links_raw = ibis.memtable({"record_id_l": [1, 3], "record_id_r": [8, 9]})
         >>> links = LinksTable(links_raw, left=left, right=right)
         >>> links.with_right(
-        ...    "address",
-        ...    ibis._.address.upper().name("address_upper"),
-        ...    right_address=ibis._.address,
+        ...     "address",
+        ...     ibis._.address.upper().name("address_upper"),
+        ...     right_address=ibis._.address,
         ... )
         ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
         ┃ record_id_l ┃ record_id_r ┃ address ┃ address_upper ┃ right_address ┃

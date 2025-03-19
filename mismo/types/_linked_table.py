@@ -125,7 +125,9 @@ class LinkedTable(TableWrapper):
         Or you can select exactly which values you want.
         They will be returned in an array, one for each linked record:
 
-        >>> lt.with_many_linked_values(_.record_id.name("idrs"), plus_ones=_.record_id + 1)
+        >>> lt.with_many_linked_values(
+        ...     _.record_id.name("idrs"), plus_ones=_.record_id + 1
+        ... )
         LinkedTable(
             3 records,
             3 links
@@ -248,7 +250,9 @@ class LinkedTable(TableWrapper):
 
         Or you can select exactly which values you want:
 
-        >>> lt.with_single_linked_values(_.record_id.name("idr"), plus_one=_.record_id + 1)
+        >>> lt.with_single_linked_values(
+        ...     _.record_id.name("idr"), plus_one=_.record_id + 1
+        ... )
         LinkedTable(
             1 records,
             3 links

@@ -77,8 +77,8 @@ class CoordinateBlocker:
     >>> ibis.options.interactive = True
     >>> conn = ibis.duckdb.connect()
     >>> left = conn.create_table(
-    ...    "left",
-    ...    {"latlon": [{"lat": 0, "lon": 2}]},
+    ...     "left",
+    ...     {"latlon": [{"lat": 0, "lon": 2}]},
     ... )
     >>> right = conn.create_table(
     ...     "right",

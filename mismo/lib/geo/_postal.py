@@ -104,14 +104,16 @@ def postal_fingerprint_address(address: ir.StructValue) -> ir.ArrayValue:
 
     Examples
     -------
-    >>> address = ibis.struct({
-    ...     "street1": "123 Main Street",
-    ...     "street2": "",
-    ...     "city": "Springfield",
-    ...     "state": "IL",
-    ...     "postal_code": "62701",
-    ...     "country": "us",
-    ... })
+    >>> address = ibis.struct(
+    ...     {
+    ...         "street1": "123 Main Street",
+    ...         "street2": "",
+    ...         "city": "Springfield",
+    ...         "state": "IL",
+    ...         "postal_code": "62701",
+    ...         "country": "us",
+    ...     }
+    ... )
     >>> postal_fingerprint_address(address).execute()  # doctest: +SKIP
     [
         "act|main street|123|springfield",

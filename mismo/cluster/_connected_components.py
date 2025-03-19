@@ -140,7 +140,11 @@ def connected_components(
     If you supply records, then the records are labeled with the component.
     We can also change the name of the column that contains the component:
 
-    >>> connected_components(records=records1, links=links, label_as="label").order_by("record_id")
+    >>> connected_components(
+    ...     records=records1,
+    ...     links=links,
+    ...     label_as="label",
+    ... ).order_by("record_id")
     ┏━━━━━━━━━━━┳━━━━━━━┳━━━━━━━┓
     ┃ record_id ┃ other ┃ label ┃
     ┡━━━━━━━━━━━╇━━━━━━━╇━━━━━━━┩

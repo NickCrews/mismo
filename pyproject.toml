@@ -118,6 +118,9 @@ lint.select = [
 force-sort-within-sections = true
 required-imports = ["from __future__ import annotations"]
 
+[tool.ruff.format]
+docstring-code-format = true
+
 [tool.mypy]
 # https://mypy.readthedocs.io/en/latest/config_file.html#using-a-pyproject-toml-file
 python_version = "3.11"

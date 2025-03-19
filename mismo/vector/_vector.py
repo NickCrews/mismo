@@ -55,7 +55,7 @@ def dot(a: T, b: T) -> ir.FloatingValue:
     14.0
     >>> m1 = ibis.map({"a": 1, "b": 2})
     >>> m2 = ibis.map({"b": 3, "c": 4})
-    >>> dot(m1, m2).execute() # 2*3
+    >>> dot(m1, m2).execute()  # 2*3
     6.0
     """
     a_vals, b_vals = _shared_vals(a, b)
@@ -88,7 +88,9 @@ def cosine_similarity(a: T, b: T) -> ir.FloatingValue:
 
     Opposite directions:
 
-    >>> cosine_similarity(ibis.array([1, 1]), ibis.array([-2, -2])).execute()  # doctest: +SKIP
+    >>> cosine_similarity(
+    ...     ibis.array([1, 1]), ibis.array([-2, -2])
+    ... ).execute()  # doctest: +SKIP
     -1.0
 
     Orthogonal vectors:

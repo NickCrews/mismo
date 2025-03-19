@@ -242,7 +242,9 @@ def spacy_tag_address(address_string: ir.StringValue) -> ir.ArrayValue:
     - "Oklahoma" in "Oklahoma City" is correctly tagged as a PlaceName
     - "Oklhoma" is correctly tagged as a typo for "Oklahoma"
 
-    >>> spacy_tag_address(ibis.literal("456 E St Jude Stre, Oklahoma City, Oklhoma 73102-1234")).execute()
+    >>> spacy_tag_address(
+    ...     ibis.literal("456 E St Jude Stre, Oklahoma City, Oklhoma 73102-1234")
+    ... ).execute()
     [{'token': '456', 'label': 'AddressNumber'},
     {'token': 'E', 'label': 'StreetNamePreDirectional'},
     {'token': 'St Jude', 'label': 'StreetName'},

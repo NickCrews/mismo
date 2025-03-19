@@ -259,21 +259,27 @@ def filter_links(links_or_linkage: Linkish, condition: ir.BooleanValue) -> Linki
 
     Examples
     --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
     >>> links = ibis.memtable(
-    >>>     [
-    >>>         (1, "a", .45),
-    >>>         (1, "b", .67),
-    >>>         (2, "c", .23),
-    >>>         (2, "c", .87),
-    >>>         (3, "d", .12),
-    >>>         (4, "d", .97),
-    >>>     ],
-    >>>     schema={"record_id_l": "int64", "record_id_r": "string", "score": "float64"},
-    >>> )
+    ...     [
+    ...         (1, "a", 0.45),
+    ...         (1, "b", 0.67),
+    ...         (2, "c", 0.23),
+    ...         (2, "c", 0.87),
+    ...         (3, "d", 0.12),
+    ...         (4, "d", 0.97),
+    ...     ],
+    ...     schema={
+    ...         "record_id_l": "int64",
+    ...         "record_id_r": "string",
+    ...         "score": "float64",
+    ...     },
+    ... )
 
     We only want to keep links that are above a certain score.
 
-    >>> filter_links(links, _.score > 0.5)
+    >>> filter_links(links, ibis._.score > 0.5)
     ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━┓
     ┃ record_id_l ┃ record_id_r ┃ score   ┃
     ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━┩
@@ -281,6 +287,7 @@ def filter_links(links_or_linkage: Linkish, condition: ir.BooleanValue) -> Linki
     ├─────────────┼─────────────┼─────────┤
     │           1 │ b           │    0.67 │
     │           2 │ c           │    0.87 │
+    │           4 │ d           │    0.97 │
     └─────────────┴─────────────┴─────────┘
 
     Or, say we are doing a lookup into a clean table (left) from a
@@ -288,7 +295,9 @@ def filter_links(links_or_linkage: Linkish, condition: ir.BooleanValue) -> Linki
     We want to only include links that are unambiguous,
     eg where each record in right is linked to at most one record in left.
 
-    >>> filter_links(links, (_.record_id_l.nunique() == 1).over(group_by="record_id_r"))
+    >>> filter_links(
+    ...     links, (ibis._.record_id_l.nunique() == 1).over(group_by="record_id_r")
+    ... ).order_by("score")
     ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━┓
     ┃ record_id_l ┃ record_id_r ┃ score   ┃
     ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━┩
@@ -297,21 +306,23 @@ def filter_links(links_or_linkage: Linkish, condition: ir.BooleanValue) -> Linki
     │           2 │ c           │    0.23 │
     │           1 │ a           │    0.45 │
     │           1 │ b           │    0.67 │
-    │           3 │ d           │    0.12 │
+    │           2 │ c           │    0.87 │
     └─────────────┴─────────────┴─────────┘
 
     Or, see how there are two links between 2 and c.
     We only want to keep the one with the highest score, per each record in right.
 
-    >>> filter_links(links, _.score == _.score.max().over(group_by="record_id_r"))
+    >>> filter_links(
+    ...     links, (ibis._.score == ibis._.score.max()).over(group_by="record_id_r")
+    ... ).order_by("score")
     ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━┓
     ┃ record_id_l ┃ record_id_r ┃ score   ┃
     ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━┩
     │ int64       │ string      │ float64 │
     ├─────────────┼─────────────┼─────────┤
-    │           2 │ c           │    0.87 │
-    │           1 │ b           │    0.67 │
     │           1 │ a           │    0.45 │
+    │           1 │ b           │    0.67 │
+    │           2 │ c           │    0.87 │
     │           4 │ d           │    0.97 │
     └─────────────┴─────────────┴─────────┘
 
@@ -320,9 +331,9 @@ def filter_links(links_or_linkage: Linkish, condition: ir.BooleanValue) -> Linki
     We only want to keep links where at least two of the linking methods agree.
 
     >>> filter_links(
-    >>>    links,
-    >>>    (_.count() >= 2).over(group_by=("record_id_l", "record_id_r")),
-    >>> )
+    ...     links,
+    ...     (ibis._.count() >= 2).over(group_by=("record_id_l", "record_id_r")),
+    ... )
     ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━┓
     ┃ record_id_l ┃ record_id_r ┃ score   ┃
     ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━┩

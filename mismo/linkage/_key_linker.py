@@ -104,7 +104,9 @@ class KeyLinker:
     because they both share the `SCHLUMBERGER` token.
 
     >>> blocker = mismo.block.KeyBlocker(tokens.unnest())
-    >>> blocker(t, t).filter(_.name_l != _.name_r).order_by("record_id_l", "record_id_r").head()  # doctest: +SKIP
+    >>> blocker(t, t).filter(_.name_l != _.name_r).order_by(
+    ...     "record_id_l", "record_id_r"
+    ... ).head()  # doctest: +SKIP
     ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l                                                     ┃ name_r                                                     ┃
     ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩

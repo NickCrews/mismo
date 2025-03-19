@@ -65,7 +65,6 @@ class _LevelsMeta(ABCMeta):
         ...     EXACT = 0
         ...     NEAR = 1
         ...     ELSE = 2
-        ...
 
         >>> NameMatchLevel[1]
         'NEAR'
@@ -120,7 +119,6 @@ class MatchLevel(metaclass=_LevelsMeta):
     ...     EXACT = 0
     ...     NEAR = 1
     ...     ELSE = 2
-    ...
 
     The class acts as a container:
 

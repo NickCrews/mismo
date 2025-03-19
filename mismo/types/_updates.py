@@ -36,7 +36,9 @@ class Filters:
         --------
         >>> u = Updates.from_tables(before, after, join_on="id")  # doctest: +SKIP
         >>> u.filter(u.filters.all_different(["name", "age"]))  # doctest: +SKIP
-        >>> u.filter(u.filters.all_different([c for c in u.columns if c != "my_id"]))  # doctest: +SKIP
+        >>> u.filter(
+        ...     u.filters.all_different([c for c in u.columns if c != "my_id"])
+        ... )  # doctest: +SKIP
         """  # noqa: E501
 
         def filter_func(table: ir.Table):

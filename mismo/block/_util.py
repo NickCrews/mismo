@@ -51,7 +51,7 @@ def sample_all_pairs(
     │ rec-1-org    │ karli      │ alderson   │ 144           │ nulsen circuit    │ … │
     │ rec-10-dup-0 │ kayla      │ harrington │ NULL          │ maltby circuit    │ … │
     └──────────────┴────────────┴────────────┴───────────────┴───────────────────┴───┘
-    >>> block.sample_all_pairs(t, t, max_pairs = 7) # doctest: +SKIP
+    >>> block.sample_all_pairs(t, t, max_pairs=7)  # doctest: +SKIP
     ┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
     ┃ record_id_l   ┃ record_id_r  ┃ address_1_l      ┃ address_1_r       ┃ … ┃
     ┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
