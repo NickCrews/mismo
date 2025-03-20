@@ -4,8 +4,6 @@ import ibis
 from ibis import _
 import pytest
 
-from mismo.block import KeyBlocker
-
 
 def _n_pairs(n: int, k: int) -> int:
     return (k - 1) * (n - k) + sum(range(k))

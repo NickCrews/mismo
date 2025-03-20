@@ -3,19 +3,18 @@ from __future__ import annotations
 import warnings
 
 import ibis
-from ibis.expr import types as ir
 
-from mismo.block._blocker import CrossBlocker
-from mismo.block._core import fix_blocked_column_order
+from mismo.linkage._linker import link
+from mismo.types import LinksTable
 
 
 # TODO: could we come up with an algorithm that would allow for a random seed?
-def sample_all_pairs(
-    left: ir.Table,
-    right: ir.Table,
+def sample_all_links(
+    left: ibis.Table,
+    right: ibis.Table,
     *,
     max_pairs: int | None = None,
-) -> ir.Table:
+) -> LinksTable:
     """Samples up to `max_pairs` from all possible pairs of records.
 
     Parameters
@@ -29,9 +28,8 @@ def sample_all_pairs(
 
     Returns
     -------
-    ir.Table
-        A blocked table of pairs, in the same schema as from other blocking functions.
-        All pairs will be unique.
+    A [LinksTable][mismo.LinksTable] with just record_id_l and record_id_r.
+    All pairs will be unique.
 
     Examples
     --------
@@ -51,7 +49,7 @@ def sample_all_pairs(
     │ rec-1-org    │ karli      │ alderson   │ 144           │ nulsen circuit    │ … │
     │ rec-10-dup-0 │ kayla      │ harrington │ NULL          │ maltby circuit    │ … │
     └──────────────┴────────────┴────────────┴───────────────┴───────────────────┴───┘
-    >>> block.sample_all_pairs(t, t, max_pairs=7)  # doctest: +SKIP
+    >>> block.sample_all_links(t, t, max_pairs=7)  # doctest: +SKIP
     ┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
     ┃ record_id_l   ┃ record_id_r  ┃ address_1_l      ┃ address_1_r       ┃ … ┃
     ┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
@@ -80,11 +78,7 @@ def sample_all_pairs(
         )
 
     if max_pairs is None:
-        return CrossBlocker()(left, right)
-
-    # ibis can't handle ibis.range(0), that's a bug with them
-    if n_pairs == 0:
-        return CrossBlocker()(left, right).limit(0)
+        return link(left, right, True, on_slow="ignore").links
 
     def make_pair_ids():
         pair_ids = ibis.range(n_pairs).unnest().as_table()
@@ -111,11 +105,13 @@ def sample_all_pairs(
         pair_ids = pair_ids.union(make_pair_ids()).distinct().limit(n_pairs).cache()
 
     right = right.view()
-    left = left.rename("{name}_l").mutate(__left_id=ibis.row_number())
-    right = right.rename("{name}_r").mutate(__right_id=ibis.row_number())
-    result = (
-        pair_ids.left_join(left, "__left_id")
-        .left_join(right, "__right_id")
+    left_ids = left.select(record_id_l="record_id").mutate(__left_id=ibis.row_number())
+    right_ids = right.select(record_id_r="record_id").mutate(
+        __right_id=ibis.row_number()
+    )
+    raw_links = (
+        pair_ids.left_join(left_ids, "__left_id")
+        .left_join(right_ids, "__right_id")
         .drop("__left_id", "__right_id", "__left_id_right", "__right_id_right")
     )
-    return fix_blocked_column_order(result)
+    return LinksTable(raw_links, left=left, right=right)

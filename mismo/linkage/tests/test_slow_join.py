@@ -3,7 +3,7 @@ from __future__ import annotations
 from ibis.expr import types as ir
 import pytest
 
-from mismo.block import SlowJoinError, SlowJoinWarning, join
+import mismo
 
 
 @pytest.mark.parametrize(
@@ -34,21 +34,21 @@ from mismo.block import SlowJoinError, SlowJoinWarning, join
     "on_slow,result",
     [
         ("ignore", None),
-        ("warn", SlowJoinWarning),
-        ("error", SlowJoinError),
+        ("warn", mismo.joins.SlowJoinWarning),
+        ("error", mismo.joins.SlowJoinError),
     ],
 )
 def test_warn_slow_join(
     t1: ir.Table, t2: ir.Table, condition, is_slow, on_slow, result
 ):
     def f():
-        join(t1, t2, condition, on_slow=on_slow)
+        mismo.link(t1, t2, condition, on_slow=on_slow)
 
     if result is None:
         f()
-    elif is_slow and result is SlowJoinWarning:
-        with pytest.warns(SlowJoinWarning):
+    elif is_slow and result is mismo.joins.SlowJoinWarning:
+        with pytest.warns(mismo.joins.SlowJoinWarning):
             f()
-    elif is_slow and result is SlowJoinError:
-        with pytest.raises(SlowJoinError):
+    elif is_slow and result is mismo.joins.SlowJoinError:
+        with pytest.raises(mismo.joins.SlowJoinError):
             f()

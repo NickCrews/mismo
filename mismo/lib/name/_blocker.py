@@ -5,7 +5,7 @@ from typing import Callable
 from ibis import Deferred, _
 from ibis.expr import types as ir
 
-from mismo import _util, block
+from mismo import _util
 
 
 class NameBlocker:

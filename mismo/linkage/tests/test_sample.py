@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from mismo.block import sample_all_pairs
+from mismo.linkage import sample_all_links
 
 
 @pytest.mark.parametrize(
@@ -25,13 +25,13 @@ def test_sample_all_pairs(table_factory, n_records: int, max_pairs: int):
     t = table_factory(
         {
             "record_id": range(n_records),
-            # just have something here to check that the column is included in output
+            # Something to check that the column is not included in output
             "value": [i // 7 for i in range(n_records)],
         }
     )
-    df = sample_all_pairs(t, t, max_pairs=max_pairs).execute()
+    df = sample_all_links(t, t, max_pairs=max_pairs).execute()
     expected_pairs = min(n_records**2, max_pairs)
-    assert df.columns.tolist() == ["record_id_l", "record_id_r", "value_l", "value_r"]
+    assert df.columns.tolist() == ["record_id_l", "record_id_r"]
     assert len(df) == expected_pairs
     assert df.record_id_l.notnull().all()
     assert df.record_id_r.notnull().all()
@@ -54,7 +54,7 @@ def test_sample_all_pairs(table_factory, n_records: int, max_pairs: int):
 @pytest.mark.parametrize("max_pairs", [None, 0, 1, 100_000])
 def test_sample_all_pairs_empty(table_factory, max_pairs: int | None):
     t = table_factory({"record_id": []})
-    df = sample_all_pairs(t, t, max_pairs=max_pairs).execute()
+    df = sample_all_links(t, t, max_pairs=max_pairs).execute()
     assert df.columns.tolist() == ["record_id_l", "record_id_r"]
     assert len(df) == 0
 
@@ -62,13 +62,13 @@ def test_sample_all_pairs_empty(table_factory, max_pairs: int | None):
 def test_sample_all_pairs_warns(table_factory):
     t = table_factory({"record_id": range(100_000)})
     with pytest.warns(UserWarning):
-        sample_all_pairs(t, t)
+        sample_all_links(t, t)
 
 
 def test_sample_all_pairs_different_tables(table_factory):
     # check that we can sample from two different tables
     # https://github.com/NickCrews/mismo/issues/35#issuecomment-2116178262
     t = table_factory({"record_id": range(100)})
-    df = sample_all_pairs(t, t.view(), max_pairs=10).execute()
+    df = sample_all_links(t, t.view(), max_pairs=10).execute()
     assert df.columns.tolist() == ["record_id_l", "record_id_r"]
     assert len(df) == 10
