@@ -4,7 +4,7 @@ import ibis
 from ibis import _
 from ibis.expr import types as ir
 
-from mismo import _structs, _util, arrays, block, compare, sets, text
+from mismo import _structs, _util, arrays, compare, sets, text
 from mismo.lib.geo._latlon import distance_km
 from mismo.lib.geo._regex_parse import parse_street1_re
 

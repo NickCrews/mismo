@@ -4,7 +4,7 @@ import ibis
 import pytest
 
 import mismo
-from mismo.block._lsh import p_blocked
+from mismo.linkage._lsh import p_blocked
 
 sets = [
     # set(),

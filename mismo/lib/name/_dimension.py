@@ -3,7 +3,6 @@ from __future__ import annotations
 from ibis import _
 from ibis.expr import types as ir
 
-from mismo import block
 from mismo.lib.name import _clean, _compare
 
 

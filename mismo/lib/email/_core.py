@@ -7,8 +7,8 @@ from ibis.expr import types as ir
 
 from mismo._util import cases, get_column
 from mismo.arrays import array_combinations, array_min
-from mismo.block import KeyBlocker
 from mismo.compare import MatchLevel
+from mismo.linkage import UnnestLinker
 from mismo.text import damerau_levenshtein
 
 
@@ -174,8 +174,8 @@ class EmailsDimension:
         )
 
     def block(self, t1: ir.Table, t2: ir.Table, **kwargs) -> ir.Table:
-        blocker = KeyBlocker(ibis._[self.column_parsed].full.unnest())
-        return blocker(t1, t2, **kwargs)
+        linker = UnnestLinker(ibis._[self.column_parsed].full.unnest())
+        return linker.__link__(t1, t2, **kwargs)
 
     def compare(self, t: ir.Table) -> ir.Table:
         """Add a column with the best match between all pairs of email addresses."""

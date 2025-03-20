@@ -13,8 +13,6 @@ from ibis.common.deferred import Deferred
 from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 
-from mismo import _resolve
-
 
 class NotSet:
     def __repr__(self):
@@ -458,98 +456,6 @@ def _check_collisions(collisions, on_collision, rename_as, columns):
         raise ValueError(f"Unknown on_collision: {on_collision}")
     if collisions and rename_as != "{name}":
         f()
-
-
-def join(
-    left: ir.Table,
-    right: ir.Table,
-    predicates: str
-    | Sequence[
-        str
-        | ir.BooleanColumn
-        | tuple[str | ir.Column | ibis.Deferred, str | ir.Column | ibis.Deferred]
-        | bool
-    ] = (),
-    how: str = "inner",
-    *,
-    lname: str = "{name}",
-    rname: str = "{name}_right",
-):
-    """
-    Ibis.join, but with enhanced condition resolution.
-    """
-    conditions = _resolve.resolve_conditions(predicates, left, right)
-    return ibis.join(
-        left,
-        right,
-        how=how,
-        lname=lname,
-        rname=rname,
-        predicates=conditions,
-    )
-
-
-def join_ensure_named(
-    left: ir.Table,
-    right: ir.Table,
-    predicates: str
-    | Sequence[
-        str
-        | ir.BooleanColumn
-        | tuple[str | ir.Column | Deferred, str | ir.Column | Deferred]
-        | bool
-    ] = (),
-    how: str = "inner",
-    *,
-    lname: str = "{name}",
-    rname: str = "{name}_right",
-):
-    """
-    Ibis.join, but AWLAYS apply lname and rname to all columns, not just on conflict.
-    """
-    joined = join(
-        left,
-        right,
-        how=how,
-        lname=lname,
-        rname=rname,
-        predicates=predicates,
-    )
-
-    def _rename(spec: str, name: str):
-        return spec.format(name=name)
-
-    selections = []
-    for col in left.columns:
-        new_name = _rename(lname, col)
-        if new_name in joined.columns:
-            selections.append((new_name, new_name))
-        else:
-            assert col in joined.columns
-            selections.append((new_name, col))
-    for col in right.columns:
-        new_name = _rename(rname, col)
-        if new_name in joined.columns:
-            selections.append((new_name, new_name))
-        else:
-            assert col in joined.columns
-            selections.append((new_name, col))
-
-    # check for dupe output columns
-    by_new_name = {}
-    for new_name, old_name in selections:
-        if new_name not in by_new_name:
-            by_new_name[new_name] = [old_name]
-        else:
-            by_new_name[new_name].append(old_name)
-    dupes = []
-    for new_name, old_names in by_new_name.items():
-        if len(old_names) > 1:
-            dupes.append(f"Column {new_name} is produced by {old_names}")
-    if dupes:
-        raise ValueError("\n".join(dupes))
-
-    return joined.select(**{new_name: old_name for new_name, old_name in selections})
 
 
 def check_schemas_equal(a: ibis.Schema | ibis.Table, b: ibis.Schema | ibis.Table):
