@@ -6,7 +6,7 @@ import ibis
 from ibis.expr import types as ir
 
 from mismo import _resolve
-from mismo._util import join_ensure_named
+from mismo.joins import join
 from mismo.linkage._linkage import LinkTableLinkage
 
 
@@ -38,12 +38,13 @@ class LabelLinker:
         return LinkTableLinkage(
             left=left,
             right=right,
-            links=join_ensure_named(
+            links=join(
                 left,
                 right,
                 self.labels,
                 lname="{name}_l",
                 rname="{name}_r",
+                rename_all=True,
             ).select("record_id_l", "record_id_r"),
         )
 

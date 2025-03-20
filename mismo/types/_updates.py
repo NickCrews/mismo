@@ -6,7 +6,7 @@ import ibis
 from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 
-from mismo import _util
+from mismo import _util, joins
 from mismo.types._table_wrapper import TableWrapper
 
 
@@ -183,8 +183,8 @@ class Updates(TableWrapper):
         if after is before:
             after = after.view()
         all_columns = (dict(before.schema()) | dict(after.schema())).keys()
-        joined = _util.join_ensure_named(
-            before, after, join_on, lname="{name}_l", rname="{name}_r"
+        joined = joins.join(
+            before, after, join_on, lname="{name}_l", rname="{name}_r", rename_all=True
         )
 
         def make_diff_col(col: str) -> ir.StructColumn:

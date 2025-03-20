@@ -4,7 +4,7 @@ import altair as alt
 from ibis import _
 from ibis.expr import types as ir
 
-from mismo.block import _upset
+from mismo.linkage import _upset
 
 
 def upset_chart(blocked: ir.Table) -> alt.Chart:

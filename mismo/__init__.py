@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from mismo import arrays as arrays
-from mismo import block as block
 from mismo import cluster as cluster
 from mismo import compare as compare
 from mismo import eda as eda
 from mismo import fs as fs
+from mismo import joins as joins
 from mismo import lib as lib
 from mismo import linkage as linkage
 from mismo import playdata as playdata
@@ -15,12 +15,14 @@ from mismo import types as types
 from mismo import vector as vector
 from mismo._datasets import Datasets as Datasets
 from mismo._recipe import PRecipe as PRecipe
+from mismo.joins import join as join
 from mismo.linkage import BaseLinkage as BaseLinkage
 from mismo.linkage import KeyLinkage as KeyLinkage
 from mismo.linkage import KeyLinker as KeyLinker
 from mismo.linkage import Linkage as Linkage
+from mismo.linkage import Linker as Linker
 from mismo.linkage import LinkTableLinkage as LinkTableLinkage
-from mismo.linkage import UnionKeyLinkage as UnionKeyLinkage
+from mismo.linkage import link as link
 from mismo.types import Diff as Diff
 from mismo.types import DiffStats as DiffStats
 from mismo.types import LinkCountsTable as LinkCountsTable

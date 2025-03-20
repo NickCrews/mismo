@@ -7,9 +7,9 @@ import ibis
 from ibis import Deferred, _
 from ibis.expr import types as ir
 
-from mismo import _typing, _util
-from mismo.block._core import join
-from mismo.block._counts_table import KeyCountsTable, PairCountsTable
+from mismo import _typing, _util, joins
+from mismo._counts_table import KeyCountsTable, PairCountsTable
+from mismo.linkage import _linker
 from mismo.linkage._linkage import BaseLinkage, LinkTableLinkage
 from mismo.types import LinkedTable, LinksTable
 
@@ -156,14 +156,8 @@ class KeyLinker:
         """  # noqa: E501
         # TODO: support named keys, eg KeyLinker("age", city=_.city.upper())
         self.keys = keys
-        self._name = _util.get_name(self.keys)
 
-    @property
-    def name(self) -> str:
-        """The name of the KeyBlocker."""
-        return self._name
-
-    def linkage(
+    def __link__(
         self,
         left: ir.Table,
         right: ir.Table,
@@ -356,7 +350,7 @@ class KeyLinker:
         return pair_counts(self.keys, left, right, task=task)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.name})"
+        return f"{self.__class__.__name__}({self.keys!r})"
 
 
 class KeyLinkage(BaseLinkage):
@@ -405,18 +399,19 @@ class KeyLinkage(BaseLinkage):
         *,
         task: Literal["dedupe", "link"] | None = None,
     ) -> None:
-        if "record_id" not in left.columns:
-            left = left.mutate(ibis.row_number().name("record_id"))
-        if "record_id" not in right.columns:
-            right = right.mutate(ibis.row_number().name("record_id"))
-        if isinstance(keys, tuple) and len(keys) == 2:
-            keys = [keys]
+        # if isinstance(keys, tuple) and len(keys) == 2:
+        #     keys = [keys]
         self.keys = keys
-        self._links = join(left, right, *self.keys, task=task, on_slow="ignore")
+        self._links = _linker.link(left, right, keys, task=task).links
         self.task = task
         self._left, self._right = LinkedTable.make_pair(
             left=left, right=right, links=self._links
         )
+
+    def __join_condition__(
+        self,
+    ) -> Callable[[ibis.Table, ibis.Table], ibis.ir.BooleanValue]:
+        return joins.join_condition(self.keys).__join_condition__()
 
     @property
     def left(self):

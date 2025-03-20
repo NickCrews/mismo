@@ -6,8 +6,8 @@ from ibis import _
 from ibis.expr import types as ir
 
 from mismo._util import sample_table
-from mismo.block import KeyBlocker, sample_all_pairs
 from mismo.compare import LevelComparer, MatchLevel
+from mismo.linkage import LabelLinker, sample_all_links
 
 from ._weights import ComparerWeights, LevelWeights, Weights
 
@@ -69,7 +69,8 @@ def _train_us_using_sampling(
         1e7 (ten million) is often adequate whilst testing different model
         specifications, before the final model is estimated.
     """
-    sample = sample_all_pairs(left, right, max_pairs=max_pairs)
+    sample_links = sample_all_links(left, right, max_pairs=max_pairs)
+    sample = sample_links.with_left().with_right()
     labels = comparer(sample)[comparer.name]
     return level_proportions(comparer.levels, labels)
 
@@ -170,7 +171,7 @@ def _true_pairs_from_labels(left: ir.Table, right: ir.Table) -> ir.Table:
         raise ValueError(
             f"Right dataset must have a label_true column. Found: {right.columns}"
         )
-    return KeyBlocker("label_true")(left, right)
+    return LabelLinker("label_true").definite_linkage(left, right).links
 
 
 def train_using_pairs(

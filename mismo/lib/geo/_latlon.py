@@ -9,7 +9,6 @@ from ibis import Deferred
 from ibis.expr import types as ir
 
 from mismo import _util
-from mismo.block import join
 
 
 def distance_km(
