@@ -248,17 +248,20 @@ class AddressesDimension:
     def prepare(self, t: ir.Table) -> ir.Table:
         """Prepares the table for blocking, adding normalized and tokenized columns."""
         t = _featurize_many(t, self.column)
+        t = t.cache()
         t = t.mutate(
             _addresses_tokens=_.addresses_featured.map(lambda a: a.street_ngrams)
             .flatten()
             .unique()
         )
+        t = t.cache()
         t = arrays.array_filter_isin_other(
             t,
             t._addresses_tokens,
             sets.rare_terms(t._addresses_tokens, max_records_n=500),
             result_format="_addresses_keywords",
         )
+        t = t.cache()
         t = t.mutate(
             ibis.struct(
                 {
@@ -267,11 +270,8 @@ class AddressesDimension:
                 }
             ).name(self.column_featured)
         ).drop("_addresses_tokens", "_addresses_keywords")
+        t = t.cache()
         return t
-
-    def block(self, t1: ir.Table, t2: ir.Table, **kwargs) -> ir.Table:
-        blocker = block.KeyBlocker(_[self.column_featured.addresses_keywords].unnest())
-        return blocker(t1, t2, **kwargs)
 
     def compare(self, t: ir.Table) -> ir.Table:
         left = t[self.column_featured + "_l"].addresses
