@@ -33,7 +33,7 @@ class JoinConditionLinker:
         task: Literal["dedupe", "link"],
     ) -> JoinConditionLinkage:
         def get_condition(left: ibis.Table, right: ibis.Table):
-            pred = self.condition.__join_condition__()(left, right)
+            pred = self.condition.__join_condition__(left, right)
             if task == "dedupe":
                 pred = pred & (left.record_id < right.record_id)
             joins.check_join_algorithm(left, right, pred, on_slow=self.on_slow)
@@ -66,9 +66,9 @@ class JoinConditionLinkage(BaseLinkage):
         )[1]
 
     def __join_condition__(
-        self,
+        self, left: ibis.Table, right: ibis.Table
     ) -> Callable[[ibis.Table, ibis.Table], ibis.ir.BooleanValue]:
-        return self._join_condition
+        return self._join_condition(left, right)
 
     @property
     def links(self):
@@ -83,7 +83,7 @@ class JoinConditionLinkage(BaseLinkage):
         return joins.join(
             self._left_raw,
             self._right_raw,
-            self.__join_condition__(),
+            self._join_condition,
             lname="{name}_l",
             rname="{name}_r",
             rename_all=True,
