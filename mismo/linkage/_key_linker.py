@@ -409,9 +409,9 @@ class KeyLinkage(BaseLinkage):
         )
 
     def __join_condition__(
-        self,
+        self, left: ir.Table, right: ir.Table
     ) -> Callable[[ibis.Table, ibis.Table], ibis.ir.BooleanValue]:
-        return joins.join_condition(self.keys).__join_condition__()
+        return joins.join_condition(self.keys).__join_condition__(left, right)
 
     @property
     def left(self):
