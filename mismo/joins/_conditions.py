@@ -21,12 +21,10 @@ class PJoiner(Protocol):
 @runtime_checkable
 class PJoinCondition(Protocol):
     """
-    Has `__join_condition__()`, which returns something that `ibis.join()` understands.
-    """
+    Has `__join_condition__(left: ibis.Table, right: ibis.Table)`, which returns something that `ibis.join()` understands.
+    """  # noqa: E501
 
-    def __join_condition__(
-        self,
-    ) -> Callable[[ibis.Table, ibis.Table], ibis.ir.BooleanValue]:
+    def __join_condition__(self, left: ibis.Table, right: ibis.Table) -> Any:
         pass
 
 
@@ -41,9 +39,9 @@ class BooleanJoinCondition:
         self.boolean = boolean
 
     def __join_condition__(
-        self,
-    ) -> Callable[[ibis.Table, ibis.Table], ibis.ir.BooleanValue]:
-        return lambda left, right: self.boolean
+        self, left: ibis.Table, right: ibis.Table
+    ) -> ibis.ir.BooleanValue | bool:
+        return self.boolean
 
 
 @join_condition.register
@@ -54,9 +52,9 @@ class FuncJoinCondition:
         self.func = func
 
     def __join_condition__(
-        self,
-    ) -> Callable[[ibis.Table, ibis.Table], ibis.ir.BooleanValue]:
-        return self.func
+        self, left: ibis.Table, right: ibis.Table
+    ) -> ibis.ir.BooleanValue:
+        return self.func(left, right)
 
 
 @join_condition.register
@@ -72,12 +70,12 @@ class AndJoinCondition:
             raise
 
     def __join_condition__(
-        self,
-    ) -> Callable[[ibis.Table, ibis.Table], ir.BooleanValue]:
-        return self.join_condition
+        self, left: ibis.Table, right: ibis.Table
+    ) -> ir.BooleanValue:
+        return self.join_condition(left, right)
 
     def join_condition(self, left: ibis.Table, right: ibis.Table) -> ir.BooleanColumn:
-        conditions = [c.__join_condition__()(left, right) for c in self.subconditions]
+        conditions = [c.__join_condition__(left, right) for c in self.subconditions]
         return ibis.and_(*conditions)
 
 
@@ -99,12 +97,12 @@ class MultiKeyJoinCondition:
         self.subconditions: tuple[KeyJoinCondition] = resolved
 
     def __join_condition__(
-        self,
-    ) -> Callable[[ibis.Table, ibis.Table], ir.BooleanValue]:
-        return self.join_condition
+        self, left: ibis.Table, right: ibis.Table
+    ) -> ir.BooleanValue:
+        return self.join_condition(left, right)
 
     def join_condition(self, left: ibis.Table, right: ibis.Table) -> ir.BooleanColumn:
-        conditions = [c.__join_condition__()(left, right) for c in self.subconditions]
+        conditions = [c.__join_condition__(left, right) for c in self.subconditions]
         return ibis.and_(*conditions)
 
 
@@ -130,9 +128,9 @@ class KeyJoinCondition:
         self.right_spec = right_spec
 
     def __join_condition__(
-        self,
-    ) -> Callable[[ibis.Table, ibis.Table], ir.BooleanValue]:
-        return self.join_condition
+        self, left: ibis.Table, right: ibis.Table
+    ) -> ir.BooleanValue:
+        return self.join_condition(left, right)
 
     def bind_columns(
         self, left: ibis.Table, right: ibis.Table

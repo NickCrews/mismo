@@ -109,7 +109,7 @@ class UnionLinkage(CombinedLinkage[L]):
 
     @property
     def _links_raw(self) -> ibis.Table:
-        return ibis.union(*self.__sublinkages__())
+        return ibis.union(*(sub.links for sub in self.__sublinkages__()))
 
 
 class IntersectionLinkage(CombinedLinkage[L]):
@@ -132,7 +132,7 @@ class IntersectionLinkage(CombinedLinkage[L]):
 
     @property
     def _links_raw(self) -> ibis.Table:
-        return ibis.intersect(*self.__sublinkages__())
+        return ibis.intersect(*(sub.links for sub in self.__sublinkages__()))
 
 
 class DifferenceLinkage(CombinedLinkage[L]):
@@ -150,7 +150,7 @@ class DifferenceLinkage(CombinedLinkage[L]):
 
     @property
     def _links_raw(self) -> ibis.Table:
-        return ibis.difference(*self.__sublinkages__())
+        return ibis.difference(*(sub.links for sub in self.__sublinkages__()))
 
 
 @runtime_checkable
@@ -186,29 +186,18 @@ class AndJoinConditionsLinkage(CombinedLinkage[HasJoinConditionLinkage]):
         super().__init__(flattened)
 
     def __join_condition__(
-        self,
+        self, left: ibis.Table, right: ibis.Table
     ) -> Callable[[ibis.Table, ibis.Table], ibis.ir.BooleanValue]:
-        def _join_condition(
-            left: ibis.Table, right: ibis.Table
-        ) -> ibis.ir.BooleanValue:
-            return ibis.and_(
-                *[
-                    sub.__join_condition__()(left, right)
-                    for sub in self.__sublinkages__()
-                ]
-            )
-
-        return _join_condition
+        return ibis.and_(
+            *[sub.__join_condition__(left, right) for sub in self.__sublinkages__()]
+        )
 
     @property
     def links(self) -> LinksTable:
-        def join_condition(left: ibis.Table, right: ibis.Table, **kwargs):
-            return self.__join_condition__()(left, right)
-
         links = join(
             self._left_raw,
             self._right_raw,
-            join_condition,
+            self.__join_condition__,
             lname="{name}_l",
             rname="{name}_r",
             rename_all=True,

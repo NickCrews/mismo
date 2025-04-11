@@ -76,7 +76,7 @@ def join(
         conditions = predicates
     else:
         conditions = _conditions.join_condition(predicates)
-    resolved_predicate = conditions.__join_condition__()(left, right)
+    resolved_predicate = conditions.__join_condition__(left, right)
     joined = ibis.join(
         left,
         right,
