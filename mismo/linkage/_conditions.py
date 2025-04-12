@@ -8,38 +8,45 @@ from ibis.expr import types as ir
 
 from mismo import _typing, joins
 from mismo.linkage._linkage import BaseLinkage
+from mismo.linkage._linker import Linker, infer_task
 from mismo.types import LinkedTable, LinksTable
 
 
-class JoinConditionLinker:
+class JoinConditionLinker(Linker):
     """
-    A [Linker][mismo.Linker] that creates the [Linkage][mismo.Linkage] based on join conditions.
+    A [Linker][mismo.Linker] that creates a [JoinConditionLinkage][mismo.JoinConditionLinkage] when given two tables.
     """  # noqa: E501
 
     def __init__(
         self,
-        condition: joins.PJoinCondition,
+        condition: Callable[[ibis.Table, ibis.Table], ibis.ir.BooleanValue],
         *,
+        task: Literal["dedupe", "link"] | None = None,
         on_slow: Literal["error", "warn", "ignore"] = "error",
     ):
         self.condition = condition
+        self.task = task
         self.on_slow = on_slow
 
-    def __link__(
-        self,
-        left: ibis.Table,
-        right: ibis.Table,
-        *,
-        task: Literal["dedupe", "link"],
-    ) -> JoinConditionLinkage:
-        def get_condition(left: ibis.Table, right: ibis.Table):
-            pred = self.condition.__join_condition__(left, right)
-            if task == "dedupe":
-                pred = pred & (left.record_id < right.record_id)
-            joins.check_join_algorithm(left, right, pred, on_slow=self.on_slow)
-            return pred
+    def __link__(self, left: ibis.Table, right: ibis.Table) -> JoinConditionLinkage:
+        if left is right:
+            right = right.view()
+        # Run this to check early for slow joins
+        self._get_pred(left, right)
+        return JoinConditionLinkage(left, right, self.__join_condition__)
 
-        return JoinConditionLinkage(left, right, get_condition)
+    def __join_condition__(
+        self, left: ibis.Table, right: ibis.Table
+    ) -> ibis.ir.BooleanValue:
+        return self._get_pred(left, right)
+
+    def _get_pred(self, left: ibis.Table, right: ibis.Table) -> ibis.ir.BooleanValue:
+        task = infer_task(self.task, left, right)
+        pred = joins.join_condition(self.condition).__join_condition__(left, right)
+        if task == "dedupe":
+            pred = pred & (left.record_id < right.record_id)
+        joins.check_join_algorithm(left, right, pred, on_slow=self.on_slow)
+        return pred
 
 
 class JoinConditionLinkage(BaseLinkage):
