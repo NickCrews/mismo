@@ -4,7 +4,7 @@ import warnings
 
 import ibis
 
-from mismo.linkage._linker import link
+from mismo.linkage._linker import FullLinkage
 from mismo.types import LinksTable
 
 
@@ -78,7 +78,7 @@ def sample_all_links(
         )
 
     if max_pairs is None:
-        return link(left, right, True, on_slow="ignore").links
+        return FullLinkage(left, right).links
 
     def make_pair_ids():
         pair_ids = ibis.range(n_pairs).unnest().as_table()

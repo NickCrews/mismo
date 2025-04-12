@@ -40,15 +40,15 @@ def train_using_em(
     Weights
         The estimated weights for each comparer.
     """
-    pairs = _train.sample_all_pairs(left, right, max_pairs=max_pairs)
+    links = _train.sample_all_links(left, right, max_pairs=max_pairs)
     for c in comparers:
-        pairs = c(pairs)
-    pairs = pairs.select([c.name for c in comparers])
-    pairs = pairs.cache()
-    weights = _initial_weights(comparers, pairs)
+        links = c(links)
+    links = links.select([c.name for c in comparers])
+    links = links.cache()
+    weights = _initial_weights(comparers, links)
     for i in range(5):
         logger.info("EM iteration {i}, starting weights: {weights}", i, weights)
-        scored = weights.score_compared(pairs)
+        scored = weights.score_compared(links)
         is_match = _.odds >= 10
         matches = scored.filter(is_match)
         nonmatches = scored.filter(~is_match)
