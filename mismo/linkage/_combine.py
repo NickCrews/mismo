@@ -14,13 +14,7 @@ import ibis
 
 from mismo._registry import Registry
 from mismo.joins import PJoinCondition, join
-from mismo.linkage._linkage import (
-    BaseLinkage,
-    Linkage,
-    LinkedTable,
-    LinksTable,
-    LinkTableLinkage,
-)
+from mismo.linkage._linkage import BaseLinkage, Linkage, LinkedTable, LinksTable
 
 logger = logging.getLogger(__name__)
 
@@ -100,14 +94,6 @@ class UnionLinkage(CombinedLinkage[L]):
         super().__init__(flattened)
 
     @property
-    def links(self) -> LinksTable:
-        return LinkTableLinkage(
-            left=self.left,
-            right=self.right,
-            links=self._links_raw,
-        )
-
-    @property
     def _links_raw(self) -> ibis.Table:
         return ibis.union(*(sub.links for sub in self.__sublinkages__()))
 
@@ -123,14 +109,6 @@ class IntersectionLinkage(CombinedLinkage[L]):
         super().__init__(flattened)
 
     @property
-    def links(self) -> LinksTable:
-        return LinkTableLinkage(
-            left=self.left,
-            right=self.right,
-            links=self._links_raw,
-        )
-
-    @property
     def _links_raw(self) -> ibis.Table:
         return ibis.intersect(*(sub.links for sub in self.__sublinkages__()))
 
@@ -139,14 +117,6 @@ class DifferenceLinkage(CombinedLinkage[L]):
     def __init__(self, sublinkages: Iterable[L]) -> None:
         # TODO: I think we can optimize this by flattening nested ones
         super().__init__(sublinkages)
-
-    @property
-    def links(self) -> LinksTable:
-        return LinkTableLinkage(
-            left=self.left,
-            right=self.right,
-            links=self._links_raw,
-        )
 
     @property
     def _links_raw(self) -> ibis.Table:
@@ -193,19 +163,14 @@ class AndJoinConditionsLinkage(CombinedLinkage[HasJoinConditionLinkage]):
         )
 
     @property
-    def links(self) -> LinksTable:
-        links = join(
+    def _links_raw(self) -> ibis.Table:
+        return join(
             self._left_raw,
             self._right_raw,
             self.__join_condition__,
             lname="{name}_l",
             rname="{name}_r",
             rename_all=True,
-        )
-        return LinksTable(
-            links=links,
-            left=self._left_raw,
-            right=self._right_raw,
         )
 
     @classmethod

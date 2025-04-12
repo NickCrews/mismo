@@ -17,12 +17,15 @@ from mismo._datasets import Datasets as Datasets
 from mismo._recipe import PRecipe as PRecipe
 from mismo.joins import join as join
 from mismo.linkage import BaseLinkage as BaseLinkage
+from mismo.linkage import EmptyLinkage as EmptyLinkage
+from mismo.linkage import EmptyLinker as EmptyLinker
+from mismo.linkage import FullLinkage as FullLinkage
+from mismo.linkage import FullLinker as FullLinker
 from mismo.linkage import KeyLinkage as KeyLinkage
 from mismo.linkage import KeyLinker as KeyLinker
 from mismo.linkage import Linkage as Linkage
 from mismo.linkage import Linker as Linker
 from mismo.linkage import LinkTableLinkage as LinkTableLinkage
-from mismo.linkage import link as link
 from mismo.types import Diff as Diff
 from mismo.types import DiffStats as DiffStats
 from mismo.types import LinkCountsTable as LinkCountsTable

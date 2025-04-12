@@ -3,7 +3,7 @@ from __future__ import annotations
 import ibis
 from ibis import _
 
-from mismo import link
+import mismo
 from mismo.lib.name import NameDimension, NameMatchLevel
 
 
@@ -16,7 +16,7 @@ def test_name_dimension(name_table):
         (3, 4),
         (5, 6),
     ]
-    links = link(name_table, name_table, True, on_slow="ignore").links.filter(
+    links = mismo.FullLinkage(name_table, name_table).links.filter(
         ibis.array([_.record_id_l, _.record_id_r]).isin(real_pairs)
     )
     compared = dim.compare(links)

@@ -10,7 +10,9 @@ from ibis.expr import types as ir
 from mismo import _typing, _util, joins
 from mismo._counts_table import KeyCountsTable, PairCountsTable
 from mismo.linkage import _linker
+from mismo.linkage._conditions import JoinConditionLinkage, JoinConditionLinker
 from mismo.linkage._linkage import BaseLinkage, LinkTableLinkage
+from mismo.linkage._linker import infer_task
 from mismo.types import LinkedTable, LinksTable
 
 
@@ -130,6 +132,7 @@ class KeyLinker:
             str | Deferred | Callable[[ibis.Table], ir.Column | str | Deferred],
         ]
         | Callable[[ibis.Table, ibis.Table], tuple[ir.Column, ir.Column]],
+        task: Literal["dedupe", "link"] | None = None,
     ) -> None:
         """Create a KeyBlocker.
 
@@ -156,15 +159,10 @@ class KeyLinker:
         """  # noqa: E501
         # TODO: support named keys, eg KeyLinker("age", city=_.city.upper())
         self.keys = keys
+        self.task = task
 
-    def __link__(
-        self,
-        left: ir.Table,
-        right: ir.Table,
-        *,
-        task: Literal["dedupe", "link"] | None = None,
-    ) -> KeyLinkage:
-        return KeyLinkage(left=left, right=right, keys=self.keys, task=task)
+    def __link__(self, left: ir.Table, right: ir.Table) -> KeyLinkage:
+        return KeyLinkage(left=left, right=right, keys=self.keys, task=self.task)
 
     def key_counts(self, t: ir.Table, /) -> KeyCountsTable:
         """Count the join keys in a table.
@@ -402,31 +400,32 @@ class KeyLinkage(BaseLinkage):
         # if isinstance(keys, tuple) and len(keys) == 2:
         #     keys = [keys]
         self.keys = keys
-        self._links = _linker.link(left, right, keys, task=task).links
+        self._left = left
+        self._right = right
         self.task = task
-        self._left, self._right = LinkedTable.make_pair(
-            left=left, right=right, links=self._links
-        )
+        self._linkage = JoinConditionLinker(
+            self.__join_condition__, task=self.task
+        ).__link__(self._left, self._right)
 
     def __join_condition__(
         self, left: ir.Table, right: ir.Table
-    ) -> Callable[[ibis.Table, ibis.Table], ibis.ir.BooleanValue]:
-        return joins.join_condition(self.keys).__join_condition__(left, right)
+    ) -> ibis.ir.BooleanValue:
+        return joins.MultiKeyJoinCondition(self.keys).__join_condition__(left, right)
 
     @property
     def left(self):
-        return self._left
+        return self._linkage.left
 
     @property
     def right(self):
-        return self._right
+        return self._linkage.right
 
     @property
     def links(self):
         return KeyLinksTable(
-            self._links,
-            left=self.left,
-            right=self.right,
+            self._linkage.links,
+            left=self._linkage.left,
+            right=self._linkage.right,
             keys=self.keys,
             task=self.task,
         )
@@ -500,8 +499,7 @@ def pair_counts(
     *,
     task: Literal["dedupe", "link"] | None = None,
 ) -> PairCountsTable:
-    if task is None:
-        task = "dedupe" if left is right else "link"
+    task = infer_task(task, left, right)
     kcl = key_counts(keys, left)
     kcr = key_counts(keys, right)
     if task == "dedupe":

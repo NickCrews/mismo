@@ -8,7 +8,7 @@ import ibis
 from ibis import Deferred
 from ibis.expr import types as ir
 
-from mismo import _util
+from mismo import _util, joins
 
 
 def distance_km(
@@ -211,7 +211,7 @@ class CoordinateBlocker:
             right_hashed = _bin_lat_lon(right_lat, right_lon, grid_size)
             return left_hashed == right_hashed
 
-        return join(left, right, pred, **kwargs)
+        return joins.join(left, right, pred, **kwargs)
 
 
 def _bin_lat_lon(

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, Literal
+from typing import Iterable
 
 import altair as alt
 import ibis
@@ -74,13 +74,7 @@ class MinhashLshLinker:
         self.n_bands = n_bands
         self.keys_column = keys_column
 
-    def __link__(
-        self,
-        left: ir.Table,
-        right: ir.Table,
-        *,
-        task: Literal["dedupe", "link"] | None = None,
-    ) -> ir.Table:
+    def __link__(self, left: ir.Table, right: ir.Table) -> ir.Table:
         """Block two tables using Minhash LSH."""
         left_terms = get_column(left, self.terms_column)
         right_terms = get_column(right, self.terms_column)

@@ -11,14 +11,6 @@ from mismo import _registry, _util
 
 
 @runtime_checkable
-class PJoiner(Protocol):
-    def __join__(
-        self,
-    ) -> Callable[[ibis.Table, ibis.Table], ibis.Table]:
-        pass
-
-
-@runtime_checkable
 class PJoinCondition(Protocol):
     """
     Has `__join_condition__(left: ibis.Table, right: ibis.Table)`, which returns something that `ibis.join()` understands.
@@ -31,12 +23,16 @@ class PJoinCondition(Protocol):
 join_condition = _registry.Registry[Callable[..., PJoinCondition], PJoinCondition]()
 
 
-@join_condition.register
 class BooleanJoinCondition:
     def __init__(self, boolean: bool | ir.BooleanValue):
-        if not isinstance(boolean, (bool, ir.BooleanValue)):
-            raise NotImplementedError
         self.boolean = boolean
+
+    @join_condition.register
+    @staticmethod
+    def _try(obj: Any) -> BooleanJoinCondition:
+        if not isinstance(obj, (bool, ir.BooleanValue)):
+            raise NotImplementedError
+        return BooleanJoinCondition(obj)
 
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
@@ -44,12 +40,16 @@ class BooleanJoinCondition:
         return self.boolean
 
 
-@join_condition.register
 class FuncJoinCondition:
     def __init__(self, func: Callable[[ibis.Table, ibis.Table], ibis.ir.BooleanValue]):
-        if not callable(func):
-            raise NotImplementedError
         self.func = func
+
+    @join_condition.register
+    @staticmethod
+    def _try(obj: Any) -> FuncJoinCondition:
+        if not callable(obj):
+            raise NotImplementedError
+        return FuncJoinCondition(obj)
 
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
@@ -57,17 +57,17 @@ class FuncJoinCondition:
         return self.func(left, right)
 
 
-@join_condition.register
 class AndJoinCondition:
     def __init__(self, subconditions: Iterable[Any]):
-        try:
-            self.subconditions: tuple[PJoinCondition] = tuple(
-                join_condition(c) for c in subconditions
-            )
-        except TypeError as e:
-            if "is not iterable" in str(e):
-                raise NotImplementedError
-            raise
+        self.subconditions: tuple[PJoinCondition] = tuple(
+            join_condition(c) for c in subconditions
+        )
+
+    @join_condition.register
+    @staticmethod
+    def _try(obj: Any) -> AndJoinCondition:
+        tuple_subconditions = _try_iterable(obj)
+        return AndJoinCondition(tuple_subconditions)
 
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
@@ -81,20 +81,20 @@ class AndJoinCondition:
 
 # KeyJoinCondition needs to be registered afterwards so that it has
 # priority with 2-tuples
-@join_condition.register
 class MultiKeyJoinCondition:
     def __init__(self, subconditions: Iterable[Any]):
-        try:
-            iterable_subconditions = tuple(c for c in subconditions)
-        except TypeError as e:
-            if "is not iterable" in str(e):
-                raise NotImplementedError
-            raise
-        resolved = [join_condition(c) for c in iterable_subconditions]
+        self.subconditions: tuple[KeyJoinCondition] = tuple(
+            join_condition(c) for c in subconditions
+        )
+
+    @join_condition.register
+    def _try(obj: Any) -> MultiKeyJoinCondition:
+        subconditions = _try_iterable(obj)
+        resolved = [join_condition(c) for c in subconditions]
         for sub in resolved:
             if not isinstance(sub, KeyJoinCondition):
                 raise NotImplementedError
-        self.subconditions: tuple[KeyJoinCondition] = resolved
+        return MultiKeyJoinCondition(resolved)
 
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
@@ -106,7 +106,10 @@ class MultiKeyJoinCondition:
         return ibis.and_(*conditions)
 
 
-@join_condition.register
+class BadKeyJoinCondition(ValueError):
+    pass
+
+
 class KeyJoinCondition:
     def __init__(self, spec: str | Deferred | tuple[str | Deferred, str | Deferred]):
         if isinstance(spec, (str, ibis.Deferred)):
@@ -115,17 +118,25 @@ class KeyJoinCondition:
             if len(spec) != 2:
                 # This is eg ("name", "age", "address"), raise this so that
                 # AndJoinCondition picks it up.
-                raise NotImplementedError
+                raise BadKeyJoinCondition(spec)
             left_spec, right_spec = spec
         else:
-            raise NotImplementedError
+            raise BadKeyJoinCondition(spec)
 
         if not isinstance(left_spec, (str, Deferred)):
-            raise NotImplementedError
+            raise BadKeyJoinCondition(spec)
         if not isinstance(right_spec, (str, Deferred)):
-            raise NotImplementedError
+            raise BadKeyJoinCondition(spec)
         self.left_spec = left_spec
         self.right_spec = right_spec
+
+    @join_condition.register
+    @staticmethod
+    def _try(obj: Any) -> KeyJoinCondition:
+        try:
+            return KeyJoinCondition(obj)
+        except BadKeyJoinCondition:
+            raise NotImplementedError
 
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
@@ -142,3 +153,12 @@ class KeyJoinCondition:
     def join_condition(self, left: ibis.Table, right: ibis.Table) -> ir.BooleanColumn:
         conditions = [coll == colr for coll, colr in self.bind_columns(left, right)]
         return ibis.and_(*conditions)
+
+
+def _try_iterable(obj: Any) -> tuple:
+    try:
+        return tuple(c for c in obj)
+    except TypeError as e:
+        if "is not iterable" in str(e):
+            raise NotImplementedError
+        raise
