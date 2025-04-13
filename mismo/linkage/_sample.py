@@ -34,9 +34,9 @@ def sample_all_links(
     Examples
     --------
     >>> import ibis
-    >>> from mismo import playdata, block
+    >>> import mismo
     >>> ibis.options.interactive = True
-    >>> t, _labels = playdata.load_febrl1()
+    >>> t, _labels = mismo.playdata.load_febrl1()
     >>> t.head(5)
     ┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
     ┃ record_id    ┃ given_name ┃ surname    ┃ street_number ┃ address_1         ┃ … ┃
@@ -49,7 +49,7 @@ def sample_all_links(
     │ rec-1-org    │ karli      │ alderson   │ 144           │ nulsen circuit    │ … │
     │ rec-10-dup-0 │ kayla      │ harrington │ NULL          │ maltby circuit    │ … │
     └──────────────┴────────────┴────────────┴───────────────┴───────────────────┴───┘
-    >>> block.sample_all_links(t, t, max_pairs=7)  # doctest: +SKIP
+    >>> mismo.linkage.sample_all_links(t, t, max_pairs=7)  # doctest: +SKIP
     ┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
     ┃ record_id_l   ┃ record_id_r  ┃ address_1_l      ┃ address_1_r       ┃ … ┃
     ┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
