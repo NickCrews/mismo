@@ -20,7 +20,38 @@ class PJoinCondition(Protocol):
         pass
 
 
-join_condition = _registry.Registry[Callable[..., PJoinCondition], PJoinCondition]()
+class join_condition:
+    """Create a join condition from an object.
+
+    Parameters
+    ----------
+    x
+        The object to create a join condition from.
+        This can be anything that ibis understands as join condition,
+        such as a boolean, an ibis.ir.BooleanValue expression, a `str`,
+        an ibis.Deferred, etc
+        It also supports other types,
+        such as `lambda left, right: <one of the above>`.
+
+        You can also register your own implementations with the
+        `join_condition.register()` method. See that for details.
+
+    Returns
+    -------
+        The first join condition in the registry
+    """
+
+    _registry = _registry.Registry[Callable[..., PJoinCondition], PJoinCondition]()
+
+    def __new__(cls, x: Any) -> PJoinCondition:
+        return cls._registry(x)
+
+    @classmethod
+    def register(
+        cls, func: Callable[..., PJoinCondition]
+    ) -> Callable[..., PJoinCondition]:
+        """Register a function as a join condition."""
+        return cls._registry.register(func)
 
 
 class BooleanJoinCondition:
