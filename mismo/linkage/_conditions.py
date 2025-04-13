@@ -12,9 +12,9 @@ from mismo.linkage._linker import Linker, infer_task
 from mismo.types import LinkedTable, LinksTable
 
 
-class JoinConditionLinker(Linker):
+class JoinLinker(Linker):
     """
-    A [Linker][mismo.Linker] that creates a [JoinConditionLinkage][mismo.JoinConditionLinkage] when given two tables.
+    A [Linker][mismo.Linker] that creates a [JoinLinkage][mismo.JoinLinkage] based on a join condition.
     """  # noqa: E501
 
     def __init__(
@@ -24,16 +24,16 @@ class JoinConditionLinker(Linker):
         task: Literal["dedupe", "link"] | None = None,
         on_slow: Literal["error", "warn", "ignore"] = "error",
     ):
-        self.condition = condition
+        self.condition = joins.join_condition(condition)
         self.task = task
         self.on_slow = on_slow
 
-    def __link__(self, left: ibis.Table, right: ibis.Table) -> JoinConditionLinkage:
+    def __link__(self, left: ibis.Table, right: ibis.Table) -> JoinLinkage:
         if left is right:
             right = right.view()
         # Run this to check early for slow joins
         self._get_pred(left, right)
-        return JoinConditionLinkage(left, right, self.__join_condition__)
+        return JoinLinkage(left, right, self.__join_condition__)
 
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
@@ -42,21 +42,23 @@ class JoinConditionLinker(Linker):
 
     def _get_pred(self, left: ibis.Table, right: ibis.Table) -> ibis.ir.BooleanValue:
         task = infer_task(self.task, left, right)
-        pred = joins.join_condition(self.condition).__join_condition__(left, right)
+        pred = self.condition.__join_condition__(left, right)
         if task == "dedupe":
             pred = pred & (left.record_id < right.record_id)
         joins.check_join_algorithm(left, right, pred, on_slow=self.on_slow)
         return pred
 
 
-class JoinConditionLinkage(BaseLinkage):
+class JoinLinkage(BaseLinkage):
+    """A [Linkage][mismo.Linkage] based on a join condition."""
+
     def __init__(
         self,
         left: ir.Table,
         right: ir.Table,
-        join_condition: Callable[[ibis.Table, ibis.Table], ibis.ir.BooleanValue],
+        condition: Callable[[ibis.Table, ibis.Table], ibis.ir.BooleanValue],
     ) -> None:
-        self._join_condition = join_condition
+        self.condition = joins.join_condition(condition)
         self._left_raw = left
         self._right_raw = right
 
@@ -75,7 +77,7 @@ class JoinConditionLinkage(BaseLinkage):
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
     ) -> Callable[[ibis.Table, ibis.Table], ibis.ir.BooleanValue]:
-        return self._join_condition(left, right)
+        return self.condition.__join_condition__(left, right)
 
     @property
     def links(self):
@@ -90,7 +92,7 @@ class JoinConditionLinkage(BaseLinkage):
         return joins.join(
             self._left_raw,
             self._right_raw,
-            self._join_condition,
+            self.condition,
             lname="{name}_l",
             rname="{name}_r",
             rename_all=True,

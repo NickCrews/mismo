@@ -6,8 +6,8 @@ from mismo.linkage._combine import (
     unify_links_min_intersection as unify_links_min_intersection,
 )
 from mismo.linkage._combine import union as union
-from mismo.linkage._conditions import JoinConditionLinkage as JoinConditionLinkage
-from mismo.linkage._conditions import JoinConditionLinker as JoinConditionLinker
+from mismo.linkage._conditions import JoinLinkage as JoinLinkage
+from mismo.linkage._conditions import JoinLinker as JoinLinker
 from mismo.linkage._key_linker import KeyLinkage as KeyLinkage
 from mismo.linkage._key_linker import KeyLinker as KeyLinker
 from mismo.linkage._label_linker import LabelLinker as LabelLinker

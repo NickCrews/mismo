@@ -25,9 +25,7 @@ class FullLinker(Linker):
 
     def __init__(self, *, task: Literal["dedupe", "link"] | None = None):
         self.task = task
-        self._linker = _conditions.JoinConditionLinker(
-            True, on_slow="ignore", task=task
-        )
+        self._linker = _conditions.JoinLinker(True, on_slow="ignore", task=task)
 
     def __link__(self, left: ibis.Table, right: ibis.Table) -> _linkage.Linkage:
         return self._linker.__link__(left, right)
@@ -38,9 +36,7 @@ class EmptyLinker(Linker):
 
     def __init__(self, *, task: Literal["dedupe", "link"] | None = None):
         self.task = task
-        self._linker = _conditions.JoinConditionLinker(
-            False, on_slow="ignore", task=task
-        )
+        self._linker = _conditions.JoinLinker(False, on_slow="ignore", task=task)
 
     def __link__(self, left: ibis.Table, right: ibis.Table) -> _linkage.Linkage:
         return self._linker.__link__(left, right)
@@ -52,7 +48,7 @@ class UnnestLinker(Linker):
     def __init__(self, column: str, *, task: Literal["dedupe", "link"] | None = None):
         self.column = column
         self.task = task
-        self._linker = _conditions.JoinConditionLinker(self.column, task=task)
+        self._linker = _conditions.JoinLinker(self.column, task=task)
 
     def __link__(self, left: ibis.Table, right: ibis.Table) -> _linkage.Linkage:
         left = left.mutate(left[self.column].unnest().name(self.column))

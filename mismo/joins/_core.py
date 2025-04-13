@@ -16,10 +16,10 @@ def join(
     | bool
     | ibis.Deferred
     | Sequence[
-        str
+        bool
         | ibis.ir.BooleanColumn
+        | str
         | tuple[str | ibis.Column | ibis.Deferred, str | ibis.Column | ibis.Deferred]
-        | bool
     ] = (),
     how: str = "inner",
     *,
