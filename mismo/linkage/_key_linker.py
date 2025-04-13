@@ -9,8 +9,7 @@ from ibis.expr import types as ir
 
 from mismo import _typing, _util, joins
 from mismo._counts_table import KeyCountsTable, PairCountsTable
-from mismo.linkage import _linker
-from mismo.linkage._conditions import JoinConditionLinkage, JoinConditionLinker
+from mismo.linkage._conditions import JoinLinker
 from mismo.linkage._linkage import BaseLinkage, LinkTableLinkage
 from mismo.linkage._linker import infer_task
 from mismo.types import LinkedTable, LinksTable
@@ -44,8 +43,8 @@ class KeyLinker:
 
     Block the table with itself wherever the names match:
 
-    >>> blocker = mismo.block.KeyBlocker("name")
-    >>> blocker(t, t).order_by("record_id_l", "record_id_r").head()  # doctest: +SKIP
+    >>> linker = mismo.block.KeyBlocker("name")
+    >>> linker(t, t).order_by("record_id_l", "record_id_r").head()  # doctest: +SKIP
     ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
     ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l         ┃ name_r         ┃
     ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
@@ -207,12 +206,12 @@ class KeyLinker:
         ... ]
         >>> letters, nums = zip(*records)
         >>> t = ibis.memtable({"letter": letters, "num": nums})
-        >>> blocker = mismo.block.KeyBlocker("letter", "num")
+        >>> linker = mismo.KeyLinker("letter", "num")
 
         Note how the (None, 4) record is not counted,
         since NULLs are not counted as a match during a join.
 
-        >>> counts = blocker.key_counts(t)
+        >>> counts = linker.key_counts(t)
         >>> counts.order_by("letter", "num")
         ┏━━━━━━━━┳━━━━━━━┳━━━━━━━┓
         ┃ letter ┃ num   ┃ n     ┃
@@ -403,9 +402,9 @@ class KeyLinkage(BaseLinkage):
         self._left = left
         self._right = right
         self.task = task
-        self._linkage = JoinConditionLinker(
-            self.__join_condition__, task=self.task
-        ).__link__(self._left, self._right)
+        self._linkage = JoinLinker(self.__join_condition__, task=self.task).__link__(
+            self._left, self._right
+        )
 
     def __join_condition__(
         self, left: ir.Table, right: ir.Table

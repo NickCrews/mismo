@@ -25,7 +25,7 @@ def test_minhash_lsh_blocker(table_factory, a, b, band_size: int, n_bands: int):
     right = table_factory({"terms": [b] * 100}, schema={"terms": "array<int>"})
     left = left.mutate(record_id=ibis.row_number())
     right = right.mutate(record_id=ibis.row_number())
-    blocker = mismo.block.MinhashLshBlocker(
+    blocker = mismo.linkage.MinhashLshBlocker(
         terms_column="terms", band_size=band_size, n_bands=n_bands
     )
     p_expected = p_blocked(_jaccard(a, b), band_size=band_size, n_bands=n_bands)
