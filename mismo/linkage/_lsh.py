@@ -9,6 +9,7 @@ from ibis.expr import types as ir
 
 from mismo._util import get_column
 from mismo.arrays import array_choice
+from mismo.linkage import _linker
 
 
 def minhash_lsh_keys(
@@ -40,11 +41,11 @@ def minhash_lsh_keys(
     return result
 
 
-class MinhashLshLinker:
-    """Uses Minhash LSH to block record pairs that have high Jaccard similarity.
+class MinhashLshLinker(_linker.Linker):
+    """A [Linker][mismo.Linker] that uses Minhash LSH to block record pairs that have high Jaccard similarity.
 
     See [the how-to guide](../howto/lsh.ipynb) for more information.
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -74,7 +75,7 @@ class MinhashLshLinker:
         self.n_bands = n_bands
         self.keys_column = keys_column
 
-    def __link__(self, left: ir.Table, right: ir.Table) -> ir.Table:
+    def __call__(self, left: ir.Table, right: ir.Table) -> ir.Table:
         """Block two tables using Minhash LSH."""
         left_terms = get_column(left, self.terms_column)
         right_terms = get_column(right, self.terms_column)

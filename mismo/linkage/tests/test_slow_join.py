@@ -42,7 +42,7 @@ def test_warn_slow_join(
     t1: ir.Table, t2: ir.Table, condition, is_slow, on_slow, result
 ):
     def f():
-        mismo.linkage.JoinLinker(condition, on_slow=on_slow).__link__(t1, t2)
+        mismo.linkage.JoinLinker(condition, on_slow=on_slow)(t1, t2)
 
     if result is None:
         f()

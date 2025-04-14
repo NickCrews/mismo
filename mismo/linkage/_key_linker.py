@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from textwrap import dedent
-from typing import Callable, Literal
+from typing import Callable, Iterable, Literal
 
 import ibis
 from ibis import Deferred, _
@@ -9,14 +9,14 @@ from ibis.expr import types as ir
 
 from mismo import _typing, _util, joins
 from mismo._counts_table import KeyCountsTable, PairCountsTable
-from mismo.linkage._conditions import JoinLinker
+from mismo.linkage._join_linker import JoinLinker
 from mismo.linkage._linkage import BaseLinkage, LinkTableLinkage
-from mismo.linkage._linker import infer_task
+from mismo.linkage._linker import Linker, infer_task
 from mismo.types import LinkedTable, LinksTable
 
 
-class KeyLinker:
-    """Links records together wherever they share a key, eg "emails match."
+class KeyLinker(Linker):
+    """A [Linker][mismo.Linker] that links records wherever they share a key, eg "emails match."
 
     This is one of the most basic blocking rules, used very often in record linkage.
     This is what is used in `splink`.
@@ -43,8 +43,10 @@ class KeyLinker:
 
     Block the table with itself wherever the names match:
 
-    >>> linker = mismo.block.KeyBlocker("name")
-    >>> linker(t, t).order_by("record_id_l", "record_id_r").head()  # doctest: +SKIP
+    >>> linker = mismo.KeyLinker("name")
+    >>> linker(t, t).links.order_by(
+    ...     "record_id_l", "record_id_r"
+    ... ).head()  # doctest: +SKIP
     ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
     ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l         ┃ name_r         ┃
     ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
@@ -63,7 +65,7 @@ class KeyLinker:
         AND
     - the latitudes, rounded to 1 decimal place, are the same
 
-    >>> blocker = mismo.block.KeyBlocker(_["name"][:5].upper(), _.latitude.round(1))
+    >>> linker = mismo.KeyLinker(_["name"][:5].upper(), _.latitude.round(1))
     >>> blocker(t, t).order_by("record_id_l", "record_id_r").head()  # doctest: +SKIP
     ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
     ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l              ┃ name_r              ┃
@@ -104,8 +106,8 @@ class KeyLinker:
     Note that this blocked `* SCHLUMBERGER LIMITED` with `* SCHLUMBERGER TECHNOLOGY BV`.
     because they both share the `SCHLUMBERGER` token.
 
-    >>> blocker = mismo.block.KeyBlocker(tokens.unnest())
-    >>> blocker(t, t).filter(_.name_l != _.name_r).order_by(
+    >>> linker = mismo.KeyLinker(tokens.unnest())
+    >>> linker(t, t).links.filter(_.name_l != _.name_r).order_by(
     ...     "record_id_l", "record_id_r"
     ... ).head()  # doctest: +SKIP
     ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -123,14 +125,16 @@ class KeyLinker:
 
     def __init__(
         self,
-        *keys: str
-        | Deferred
-        | Callable[[ibis.Table], ir.Column | str | Deferred]
-        | tuple[
-            str | Deferred | Callable[[ibis.Table], ir.Column | str | Deferred],
-            str | Deferred | Callable[[ibis.Table], ir.Column | str | Deferred],
-        ]
-        | Callable[[ibis.Table, ibis.Table], tuple[ir.Column, ir.Column]],
+        keys: Iterable[
+            str
+            | Deferred
+            | Callable[[ibis.Table], ir.Column | str | Deferred]
+            | tuple[
+                str | Deferred | Callable[[ibis.Table], ir.Column | str | Deferred],
+                str | Deferred | Callable[[ibis.Table], ir.Column | str | Deferred],
+            ]
+            | Callable[[ibis.Table, ibis.Table], tuple[ir.Column, ir.Column]]
+        ],
         task: Literal["dedupe", "link"] | None = None,
     ) -> None:
         """Create a KeyBlocker.
@@ -157,10 +161,12 @@ class KeyLinker:
               of columns. Left and right will be joined where the columns are equal.
         """  # noqa: E501
         # TODO: support named keys, eg KeyLinker("age", city=_.city.upper())
-        self.keys = keys
+        if isinstance(keys, Deferred):
+            keys = (keys,)
+        self.keys = tuple(keys)
         self.task = task
 
-    def __link__(self, left: ir.Table, right: ir.Table) -> KeyLinkage:
+    def __call__(self, left: ir.Table, right: ir.Table) -> KeyLinkage:
         return KeyLinkage(left=left, right=right, keys=self.keys, task=self.task)
 
     def key_counts(self, t: ir.Table, /) -> KeyCountsTable:
@@ -292,7 +298,7 @@ class KeyLinker:
         ... ]
         >>> letters, nums = zip(*records)
         >>> t = ibis.memtable({"letter": letters, "num": nums})
-        >>> blocker = mismo.block.KeyBlocker("letter", "num")
+        >>> linker = mismo.KeyLinker(["letter", "num"])
 
         If we joined t with itself using this blocker in a link task,
         we would end up with
@@ -302,7 +308,7 @@ class KeyLinker:
         - 1 pairs in the (a, 1) block due to pair (0, 0)
         - 1 pairs in the (b, 2) block due to pair (4, 4)
 
-        >>> counts = blocker.pair_counts(t, t, task="link").order_by("letter", "num")
+        >>> counts = linker.pair_counts(t, t, task="link").order_by("letter", "num")
         >>> counts
         ┏━━━━━━━━┳━━━━━━━┳━━━━━━━┓
         ┃ letter ┃ num   ┃ n     ┃
@@ -323,7 +329,7 @@ class KeyLinker:
         - 0 pairs in the (a, 1) block due to record 0 not getting blocked with itself
         - 0 pairs in the (b, 2) block due to record 4 not getting blocked with itself
 
-        >>> counts = blocker.pair_counts(t, t)
+        >>> counts = linker.pair_counts(t, t)
         >>> counts.order_by("letter", "num")
         ┏━━━━━━━━┳━━━━━━━┳━━━━━━━┓
         ┃ letter ┃ num   ┃ n     ┃
@@ -352,7 +358,7 @@ class KeyLinker:
 
 class KeyLinkage(BaseLinkage):
     """
-    Create a Linkage from join predicates.
+    A [Linkage][mismo.Linkage] of where records share a key, eg
 
     This is useful if you don't already have a table of links.
     This will create a table of links by joining the left and right tables
@@ -402,7 +408,7 @@ class KeyLinkage(BaseLinkage):
         self._left = left
         self._right = right
         self.task = task
-        self._linkage = JoinLinker(self.__join_condition__, task=self.task).__link__(
+        self._linkage = JoinLinker(self.__join_condition__, task=self.task)(
             self._left, self._right
         )
 

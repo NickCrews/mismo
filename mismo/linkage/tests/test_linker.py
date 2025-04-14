@@ -18,7 +18,7 @@ def test_cant_instantiate():
 
 
 def test_cross_blocker(table_factory, t1: ir.Table, t2: ir.Table):
-    linkage = FullLinker().__link__(t1, t2)
+    linkage = FullLinker()(t1, t2)
     blocked_ids = linkage.links.select("record_id_l", "record_id_r")
     expected = table_factory(
         {
@@ -30,7 +30,7 @@ def test_cross_blocker(table_factory, t1: ir.Table, t2: ir.Table):
 
 
 def test_empty_blocker(t1: ir.Table, t2: ir.Table):
-    links = EmptyLinker().__link__(t1, t2).links
+    links = EmptyLinker()(t1, t2).links
     assert "record_id_l" in links.columns
     assert "record_id_r" in links.columns
     n = links.count().execute()

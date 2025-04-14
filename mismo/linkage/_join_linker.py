@@ -28,7 +28,7 @@ class JoinLinker(Linker):
         self.task = task
         self.on_slow = on_slow
 
-    def __link__(self, left: ibis.Table, right: ibis.Table) -> JoinLinkage:
+    def __call__(self, left: ibis.Table, right: ibis.Table) -> JoinLinkage:
         if left is right:
             right = right.view()
         # Run this to check early for slow joins
