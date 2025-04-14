@@ -175,7 +175,7 @@ class EmailsDimension:
 
     def block(self, t1: ir.Table, t2: ir.Table, **kwargs) -> ir.Table:
         linker = UnnestLinker(ibis._[self.column_parsed].full.unnest())
-        return linker.__link__(t1, t2, **kwargs)
+        return linker(t1, t2, **kwargs)
 
     def compare(self, t: ir.Table) -> ir.Table:
         """Add a column with the best match between all pairs of email addresses."""
