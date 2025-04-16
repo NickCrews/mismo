@@ -14,6 +14,10 @@ from mismo import _registry, _util
 class PJoinCondition(Protocol):
     """
     Has `__join_condition__(left: ibis.Table, right: ibis.Table)`, which returns something that `ibis.join()` understands.
+
+    There are concrete implementations of this for various types of join conditions.
+    For example, `BooleanJoinCondition` wraps a boolean
+    or an `ibis.ir.BooleanValue` expression.
     """  # noqa: E501
 
     def __join_condition__(self, left: ibis.Table, right: ibis.Table) -> Any:
@@ -21,7 +25,8 @@ class PJoinCondition(Protocol):
 
 
 class join_condition:
-    """Create a join condition from an object.
+    """
+    A flexible factory function to create a [PJoinCondition][mismo.PJoinCondition].
 
     Parameters
     ----------
@@ -38,7 +43,10 @@ class join_condition:
 
     Returns
     -------
-        The first join condition in the registry
+        The first matching PJoinCondition in the registry.
+        For example, if you pass a boolean,
+        it will return a `BooleanJoinCondition` instance,
+        which just wraps the boolean.
     """
 
     _registry = _registry.Registry[Callable[..., PJoinCondition], PJoinCondition]()
