@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Callable
 import ibis
 from ibis import _
 
-from mismo import _typing, _util
+from mismo import _util
 from mismo.types._table_wrapper import TableWrapper
 
 if TYPE_CHECKING:
@@ -49,7 +49,7 @@ class LinksTable(TableWrapper):
         self,
         *values: ibis.Deferred | Callable[[ibis.Table], ibis.Value] | None,
         **named_values: ibis.Deferred | Callable[[ibis.Table], ibis.Value] | None,
-    ) -> _typing.Self:
+    ) -> LinksTable:
         """Add columns from the left table to this table of links.
 
         This allows you to add specific columns from the left table,
@@ -95,13 +95,13 @@ class LinksTable(TableWrapper):
         if conflicts:
             raise ValueError(f"conflicting columns: {conflicts}")
         joined = self.left_join(left, self.record_id_l == left[uname]).drop(uname)
-        return self.__class__(joined, left=self._left_raw, right=self._right_raw)
+        return LinksTable(joined, left=self._left_raw, right=self._right_raw)
 
     def with_right(
         self,
         *values: ibis.Deferred | Callable[[ibis.Table], ibis.Value] | None,
         **named_values: ibis.Deferred | Callable[[ibis.Table], ibis.Value] | None,
-    ) -> _typing.Self:
+    ) -> LinksTable:
         """Add columns from the right table to this table of links.
 
         This allows you to add specific columns from the right table,
@@ -139,7 +139,7 @@ class LinksTable(TableWrapper):
         └─────────────┴─────────────┴─────────┴───────────────┴───────────────┘
         """
         if not values and not named_values:
-            values = self.left_.columns
+            values = self.right_.columns
 
         uname = _util.unique_name()
         right = self.right_.select(_.record_id.name(uname), *values, **named_values)
@@ -147,7 +147,7 @@ class LinksTable(TableWrapper):
         if conflicts:
             raise ValueError(f"conflicting columns: {conflicts}")
         joined = self.left_join(right, self.record_id_r == right[uname]).drop(uname)
-        return self.__class__(joined, left=self._left_raw, right=self._right_raw)
+        return LinksTable(joined, left=self._left_raw, right=self._right_raw)
 
     @property
     def left_(self) -> LinkedTable:
