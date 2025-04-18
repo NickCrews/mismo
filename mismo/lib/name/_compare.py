@@ -108,6 +108,9 @@ def _get_level(le: ir.StructValue, ri: ir.StructValue) -> ir.IntegerValue:
 class NameComparer:
     """Compare names. Assumes the names have already been normalized/featurized."""
 
+    Levels = NameMatchLevel
+    """The levels of name comparison."""
+
     def __init__(
         self,
         left_column: str = "name_l",
