@@ -11,7 +11,7 @@ from mismo.tests.util import assert_tables_equal
 @pytest.fixture
 def linkage() -> LinkTableLinkage:
     left = ibis.memtable({"record_id": [4, 5, 6]})
-    right = ibis.memtable({"record_id": [7, 8, 9]})
+    right = ibis.memtable({"record_id": [7, 8, 9], "extra": ["a", "b", "c"]})
     links = ibis.memtable(
         {"record_id_l": [4, 4, 5], "record_id_r": [7, 8, 9], "extra": [1, 2, 3]}
     )
@@ -63,6 +63,7 @@ def test_LinkedTable_with_n_links(linkage: LinkTableLinkage):
     expected = ibis.memtable(
         {
             "record_id": [7, 8, 9],
+            "extra": ["a", "b", "c"],
             "foo": [1, 1, 1],
         }
     )
@@ -117,33 +118,25 @@ def test_Linkage_empty_link_counts_chart(linkage: LinkTableLinkage):
     empty_linkage.link_counts_chart()
 
 
-def test_LinkTableLinkage_with_many_linked_values(
-    linkage: LinkTableLinkage, table_factory
-):
-    result = linkage.left.with_many_linked_values(x="record_id", y=_.record_id + 1)
-    assert isinstance(result, LinkedTable)
-
-    expected = table_factory(
-        [
-            (4, [7, 8], [8, 9]),
-            (5, [9], [10]),
-            (6, [], []),
-        ],
-        columns=["record_id", "x", "y"],
+def test_LinkTableLinkage_with_linked_values(linkage: LinkTableLinkage, table_factory):
+    result = linkage.left.with_linked_values(
+        "extra",
+        x=_.record_id.max(),
+        y=(_.record_id + 1),
     )
-    assert_tables_equal(expected, result)
-
-
-def test_LinkedTable_with_single_linked_values(
-    linkage: LinkTableLinkage, table_factory
-):
-    result = linkage.left.with_single_linked_values(x="record_id", y=_.record_id + 1)
     assert isinstance(result, LinkedTable)
 
     expected = table_factory(
         [
-            (5, 9, 10),
+            (4, ["a", "b"], 8, [8, 9]),
+            (5, ["c"], 9, [10]),
+            (6, None, None, None),
         ],
-        columns=["record_id", "x", "y"],
+        schema={
+            "record_id": "int64",
+            "extra": "array<string>",
+            "x": "int64",
+            "y": "array<int64>",
+        },
     )
     assert_tables_equal(expected, result)

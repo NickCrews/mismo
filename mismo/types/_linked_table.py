@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Callable
 
 import ibis
 from ibis import _
+from ibis.expr import types as ir
 
 from mismo import _common, _typing, _util
 from mismo.types._links_table import LinksTable
@@ -11,7 +12,6 @@ from mismo.types._table_wrapper import TableWrapper
 
 if TYPE_CHECKING:
     import altair as alt
-    from ibis.expr import types as ir
 
 
 class LinkedTable(TableWrapper):
@@ -50,26 +50,17 @@ class LinkedTable(TableWrapper):
         Trailing underscore to avoid name conflicts with column names."""
         return LinksTable(self._links_raw, left=self, right=self._other_raw)
 
-    def with_many_linked_values(
+    def with_linked_values(
         self,
         *values: ibis.Deferred | Callable[[ibis.Table], ir.Value] | None,
+        default_agg: ibis.Deferred = _.collect(),
         **named_values: ibis.Deferred | Callable[[ibis.Table], ir.Value] | None,
     ) -> _typing.Self:
         """
-        This table, with `array<>` columns of values from linked records in `other`
+        This table, with values from the linked records.
 
-        This is very similar to `with_single_linked_values`, except:
-
-        - This includes values from all linked records, not just the single match.
-        - Here, the values from the N linked records are returned in an array.
-          There, since there is only one linked record, we return it directly,
-          not as a length-1 array.
-
-        This uses the same semantics as `ibis.Table.select(*values, **named_values)`
-        to choose which values from `other` to add to `self`
-
-        If no values are provided, we will by default add a column named `other`
-        with all the values from other packed into a struct.
+        See the examples below, this is easy to understand with examples,
+        but hard to describe.
 
         Parameters
         ----------
@@ -80,215 +71,121 @@ class LinkedTable(TableWrapper):
 
         Returns
         -------
-        A new LinkedTable with the new column.
+        A new LinkedTable with new columns of values from the linked records.
 
         Examples
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> this = ibis.memtable({"record_id": [4, 5, 6]})
-        >>> other = ibis.memtable({"record_id": [7, 8, 9]})
-        >>> links = ibis.memtable({"record_id_l": [4, 4, 5], "record_id_r": [7, 8, 9]})
+        >>> this = ibis.memtable({"record_id": [40, 50, 60], "x": ["a", "b", "c"]})
+        >>> other = ibis.memtable({"record_id": [41, 42, 51], "y": [4.1, 4.2, 9.0]})
+        >>> links = ibis.memtable(
+        ...     {"record_id_l": [40, 40, 50], "record_id_r": [41, 42, 51]}
+        ... )
         >>> lt = LinkedTable(this, other=other, links=links)
         >>> lt
-        LinkedTable(
-            3 records,
-            3 links
-        )
-        ┏━━━━━━━━━━━┓
-        ┃ record_id ┃
-        ┡━━━━━━━━━━━┩
-        │ int64     │
-        ├───────────┤
-        │         4 │
-        │         5 │
-        │         6 │
-        └───────────┘
+        LinkedTable<3 records, 3 links>
+        ┏━━━━━━━━━━━┳━━━━━━━━┓
+        ┃ record_id ┃ x      ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━┩
+        │ int64     │ string │
+        ├───────────┼────────┤
+        │        40 │ a      │
+        │        50 │ b      │
+        │        60 │ c      │
+        └───────────┴────────┘
 
-        Default is to pack everything into array<struct<all columns from other>>:
+        Select exactly which values you want from `other`
+        Since every record in `self` can be linked to 0-N records in `other`,
+        we need a way of aggregating the 0-N linked values in `other` to a single value.
+        By default, if the given expression is not an aggregate,
+        we default to `.collect()` to combine them all into an array.
+        If the given expression is already an aggregate, then it is kept as-is.
 
-        >>> lt.with_many_linked_values()
-        LinkedTable(
-            3 records,
-            3 links
-        )
-        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ record_id ┃ other                                ┃
-        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ int64     │ array<struct<record_id: int64>>      │
-        ├───────────┼──────────────────────────────────────┤
-        │         4 │ [{'record_id': 7}, {'record_id': 8}] │
-        │         5 │ [{'record_id': 9}]                   │
-        │         6 │ []                                   │
-        └───────────┴──────────────────────────────────────┘
+        This uses the same semantics as `ibis.Table.select(*values, **named_values)`.
 
-        Or you can select exactly which values you want.
-        They will be returned in an array, one for each linked record:
-
-        >>> lt.with_many_linked_values(
-        ...     _.record_id.name("idrs"), plus_ones=_.record_id + 1
+        >>> lt.with_linked_values(
+        ...     "y",
+        ...     ibis._.y.max().name("y_max"),
+        ...     others="record_id",
+        ...     other=ibis._.record_id.arbitrary(),
         ... )
-        LinkedTable(
-            3 records,
-            3 links
-        )
-        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ record_id ┃ idrs                 ┃ plus_ones            ┃
-        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
-        │ int64     │ array<int64>         │ array<int64>         │
-        ├───────────┼──────────────────────┼──────────────────────┤
-        │         4 │ [7, 8]               │ [8, 9]               │
-        │         5 │ [9]                  │ [10]                 │
-        │         6 │ []                   │ []                   │
-        └───────────┴──────────────────────┴──────────────────────┘
+        LinkedTable<3 records, 3 links>
+        ┏━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
+        ┃ record_id ┃ x      ┃ y                    ┃ y_max   ┃ others               ┃ other ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
+        │ int64     │ string │ array<float64>       │ float64 │ array<int64>         │ int64 │
+        ├───────────┼────────┼──────────────────────┼─────────┼──────────────────────┼───────┤
+        │        40 │ a      │ [4.1, 4.2]           │     4.2 │ [41, 42]             │    41 │
+        │        50 │ b      │ [9.0]                │     9.0 │ [51]                 │    51 │
+        │        60 │ c      │ NULL                 │    NULL │ NULL                 │  NULL │
+        └───────────┴────────┴──────────────────────┴─────────┴──────────────────────┴───────┘
+
+        One common use case for this is during the task of a lookup.
+        I want to see the record id of the linked record,
+        exluding when there are no links and when there are multiple (ie ambiguous) links.
+
+        >>> lt.with_n_links().with_linked_values(
+        ...     ibis._.record_id.arbitrary().name("record_id_other"),
+        ... ).filter(ibis._.n_links == 1)
+        ┏━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+        ┃ record_id ┃ x      ┃ n_links ┃ record_id_other ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+        │ int64     │ string │ int64   │ int64           │
+        ├───────────┼────────┼─────────┼─────────────────┤
+        │        50 │ b      │       1 │              51 │
+        └───────────┴────────┴─────────┴─────────────────┘
+
+        If no values are provided, we will by default add a column named `other`
+        with all the values from other packed into an array of structs.
+
+        >>> lt.with_linked_values()
+        LinkedTable<3 records, 3 links>
+        ┏━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ record_id ┃ x      ┃ other                                                      ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ int64     │ string │ array<struct<record_id: int64, y: float64>>                │
+        ├───────────┼────────┼────────────────────────────────────────────────────────────┤
+        │        40 │ a      │ [{'record_id': 41, 'y': 4.1}, {'record_id': 42, 'y': 4.2}] │
+        │        50 │ b      │ [{'record_id': 51, 'y': 9.0}]                              │
+        │        60 │ c      │ NULL                                                       │
+        └───────────┴────────┴────────────────────────────────────────────────────────────┘
         """  # noqa: E501
+        uname = _util.unique_name()
         if not values and not named_values:
             values = (
-                lambda t: ibis.struct({c: t[c] for c in t.columns}).name("other"),
+                lambda t: ibis.struct({c: t[c] for c in t.columns if c != uname}).name(
+                    "other"
+                ),
             )
 
-        uname = _util.unique_name()
-        o = self.other_.select(_.record_id.name(uname), *values, **named_values)
-        id_to_other_vals = (
-            self.links_.select(
-                **{
-                    "record_id": "record_id_l",
-                    uname: "record_id_r",
-                }
-            )
-            .join(o, uname)
-            .drop(uname)
-        )
-        value_names = [c for c in id_to_other_vals.columns if c != "record_id"]
-        self_id_to_other_array_vals = id_to_other_vals.group_by("record_id").agg(
-            *[_[c].collect().name(c) for c in value_names]
-        )
+        id_to_other = self.links_.select(
+            **{
+                uname: "record_id_l",
+                "record_id": "record_id_r",
+            }
+        ).join(self.other_, "record_id")
+        vals_bound = id_to_other.bind(*values, **named_values)
+        aggs = [
+            v if isinstance(v, ir.Scalar) else default_agg.resolve(v).name(v.get_name())
+            for v in vals_bound
+        ]
 
-        t = self
-        need_to_drop = [c for c in value_names if c in t.columns]
-        t = t.drop(*need_to_drop)
+        self_id_to_other_array_vals = id_to_other.group_by(uname).agg(*aggs)
+        value_names = [c for c in self_id_to_other_array_vals.columns if c != uname]
+
+        t = self.mutate(_.record_id.name(uname))
+        collisions = [c for c in value_names if c in t.columns]
+        if collisions:
+            raise ValueError(
+                "Given values would collide with existing columns in self: "
+                f"{collisions}",
+            )
         with_other = _util.join_lookup(
             t,
             self_id_to_other_array_vals,
-            "record_id",
-            defaults={c: [] for c in value_names},
-        )
-        return self.__class__(with_other, other=self.other_, links=self.links_)
-
-    def with_single_linked_values(
-        self,
-        *values: ibis.Deferred | Callable[[ibis.Table], ir.Value] | None,
-        **named_values: ibis.Deferred | Callable[[ibis.Table], ir.Value] | None,
-    ) -> _typing.Self:
-        """
-        This table filtered to single matches, with values from the linked record.
-
-        This is very similar to `with_many_linked_values`, except:
-
-        - It filters to only include records that have exactly 1 link.
-        - In `with_many_linked_values` the values from the N linked records are
-          returned in an array.
-          Here, since there is only one linked record, we return it directly,
-          not as a length-1 array.
-
-        This uses the same semantics as `ibis.Table.select(*values, **named_values)`
-        to choose which values from `other` to add to `self`
-
-        If no values are provided, we will by default add a column named `other`
-        with all the values from other packed into a struct.
-
-        Parameters
-        ----------
-        values
-            unnamed values
-        named_values
-            named values
-
-        Returns
-        -------
-        A new LinkedTable with the new column.
-
-        Examples
-        --------
-        >>> import ibis
-        >>> ibis.options.interactive = True
-        >>> left = ibis.memtable({"record_id": [4, 5, 6]})
-        >>> right = ibis.memtable({"record_id": [7, 8, 9]})
-        >>> links = ibis.memtable({"record_id_l": [4, 4, 5], "record_id_r": [7, 8, 9]})
-        >>> lt = LinkedTable(left, other=right, links=links)
-        >>> lt
-        LinkedTable(
-            3 records,
-            3 links
-        )
-        ┏━━━━━━━━━━━┓
-        ┃ record_id ┃
-        ┡━━━━━━━━━━━┩
-        │ int64     │
-        ├───────────┤
-        │         4 │
-        │         5 │
-        │         6 │
-        └───────────┘
-
-        We only include record with id 5, because it has exactly 1 link.
-        Record 4 is linked to 2 records (7 and 8), and record 6 is linked to 0 records.
-        Default is to pack everything into a struct:
-
-        >>> lt.with_single_linked_values()
-        LinkedTable(
-            1 records,
-            3 links
-        )
-        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ record_id ┃ other                    ┃
-        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ int64     │ struct<record_id: int64> │
-        ├───────────┼──────────────────────────┤
-        │         5 │ {'record_id': 9}         │
-        └───────────┴──────────────────────────┘
-
-        Or you can select exactly which values you want:
-
-        >>> lt.with_single_linked_values(
-        ...     _.record_id.name("idr"), plus_one=_.record_id + 1
-        ... )
-        LinkedTable(
-            1 records,
-            3 links
-        )
-        ┏━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━┓
-        ┃ record_id ┃ idr   ┃ plus_one ┃
-        ┡━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━┩
-        │ int64     │ int64 │ int64    │
-        ├───────────┼───────┼──────────┤
-        │         5 │     9 │       10 │
-        └───────────┴───────┴──────────┘
-        """  # noqa: E501
-        if not values and not named_values:
-            values = (
-                lambda t: ibis.struct({c: t[c] for c in t.columns}).name("other"),
-            )
-
-        uname = _util.unique_name()
-        t = self.with_n_links(name=uname).filter(_[uname] == 1).drop(uname)
-        o = self.other_.select(_.record_id.name(uname), *values, **named_values)
-        id_to_other_vals = (
-            self.links_.select(
-                **{
-                    "record_id": "record_id_l",
-                    uname: "record_id_r",
-                }
-            )
-            .join(o, uname)
-            .drop(uname)
-        )
-
-        need_to_drop = [
-            c for c in id_to_other_vals.columns if c in t.columns and c != "record_id"
-        ]
-        t = t.drop(*need_to_drop)
-        with_other = _util.join_lookup(t, id_to_other_vals, "record_id")
+            uname,
+        ).drop(uname)
         return self.__class__(with_other, other=self.other_, links=self.links_)
 
     def with_n_links(self, /, *, name: str = "n_links") -> _typing.Self:
@@ -420,13 +317,9 @@ class LinkedTable(TableWrapper):
         return left, right
 
     def __repr__(self) -> str:
-        return f"""
-{self.__class__.__name__}(
-    {self.count().execute()} records,
-    {self.links_.count().execute()} links
-)
+        return f"""{self.__class__.__name__}<{self.count().execute()} records, {self.links_.count().execute()} links>
 {super().__repr__()}
-""".strip()
+""".strip()  # noqa: E501
 
 
 class LinkCountsTable(TableWrapper):
