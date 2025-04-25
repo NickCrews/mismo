@@ -238,13 +238,7 @@ class LinkTableLinkage(BaseLinkage):
         )
 
     def __repr__(self):
-        return f"""
-{self.__class__.__name__}(
-    left={self.left.count().execute():_},
-    right={self.right.count().execute():_},
-    links={self.links.count().execute():_},
-)
-""".strip()
+        return f"{self.__class__.__name__}<left={self.left.count().execute():_}, right={self.right.count().execute():_}, links={self.links.count().execute():_}>"  # noqa: E501
 
 
 Linkish = TypeVar("T", bound=LinksTable | Linkage)

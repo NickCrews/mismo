@@ -72,11 +72,8 @@ def join(
         (the default, the same as in `ibis.join()`)
 
     """  # noqa: E501
-    if isinstance(predicates, _conditions.PJoinCondition):
-        conditions = predicates
-    else:
-        conditions = _conditions.join_condition(predicates)
-    resolved_predicate = conditions.__join_condition__(left, right)
+    condition = _conditions.join_condition(predicates)
+    resolved_predicate = condition.__join_condition__(left, right)
     joined = ibis.join(
         left,
         right,
