@@ -22,6 +22,8 @@ from mismo.linkage import EmptyLinkage as EmptyLinkage
 from mismo.linkage import EmptyLinker as EmptyLinker
 from mismo.linkage import FullLinkage as FullLinkage
 from mismo.linkage import FullLinker as FullLinker
+from mismo.linkage import JoinLinkage as JoinLinkage
+from mismo.linkage import JoinLinker as JoinLinker
 from mismo.linkage import KeyLinkage as KeyLinkage
 from mismo.linkage import KeyLinker as KeyLinker
 from mismo.linkage import Linkage as Linkage
