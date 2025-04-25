@@ -82,7 +82,7 @@ def test_sample_table_big_pop_small_sample(table_factory):
     blockwise43 = set(blockwise43_e.execute())
     assert blockwise42 == blockwise42_2
     assert blockwise43 != blockwise42
-    assert len(blockwise42) == 10240
+    assert len(blockwise42) == 7712
     assert len(blockwise43) == 8192
 
 

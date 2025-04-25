@@ -40,16 +40,13 @@ docs-publish:
 bench *args:
     uv run pytest --benchmark-only --benchmark-enable --benchmark-autosave --benchmark-group-by=func {{args}}
 
-benchmark *args:
-    uv run bench {{args}}
-
 # run timing benchmarks and compare with a previous run
 benchcmp number *args:
     just bench --benchmark-compare {{ number }} {{ args }}
 
-# update dependencies
-update:
-    uv lock --update
+# upgrade dependencies
+upgrade:
+    uv lock --upgrade
 
 #install libpostal to the system, a dependency for the pypostal python package 
 install-libpostal datadir="/tmp/postal":
