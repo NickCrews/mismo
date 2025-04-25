@@ -178,14 +178,16 @@ class KeyLinker(Linker):
         self.keys = tuple(_util.promote_list(keys))
         self.max_pairs = max_pairs
 
-    def __join_condition__(self, left: ir.Table, right: ir.Table) -> ir.BooleanValue:
+    def __join_condition__(
+        self, left: ibis.Table, right: ibis.Table
+    ) -> ir.BooleanValue:
         keys_left, keys_right = self.__keys__(left, right)
         clauses = (kl == kr for kl, kr in zip(keys_left, keys_right, strict=True))
         return ibis.and_(*clauses)
 
     def __pre_join__(
-        self, left: ir.Table, right: ir.Table
-    ) -> tuple[ir.Table, ir.Table]:
+        self, left: ibis.Table, right: ibis.Table
+    ) -> tuple[ibis.Table, ibis.Table]:
         """The prefilter clause that removes keys that would generate too many pairs."""
         if self.max_pairs is None:
             return left, right
@@ -210,7 +212,7 @@ class KeyLinker(Linker):
         right = right.filter(_[key_name].notin(too_big)).drop(key_name)
         return left, right
 
-    def __links__(self, left: ir.Table, right: ir.Table) -> LinksTable:
+    def __links__(self, left: ibis.Table, right: ibis.Table) -> LinksTable:
         """The links between the two tables."""
         left, right = self.__pre_join__(left, right)
         links = joins.join(
@@ -223,21 +225,21 @@ class KeyLinker(Linker):
         )
         return LinksTable(links, left=left, right=right)
 
-    def linkage(self, left: ir.Table, right: ir.Table) -> KeyLinkage:
+    def linkage(self, left: ibis.Table, right: ibis.Table) -> KeyLinkage:
         """The linkage between the two tables."""
         return KeyLinkage(
             left=left, right=right, keys=self.keys, max_pairs=self.max_pairs
         )
 
     def __keys__(
-        self, left: ir.Table, right: ir.Table
+        self, left: ibis.Table, right: ibis.Table
     ) -> list[tuple[ir.Column, ir.Column]]:
         return _get_keys_2_tables(left, right, self.keys)
 
-    def __link__(self, left: ir.Table, right: ir.Table) -> KeyLinkage:
+    def __link__(self, left: ibis.Table, right: ibis.Table) -> KeyLinkage:
         return KeyLinkage(left=left, right=right, keys=self.keys, task=self.task)
 
-    def key_counts(self, t: ir.Table, /) -> KeyCountsTable:
+    def key_counts(self, t: ibis.Table, /) -> KeyCountsTable:
         """Count the join keys in a table.
 
         This is very similar to `t.group_by(key).count()`, except that counts NULLs,
@@ -310,8 +312,8 @@ class KeyLinker(Linker):
 
     def pair_counts(
         self,
-        left: ir.Table,
-        right: ir.Table,
+        left: ibis.Table,
+        right: ibis.Table,
         *,
         task: Literal["dedupe", "link"] | None = None,
     ) -> PairCountsTable:
@@ -464,8 +466,8 @@ class KeyLinkage(BaseLinkage):
 
     def __init__(
         self,
-        left: ir.Table,
-        right: ir.Table,
+        left: ibis.Table,
+        right: ibis.Table,
         keys,
         *,
         max_pairs: int | None = None,
@@ -483,7 +485,7 @@ class KeyLinkage(BaseLinkage):
         self._links = self._linker.__links__(left, right)
 
     def __join_condition__(
-        self, left: ir.Table, right: ir.Table
+        self, left: ibis.Table, right: ibis.Table
     ) -> ibis.ir.BooleanValue:
         return joins.MultiKeyJoinCondition(self.keys).__join_condition__(left, right)
 
@@ -569,7 +571,7 @@ def _get_keys_2_tables(
     return t1.bind(keys), t2.bind(keys)
 
 
-def key_counts(keys: tuple, t: ir.Table) -> KeyCountsTable:
+def key_counts(keys: tuple, t: ibis.Table) -> KeyCountsTable:
     t = t.select(keys)
     t = t.drop_null(how="any")
     t = t.group_by(t.columns).agg(n=_.count()).order_by(_.n.desc())
@@ -578,8 +580,8 @@ def key_counts(keys: tuple, t: ir.Table) -> KeyCountsTable:
 
 def pair_counts(
     keys,
-    left: ir.Table,
-    right: ir.Table,
+    left: ibis.Table,
+    right: ibis.Table,
     *,
     task: Literal["dedupe", "link"] | None = None,
 ) -> PairCountsTable:
