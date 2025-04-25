@@ -125,15 +125,30 @@ class KeyLinker(Linker):
 
     def __init__(
         self,
-        keys: Iterable[
+        keys: str
+        | ir.Value
+        | Deferred
+        | Callable[
+            [ibis.Table, ibis.Table],
+            tuple[ir.Value | ir.Column, ir.Value | ir.Column],
+        ]
+        | Iterable[
             str
+            | ir.Value
             | Deferred
-            | Callable[[ibis.Table], ir.Column | str | Deferred]
+            | Callable[[ibis.Table], ir.Value | ir.Column | str | Deferred]
             | tuple[
-                str | Deferred | Callable[[ibis.Table], ir.Column | str | Deferred],
-                str | Deferred | Callable[[ibis.Table], ir.Column | str | Deferred],
+                str
+                | Deferred
+                | Callable[[ibis.Table], ir.Value | ir.Column | str | Deferred],
+                str
+                | Deferred
+                | Callable[[ibis.Table], ir.Value | ir.Column | str | Deferred],
             ]
-            | Callable[[ibis.Table, ibis.Table], tuple[ir.Column, ir.Column]]
+            | Callable[
+                [ibis.Table, ibis.Table],
+                tuple[ir.Value | ir.Column, ir.Value | ir.Column],
+            ]
         ],
         task: Literal["dedupe", "link"] | None = None,
     ) -> None:
@@ -161,9 +176,7 @@ class KeyLinker(Linker):
               of columns. Left and right will be joined where the columns are equal.
         """  # noqa: E501
         # TODO: support named keys, eg KeyLinker("age", city=_.city.upper())
-        if isinstance(keys, Deferred):
-            keys = (keys,)
-        self.keys = tuple(keys)
+        self.keys = tuple(_util.promote_list(keys))
         self.task = task
 
     def __call__(self, left: ir.Table, right: ir.Table) -> KeyLinkage:
