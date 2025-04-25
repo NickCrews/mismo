@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-from textwrap import dedent
 from typing import Callable, Iterable, Literal
 
 import ibis
 from ibis import Deferred, _
 from ibis.expr import types as ir
 
-from mismo import _typing, _util, joins
+from mismo import _funcs, _typing, _util, joins
 from mismo._counts_table import KeyCountsTable, PairCountsTable
-from mismo.linkage._join_linker import JoinLinker
 from mismo.linkage._linkage import BaseLinkage, LinkTableLinkage
 from mismo.linkage._linker import Linker, infer_task
 from mismo.types import LinkedTable, LinksTable
@@ -65,7 +63,7 @@ class KeyLinker(Linker):
         AND
     - the latitudes, rounded to 1 decimal place, are the same
 
-    >>> linker = mismo.KeyLinker(_["name"][:5].upper(), _.latitude.round(1))
+    >>> linker = mismo.KeyLinker((_["name"][:5].upper(), _.latitude.round(1)))
     >>> blocker(t, t).order_by("record_id_l", "record_id_r").head()  # doctest: +SKIP
     ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
     ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l              ┃ name_r              ┃
@@ -150,7 +148,8 @@ class KeyLinker(Linker):
                 tuple[ir.Value | ir.Column, ir.Value | ir.Column],
             ]
         ],
-        task: Literal["dedupe", "link"] | None = None,
+        *,
+        max_pairs: int | None = None,
     ) -> None:
         """Create a KeyBlocker.
 
@@ -177,9 +176,65 @@ class KeyLinker(Linker):
         """  # noqa: E501
         # TODO: support named keys, eg KeyLinker("age", city=_.city.upper())
         self.keys = tuple(_util.promote_list(keys))
-        self.task = task
+        self.max_pairs = max_pairs
 
-    def __call__(self, left: ir.Table, right: ir.Table) -> KeyLinkage:
+    def __join_condition__(self, left: ir.Table, right: ir.Table) -> ir.BooleanValue:
+        keys_left, keys_right = self.__keys__(left, right)
+        clauses = (kl == kr for kl, kr in zip(keys_left, keys_right, strict=True))
+        return ibis.and_(*clauses)
+
+    def __pre_join__(
+        self, left: ir.Table, right: ir.Table
+    ) -> tuple[ir.Table, ir.Table]:
+        """The prefilter clause that removes keys that would generate too many pairs."""
+        if self.max_pairs is None:
+            return left, right
+        left_keys, right_keys = self.__keys__(left, right)
+        left_key = ibis.struct({k.get_name(): k for k in left_keys}).hash()
+        right_key = ibis.struct({k.get_name(): k for k in right_keys}).hash()
+        key_name = _util.unique_name()
+        # count_name = _util.unique_name()
+        left = left.mutate(left_key.name(key_name))
+        right = right.mutate(right_key.name(key_name))
+        left_counts = left.group_by(key_name).agg(nleft=_.count())
+        right_counts = right.group_by(key_name).agg(nright=_.count())
+        # If a key is only in one table, it won't be in this joined table,
+        # so watch out, we should only test for `IN`, not `NOT IN`
+        pair_counts_by_key = ibis.join(
+            left_counts,
+            right_counts,
+            key_name,
+        ).select(key_name, npairs=_.nleft * _.nright)
+        too_big = pair_counts_by_key.filter(_.npairs > self.max_pairs)[key_name]
+        left = left.filter(_[key_name].notin(too_big)).drop(key_name)
+        right = right.filter(_[key_name].notin(too_big)).drop(key_name)
+        return left, right
+
+    def __links__(self, left: ir.Table, right: ir.Table) -> LinksTable:
+        """The links between the two tables."""
+        left, right = self.__pre_join__(left, right)
+        links = joins.join(
+            left,
+            right,
+            self.__join_condition__,
+            lname="{name}_l",
+            rname="{name}_r",
+            rename_all=True,
+        )
+        return LinksTable(links, left=left, right=right)
+
+    def linkage(self, left: ir.Table, right: ir.Table) -> KeyLinkage:
+        """The linkage between the two tables."""
+        return KeyLinkage(
+            left=left, right=right, keys=self.keys, max_pairs=self.max_pairs
+        )
+
+    def __keys__(
+        self, left: ir.Table, right: ir.Table
+    ) -> list[tuple[ir.Column, ir.Column]]:
+        return _get_keys_2_tables(left, right, self.keys)
+
+    def __link__(self, left: ir.Table, right: ir.Table) -> KeyLinkage:
         return KeyLinkage(left=left, right=right, keys=self.keys, task=self.task)
 
     def key_counts(self, t: ir.Table, /) -> KeyCountsTable:
@@ -225,7 +280,7 @@ class KeyLinker(Linker):
         ... ]
         >>> letters, nums = zip(*records)
         >>> t = ibis.memtable({"letter": letters, "num": nums})
-        >>> linker = mismo.KeyLinker("letter", "num")
+        >>> linker = mismo.KeyLinker(["letter", "num"])
 
         Note how the (None, 4) record is not counted,
         since NULLs are not counted as a match during a join.
@@ -366,7 +421,7 @@ class KeyLinker(Linker):
         return pair_counts(self.keys, left, right, task=task)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.keys!r})"
+        return f"{self.__class__.__name__}({self.keys!r}, max_pairs={self.max_pairs:_})"  # noqa: E501
 
 
 class KeyLinkage(BaseLinkage):
@@ -413,17 +468,19 @@ class KeyLinkage(BaseLinkage):
         right: ir.Table,
         keys,
         *,
+        max_pairs: int | None = None,
         task: Literal["dedupe", "link"] | None = None,
     ) -> None:
         # if isinstance(keys, tuple) and len(keys) == 2:
         #     keys = [keys]
-        self.keys = keys
-        self._left = left
-        self._right = right
+        task = infer_task(task, left, right)
+        if task == "dedupe":
+            right = right.view()
         self.task = task
-        self._linkage = JoinLinker(self.__join_condition__, task=self.task)(
-            self._left, self._right
-        )
+        self.keys = keys
+        self.max_pairs = max_pairs
+        self._linker = KeyLinker(keys, max_pairs=max_pairs)
+        self._links = self._linker.__links__(left, right)
 
     def __join_condition__(
         self, left: ir.Table, right: ir.Table
@@ -432,18 +489,18 @@ class KeyLinkage(BaseLinkage):
 
     @property
     def left(self):
-        return self._linkage.left
+        return self._links.left_
 
     @property
     def right(self):
-        return self._linkage.right
+        return self._links.right_
 
     @property
     def links(self):
         return KeyLinksTable(
-            self._linkage.links,
-            left=self._linkage.left,
-            right=self._linkage.right,
+            self._links,
+            left=self.left,
+            right=self.right,
             keys=self.keys,
             task=self.task,
         )
@@ -470,15 +527,7 @@ class KeyLinkage(BaseLinkage):
         return self
 
     def __repr__(self) -> str:
-        return dedent(
-            f"""
-{self.__class__.__name__}(
-    keys={_util.get_name(self.keys)}
-    nleft={self.left.count().execute():_}
-    nright={self.right.count().execute():_}
-    nlinks={self.links.count().execute():_}
-)""".strip()
-        )
+        return f"{self.__class__.__name__}<keys={_util.get_name(self.keys)}, nleft={self.left.count().execute():_}, nright={self.right.count().execute():_}, nlinks={self.links.count().execute():_}>"  # noqa: E501
 
 
 class KeyLinksTable(LinksTable):
@@ -501,6 +550,23 @@ class KeyLinksTable(LinksTable):
             .n.sum()
             .fill_null(0)
         )
+
+
+def _get_keys_2_tables(
+    t1: ibis.Table, t2: ibis.Table, keys
+) -> tuple[tuple[ir.Value], tuple[ir.Value]]:
+    if isinstance(keys, ibis.Value):
+        return (keys,), (keys,)
+    if isinstance(keys, ibis.Deferred):
+        return t1.bind(keys), t2.bind(keys)
+    if isinstance(keys, str):
+        return t1.bind(keys), t2.bind(keys)
+    if _funcs.is_unary(keys):
+        return t1.bind(keys), t2.bind(keys)
+    if _funcs.is_binary(keys):
+        return _get_keys_2_tables(keys(t1, t2))
+    # TODO: this might not be complete, needs tests
+    return t1.bind(keys), t2.bind(keys)
 
 
 def key_counts(keys: tuple, t: ir.Table) -> KeyCountsTable:

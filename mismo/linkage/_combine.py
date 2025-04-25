@@ -13,7 +13,7 @@ from typing import (
 import ibis
 
 from mismo._registry import Registry
-from mismo.joins import PJoinCondition, join
+from mismo.joins import HasJoinCondition, join
 from mismo.linkage._linkage import BaseLinkage, Linkage, LinkedTable, LinksTable
 
 logger = logging.getLogger(__name__)
@@ -139,7 +139,7 @@ class CombinerRegistry(Registry[PCombiner, Linkage]):
 
 
 @runtime_checkable
-class HasJoinConditionLinkage(PJoinCondition, Linkage, Protocol):
+class HasJoinConditionLinkage(HasJoinCondition, Linkage, Protocol):
     pass
 
 

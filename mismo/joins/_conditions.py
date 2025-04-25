@@ -11,7 +11,7 @@ from mismo import _registry, _util
 
 
 @runtime_checkable
-class PJoinCondition(Protocol):
+class HasJoinCondition(Protocol):
     """
     Has `__join_condition__(left: ibis.Table, right: ibis.Table)`, which returns something that `ibis.join()` understands.
 
@@ -20,13 +20,15 @@ class PJoinCondition(Protocol):
     or an `ibis.ir.BooleanValue` expression.
     """  # noqa: E501
 
-    def __join_condition__(self, left: ibis.Table, right: ibis.Table) -> Any:
+    def __join_condition__(
+        self, left: ibis.Table, right: ibis.Table, predicate: ir.BooleanValue | bool
+    ) -> tuple[ibis.Table, ibis.Table, ir.BooleanValue]:
         pass
 
 
 class join_condition:
     """
-    A flexible factory function to create a [PJoinCondition][mismo.PJoinCondition].
+    A flexible factory function to create a [HasJoinCondition][mismo.HasJoinCondition].
 
     Parameters
     ----------
@@ -43,21 +45,23 @@ class join_condition:
 
     Returns
     -------
-        The first matching PJoinCondition in the registry.
+        The first matching HasJoinCondition in the registry.
         For example, if you pass a boolean,
         it will return a `BooleanJoinCondition` instance,
         which just wraps the boolean.
     """
 
-    _registry = _registry.Registry[Callable[..., PJoinCondition], PJoinCondition]()
+    _registry = _registry.Registry[Callable[..., HasJoinCondition], HasJoinCondition]()
 
-    def __new__(cls, x: Any) -> PJoinCondition:
+    def __new__(cls, x: Any) -> HasJoinCondition:
+        if isinstance(x, HasJoinCondition):
+            return x
         return cls._registry(x)
 
     @classmethod
     def register(
-        cls, func: Callable[..., PJoinCondition]
-    ) -> Callable[..., PJoinCondition]:
+        cls, func: Callable[..., HasJoinCondition]
+    ) -> Callable[..., HasJoinCondition]:
         """Register a function as a join condition."""
         return cls._registry.register(func)
 
@@ -78,6 +82,9 @@ class BooleanJoinCondition:
     ) -> ibis.ir.BooleanValue | bool:
         return self.boolean
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.boolean!r})"
+
 
 class FuncJoinCondition:
     def __init__(self, func: Callable[[ibis.Table, ibis.Table], ibis.ir.BooleanValue]):
@@ -95,10 +102,13 @@ class FuncJoinCondition:
     ) -> ibis.ir.BooleanValue:
         return self.func(left, right)
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.func!r})"
+
 
 class AndJoinCondition:
     def __init__(self, subconditions: Iterable[Any]):
-        self.subconditions: tuple[PJoinCondition] = tuple(
+        self.subconditions: tuple[HasJoinCondition] = tuple(
             join_condition(c) for c in subconditions
         )
 

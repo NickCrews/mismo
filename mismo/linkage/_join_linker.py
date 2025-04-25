@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from textwrap import dedent
 from typing import Callable, Literal
 
 import ibis
@@ -48,6 +47,9 @@ class JoinLinker(Linker):
         joins.check_join_algorithm(left, right, pred, on_slow=self.on_slow)
         return pred
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}<condition={self.condition!r}, task={self.task}, on_slow={self.on_slow}>"  # noqa: E501
+
 
 class JoinLinkage(BaseLinkage):
     """A [Linkage][mismo.Linkage] based on a join condition."""
@@ -59,6 +61,8 @@ class JoinLinkage(BaseLinkage):
         condition: Callable[[ibis.Table, ibis.Table], ibis.ir.BooleanValue],
     ) -> None:
         self.condition = joins.join_condition(condition)
+        if left is right:
+            right = right.view()
         self._left_raw = left
         self._right_raw = right
 
@@ -107,11 +111,4 @@ class JoinLinkage(BaseLinkage):
         return self
 
     def __repr__(self) -> str:
-        return dedent(
-            f"""
-            {self.__class__.__name__}(
-                nleft={self.left.count().execute():_}
-                nright={self.right.count().execute():_}
-                nlinks={self.links.count().execute():_}
-            )""".strip()
-        )
+        return f"{self.__class__.__name__}<nleft={self.left.count().execute():_}, nright={self.right.count().execute():_}, nlinks={self.links.count().execute():_}>"  # noqa: E501

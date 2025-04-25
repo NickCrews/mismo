@@ -15,7 +15,7 @@ from mismo import types as types
 from mismo import vector as vector
 from mismo._datasets import Datasets as Datasets
 from mismo._recipe import PRecipe as PRecipe
-from mismo.joins import PJoinCondition as PJoinCondition
+from mismo.joins import HasJoinCondition as HasJoinCondition
 from mismo.joins import join as join
 from mismo.linkage import BaseLinkage as BaseLinkage
 from mismo.linkage import EmptyLinkage as EmptyLinkage
