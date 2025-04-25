@@ -67,6 +67,7 @@ class LinksTable(TableWrapper):
 
         Examples
         --------
+        >>> ibis.options.interactive = True
         >>> left = ibis.memtable({"record_id": [1, 2, 3], "address": ["a", "b", "c"]})
         >>> right = ibis.memtable({"record_id": [8, 9], "address": ["x", "y"]})
         >>> links_raw = ibis.memtable({"record_id_l": [1, 3], "record_id_r": [8, 9]})
@@ -118,6 +119,7 @@ class LinksTable(TableWrapper):
 
         Examples
         --------
+        >>> ibis.options.interactive = True
         >>> left = ibis.memtable({"record_id": [1, 2, 3], "address": ["a", "b", "c"]})
         >>> right = ibis.memtable({"record_id": [8, 9], "address": ["x", "y"]})
         >>> links_raw = ibis.memtable({"record_id_l": [1, 3], "record_id_r": [8, 9]})
