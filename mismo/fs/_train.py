@@ -7,7 +7,8 @@ from ibis.expr import types as ir
 
 from mismo._util import sample_table
 from mismo.compare import LevelComparer, MatchLevel
-from mismo.linkage import LabelLinker, sample_all_links
+from mismo.linkage import sample_all_links
+from mismo.linker import LabelLinker
 
 from ._weights import ComparerWeights, LevelWeights, Weights
 
