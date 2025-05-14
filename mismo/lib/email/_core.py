@@ -8,7 +8,7 @@ from ibis.expr import types as ir
 from mismo._util import cases, get_column
 from mismo.arrays import array_combinations, array_min
 from mismo.compare import MatchLevel
-from mismo.linkage import UnnestLinker
+from mismo.linker import UnnestLinker
 from mismo.text import damerau_levenshtein
 
 

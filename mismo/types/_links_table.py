@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 import ibis
 from ibis import _
 
-from mismo import _util
+from mismo import _typing, _util, joins
 from mismo.types._table_wrapper import TableWrapper
 
 if TYPE_CHECKING:
@@ -44,6 +44,23 @@ class LinksTable(TableWrapper):
         super().__init__(links)
         object.__setattr__(self, "_left_raw", left)
         object.__setattr__(self, "_right_raw", right)
+
+    @classmethod
+    def from_join_condition(
+        cls,
+        left: ibis.Table,
+        right: ibis.Table,
+        condition: Any,
+    ) -> _typing.Self:
+        links_raw = joins.join(
+            left,
+            right,
+            condition,
+            lname="{name}_l",
+            rname="{name}_r",
+            rename_all=True,
+        )
+        return LinksTable(links_raw, left=left, right=right)
 
     def with_left(
         self,

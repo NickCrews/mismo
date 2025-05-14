@@ -4,7 +4,8 @@ from typing import Literal, Protocol, runtime_checkable
 
 import ibis
 
-from mismo.linkage import _join_linker, _linkage
+from mismo.linkage import _linkage
+from mismo.linker import _join_linker
 
 
 @runtime_checkable
