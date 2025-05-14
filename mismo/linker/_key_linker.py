@@ -9,7 +9,7 @@ from ibis.expr import types as ir
 from mismo import _funcs, _typing, _util, joins
 from mismo._counts_table import KeyCountsTable, PairCountsTable
 from mismo.linkage._linkage import BaseLinkage, LinkTableLinkage
-from mismo.linkage._linker import Linker, infer_task
+from mismo.linker._linker import Linker, infer_task
 from mismo.types import LinkedTable, LinksTable
 
 
