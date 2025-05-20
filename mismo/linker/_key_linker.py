@@ -6,11 +6,11 @@ import ibis
 from ibis import Deferred, _
 from ibis.expr import types as ir
 
-from mismo import _funcs, _typing, _util, joins
+from mismo import _util, joins
 from mismo._counts_table import KeyCountsTable, PairCountsTable
-from mismo.linkage._linkage import BaseLinkage, LinkTableLinkage
+from mismo.linkage import Linkage
 from mismo.linker._linker import Linker, infer_task
-from mismo.types import LinkedTable, LinksTable
+from mismo.types import LinksTable
 
 
 class KeyLinker(Linker):
@@ -150,12 +150,13 @@ class KeyLinker(Linker):
         ],
         *,
         max_pairs: int | None = None,
+        task: Literal["dedupe", "link"] | None = None,
     ) -> None:
         """Create a KeyBlocker.
 
         Parameters
         ----------
-        keys
+        keys:
             The keys to block on.
             The tables will be blocked together wherever they share ALL the keys.
             Each key can be any of the following:
@@ -173,16 +174,41 @@ class KeyLinker(Linker):
               This is useful when the keys have different names in the two tables.
             - A callable that takes the left and right tables and returns a tuple
               of columns. Left and right will be joined where the columns are equal.
+        max_pairs:
+            The maximum number of pairs to generate for each key.
+            This is to reduce the impact of very common keys.
+            For example, if you are linking people, the name "John Smith" might be
+            very common, appearing 5000 times in both left and right.
+            This name alone would generate 5000 * 5000 = 25 million pairs,
+            which might be too computationally expensive.
+            If you set `max_pairs=1000`, then any key that generates more than 1000
+            pairs will be ignored.
+        task:
+            The task to count pairs for.
+
+            - "link": each key results in n_left * n_right pairs
+            - "dedupe": each key results in n_left * (n_right - 1) / 2 pairs
+               since we will only generate pair (A, B), not also (B, A).
+            - None: inferred from the input tables: if `left is right`, then "dedupe",
+              otherwise "link".
         """  # noqa: E501
         # TODO: support named keys, eg KeyLinker("age", city=_.city.upper())
         self.keys = tuple(_util.promote_list(keys))
         self.max_pairs = max_pairs
+        self.task = task
 
     def __join_condition__(
-        self, left: ibis.Table, right: ibis.Table
+        self,
+        left: ibis.Table,
+        right: ibis.Table,
+        *,
+        task: Literal["link", "dedupe"] | None = None,
     ) -> ir.BooleanValue:
         keys_left, keys_right = self.__keys__(left, right)
         clauses = (kl == kr for kl, kr in zip(keys_left, keys_right, strict=True))
+        task = infer_task(task or self.task, left, right)
+        if task == "dedupe":
+            clauses = (*clauses, left.record_id < right.record_id)
         return ibis.and_(*clauses)
 
     def __pre_join__(
@@ -214,30 +240,36 @@ class KeyLinker(Linker):
 
     def __links__(self, left: ibis.Table, right: ibis.Table) -> LinksTable:
         """The links between the two tables."""
+        task = infer_task(self.task, left, right)
+        join_condition = lambda le, ri: self.__join_condition__(le, ri, task=task)  #  noqa: E731
+        if right is left:
+            right = right.view()
         left, right = self.__pre_join__(left, right)
         links = joins.join(
             left,
             right,
-            self.__join_condition__,
+            join_condition,
             lname="{name}_l",
             rname="{name}_r",
             rename_all=True,
         )
         return LinksTable(links, left=left, right=right)
 
-    def linkage(self, left: ibis.Table, right: ibis.Table) -> KeyLinkage:
+    def linkage(self, left: ibis.Table, right: ibis.Table) -> Linkage:
         """The linkage between the two tables."""
-        return KeyLinkage(
-            left=left, right=right, keys=self.keys, max_pairs=self.max_pairs
-        )
+        links = self.__links__(left, right)
+        return Linkage(left=left, right=right, links=links)
+
+    def __call__(self, left, right):
+        return self.linkage(left, right)
 
     def __keys__(
         self, left: ibis.Table, right: ibis.Table
     ) -> list[tuple[ir.Column, ir.Column]]:
-        return _get_keys_2_tables(left, right, self.keys)
+        return joins.get_keys_2_tables(left, right, self.keys)
 
-    def __link__(self, left: ibis.Table, right: ibis.Table) -> KeyLinkage:
-        return KeyLinkage(left=left, right=right, keys=self.keys, task=self.task)
+    def __link__(self, left: ibis.Table, right: ibis.Table) -> Linkage:
+        return self.linkage(left, right)
 
     def key_counts(self, t: ibis.Table, /) -> KeyCountsTable:
         """Count the join keys in a table.
@@ -301,9 +333,9 @@ class KeyLinker(Linker):
         └────────┴───────┴───────┘
 
         The returned CountsTable is a subclass of an Ibis Table
-        with a special `n_total` property for convenience:
+        with a special `n_total` method for convenience:
 
-        >>> counts.n_total
+        >>> counts.n_total()
         7
         >>> isinstance(counts, ibis.Table)
         True
@@ -314,8 +346,6 @@ class KeyLinker(Linker):
         self,
         left: ibis.Table,
         right: ibis.Table,
-        *,
-        task: Literal["dedupe", "link"] | None = None,
     ) -> PairCountsTable:
         """Count the number of pairs that would be generated by each key.
 
@@ -337,14 +367,6 @@ class KeyLinker(Linker):
             The left table.
         right
             The right table.
-        task
-            The task to count pairs for.
-
-            - "link": each key results in n_left * n_right pairs
-            - "dedupe": each key results in n_left * (n_right - 1) / 2 pairs
-               since we will only generate pair (A, B), not also (B, A).
-            - None: inferred from the input tables: if `left is right`, then "dedupe",
-              otherwise "link".
 
         Returns
         -------
@@ -368,28 +390,6 @@ class KeyLinker(Linker):
         ... ]
         >>> letters, nums = zip(*records)
         >>> t = ibis.memtable({"letter": letters, "num": nums})
-        >>> linker = mismo.KeyLinker(["letter", "num"])
-
-        If we joined t with itself using this blocker in a link task,
-        we would end up with
-
-        - 9 pairs in the (c, 3) block due to pairs (3,3), (3, 6), (3, 8), (6, 3), (6, 6), (6, 8), (8, 3), (8, 6), and (8, 8)
-        - 4 pairs in the (b, 1) block due to pairs (1, 1), (1, 2), (2, 1), and (2, 2)
-        - 1 pairs in the (a, 1) block due to pair (0, 0)
-        - 1 pairs in the (b, 2) block due to pair (4, 4)
-
-        >>> counts = linker.pair_counts(t, t, task="link").order_by("letter", "num")
-        >>> counts
-        ┏━━━━━━━━┳━━━━━━━┳━━━━━━━┓
-        ┃ letter ┃ num   ┃ n     ┃
-        ┡━━━━━━━━╇━━━━━━━╇━━━━━━━┩
-        │ string │ int64 │ int64 │
-        ├────────┼───────┼───────┤
-        │ a      │     1 │     1 │
-        │ b      │     1 │     4 │
-        │ b      │     2 │     1 │
-        │ c      │     3 │     9 │
-        └────────┴───────┴───────┘
 
         If we joined t with itself using this blocker in a dedupe task,
         we would end up with
@@ -399,6 +399,7 @@ class KeyLinker(Linker):
         - 0 pairs in the (a, 1) block due to record 0 not getting blocked with itself
         - 0 pairs in the (b, 2) block due to record 4 not getting blocked with itself
 
+        >>> linker = mismo.KeyLinker(["letter", "num"], task="dedupe")
         >>> counts = linker.pair_counts(t, t)
         >>> counts.order_by("letter", "num")
         ┏━━━━━━━━┳━━━━━━━┳━━━━━━━┓
@@ -412,124 +413,40 @@ class KeyLinker(Linker):
         │ c      │     3 │     3 │
         └────────┴───────┴───────┘
 
-        The returned CountsTable is a subclass of an Ibis Table
-        with a special `n_total` property for convenience:
+        If we joined t with a copy of itself using this linker in a link task,
+        we would end up with
 
-        >>> counts.n_total
-        4
+        - 9 pairs in the (c, 3) block due to pairs (3,3), (3, 6), (3, 8), (6, 3), (6, 6), (6, 8), (8, 3), (8, 6), and (8, 8)
+        - 4 pairs in the (b, 1) block due to pairs (1, 1), (1, 2), (2, 1), and (2, 2)
+        - 1 pairs in the (a, 1) block due to pair (0, 0)
+        - 1 pairs in the (b, 2) block due to pair (4, 4)
+
+        >>> linker = mismo.KeyLinker(["letter", "num"], task="link")
+        >>> counts = linker.pair_counts(t, t)
+        >>> counts.order_by("letter", "num")
+        ┏━━━━━━━━┳━━━━━━━┳━━━━━━━┓
+        ┃ letter ┃ num   ┃ n     ┃
+        ┡━━━━━━━━╇━━━━━━━╇━━━━━━━┩
+        │ string │ int64 │ int64 │
+        ├────────┼───────┼───────┤
+        │ a      │     1 │     1 │
+        │ b      │     1 │     4 │
+        │ b      │     2 │     1 │
+        │ c      │     3 │     9 │
+        └────────┴───────┴───────┘
+
+        The returned CountsTable is a subclass of an Ibis Table
+        with a special `n_total` method for convenience:
+
+        >>> counts.n_total()
+        15
         >>> isinstance(counts, ibis.Table)
         True
         """  # noqa: E501
-        return pair_counts(self.keys, left, right, task=task)
+        return pair_counts(self.keys, left, right, task=self.task)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.keys!r}, max_pairs={self.max_pairs:_})"  # noqa: E501
-
-
-class KeyLinkage(BaseLinkage):
-    """
-    A [Linkage][mismo.Linkage] of where records share a key, eg
-
-    This is useful if you don't already have a table of links.
-    This will create a table of links by joining the left and right tables
-    on the given predicates.
-    It will either use the existing `record_id` columns in the tables,
-    or create new ones if they don't exist.
-
-    Parameters
-    ----------
-    left
-        The left table.
-    right
-        The right table.
-    predicates
-        The join predicates. Anything that ibis.join() accepts.
-
-    Examples
-    --------
-    >>> import ibis
-    >>> ibis.options.interactive = True
-    >>> tl = ibis.memtable({"record_id": [1, 2, 3]})
-    >>> tr = ibis.memtable({"record_id": [1, 2, 2]})
-    >>> linkage = KeyLinkage(tl, tr, ["record_id"])
-    >>> linkage.links
-    ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
-    ┃ record_id_l ┃ record_id_r ┃
-    ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
-    │ int64       │ int64       │
-    ├─────────────┼─────────────┤
-    │           1 │           1 │
-    │           2 │           2 │
-    │           2 │           2 │
-    └─────────────┴─────────────┘
-    """
-
-    def __init__(
-        self,
-        left: ibis.Table,
-        right: ibis.Table,
-        keys,
-        *,
-        max_pairs: int | None = None,
-        task: Literal["dedupe", "link"] | None = None,
-    ) -> None:
-        # if isinstance(keys, tuple) and len(keys) == 2:
-        #     keys = [keys]
-        task = infer_task(task, left, right)
-        if task == "dedupe":
-            right = right.view()
-        self.task = task
-        self.keys = keys
-        self.max_pairs = max_pairs
-        self._linker = KeyLinker(keys, max_pairs=max_pairs)
-        self._links = self._linker.__links__(left, right)
-
-    def __join_condition__(
-        self, left: ibis.Table, right: ibis.Table
-    ) -> ibis.ir.BooleanValue:
-        return joins.MultiKeyJoinCondition(self.keys).__join_condition__(left, right)
-
-    @property
-    def left(self):
-        return self._links.left_
-
-    @property
-    def right(self):
-        return self._links.right_
-
-    @property
-    def links(self):
-        return KeyLinksTable(
-            self._links,
-            left=self.left,
-            right=self.right,
-            keys=self.keys,
-            task=self.task,
-        )
-
-    def adjust(
-        self,
-        *,
-        left: LinkedTable | None = None,
-        right: LinkedTable | None = None,
-        links: LinksTable | None = None,
-    ) -> LinkTableLinkage:
-        return LinkTableLinkage(
-            left=left if left is not None else self.left,
-            right=right if right is not None else self.right,
-            links=links if links is not None else self.links,
-        )
-
-    def cache(self) -> _typing.Self:
-        """
-        No-op to cache this, since the condition is an abstract condition, and
-        left and right are already cached.
-        """
-        # I think this API is fine to just return self instead of a new instance?
-        return self
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}<keys={_util.get_name(self.keys)}, nleft={self.left.count().execute():_}, nright={self.right.count().execute():_}, nlinks={self.links.count().execute():_}>"  # noqa: E501
 
 
 class KeyLinksTable(LinksTable):
@@ -552,23 +469,6 @@ class KeyLinksTable(LinksTable):
             .n.sum()
             .fill_null(0)
         )
-
-
-def _get_keys_2_tables(
-    t1: ibis.Table, t2: ibis.Table, keys
-) -> tuple[tuple[ir.Value], tuple[ir.Value]]:
-    if isinstance(keys, ibis.Value):
-        return (keys,), (keys,)
-    if isinstance(keys, ibis.Deferred):
-        return t1.bind(keys), t2.bind(keys)
-    if isinstance(keys, str):
-        return t1.bind(keys), t2.bind(keys)
-    if _funcs.is_unary(keys):
-        return t1.bind(keys), t2.bind(keys)
-    if _funcs.is_binary(keys):
-        return _get_keys_2_tables(keys(t1, t2))
-    # TODO: this might not be complete, needs tests
-    return t1.bind(keys), t2.bind(keys)
 
 
 def key_counts(keys: tuple, t: ibis.Table) -> KeyCountsTable:

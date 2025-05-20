@@ -4,52 +4,31 @@ import ibis
 from ibis import _
 import pytest
 
-from mismo import KeyLinkage, LinkedTable, LinkTableLinkage
+from mismo import Linkage, LinkedTable
 from mismo.tests.util import assert_tables_equal
 
 
 @pytest.fixture
-def linkage() -> LinkTableLinkage:
+def linkage() -> Linkage:
     left = ibis.memtable({"record_id": [4, 5, 6]})
     right = ibis.memtable({"record_id": [7, 8, 9], "extra": ["a", "b", "c"]})
     links = ibis.memtable(
         {"record_id_l": [4, 4, 5], "record_id_r": [7, 8, 9], "extra": [1, 2, 3]}
     )
-    return LinkTableLinkage(left, right, links)
+    return Linkage(left=left, right=right, links=links)
 
 
-def test_LinkTableLinkage_init():
+def test_Linkage_init():
     left = ibis.memtable({"record_id": [4, 5, 6]})
     right = ibis.memtable({"record_id": [7, 8, 9]})
     links = ibis.memtable(
         {"record_id_l": [4, 4, 5], "record_id_r": [7, 8, 9], "extra": [1, 2, 3]}
     )
     # no error on extra column
-    LinkTableLinkage(left, right, links)
+    Linkage(left=left, right=right, links=links)
 
 
-@pytest.mark.xfail(reason="join keys such as (tl.foo, tr.bar) are not supported yet")
-def test_KeyLinkage():
-    tl = ibis.memtable({"foo": [1, 2, 3]})
-    tr = ibis.memtable({"bar": [1, 2, 3]})
-    linkage = KeyLinkage(tl, tr, (tl.foo, tr.bar))
-    assert tuple(linkage.left.columns) == ("foo", "record_id")
-    assert tuple(linkage.right.columns) == ("bar", "record_id")
-
-    # Don't want test the actual contents, because the values
-    # are just an implementation detail from using ibis.row_number().
-    # They could be uuids or anything else.
-    # So just test the len.
-    assert set(linkage.links.columns) == {
-        "record_id_l",
-        "record_id_r",
-        "foo_l",
-        "bar_r",
-    }
-    assert linkage.links.count().execute() == 3
-
-
-def test_LinkedTable_with_n_links(linkage: LinkTableLinkage):
+def test_LinkedTable_with_n_links(linkage: Linkage):
     actual = linkage.left.with_n_links()
     expected = ibis.memtable(
         {
@@ -70,7 +49,7 @@ def test_LinkedTable_with_n_links(linkage: LinkTableLinkage):
     assert_tables_equal(expected, actual)
 
 
-def test_LinkedTable_link_counts(linkage: LinkTableLinkage):
+def test_LinkedTable_link_counts(linkage: Linkage):
     actual = linkage.left.link_counts()
     # ┏━━━━━━━━━┳━━━━━━━━━━━┓
     # ┃ n_links ┃ n_records ┃
@@ -106,19 +85,19 @@ def test_LinkedTable_link_counts(linkage: LinkTableLinkage):
     assert_tables_equal(expected, actual, column_order="ignore")
 
 
-def test_Linkage_link_counts_chart(linkage: LinkTableLinkage):
+def test_Linkage_link_counts_chart(linkage: Linkage):
     # just a smoketest that it doesn't crash
     linkage.link_counts_chart()
 
 
-def test_Linkage_empty_link_counts_chart(linkage: LinkTableLinkage):
-    empty_linkage = LinkTableLinkage(
+def test_Linkage_empty_link_counts_chart(linkage: Linkage):
+    empty_linkage = Linkage(
         left=linkage.left, right=linkage.right, links=linkage.links.limit(0)
     )
     empty_linkage.link_counts_chart()
 
 
-def test_LinkTableLinkage_with_linked_values(linkage: LinkTableLinkage, table_factory):
+def test_Linkage_with_linked_values(linkage: Linkage, table_factory):
     result = linkage.left.with_linked_values(
         "extra",
         x=_.record_id.max(),

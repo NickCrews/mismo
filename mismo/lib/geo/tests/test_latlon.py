@@ -80,8 +80,8 @@ def test_coordinate_blocker(table_factory, coord1, coord2, km, expected, kwargs)
         }
     )
     blocker = CoordinateBlocker(distance_km=km, **kwargs)
-    blocked = blocker(t1, t2)
-    n_blocked = blocked.count().execute()
+    linkage = blocker(t1, t2)
+    n_blocked = linkage.links.count().execute()
     if expected:
         assert n_blocked == 1
     else:

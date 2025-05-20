@@ -29,8 +29,8 @@ def document_counts(terms: ir.ArrayColumn) -> ir.Table:
     Examples
     --------
     >>> import ibis
+    >>> ibis.options.interactive = True
     >>> from mismo.sets import document_counts
-    >>> ibis.options.repr.interactive.max_length = 20
     >>> addresses = [
     ...     "12 main st",
     ...     "99 main ave",

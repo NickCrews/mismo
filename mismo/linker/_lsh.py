@@ -9,7 +9,7 @@ from ibis.expr import types as ir
 
 from mismo._util import get_column
 from mismo.arrays import array_choice
-from mismo.linkage import _linker
+from mismo.linker import _linker
 
 
 def minhash_lsh_keys(

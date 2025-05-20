@@ -8,7 +8,7 @@ import ibis
 from ibis import Deferred
 from ibis.expr import types as ir
 
-from mismo import _util, joins
+from mismo import _util, linkage, types
 
 
 def distance_km(
@@ -77,31 +77,53 @@ class CoordinateBlocker:
     >>> conn = ibis.duckdb.connect()
     >>> left = conn.create_table(
     ...     "left",
-    ...     {"latlon": [{"lat": 0, "lon": 2}]},
+    ...     [
+    ...         {
+    ...             "record_id": 0,
+    ...             "latlon": {"lat": 61.1547800, "lon": -150.0677490},
+    ...         }
+    ...     ],
     ... )
     >>> right = conn.create_table(
     ...     "right",
-    ...     {
-    ...         "latitude": [0, 1, 2],
-    ...         "longitude": [2, 3, 4],
-    ...     },
+    ...     [
+    ...         {
+    ...             "record_id": 4,
+    ...             "latitude": 61.1582056,
+    ...             "longitude": -150.0584552,
+    ...         },
+    ...         {
+    ...             "record_id": 5,
+    ...             "latitude": 61.1582056,
+    ...             "longitude": 0,
+    ...         },
+    ...         {
+    ...             "record_id": 6,
+    ...             "latitude": 61.1547800,
+    ...             "longitude": -150,
+    ...         },
+    ...     ],
     ... )
     >>> blocker = CoordinateBlocker(
-    ...     distance_km=10,
-    ...     name="within_10_km",
+    ...     distance_km=1,
+    ...     name="within_1_km",
     ...     left_coord="latlon",
     ...     right_lat="latitude",
     ...     right_lon="longitude",
     ... )
-    >>> blocker(left, right)
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
-    ┃ latlon_l                       ┃ latitude_r ┃ longitude_r ┃
-    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
-    │ struct<lat: int64, lon: int64> │ int64      │ int64       │
-    ├────────────────────────────────┼────────────┼─────────────┤
-    │ {'lat': 0, 'lon': 2}           │          0 │           2 │
-    └────────────────────────────────┴────────────┴─────────────┘
-    """
+    >>> blocker(left, right).links
+    ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
+    ┃ record_id_l ┃ latlon_l                      ┃ record_id_r ┃ latitude_r ┃ longitude_r ┃
+    ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
+    │ int64       │ struct<lat: float64, lon:     │ int64       │ float64    │ float64     │
+    │             │ float64>                      │             │            │             │
+    ├─────────────┼───────────────────────────────┼─────────────┼────────────┼─────────────┤
+    │             │ {                             │             │            │             │
+    │           0 │     'lat': 61.15478,          │           4 │  61.158206 │ -150.058455 │
+    │             │     'lon': -150.067749        │             │            │             │
+    │             │ }                             │             │            │             │
+    └─────────────┴───────────────────────────────┴─────────────┴────────────┴─────────────┘
+    """  # noqa: E501
 
     distance_km: float | int
     """
@@ -192,26 +214,19 @@ class CoordinateBlocker:
         if self.right_lon is not None:
             right_lon = _util.get_column(right, self.right_lon)
         return left_lat, left_lon, right_lat, right_lon
-        assert False, "Unreachable"
 
-    def __call__(
-        self,
-        left: ir.Table,
-        right: ir.Table,
-        **kwargs,
-    ) -> ir.Table:
-        """Return a hash value for the two coordinates."""
+    def __join_condition__(self, left: ir.Table, right: ir.Table) -> ir.BooleanValue:
+        left_lat, left_lon, right_lat, right_lon = self._get_cols(left, right)
+        # We have to use a grid size of ~3x the precision to avoid
+        # two points falling right on either side of a grid cell boundary
+        grid_size = self.distance_km * 3
+        left_hashed = _bin_lat_lon(left_lat, left_lon, grid_size)
+        right_hashed = _bin_lat_lon(right_lat, right_lon, grid_size)
+        return left_hashed == right_hashed
 
-        def pred(left, right, **kwargs):
-            left_lat, left_lon, right_lat, right_lon = self._get_cols(left, right)
-            # We have to use a grid size of ~3x the precision to avoid
-            # two points falling right on either side of a grid cell boundary
-            grid_size = self.distance_km * 3
-            left_hashed = _bin_lat_lon(left_lat, left_lon, grid_size)
-            right_hashed = _bin_lat_lon(right_lat, right_lon, grid_size)
-            return left_hashed == right_hashed
-
-        return joins.join(left, right, pred, **kwargs)
+    def __call__(self, left: ir.Table, right: ir.Table) -> linkage.Linkage:
+        links = types.LinksTable.from_join_condition(left, right, self)
+        return linkage.Linkage(left=left, right=right, links=links)
 
 
 def _bin_lat_lon(

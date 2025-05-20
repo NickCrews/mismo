@@ -6,8 +6,7 @@ import ibis
 from ibis.expr import types as ir
 
 from mismo import _resolve
-from mismo.joins import join
-from mismo.linkage._linkage import LinkTableLinkage
+from mismo.linkage._linkage import Linkage, LinksTable
 
 
 class LabelLinker:
@@ -34,19 +33,11 @@ class LabelLinker:
         """
         self.labels = labels
 
-    def definite_linkage(self, left: ibis.Table, right: ibis.Table) -> LinkTableLinkage:
-        return LinkTableLinkage(
-            left=left,
-            right=right,
-            links=join(
-                left,
-                right,
-                self.labels,
-                lname="{name}_l",
-                rname="{name}_r",
-                rename_all=True,
-            ).select("record_id_l", "record_id_r"),
-        )
+    def definite_linkage(self, left: ibis.Table, right: ibis.Table) -> Linkage:
+        if right is left:
+            right = right.view()
+        links = LinksTable.from_join_condition(left, right, self.labels)
+        return Linkage(left=left, right=right, links=links)
 
     def indefinite_tables(
         self,

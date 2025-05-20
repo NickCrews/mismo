@@ -209,7 +209,7 @@ class LinkedTable(TableWrapper):
         >>> left = ibis.memtable({"record_id": [4, 5, 6]})
         >>> right = ibis.memtable({"record_id": [7, 8, 9]})
         >>> links = ibis.memtable({"record_id_l": [4, 4, 5], "record_id_r": [7, 8, 9]})
-        >>> linkage = mismo.LinkTableLinkage(left, right, links)
+        >>> linkage = mismo.Linkage(left=left, right=right, links=links)
         >>> linkage.left.with_n_links().order_by("record_id")
         ┏━━━━━━━━━━━┳━━━━━━━━━┓
         ┃ record_id ┃ n_links ┃
@@ -261,7 +261,7 @@ class LinkedTable(TableWrapper):
         >>> left = ibis.memtable({"record_id": [4, 5, 6]})
         >>> right = ibis.memtable({"record_id": [7, 8, 9]})
         >>> links = ibis.memtable({"record_id_l": [4, 4, 5], "record_id_r": [7, 8, 9]})
-        >>> linkage = mismo.LinkTableLinkage(left, right, links)
+        >>> linkage = mismo.Linkage(left=left, right=right, links=links)
 
         There is 1 record in left (6) that didn't match any in right.
         There is 1 record in left (5) that matched 1 in right.

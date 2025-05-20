@@ -49,19 +49,17 @@ def sample_all_links(
     │ rec-10-dup-0 │ kayla      │ harrington │ NULL          │ maltby circuit    │ … │
     └──────────────┴────────────┴────────────┴───────────────┴───────────────────┴───┘
     >>> mismo.linkage.sample_all_links(t, t, max_pairs=7)  # doctest: +SKIP
-    ┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
-    ┃ record_id_l   ┃ record_id_r  ┃ address_1_l      ┃ address_1_r       ┃ … ┃
-    ┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
-    │ string        │ string       │ string           │ string            │ … │
-    ├───────────────┼──────────────┼──────────────────┼───────────────────┼───┤
-    │ rec-138-org   │ rec-63-org   │ strachan place   │ charleston street │ … │
-    │ rec-2-org     │ rec-34-org   │ finniss crescent │ messenger street  │ … │
-    │ rec-325-dup-0 │ rec-422-org  │ becker uplace    │ booth crescent    │ … │
-    │ rec-338-org   │ rec-367-org  │ crease place     │ pickles street    │ … │
-    │ rec-367-org   │ rec-431-org  │ pickles street   │ kaveneys road     │ … │
-    │ rec-448-org   │ rec-69-org   │ fenwick place    │ torrens street    │ … │
-    │ rec-72-org    │ rec-58-dup-0 │ madigan street   │ clark close       │ … │
-    └───────────────┴──────────────┴──────────────────┴───────────────────┴───┘
+    ┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+    ┃ record_id_l   ┃ record_id_r   ┃
+    ┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+    │ string        │ string        │
+    ├───────────────┼───────────────┤
+    │ rec-226-dup-0 │ rec-396-org   │
+    │ rec-232-dup-0 │ rec-402-dup-0 │
+    │ rec-259-dup-0 │ rec-61-org    │
+    │ rec-293-dup-0 │ rec-41-dup-0  │
+    │ rec-448-org   │ rec-25-org    │
+    └───────────────┴───────────────┘
     """  # noqa: E501
     left = left.cache()
     right = right.cache()
@@ -75,7 +73,6 @@ def sample_all_links(
             f"Sampling {msg} pairs from {n_possible_pairs:,} possible pairs."
             " This may be slow. Consider setting max_pairs to a smaller value."
         )
-
     if max_pairs is None:
         return LinksTable.from_join_condition(left, right, True)
 

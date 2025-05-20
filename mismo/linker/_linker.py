@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal, Protocol, runtime_checkable
+from typing import ClassVar, Literal, Protocol, runtime_checkable
 
 import ibis
 
@@ -28,6 +28,11 @@ class FullLinker(Linker):
         self.task = task
         self._linker = _join_linker.JoinLinker(True, on_slow="ignore", task=task)
 
+    def __join_condition__(
+        self, left: ibis.Table, right: ibis.Table
+    ) -> ibis.ir.BooleanValue:
+        return self._linker.__join_condition__(left, right)
+
     def __call__(self, left: ibis.Table, right: ibis.Table) -> _linkage.Linkage:
         return self._linker(left, right)
 
@@ -38,6 +43,11 @@ class EmptyLinker(Linker):
     def __init__(self, *, task: Literal["dedupe", "link"] | None = None):
         self.task = task
         self._linker = _join_linker.JoinLinker(False, on_slow="ignore", task=task)
+
+    def __join_condition__(
+        self, left: ibis.Table, right: ibis.Table
+    ) -> ibis.ir.BooleanValue:
+        return self._linker.__join_condition__(left, right)
 
     def __call__(self, left: ibis.Table, right: ibis.Table) -> _linkage.Linkage:
         return self._linker(left, right)
@@ -57,8 +67,8 @@ class UnnestLinker(Linker):
         return self._linker.__call__(left, right)
 
 
-class _LinkerLinkage(_linkage.BaseLinkage):
-    _linker_cls: type[Linker]
+class _LinkerLinkage:
+    _linker_cls: ClassVar[type[Linker]]
 
     def __init__(
         self,

@@ -131,6 +131,8 @@ class AndJoinCondition:
 # KeyJoinCondition needs to be registered afterwards so that it has
 # priority with 2-tuples
 class MultiKeyJoinCondition:
+    """Join where all of the keys match."""
+
     def __init__(self, subconditions: Iterable[Any]):
         self.subconditions: tuple[KeyJoinCondition] = tuple(
             join_condition(c) for c in subconditions
@@ -195,9 +197,11 @@ class KeyJoinCondition:
     def bind_columns(
         self, left: ibis.Table, right: ibis.Table
     ) -> list[tuple[ibis.Column, ibis.Column]]:
+        print(self.left_spec, self.right_spec)
         l_cols = _util.bind(left, self.left_spec)
         r_cols = _util.bind(right, self.right_spec)
-        return list(zip(l_cols, r_cols))
+        print(self.left_spec, self.right_spec)
+        return list(zip(l_cols, r_cols, strict=True))
 
     def join_condition(self, left: ibis.Table, right: ibis.Table) -> ir.BooleanColumn:
         conditions = [coll == colr for coll, colr in self.bind_columns(left, right)]
