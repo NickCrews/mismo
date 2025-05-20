@@ -266,7 +266,7 @@ class KeyLinker(Linker):
     def __keys__(
         self, left: ibis.Table, right: ibis.Table
     ) -> list[tuple[ir.Column, ir.Column]]:
-        return joins.get_keys_2_tables(left, right, self.keys)
+        return joins.get_keys_2_tables(self.keys, left, right)
 
     def __link__(self, left: ibis.Table, right: ibis.Table) -> Linkage:
         return self.linkage(left, right)
