@@ -3,7 +3,7 @@ from __future__ import annotations
 from ibis.expr import types as ir
 import pytest
 
-from mismo.linkage import EmptyLinker, FullLinker, Linker
+from mismo.linker import EmptyLinker, FullLinker, Linker
 from mismo.tests.util import assert_tables_equal
 
 

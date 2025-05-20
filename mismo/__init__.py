@@ -8,6 +8,7 @@ from mismo import fs as fs
 from mismo import joins as joins
 from mismo import lib as lib
 from mismo import linkage as linkage
+from mismo import linker as linker
 from mismo import playdata as playdata
 from mismo import sets as sets
 from mismo import text as text
@@ -17,16 +18,12 @@ from mismo._datasets import Datasets as Datasets
 from mismo._recipe import PRecipe as PRecipe
 from mismo.joins import HasJoinCondition as HasJoinCondition
 from mismo.joins import join as join
-from mismo.linkage import BaseLinkage as BaseLinkage
 from mismo.linkage import Linkage as Linkage
-from mismo.linkage import LinkTableLinkage as LinkTableLinkage
 from mismo.linker import EmptyLinkage as EmptyLinkage
 from mismo.linker import EmptyLinker as EmptyLinker
 from mismo.linker import FullLinkage as FullLinkage
 from mismo.linker import FullLinker as FullLinker
-from mismo.linker import JoinLinkage as JoinLinkage
 from mismo.linker import JoinLinker as JoinLinker
-from mismo.linker import KeyLinkage as KeyLinkage
 from mismo.linker import KeyLinker as KeyLinker
 from mismo.linker import Linker as Linker
 from mismo.types import Diff as Diff

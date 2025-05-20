@@ -35,10 +35,9 @@ class CountsTable(TableWrapper):
     # This MUST be set in subclasses
     _KEY_COUNTS_SPEC: _HistSpec
 
-    @property
     @functools.cache
     def n_total(self) -> int:
-        """n.sum(), just here for convenience."""
+        """n.sum().fill_null(0), just here for convenience."""
         raw = self.n.sum().execute()
         return int(raw) if raw is not None else 0
 
@@ -88,7 +87,7 @@ def _counts_chart(
             title=alt.TitleParams(
                 hist_spec.chart_title,
                 subtitle=[
-                    hist_spec.chart_subtitle.format(n_total=counts.n_total),
+                    hist_spec.chart_subtitle.format(n_total=counts.n_total()),
                     f"Showing the {n_keys_shown:_} most and least common keys out of {n_keys_total:_}",  # noqa: E501
                 ],
                 anchor="middle",

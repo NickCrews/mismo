@@ -1,26 +1,29 @@
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, Literal
 
+import ibis
 from ibis import Deferred, _
 from ibis.expr import types as ir
 
-from mismo import _util
+from mismo import linkage, linker
 
 
 class NameBlocker:
     def __init__(
         self,
         *,
-        column: str | Deferred | Callable[[ir.Table], ir.StructColumn] | None = None,
+        column: str | Deferred | Callable[[ibis.Table], ir.StructColumn] | None = None,
         column_left: str
         | Deferred
-        | Callable[[ir.Table], ir.StructColumn]
+        | Callable[[ibis.Table], ir.StructColumn]
         | None = None,
         column_right: str
         | Deferred
-        | Callable[[ir.Table], ir.StructColumn]
+        | Callable[[ibis.Table], ir.StructColumn]
         | None = None,
+        max_pairs: int | None = 100_000,
+        task: Literal["dedupe", "link"] | None = None,
     ):
         """Block two tables on the specified name columns.
 
@@ -59,29 +62,41 @@ class NameBlocker:
                 )
             self.column_left = column_left
             self.column_right = column_right
+        self.max_pairs = max_pairs
+        self.task = task
 
-    def __call__(
-        self, left: ir.Table, right: ir.Table, **kwargs
-    ) -> tuple[ir.Table, ir.Table]:
-        nl: ir.StructColumn = _util.get_column(_, self.column_left)
-        nr: ir.StructColumn = _util.get_column(_, self.column_right)
-        tokensl = _oneline(nl).upper().re_split(r"\s+").unnest()
-        tokensr = _oneline(nr).upper().re_split(r"\s+").unnest()
+    def name_keys(self) -> tuple[tuple[ibis.Deferred, ibis.Deferred]]:
+        parts = [
+            "prefix",
+            "given",
+            "middle",
+            "surname",
+            "suffix",
+            "nickname",
+        ]
 
-        return block.KeyBlocker((tokensl, tokensr))(left, right, **kwargs)
+        def norm(s):
+            return s.upper().strip()
 
+        keys = []
+        for pl in parts:
+            for pr in parts:
+                key_left = norm(_[self.column_left][pl])
+                key_right = norm(_[self.column_right][pr])
+                keys.append((key_left, key_right))
+        return keys
 
-def _oneline(name: ir.StructValue) -> ir.StringValue:
-    return (
-        name.prefix.fill_null("")
-        + " "
-        + name.given.fill_null("")
-        + " "
-        + name.middle.fill_null("")
-        + " "
-        + name.surname.fill_null("")
-        + " "
-        + name.suffix.fill_null("")
-        + " "
-        + name.nickname.fill_null("")
-    ).strip()
+    def __call__(self, left: ibis.Table, right: ibis.Table) -> linkage.Linkage:
+        keys = self.name_keys()
+        link_tables = [
+            linker.KeyLinker(
+                (key_left, key_right), max_pairs=self.max_pairs, task=self.task
+            )(left, right).links.select("record_id_l", "record_id_r")
+            for key_left, key_right in keys
+        ]
+        links_union = ibis.union(*link_tables, distinct=True)
+        return linkage.Linkage(
+            left=left,
+            right=right,
+            links=links_union,
+        )

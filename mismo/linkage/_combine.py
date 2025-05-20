@@ -14,7 +14,7 @@ import ibis
 
 from mismo._registry import Registry
 from mismo.joins import HasJoinCondition, join
-from mismo.linkage._linkage import BaseLinkage, Linkage, LinkedTable, LinksTable
+from mismo.linkage._linkage import Linkage, LinkedTable, LinksTable
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class HasSublinkages(Protocol, Generic[L]):
         pass
 
 
-class CombinedLinkage(BaseLinkage, Generic[L]):
+class CombinedLinkage(Generic[L]):
     def __init__(self, sublinkages: Iterable[L]) -> None:
         self._sublinkages = tuple(sublinkages)
         if not self._sublinkages:
@@ -139,7 +139,7 @@ class CombinerRegistry(Registry[PCombiner, Linkage]):
 
 
 @runtime_checkable
-class HasJoinConditionLinkage(HasJoinCondition, Linkage, Protocol):
+class HasJoinConditionLinkage(HasJoinCondition, Protocol):
     pass
 
 
@@ -214,6 +214,6 @@ def unify_links_min_intersection(*linkages: Linkage) -> tuple[Linkage, ...]:
         shared &= column_set
     shared_columns = [name for name, _ in shared]
     return tuple(
-        linkage.adjust(links=linkage.links.select(*shared_columns))
+        linkage.copy(links=linkage.links.select(*shared_columns))
         for linkage in linkages
     )

@@ -52,6 +52,10 @@ class LinksTable(TableWrapper):
         right: ibis.Table,
         condition: Any,
     ) -> _typing.Self:
+        if "record_id" not in left.columns:
+            left = left.mutate(record_id=ibis.row_number())
+        if "record_id" not in right.columns:
+            right = right.mutate(record_id=ibis.row_number())
         links_raw = joins.join(
             left,
             right,
@@ -104,10 +108,10 @@ class LinksTable(TableWrapper):
         └─────────────┴─────────────┴─────────┴───────────────┴──────────────┘
         """
         if not values and not named_values:
-            values = self.left_.columns
+            values = self.left.columns
 
         uname = _util.unique_name()
-        left = self.left_.select(_.record_id.name(uname), *values, **named_values)
+        left = self.left.select(_.record_id.name(uname), *values, **named_values)
         conflicts = [c for c in left.columns if c in self.columns]
         if conflicts:
             raise ValueError(f"conflicting columns: {conflicts}")
@@ -156,25 +160,44 @@ class LinksTable(TableWrapper):
         └─────────────┴─────────────┴─────────┴───────────────┴───────────────┘
         """
         if not values and not named_values:
-            values = self.right_.columns
+            values = self.right.columns
 
         uname = _util.unique_name()
-        right = self.right_.select(_.record_id.name(uname), *values, **named_values)
+        right = self.right.select(_.record_id.name(uname), *values, **named_values)
         conflicts = [c for c in right.columns if c in self.columns]
         if conflicts:
             raise ValueError(f"conflicting columns: {conflicts}")
         joined = self.left_join(right, self.record_id_r == right[uname]).drop(uname)
         return LinksTable(joined, left=self._left_raw, right=self._right_raw)
 
+    def with_both(self) -> LinksTable:
+        """
+        Add all columns from `left` and `right` with suffixes `_l` and `_r`
+        """
+        left_columns = [
+            _[c].name(c + "_l")
+            for c in self.left.columns
+            if c + "_l" not in self.columns
+        ]
+        right_columns = [
+            _[c].name(c + "_r")
+            for c in self.right.columns
+            if c + "_r" not in self.columns
+        ]
+        x = self
+        x = x.with_left(*left_columns)
+        x = x.with_right(*right_columns)
+        return x
+
     @property
-    def left_(self) -> LinkedTable:
+    def left(self) -> LinkedTable:
         """The left table."""
         from mismo.types._linked_table import LinkedTable
 
         return LinkedTable(self._left_raw, other=self._right_raw, links=self)
 
     @property
-    def right_(self) -> LinkedTable:
+    def right(self) -> LinkedTable:
         """The right table."""
         from mismo.types._linked_table import LinkedTable
 

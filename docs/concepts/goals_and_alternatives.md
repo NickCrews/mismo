@@ -19,7 +19,12 @@
   have these be shortcuts instead of dead ends.
 - Reproducible results using `random_state` similar to sklearn. No peer of Mismo
   seems to do this.
-- Ergonomic model persistence.
+- Separation between specification and data. eg you define linkage model abstractly,
+  without needing the actual tables of data. Then, at a later step, you actually
+  apply the model to the data. This makes it so you can re-apply the same model
+  to different datasets, eg if you have a linkage job you need to run nightly.
+  This also makes it easier to save and load model specifications, 
+  share them with others, and adjust them for doing A/B testing.
 - Python-first approach. Instead of configuring using JSON, the majority of
   the implementation logic should be in python. This prevents dead ends and makes
   things much more extendable. I found with splink that the JSON representation

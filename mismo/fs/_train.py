@@ -70,8 +70,8 @@ def _train_us_using_sampling(
         1e7 (ten million) is often adequate whilst testing different model
         specifications, before the final model is estimated.
     """
-    sample_links = sample_all_links(left, right, max_pairs=max_pairs)
-    sample = sample_links.with_left().with_right()
+    sample = sample_all_links(left, right, max_pairs=max_pairs)
+    sample = sample.with_both()
     labels = comparer(sample)[comparer.name]
     return level_proportions(comparer.levels, labels)
 

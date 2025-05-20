@@ -3,7 +3,7 @@ from __future__ import annotations
 import ibis
 import pytest
 
-from mismo.linkage import LabelLinker
+from mismo.linker import LabelLinker
 from mismo.tests.util import assert_tables_equal
 
 

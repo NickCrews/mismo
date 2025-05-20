@@ -41,6 +41,7 @@ def train_using_em(
         The estimated weights for each comparer.
     """
     links = _train.sample_all_links(left, right, max_pairs=max_pairs)
+    links = links.with_both()
     for c in comparers:
         links = c(links)
     links = links.select([c.name for c in comparers])

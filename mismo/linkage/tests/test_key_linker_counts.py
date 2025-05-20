@@ -4,7 +4,7 @@ import ibis
 from ibis import _
 import pytest
 
-from mismo.linkage import KeyLinker
+from mismo.linker import KeyLinker
 from mismo.tests.util import assert_tables_equal
 
 
@@ -44,21 +44,24 @@ def test_counts_letters(inp, table_factory, key):
     )
     c = linker.key_counts(inp)
     assert_tables_equal(c, expected.select("letter", n=_.expected_keys))
-    assert c.n_total == 7
+    assert c.n_total() == 7
     # we need the CountsTable instance to be indistinguishable from a regular Table
     assert isinstance(c, ibis.Table)
 
     c = linker.pair_counts(inp, inp)
     assert_tables_equal(c, expected.select("letter", n=_.expected_pairs_dedupe))
-    assert c.n_total == 6
+    assert c.n_total() == 6
 
-    c = linker.pair_counts(inp, inp, task="dedupe")
+    linker = KeyLinker(key, task="dedupe")
+    c = linker.pair_counts(inp, inp)
     assert_tables_equal(c, expected.select("letter", n=_.expected_pairs_dedupe))
 
+    linker = KeyLinker(key, task="link")
     c = linker.pair_counts(inp, inp.view())
     assert_tables_equal(c, expected.select("letter", n=_.expected_pairs_link))
 
-    c = linker.pair_counts(inp, inp, task="link")
+    linker = KeyLinker(key, task="link")
+    c = linker.pair_counts(inp, inp)
     assert_tables_equal(c, expected.select("letter", n=_.expected_pairs_link))
 
 
@@ -70,7 +73,7 @@ def test_counts_letters(inp, table_factory, key):
     ],
 )
 def test_counts_letters_num(inp, table_factory, keys):
-    linker = KeyLinker(*keys)
+    linker = KeyLinker(keys)
     expected = table_factory(
         {
             "letter": ["c", "b", "b", "a"],
@@ -82,27 +85,30 @@ def test_counts_letters_num(inp, table_factory, keys):
     )
     c = linker.key_counts(inp)
     assert_tables_equal(c, expected.select("letter", "num", n=_.expected_keys))
-    assert c.n_total == 7
+    assert c.n_total() == 7
     # we need the CountsTable instance to be indistinguishable from a regular Table
     assert isinstance(c, ibis.Table)
 
-    c = linker.pair_counts(inp, inp)
+    c = KeyLinker(keys, task="dedupe").pair_counts(inp, inp)
     assert_tables_equal(c, expected.select("letter", "num", n=_.expected_pairs_dedupe))
-    assert c.n_total == 4
-
-    c = linker.pair_counts(inp, inp, task="dedupe")
+    c = KeyLinker(keys, task="link").pair_counts(inp, inp)
+    assert_tables_equal(c, expected.select("letter", "num", n=_.expected_pairs_link))
+    c = KeyLinker(keys).pair_counts(inp, inp)
     assert_tables_equal(c, expected.select("letter", "num", n=_.expected_pairs_dedupe))
+    assert c.n_total() == 4
 
-    c = linker.pair_counts(inp, inp.view())
+    # with a .view() table pair, check that dedupe/link behavior works
+    c = KeyLinker(keys, task="link").pair_counts(inp, inp.view())
+    assert_tables_equal(c, expected.select("letter", "num", n=_.expected_pairs_link))
+    c = KeyLinker(keys, task="dedupe").pair_counts(inp, inp.view())
+    assert_tables_equal(c, expected.select("letter", "num", n=_.expected_pairs_dedupe))
+    c = KeyLinker(keys).pair_counts(inp, inp.view())
     assert_tables_equal(c, expected.select("letter", "num", n=_.expected_pairs_link))
 
-    c = linker.pair_counts(inp, inp, task="link")
-    assert_tables_equal(c, expected.select("letter", "num", n=_.expected_pairs_link))
 
-
-def test_counts_empty(inp, table_factory):
+def test_counts_empty(inp):
     # null keys will never get blocked with any others
     linker = KeyLinker(ibis.null(int))
     c = linker.pair_counts(inp, inp)
     assert c.count().execute() == 0
-    assert c.n_total == 0
+    assert c.n_total() == 0
