@@ -5,10 +5,9 @@ from typing import Literal
 import warnings
 
 import ibis
-from ibis.backends.duckdb import Backend as DuckDBBackend
 from ibis.expr import types as ir
 
-from mismo import _util
+from mismo import _errors, _explain, _util
 
 JOIN_ALGORITHMS = frozenset(
     {
@@ -65,7 +64,7 @@ def get_join_algorithm(left: ir.Table, right: ir.Table, condition) -> str:
     Other kinds of expressions will raise NotImplementedError.
     """
     j = ibis.join(left, right, condition)
-    ex = _explain_str(j)
+    ex = _explain.explain(j)
     return _extract_top_join_alg(ex)
 
 
@@ -108,7 +107,7 @@ def check_join_algorithm(
         return
     try:
         alg = get_join_algorithm(left, right, condition)
-    except _UnsupportedBackendError as e:
+    except _errors.UnsupportedBackendError as e:
         warnings.warn(
             "We can only check the join algorithm for DuckDB backends. You passed"
             f" an expression with a {type(e.args[0])} backend."
@@ -122,33 +121,6 @@ def check_join_algorithm(
             raise SlowJoinError(condition, alg)
         elif on_slow == "warn":
             warnings.warn(SlowJoinWarning(condition, alg), stacklevel=2)
-
-
-def _explain_str(duckdb_expr: ir.Expr | str, *, analyze: bool = False) -> str:
-    # we can't use a separate backend eg from ibis.duckdb.connect()
-    # or it might not be able to find the tables/data referenced
-    sql, con = _to_sql_and_backend(duckdb_expr)
-    if analyze:
-        sql = "EXPLAIN ANALYZE " + sql
-    else:
-        sql = "EXPLAIN " + sql
-    cursor = con.raw_sql(sql)
-    return cursor.fetchall()[0][1]
-
-
-def _to_sql_and_backend(duckdb_expr: ir.Expr | str) -> tuple[str, DuckDBBackend]:
-    if isinstance(duckdb_expr, str):
-        sql = duckdb_expr
-        con = ibis.duckdb.connect()
-    else:
-        try:
-            con = duckdb_expr._find_backend(use_default=True)
-        except AttributeError:
-            raise NotImplementedError("The given expression must have a backend.")
-        if not isinstance(con, DuckDBBackend):
-            raise _UnsupportedBackendError(con)
-        sql = ibis.to_sql(duckdb_expr, dialect="duckdb")
-    return sql, con
 
 
 def _extract_top_join_alg(explain_str: str) -> str:
@@ -192,7 +164,3 @@ def _extract_top_join_alg(explain_str: str) -> str:
             f"Could not find a join algorithm in the explain string: {explain_str}"
         )
     return match.group(1)
-
-
-class _UnsupportedBackendError(ValueError):
-    pass
