@@ -6,7 +6,7 @@ from ibis.expr import types as ir
 from mismo import _funcs, _util
 
 
-def _resolve(spec, t: ir.Table) -> ir.Value:
+def _resolve(t: ir.Table, spec) -> ir.Value:
     values = t.bind(spec)
     if len(values) != 1:
         raise ValueError(f"Expected 1 column, got {len(values)} from {spec}")
