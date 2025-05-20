@@ -8,7 +8,7 @@ from ibis.expr import types as ir
 from mismo._util import sample_table
 from mismo.compare import LevelComparer, MatchLevel
 from mismo.linkage import sample_all_links
-from mismo.linker import LabelLinker
+from mismo.linker import JoinLinker
 
 from ._weights import ComparerWeights, LevelWeights, Weights
 
@@ -172,7 +172,7 @@ def _true_pairs_from_labels(left: ir.Table, right: ir.Table) -> ir.Table:
         raise ValueError(
             f"Right dataset must have a label_true column. Found: {right.columns}"
         )
-    return LabelLinker("label_true").definite_linkage(left, right).links
+    return JoinLinker("label_true")(left, right).links
 
 
 def train_using_pairs(
