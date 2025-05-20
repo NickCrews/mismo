@@ -15,6 +15,8 @@ from mismo import text as text
 from mismo import types as types
 from mismo import vector as vector
 from mismo._datasets import Datasets as Datasets
+from mismo._errors import UnsupportedBackendError as UnsupportedBackendError
+from mismo._explain import explain as explain
 from mismo._recipe import PRecipe as PRecipe
 from mismo.joins import HasJoinCondition as HasJoinCondition
 from mismo.joins import join as join
