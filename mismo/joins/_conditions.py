@@ -21,8 +21,8 @@ class HasJoinCondition(Protocol):
     """  # noqa: E501
 
     def __join_condition__(
-        self, left: ibis.Table, right: ibis.Table, predicate: ir.BooleanValue | bool
-    ) -> tuple[ibis.Table, ibis.Table, ir.BooleanValue]:
+        self, left: ibis.Table, right: ibis.Table
+    ) -> ir.BooleanValue | bool:
         pass
 
 

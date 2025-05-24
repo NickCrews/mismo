@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from mismo.arrays._array import array_choice as array_choice
 from mismo.arrays._array import array_combinations as array_combinations
+from mismo.arrays._array import (
+    array_combinations_first_n as array_combinations_first_n,
+)
 from mismo.arrays._array import array_filter_isin_other as array_filter_isin_other
 from mismo.arrays._array import array_shuffle as array_shuffle
 from mismo.arrays._array import array_sort as array_sort

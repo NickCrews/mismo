@@ -89,38 +89,47 @@ class IDLinker:
         links = LinksTable.from_join_condition(left, right, self.match_condition)
         return Linkage(left=left, right=right, links=links)
 
-    def nonmatch_condition(self, a: ibis.Table, b: ibis.Table) -> ir.BooleanColumn:
-        """Select any pairs where we know they are a non-match.
+    # def nonmatch_condition(self, a: ibis.Table, b: ibis.Table) -> ir.BooleanValue:
+    #     """Select any pairs where we know they are a non-match.
 
-        Includes pairs where either
-        - one or both of the labels are null (iff `when_null` is "nonmatch")
-        - the labels are not equal (iff `when_not_equal` is "nonmatch")
-        """
-        label_a, label_b = _resolve.resolve_column_pair(self.labels, a, b)
-        conditions = []
-        if self.when_null == "nonmatch":
-            conditions.append(label_a.isnull() | label_b.isnull())
-        if self.when_not_equal == "nonmatch":
-            conditions.append(label_a != label_b)
-        if not conditions:
-            return ibis.literal(False)
-        return ibis.or_(*conditions)
+    #     Includes pairs where either
+    #     - one or both of the labels are null (iff `when_null` is "nonmatch")
+    #     - the labels are not equal (iff `when_not_equal` is "nonmatch")
+    #     """
+    #     label_a, label_b = _resolve.resolve_column_pair(self.labels, a, b)
+    #     conditions = []
+    #     if self.when_not_equal == "nonmatch":
+    #         conditions.append(
+    #             ibis.and_(
+    #                 label_a != label_b,
+    #                 label_a.notnull(),
+    #                 label_b.notnull(),
+    #             )
+    #         )
+    #     if self.when_null == "nonmatch":
+    #         conditions.append(label_a.isnull() | label_b.isnull())
+    #     if not conditions:
+    #         return ibis.literal(False)
+    #     return ibis.or_(*conditions)
 
-    def indefinite_condition(self, a: ibis.Table, b: ibis.Table) -> ir.BooleanColumn:
+    def indefinite_condition(self, a: ibis.Table, b: ibis.Table) -> ir.BooleanValue:
         """Select any pairs where they are not a match and they are not a non-match."""
         # return ibis.and_(
         #     ~self.match_condition(a, b),
         #     ~self.nonmatch_condition(a, b),
         # )
         label_a, label_b = _resolve.resolve_column_pair(self.labels, a, b)
-        conditions = []
-        if self.when_null == "indefinite":
-            conditions.append(label_a.isnull() | label_b.isnull())
+        conditions = [label_a == label_b]
         if self.when_not_equal == "indefinite":
-            conditions.append(label_a != label_b)
-        if not conditions:
-            return False
-        return ibis.or_(*conditions)
+            conditions.append((label_a != label_b).fill)
+        # conditions = []
+        # if self.when_not_equal == "indefinite":
+        #     conditions.append(label_a != label_b)
+        # if self.when_null == "indefinite":
+        #     conditions.append(label_a.isnull() | label_b.isnull())
+        # if not conditions:
+        #     return ibis.literal(False)
+        # return ibis.or_(*conditions)
 
     def indefinite_linkage(self, left: ibis.Table, right: ibis.Table) -> Linkage:
         if right is left:

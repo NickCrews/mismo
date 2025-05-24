@@ -34,6 +34,48 @@ def array_combinations(left: ir.ArrayValue, right: ir.ArrayValue) -> ir.ArrayVal
     ).flatten()
 
 
+def array_combinations_first_n(
+    left: ir.ArrayValue,
+    right: ir.ArrayValue,
+    *,
+    n_left: int,
+    n_right: int,
+) -> list[tuple[ir.Value, ir.Value]]:
+    """Generate the combinations from the first N elements of two arrays.
+
+    This is a static version of `array_combinations`.
+    That function generates ALL combinations of the two arrays,
+    but since that number is dynamic, it can be hard to work with.
+    This function is useful for if you have a small number of
+    combinations you want to generate,
+    eg you want to compare all the email addresses for
+    one person to all the email addresses for another person.
+
+    Parameters
+    ----------
+    left
+        The first array.
+    right
+        The second array.
+    n_left
+        The number of elements to take from the first array.
+    n_right
+        The number of elements to take from the second array.
+
+    Returns
+    -------
+    combinations
+        A list of (left, right) tuples.
+    """
+    if n_left < 0 or n_right < 0:
+        raise ValueError("n_left and n_right must be non-negative.")
+    results = []
+    for i in range(n_left):
+        for j in range(n_right):
+            results.append((left[i], right[j]))
+    return results
+
+
 def array_filter_isin_other(
     t: ir.Table,
     array: ir.ArrayColumn | str,
