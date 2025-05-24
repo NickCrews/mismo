@@ -124,21 +124,29 @@ class NameComparer:
         self.right_column = right_column
         self.name = result_column
 
-    def __call__(self, pairs: ir.Table) -> ir.Table:
-        """Compare pairs of names.
+    def __call__(
+        self,
+        table: ir.Table | None = None,
+        *,
+        left: ir.StructValue | None = None,
+        right: ir.StructValue | None = None,
+    ) -> ir.IntegerValue:
+        """Compare two names.
 
         Parameters
         ----------
-        pairs :
-            A table with columns ``self.left_column`` and ``self.right_column``.
-            Each of these columns should be a struct that has been normalized/featurized
-            with _clean.normalize_name(raw_name_struct).
+        left :
+            The left name.
+        right :
+            The right name.
 
         Returns
         -------
         t :
-            The table with the comparison results in the column ``self.name``.
+            The comparison result.
         """
-        le = pairs[self.left_column]
-        ri = pairs[self.right_column]
-        return pairs.mutate(_get_level(le, ri).name(self.name))
+        if table is None and (left is None or right is None):
+            raise ValueError("Must provide either table or left and right")
+        left = left or table[self.left_column]
+        right = right or table[self.right_column]
+        return _get_level(left, right).name(self.name)

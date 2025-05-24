@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Literal, overload
 
-import ibis
 from ibis.expr import types as ir
 
 from mismo._util import cases, get_column
@@ -160,16 +159,15 @@ class PhonesDimension:
         self.column_parsed = column_parsed.format(column=column)
         self.column_compared = column_compared.format(column=column)
 
-    def prepare(self, t: ir.Table) -> ir.Table:
+    def prepare_for_fast_linking(self, t: ir.Table) -> ir.Table:
         """Add a column with the parsed and normalized phone numbers."""
         return t.mutate(
             get_column(t, self.column).map(clean_phone_number).name(self.column_parsed)
         )
 
-    def block(self, left: ir.Table, right: ir.Table, **kwargs) -> ir.Table:
-        """Block records wherever they share a phone number."""
-        blocker = KeyBlocker(ibis._[self.column_parsed].unnest())
-        return blocker(left, right, **kwargs)
+    def prepare_for_blocking(self, t: ir.Table) -> ir.Table:
+        """noop"""
+        return t
 
     def compare(self, t: ir.Table) -> ir.Table:
         """Add a column with the best match between all pairs of phone numbers."""

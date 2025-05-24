@@ -161,7 +161,7 @@ class EmailsDimension:
         self.column_parsed = column_parsed.format(column=column)
         self.column_compared = column_compared.format(column=column)
 
-    def prepare(self, t: ir.Table) -> ir.Table:
+    def prepare_for_fast_linking(self, t: ir.Table) -> ir.Table:
         """Add a column with the parsed and normalized email addresses."""
         return t.mutate(
             get_column(t, self.column)
@@ -172,6 +172,9 @@ class EmailsDimension:
             )
             .name(self.column_parsed)
         )
+
+    def prepare_for_blocking(self, t: ir.Table) -> ir.Table:
+        return t
 
     def block(self, t1: ir.Table, t2: ir.Table, **kwargs) -> ir.Table:
         linker = UnnestLinker(ibis._[self.column_parsed].full.unnest())
