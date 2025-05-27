@@ -141,7 +141,7 @@ class PhonesDimension:
         self,
         column: str,
         *,
-        column_parsed: str = "{column}_parsed",
+        column_cleaned: str = "{column}_cleaned",
         column_compared: str = "{column}_compared",
     ):
         """Initialize the dimension.
@@ -150,19 +150,19 @@ class PhonesDimension:
         ----------
         column :
             The name of the column that holds a array<string> of phone numbers.
-        column_parsed :
+        column_cleaned :
             The name of the column that will be filled with the parsed phone numbers.
         column_compared :
             The name of the column that will be filled with the comparison results.
         """
         self.column = column
-        self.column_parsed = column_parsed.format(column=column)
+        self.column_cleaned = column_cleaned.format(column=column)
         self.column_compared = column_compared.format(column=column)
 
     def prepare_for_fast_linking(self, t: ir.Table) -> ir.Table:
         """Add a column with the parsed and normalized phone numbers."""
         return t.mutate(
-            get_column(t, self.column).map(clean_phone_number).name(self.column_parsed)
+            get_column(t, self.column).map(clean_phone_number).name(self.column_cleaned)
         )
 
     def prepare_for_blocking(self, t: ir.Table) -> ir.Table:
@@ -171,8 +171,8 @@ class PhonesDimension:
 
     def compare(self, t: ir.Table) -> ir.Table:
         """Add a column with the best match between all pairs of phone numbers."""
-        le = t[self.column_parsed + "_l"]
-        ri = t[self.column_parsed + "_r"]
+        le = t[self.column_cleaned + "_l"]
+        ri = t[self.column_cleaned + "_r"]
         pairs = array_combinations(le, ri)
         min_level = array_min(
             pairs.map(lambda pair: match_level(pair.l, pair.r).as_integer())
