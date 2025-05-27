@@ -17,6 +17,8 @@ if TYPE_CHECKING:
 class Linkage:
     """A dataclass of two Tables of records ([LinkedTables][mismo.LinkedTable]) and a Table of links ([LinksTable][mismo.LinksTable]) between them.
 
+    Each record in `left` can be linked from 0 to N records in `right`, and vice versa.
+
     See Also
     --------
     The [Diff][mismo.Diff] dataclass, for representing the special case
@@ -66,7 +68,7 @@ class Linkage:
         return LinksTable(self._raw_links, left=self._left, right=self._right)
 
     def cache(self) -> _typing.Self:
-        """Cache this Linkage for faster subsequent access."""
+        """Cache left, right, and links for faster subsequent access."""
         return self.__class__(
             left=self.left.cache(),
             right=self.right.cache(),

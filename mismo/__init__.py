@@ -14,6 +14,7 @@ from mismo import sets as sets
 from mismo import text as text
 from mismo import types as types
 from mismo import vector as vector
+from mismo._counts_table import CountsTable as CountsTable
 from mismo._datasets import Datasets as Datasets
 from mismo._errors import UnsupportedBackendError as UnsupportedBackendError
 from mismo._explain import explain as explain
