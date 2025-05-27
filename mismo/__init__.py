@@ -20,6 +20,8 @@ from mismo._explain import explain as explain
 from mismo._recipe import PRecipe as PRecipe
 from mismo.joins import HasJoinCondition as HasJoinCondition
 from mismo.joins import join as join
+from mismo.joins import left as left
+from mismo.joins import right as right
 from mismo.linkage import Linkage as Linkage
 from mismo.linker import EmptyLinkage as EmptyLinkage
 from mismo.linker import EmptyLinker as EmptyLinker

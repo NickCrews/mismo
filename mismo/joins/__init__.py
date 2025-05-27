@@ -13,5 +13,7 @@ from mismo.joins._conditions import HasJoinCondition as HasJoinCondition
 from mismo.joins._conditions import KeyJoinCondition as KeyJoinCondition
 from mismo.joins._conditions import MultiKeyJoinCondition as MultiKeyJoinCondition
 from mismo.joins._conditions import join_condition as join_condition
+from mismo.joins._conditions import left as left
+from mismo.joins._conditions import right as right
 from mismo.joins._core import join as join
 from mismo.joins._keys import get_keys_2_tables as get_keys_2_tables
