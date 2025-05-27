@@ -12,7 +12,7 @@ from mismo.lib.geo._regex_parse import parse_street1_re
 def _featurize_many(t: ibis.Table, *, cleaned_column: str) -> ibis.Table:
     """Given a table with column addresses:Array<Struct>, add a column address_featured:Array<Struct>."""  # noqa: E501
     with_id = t.mutate(__id=ibis.row_number())
-    unnested = with_id.select("__id", address=_[cleaned_column].unnest())
+    unnested = with_id.select("__id", _[cleaned_column].unnest().name(cleaned_column))
     lookup = (
         _featurize(unnested, unnested[cleaned_column])
         .group_by("__id")
@@ -74,15 +74,16 @@ def _featurize(t: ibis.Table, address_cleaned: ir.StructValue) -> ibis.Table:
     # for every time it appears in the SQL. See https://github.com/duckdb/duckdb/discussions/14649.
     # So, if we did one .mutate(), we would end up with like literally 100 regex
     # evaluations in the SQL, which is 100x slower than evaluating the regex once.
-    if "address" not in t.columns:
-        raise ValueError("Table must have a column named 'address'.")
-    if not isinstance(t.address, ir.StructValue):
-        raise ValueError("Column 'address' must be a struct.")
-
-    t = t.mutate(_parsed=parse_street1_re(address_cleaned.street1))
+    t = t.mutate(
+        _parsed=parse_street1_re(address_cleaned.street1), _cleaned=address_cleaned
+    )
     t = t.mutate(
         address_featured=ibis.struct(
             dict(
+                street1=_._cleaned.street1,
+                city=_._cleaned.city,
+                postal_code=_._cleaned.postal_code,
+                state=_._cleaned.state,
                 street_name=_norm_field(_._parsed.StreetName),
                 # either 123 from "123 Main St" or "PO BOX 123". Only one of these
                 # will be non-empty.
@@ -95,7 +96,7 @@ def _featurize(t: ibis.Table, address_cleaned: ir.StructValue) -> ibis.Table:
     t = t.mutate(
         address_featured=_structs.mutate(
             t.address_featured,
-            street_number_sorted=t.address_cleaned.street_number.split("")
+            street_number_sorted=t.address_featured.street_number.split("")
             .sort()
             .join(""),
         )
@@ -103,9 +104,9 @@ def _featurize(t: ibis.Table, address_cleaned: ir.StructValue) -> ibis.Table:
     ngrams = 4
     t = t.mutate(
         __street_number_ngrams=text.ngrams(
-            address_cleaned.street_number_sorted, ngrams
+            t.address_featured.street_number_sorted, ngrams
         ),
-        __street_name_ngrams=text.ngrams(address_cleaned.street_name, ngrams),
+        __street_name_ngrams=text.ngrams(t.address_featured.street_name, ngrams),
     )
     t = t.mutate(
         address_featured=_structs.mutate(
@@ -114,7 +115,7 @@ def _featurize(t: ibis.Table, address_cleaned: ir.StructValue) -> ibis.Table:
                 ibis.array(
                     [
                         t.address_featured.street_number_sorted,
-                        address_cleaned.street_name,
+                        t.address_featured.street_name,
                     ]
                 )
                 .concat(
