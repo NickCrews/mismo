@@ -5,6 +5,7 @@ from typing import Any, Callable, Protocol, runtime_checkable
 
 import ibis
 from ibis import Deferred
+from ibis.common.deferred import Resolver, Variable, var
 from ibis.expr import types as ir
 
 from mismo import _registry, _util
@@ -93,6 +94,9 @@ class FuncJoinCondition:
     @join_condition.register
     @staticmethod
     def _try(obj: Any) -> FuncJoinCondition:
+        # Deffered's think they are callable, so guard against that.
+        if isinstance(obj, ibis.Deferred):
+            raise NotImplementedError()
         if not callable(obj):
             raise NotImplementedError
         return FuncJoinCondition(obj)
@@ -163,7 +167,13 @@ class BadKeyJoinCondition(ValueError):
 
 class KeyJoinCondition:
     def __init__(self, spec: str | Deferred | tuple[str | Deferred, str | Deferred]):
-        if isinstance(spec, (str, ibis.Deferred)):
+        if isinstance(spec, str):
+            left_spec = right_spec = spec
+        elif isinstance(spec, Deferred):
+            if variables_names(spec) != {"_"}:
+                raise BadKeyJoinCondition(
+                    "Deferred join conditions must only contain `ibis._` variables."
+                )
             left_spec = right_spec = spec
         elif isinstance(spec, tuple):
             if len(spec) != 2:
@@ -197,15 +207,98 @@ class KeyJoinCondition:
     def bind_columns(
         self, left: ibis.Table, right: ibis.Table
     ) -> list[tuple[ibis.Column, ibis.Column]]:
-        print(self.left_spec, self.right_spec)
+        # print(self.left_spec, self.right_spec)
         l_cols = _util.bind(left, self.left_spec)
         r_cols = _util.bind(right, self.right_spec)
-        print(self.left_spec, self.right_spec)
+        # print(self.left_spec, self.right_spec)
         return list(zip(l_cols, r_cols, strict=True))
 
     def join_condition(self, left: ibis.Table, right: ibis.Table) -> ir.BooleanColumn:
         conditions = [coll == colr for coll, colr in self.bind_columns(left, right)]
         return ibis.and_(*conditions)
+
+
+left = var("left")
+"""A deferred placeholder for the left table in a join.
+
+Examples
+--------
+>>> condition = mismo.left.last_name.upper() == mismo.right.family_name.upper()
+>>> import ibis
+>>> my_left_table = ibis.memtable([("johnson",), ("smith",)], columns=["last_name"])
+>>> my_right_table = ibis.memtable([("JOHNSON",), ("JONES",)], columns=["family_name"])
+>>> mismo.join(my_left_table, my_right_table, condition)
+┏━━━━━━━━━━━┳━━━━━━━━━━━━━┓
+┃ last_name ┃ family_name ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━┩
+│ string    │ string      │
+├───────────┼─────────────┤
+│ johnson   │ JOHNSON     │
+└───────────┴─────────────┘
+"""
+right = var("right")
+"""A deferred placeholder for the right table in a join.
+
+Examples
+--------
+>>> condition = mismo.left.last_name.upper() == mismo.right.family_name.upper()
+>>> import ibis
+>>> my_left_table = ibis.memtable([("johnson",), ("smith",)], columns=["last_name"])
+>>> my_right_table = ibis.memtable([("JOHNSON",), ("JONES",)], columns=["family_name"])
+>>> mismo.join(my_left_table, my_right_table, condition)
+┏━━━━━━━━━━━┳━━━━━━━━━━━━━┓
+┃ last_name ┃ family_name ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━┩
+│ string    │ string      │
+├───────────┼─────────────┤
+│ johnson   │ JOHNSON     │
+└───────────┴─────────────┘
+"""
+
+
+def variables_names(deferred: Deferred) -> set[str]:
+    """Get the names of all Variables in a Deferred."""
+    if not isinstance(deferred, Deferred):
+        raise TypeError(f"Expected a Deferred, got {type(deferred).__name__} instead.")
+    return _variables_names(deferred, set())
+
+
+def _variables_names(x, variable_names: set[str]):
+    if isinstance(x, Variable):
+        variable_names = {*variable_names, x.name}
+    elif (
+        resolver := x if isinstance(x, Resolver) else getattr(x, "_resolver", None)
+    ) is not None:
+        for slot in resolver.__slots__:
+            child = getattr(resolver, slot)
+            child_variables = _variables_names(child, variable_names)
+            # print(slot, type(child), child_contains_left, child_contains_right)
+            variable_names = variable_names.union(child_variables)
+    return variable_names
+
+
+class LeftRightDeferredCondition:
+    def __init__(self, condition: Deferred):
+        self.condition = condition
+
+    @join_condition.register
+    @staticmethod
+    def _try(obj: Any) -> LeftRightDeferredCondition:
+        if not isinstance(obj, Deferred):
+            raise NotImplementedError
+        if variables_names(obj) == {"left", "right"}:
+            return LeftRightDeferredCondition(obj)
+        raise NotImplementedError(
+            "Deferred join conditions must only contain 'left' and 'right' variables."
+        )
+
+    def __join_condition__(
+        self, left: ibis.Table, right: ibis.Table
+    ) -> ibis.ir.BooleanValue:
+        return self.condition.resolve(left=left, right=right)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.condition!r})"
 
 
 def _try_iterable(obj: Any) -> tuple:
