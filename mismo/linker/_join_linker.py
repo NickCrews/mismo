@@ -12,7 +12,7 @@ from mismo.types import LinksTable
 
 class JoinLinker(Linker):
     """
-    A [Linker][mismo.Linker] that creates a [JoinLinkage][mismo.JoinLinkage] based on a join condition.
+    A [Linker][mismo.Linker] based on a join condition.
     """  # noqa: E501
 
     def __init__(

@@ -8,14 +8,21 @@ of the framework
 ::: mismo.Linkage
 ::: mismo.LinkedTable
 ::: mismo.LinksTable
+::: mismo.CountsTable
 
-## Specific Linkage types
+## Linkers
+Utilities and classes for the blocking phase of record linkage, where
+we choose pairs of records to compare.
 
-::: mismo.BaseLinkage
-::: mismo.KeyLinkage
+Without blocking, we would have to compare N*M records, which
+becomes intractable for datasets much larger than a few thousand.
+
+::: mismo.Linker
+::: mismo.FullLinker
+::: mismo.EmptyLinker
+::: mismo.JoinLinker
 ::: mismo.KeyLinker
-::: mismo.LinkTableLinkage
-::: mismo.UnionKeyLinkage
+::: mismo.linkage.sample_all_links
 
 ## Comparing tables
 

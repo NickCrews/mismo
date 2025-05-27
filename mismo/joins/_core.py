@@ -70,7 +70,6 @@ def join(
         Should we apply `lname` and `rname` to ALL columns in the output,
         or just on the ones that collide between the two tables
         (the default, the same as in `ibis.join()`)
-
     """  # noqa: E501
     condition = _conditions.join_condition(predicates)
     resolved_predicate = condition.__join_condition__(left, right)

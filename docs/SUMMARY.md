@@ -9,7 +9,7 @@
     * [Core API](reference/core.md)
     * By Task
         * [EDA](reference/eda.md)
-        * [Blocking](reference/block.md)
+        * [Joining](reference/join.md)
         * [Comparing](reference/compare.md)
             * [Fellegi-Sunter](reference/fs.md)
         * [Clustering](reference/cluster.md)
