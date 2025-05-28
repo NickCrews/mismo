@@ -215,3 +215,7 @@ class LinksTable(TableWrapper):
             return name
 
         return links.rename(_swap_l_and_r)
+
+    def cache(self) -> LinksTable:
+        """Cache the links table."""
+        return LinksTable(self._t.cache(), left=self._left_raw, right=self._right_raw)
