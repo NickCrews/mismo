@@ -12,6 +12,7 @@ from mismo import linker as linker
 from mismo import playdata as playdata
 from mismo import sets as sets
 from mismo import text as text
+from mismo import tf as tf
 from mismo import types as types
 from mismo import vector as vector
 from mismo._counts_table import CountsTable as CountsTable
