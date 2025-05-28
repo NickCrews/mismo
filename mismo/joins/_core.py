@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import ibis
+from ibis.expr import types as ir
 
 from mismo.joins import _conditions
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 def join(
@@ -134,3 +138,20 @@ def rename_all_joins(
         raise ValueError("\n".join(dupes))
 
     return joined.select(**{new_name: old_name for new_name, old_name in selections})
+
+
+def remove_condition_overlap(
+    conditions: Iterable[ir.BooleanValue],
+) -> list[ir.BooleanValue]:
+    """Remove overlapping conditions from a list of conditions.
+
+    This transforms each condition so that it doesn't generate any pairs
+    that are already covered by previous conditions.
+    """
+    result = []
+    priors = []
+    for condition in conditions:
+        modified = ibis.and_(condition, *[~prior for prior in priors])
+        priors.append(condition)
+        result.append(modified)
+    return result

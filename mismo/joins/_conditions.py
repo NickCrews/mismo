@@ -5,10 +5,10 @@ from typing import Any, Callable, Protocol, runtime_checkable
 
 import ibis
 from ibis import Deferred
-from ibis.common.deferred import Resolver, Variable, var
+from ibis.common.deferred import var
 from ibis.expr import types as ir
 
-from mismo import _registry, _util
+from mismo import _registry, _resolve, _util
 
 
 @runtime_checkable
@@ -170,7 +170,7 @@ class KeyJoinCondition:
         if isinstance(spec, str):
             left_spec = right_spec = spec
         elif isinstance(spec, Deferred):
-            if variables_names(spec) != {"_"}:
+            if _resolve.variables_names(spec) != {"_"}:
                 raise BadKeyJoinCondition(
                     "Deferred join conditions must only contain `ibis._` variables."
                 )
@@ -256,27 +256,6 @@ Examples
 """
 
 
-def variables_names(deferred: Deferred) -> set[str]:
-    """Get the names of all Variables in a Deferred."""
-    if not isinstance(deferred, Deferred):
-        raise TypeError(f"Expected a Deferred, got {type(deferred).__name__} instead.")
-    return _variables_names(deferred, set())
-
-
-def _variables_names(x, variable_names: set[str]):
-    if isinstance(x, Variable):
-        variable_names = {*variable_names, x.name}
-    elif (
-        resolver := x if isinstance(x, Resolver) else getattr(x, "_resolver", None)
-    ) is not None:
-        for slot in resolver.__slots__:
-            child = getattr(resolver, slot)
-            child_variables = _variables_names(child, variable_names)
-            # print(slot, type(child), child_contains_left, child_contains_right)
-            variable_names = variable_names.union(child_variables)
-    return variable_names
-
-
 class LeftRightDeferredCondition:
     def __init__(self, condition: Deferred):
         self.condition = condition
@@ -286,7 +265,7 @@ class LeftRightDeferredCondition:
     def _try(obj: Any) -> LeftRightDeferredCondition:
         if not isinstance(obj, Deferred):
             raise NotImplementedError
-        if variables_names(obj) == {"left", "right"}:
+        if _resolve.variables_names(obj) == {"left", "right"}:
             return LeftRightDeferredCondition(obj)
         raise NotImplementedError(
             "Deferred join conditions must only contain 'left' and 'right' variables."
