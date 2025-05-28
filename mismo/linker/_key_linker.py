@@ -150,7 +150,7 @@ class KeyLinker(Linker):
         ],
         *,
         max_pairs: int | None = None,
-        task: Literal["dedupe", "link"] | None = None,
+        task: Literal["dedupe", "lookup", "link"] | None = None,
     ) -> None:
         """Create a KeyBlocker.
 
@@ -206,11 +206,11 @@ class KeyLinker(Linker):
         if task == "dedupe":
             clauses = (*clauses, left.record_id < right.record_id)
         if self.max_pairs is not None:
-            too_common_right, too_common_left = self.too_common_of_records(left, right)
+            too_common_left, too_common_right = self.too_common_of_records(left, right)
             clauses = [
                 *clauses,
                 left.record_id.notin(too_common_left.record_id),
-                right.record_id.notin(too_common_right.record_id),
+                # right.record_id.notin(too_common_right.record_id),
             ]
         return ibis.and_(*clauses)
 
@@ -237,9 +237,10 @@ class KeyLinker(Linker):
             right_counts,
             key_name,
         ).select(key_name, npairs=_.nleft * _.nright)
-        too_big = pair_counts_by_key.filter(_.npairs > self.max_pairs)[key_name]
-        left = left.filter(_[key_name].notin(too_big)).drop(key_name)
-        right = right.filter(_[key_name].notin(too_big)).drop(key_name)
+        too_big = pair_counts_by_key.filter(_.npairs > self.max_pairs)
+        too_big = too_big.cache()
+        left = left.filter(_[key_name].isin(too_big[key_name])).drop(key_name)
+        right = right.filter(_[key_name].isin(too_big[key_name])).drop(key_name)
         return left, right
 
     def linkage(self, left: ibis.Table, right: ibis.Table) -> Linkage:
@@ -432,7 +433,12 @@ class KeyLinker(Linker):
         >>> isinstance(counts, ibis.Table)
         True
         """  # noqa: E501
-        counts = pair_counts(self.resolvers, left, right, task=self.task)
+        too_common_left, too_common_right = self.too_common_of_records(left, right)
+        left_filtered = left.filter(_.record_id.notin(too_common_left.record_id))
+        right_filtered = right.filter(_.record_id.notin(too_common_right.record_id))
+        counts = pair_counts(
+            self.resolvers, left_filtered, right_filtered, task=self.task
+        )
         if self.max_pairs is not None:
             counts = PairCountsTable(counts.filter(_.n <= self.max_pairs))
         return counts
