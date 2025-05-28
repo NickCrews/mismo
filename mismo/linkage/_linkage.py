@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import ibis
 
@@ -66,6 +66,33 @@ class Linkage:
         A table of (record_id_l, record_id_r, <other attributes>...) that link `left` and `right`.
         """  # noqa: E501
         return LinksTable(self._raw_links, left=self._left, right=self._right)
+
+    @classmethod
+    def from_join_condition(
+        cls,
+        left: ibis.Table,
+        right: ibis.Table,
+        condition: Any,
+    ) -> _typing.Self:
+        """
+        Create a Linkage from two Tables and a join condition.
+
+        Parameters
+        ----------
+        left
+            A Table of records, with at least a column 'record_id'.
+        right
+            A Table of records, with at least a column 'record_id'.
+        condition
+            A join condition, such as a boolean expression or an ibis expression.
+            See [join_condition][mismo.join_condition] for more details.
+
+        Returns
+        -------
+            A Linkage object.
+        """
+        links = LinksTable.from_join_condition(left, right, condition)
+        return cls(left=left, right=right, links=links)
 
     def cache(self) -> _typing.Self:
         """Cache left, right, and links for faster subsequent access."""
