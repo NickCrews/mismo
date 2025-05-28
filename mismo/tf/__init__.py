@@ -1,3 +1,7 @@
+"""
+Term Frequency utils, eg matching on "John Smith" has less signal than "Arun di Suvero".
+"""
+
 from __future__ import annotations
 
 from mismo.tf._tf import ColumnStats as ColumnStats
