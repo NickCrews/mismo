@@ -16,4 +16,4 @@ from mismo.joins._conditions import join_condition as join_condition
 from mismo.joins._conditions import left as left
 from mismo.joins._conditions import right as right
 from mismo.joins._core import join as join
-from mismo.joins._keys import get_keys_2_tables as get_keys_2_tables
+from mismo.joins._core import remove_condition_overlap as remove_condition_overlap
