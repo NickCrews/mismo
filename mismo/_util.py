@@ -25,6 +25,40 @@ class NotSet:
 NOT_SET = NotSet
 
 
+def select(*values: ibis.Value | Any, **named_values: ibis.Value | Any) -> ibis.Table:
+    """Like Table.select(), but you don't need to reference the table.
+
+    Examples
+    --------
+    >>> t = ibis.memtable({"a": [1, 2, 3], "b": [4, 5, 6]})
+    >>> select(t.a.name("aa"), b2=_.b * 2, x=3)
+    ┏━━━━━━━┳━━━━━━━┳━━━━━━┓
+    ┃ aa    ┃ b2    ┃ x    ┃
+    ┡━━━━━━━╇━━━━━━━╇━━━━━━┩
+    │ int64 │ int64 │ int8 │
+    ├───────┼───────┼──────┤
+    │     1 │     8 │    3 │
+    │     2 │    10 │    3 │
+    │     3 │    12 │    3 │
+    └───────┴───────┴──────┘
+    """
+    exprs_values = (v for v in values if isinstance(v, ir.Expr))
+    exprs_named_values = (v for v in named_values.values() if isinstance(v, ir.Expr))
+    exprs = [*exprs_values, *exprs_named_values]
+    parent_relations = {}
+    for v in exprs:
+        for r in v.op().relations:
+            parent_relations[r] = parent_relations.get(r, set()) | {v.get_name()}
+    if not parent_relations:
+        raise ValueError("No parent relations found")
+    if len(parent_relations) > 1:
+        lines = [f"relation {r} owns values {vs}" for r, vs in parent_relations.items()]
+        s = "\n  ".join(lines)
+        raise ValueError("Multiple parent relations:\n" + s)
+    parent = next(iter(parent_relations))
+    return parent.to_expr().select(*values, **named_values)
+
+
 def cases(
     *case_result_pairs: tuple[ir.BooleanValue, ir.Value],
     else_: ir.Value | None = None,
