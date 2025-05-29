@@ -198,7 +198,31 @@ def key_pair_resolver(spec) -> KeyPairResolver:
             )
         )
     keyl, keyr = parts
-    return PairOfIndividualResolver(value_resolver(keyl), value_resolver(keyr))
+    if isinstance(keyl, Deferred):
+        left_resolver = DeferredResolver(keyl, _get_name(keyl, {"left", "_"}))
+    else:
+        left_resolver = value_resolver(keyl)
+    if isinstance(keyr, Deferred):
+        right_resolver = DeferredResolver(keyr, _get_name(keyr, {"right", "_"}))
+    else:
+        right_resolver = value_resolver(keyr)
+
+    return PairOfIndividualResolver(left_resolver, right_resolver)
+
+
+def _get_name(d: Deferred, allowed_names: set[str]) -> str:
+    """Get the name of a Deferred, or raise an error if it is not in allowed_names."""
+    actual_names = variables_names(d)
+    if len(actual_names) != 1:
+        raise ValueError(
+            f"Expected a Deferred with name in {allowed_names}, got {actual_names} from {d}"  # noqa: E501
+        )
+    actual_name = actual_names.pop()
+    if actual_name not in allowed_names:
+        raise ValueError(
+            f"Expected a Deferred with name in {allowed_names}, got {actual_name} from {d}"  # noqa: E501
+        )
+    return actual_name
 
 
 def key_pair_resolvers(x) -> list[KeyPairResolver]:
