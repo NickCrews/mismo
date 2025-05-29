@@ -261,77 +261,6 @@ class KeyLinker(Linker):
             rkeys.append(keyr)
         return tuple(lkeys), tuple(rkeys)
 
-    def key_counts(self, t: ibis.Table, /) -> KeyCountsTable:
-        """Count the join keys in a table.
-
-        This is very similar to `t.group_by(key).count()`, except that counts NULLs,
-        whereas this method does not count NULLs since they are not
-        counted as a match during joins.
-
-        This is useful for analyzing the skew of join keys.
-        For example, if you are joining on (surname, city),
-        there might be only 4 values for (hoessle, tinytown),
-        which would lead to a block of 4 * 4 = 16 record pairs.
-
-        On the other hand, there could be 10_000 values for (smith, new york city).
-        This would lead to 10_000 * 10_000 = 100_000_000 record pairs,
-        which is likely too many for you to be able to compare.
-
-        Parameters
-        ----------
-        t
-            The table of records.
-
-        Returns
-        -------
-        CountsTable
-            Will have column(s) for each `key` and a column `n` with the count.
-
-        Examples
-        --------
-        >>> import ibis
-        >>> ibis.options.interactive = True
-        >>> import mismo
-        >>> records = [
-        ...     ("a", 1),
-        ...     ("b", 1),
-        ...     ("b", 1),
-        ...     ("c", 3),
-        ...     ("b", 2),
-        ...     ("c", 3),
-        ...     (None, 4),
-        ...     ("c", 3),
-        ... ]
-        >>> letters, nums = zip(*records)
-        >>> t = ibis.memtable({"letter": letters, "num": nums})
-        >>> linker = mismo.KeyLinker(["letter", "num"])
-
-        Note how the (None, 4) record is not counted,
-        since NULLs are not counted as a match during a join.
-
-        >>> counts = linker.key_counts(t)
-        >>> counts.order_by("letter", "num")
-        ┏━━━━━━━━┳━━━━━━━┳━━━━━━━┓
-        ┃ letter ┃ num   ┃ n     ┃
-        ┡━━━━━━━━╇━━━━━━━╇━━━━━━━┩
-        │ string │ int64 │ int64 │
-        ├────────┼───────┼───────┤
-        │ a      │     1 │     1 │
-        │ b      │     1 │     2 │
-        │ b      │     2 │     1 │
-        │ c      │     3 │     3 │
-        └────────┴───────┴───────┘
-
-        The returned CountsTable is a subclass of an Ibis Table
-        with a special `n_total` method for convenience:
-
-        >>> counts.n_total()
-        7
-        >>> isinstance(counts, ibis.Table)
-        True
-        """
-        return key_counts(self.resolvers, t)
-
     def pair_counts(
         self,
         left: ibis.Table,
@@ -445,8 +374,11 @@ class KeyLinker(Linker):
 
     def __repr__(self) -> str:
         if self.max_pairs is None:
-            return f"{self.__class__.__name__}({self.resolvers!r}, max_pairs=None)"  # noqa: E501
-        return f"{self.__class__.__name__}({self.resolvers!r}, max_pairs={self.max_pairs:_})"  # noqa: E501
+            max_pairs = "None"
+        else:
+            max_pairs = f"{self.max_pairs:_}"
+        resolvers_str = ", ".join(str(r) for r in self.resolvers)
+        return f"{self.__class__.__name__}([{resolvers_str}], max_pairs={max_pairs})"
 
 
 class KeyLinksTable(LinksTable):
@@ -468,6 +400,7 @@ class KeyLinksTable(LinksTable):
             )
             .n.sum()
             .fill_null(0)
+            .name("count")
         )
 
 
