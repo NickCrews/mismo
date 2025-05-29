@@ -51,6 +51,9 @@ class DeferredResolver(ValueResolver):
             return f"DeferredResolver({self.deferred!r})"
         return f"DeferredResolver({self.deferred!r}, name={self.name!r})"
 
+    def __str__(self) -> str:
+        return f"{self.deferred!r}"
+
 
 class LiteralResolver(ValueResolver):
     def __init__(self, value: ibis.Value) -> None:
@@ -66,7 +69,10 @@ class LiteralResolver(ValueResolver):
         return resolved[0]
 
     def __repr__(self) -> str:
-        return f"LiteralResolver({self.left_value!r}, {self.right_value!r})"
+        return f"LiteralResolver({self.value!r})"
+
+    def __str__(self) -> str:
+        return f"`{self.value!r}`"
 
 
 class StrResolver(ValueResolver):
@@ -82,6 +88,9 @@ class StrResolver(ValueResolver):
 
     def __repr__(self):
         return f"StrResolver({self.s!r})"
+
+    def __str__(self):
+        return f"`{self.s!r}`"
 
 
 class FuncResolver(ValueResolver):
@@ -118,6 +127,9 @@ class PairOfIndividualResolver(KeyPairResolver):
         return (
             f"PairOfIndividualResolver({self.left_resolver!r}, {self.right_resolver!r})"
         )
+
+    def __str__(self):
+        return f"{self.left_resolver!s} == {self.right_resolver!s}"
 
 
 class BinaryFuncResolver(KeyPairResolver):

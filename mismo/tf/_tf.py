@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
+import functools
 from typing import Generic, Literal, TypeVar
 
 import ibis
@@ -35,18 +36,23 @@ class ColumnStats:
 
     def __init__(self, column: ir.Column):
         self.column = column
-        self.stats = StatsTable.from_column(column)
+        self._stats_table = StatsTable.from_column(column)
 
     @property
     def name(self) -> str:
         """The name of the term."""
         return self.column.get_name()
 
+    @functools.cached_property
+    def stats_table(self) -> StatsTable:
+        """The stats table for this column."""
+        return StatsTable(self._stats_table.cache())
+
     def add_frequencies(
         self,
         table: ibis.Table,
         *,
-        column: str | ibis.Deferred = None,
+        column: str | ibis.Deferred | ibis.Column = None,
         name_as: str | None = None,
         default: Literal["1/N"] | int | float = "1/N",
     ) -> ibis.Table:
@@ -68,7 +74,7 @@ class ColumnStats:
 
         unique_name = _util.unique_name("join_key")
         # TODO: this could be factored out into a join_lookup() function
-        stats_raw = self.stats.select(
+        stats_raw = self.stats_table.select(
             _.value.name(unique_name), _.frequency.name(name_as)
         )
         filler = (
@@ -115,7 +121,7 @@ class TermFrequencyModel:
         self,
         table: ibis.Table,
         *,
-        columns: dict[str, str | ibis.Deferred] | None = None,
+        columns: dict[str, str | ibis.Deferred | ibis.Column] | None = None,
         name_as: str | None = None,
         default: Literal[0, "1/N"] = "1/N",
     ) -> ibis.Table:
