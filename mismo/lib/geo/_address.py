@@ -9,21 +9,27 @@ from mismo.lib.geo._latlon import distance_km
 from mismo.lib.geo._regex_parse import parse_street1_re
 
 
-def _featurize_many(t: ibis.Table, *, cleaned_column: str) -> ibis.Table:
+def _featurize_many(
+    t: ibis.Table, *, input_column: str, output_column: str
+) -> ibis.Table:
     """Given a table with column addresses:Array<Struct>, add a column address_featured:Array<Struct>."""  # noqa: E501
     with_id = t.mutate(__id=ibis.row_number())
-    unnested = with_id.select("__id", _[cleaned_column].unnest().name(cleaned_column))
+    unnested = with_id.select("__id", _[input_column].unnest().name(input_column))
     lookup = (
-        _featurize(unnested, unnested[cleaned_column])
+        _featurize(
+            unnested,
+            input_column=input_column,
+            output_name="address_featured",
+        )
         .group_by("__id")
-        .agg(addresses_featured=_.address_featured.collect())
+        .agg(_.address_featured.collect().name(output_column))
     )
     lookup = lookup.cache()
     rejoined = _util.join_lookup(
-        with_id, lookup, "__id", defaults={"addresses_featured": []}
+        with_id, lookup, "__id", defaults={output_column: []}
     ).drop("__id")
     rejoined = rejoined.mutate(
-        addresses_featured=_[cleaned_column].isnull().ifelse(None, _.addresses_featured)
+        _[input_column].isnull().ifelse(None, _[output_column]).name(output_column)
     )
     return rejoined
 
@@ -50,18 +56,10 @@ def _norm_address(address: ir.StructValue) -> ir.StructValue:
     )
 
 
-def _featurize(t: ibis.Table, address_cleaned: ir.StructValue) -> ibis.Table:
-    """Add a StructColumn named "address_featured" to the table.
-
-    The input table must have a column named "address" of type
-    struct<
-        street1: string,
-        street2: string,
-        city: string,
-        state: string,
-        postal_code: string,
-    >
-    """
+def _featurize(
+    t: ibis.Table, *, input_column: str | ir.StructValue, output_name: str
+) -> ibis.Table:
+    """Add a StructColumn named "address_featured" to the table."""
     # we have this Table -> Table API for performance reasons:
     # by doing all these operations in a much of sequential .mutate()s,
     # it compiles to a bunch of chained CTEs in the SQL.
@@ -74,11 +72,10 @@ def _featurize(t: ibis.Table, address_cleaned: ir.StructValue) -> ibis.Table:
     # for every time it appears in the SQL. See https://github.com/duckdb/duckdb/discussions/14649.
     # So, if we did one .mutate(), we would end up with like literally 100 regex
     # evaluations in the SQL, which is 100x slower than evaluating the regex once.
+    input_column = t.bind(input_column)[0]
+    t = t.mutate(_parsed=parse_street1_re(input_column.street1), _cleaned=input_column)
     t = t.mutate(
-        _parsed=parse_street1_re(address_cleaned.street1), _cleaned=address_cleaned
-    )
-    t = t.mutate(
-        address_featured=ibis.struct(
+        __address_featured=ibis.struct(
             dict(
                 street1=_._cleaned.street1,
                 city=_._cleaned.city,
@@ -94,9 +91,9 @@ def _featurize(t: ibis.Table, address_cleaned: ir.StructValue) -> ibis.Table:
         )
     ).drop("_parsed")
     t = t.mutate(
-        address_featured=_structs.mutate(
-            t.address_featured,
-            street_number_sorted=t.address_featured.street_number.split("")
+        __address_featured=_structs.mutate(
+            t.__address_featured,
+            street_number_sorted=t.__address_featured.street_number.split("")
             .sort()
             .join(""),
         )
@@ -104,18 +101,18 @@ def _featurize(t: ibis.Table, address_cleaned: ir.StructValue) -> ibis.Table:
     ngrams = 4
     t = t.mutate(
         __street_number_ngrams=text.ngrams(
-            t.address_featured.street_number_sorted, ngrams
+            t.__address_featured.street_number_sorted, ngrams
         ),
-        __street_name_ngrams=text.ngrams(t.address_featured.street_name, ngrams),
+        __street_name_ngrams=text.ngrams(t.__address_featured.street_name, ngrams),
     )
     t = t.mutate(
-        address_featured=_structs.mutate(
-            t.address_featured,
+        __address_featured=_structs.mutate(
+            t.__address_featured,
             street_ngrams=(
                 ibis.array(
                     [
-                        t.address_featured.street_number_sorted,
-                        t.address_featured.street_name,
+                        t.__address_featured.street_number_sorted,
+                        t.__address_featured.street_name,
                     ]
                 )
                 .concat(
@@ -127,11 +124,11 @@ def _featurize(t: ibis.Table, address_cleaned: ir.StructValue) -> ibis.Table:
         )
     )
     t = t.mutate(
-        address_featured=_structs.mutate(
-            t.address_featured,
-            street_ngrams=t.address_featured.street_ngrams.unique(),
-        )
-    )
+        _structs.mutate(
+            t.__address_featured,
+            street_ngrams=t.__address_featured.street_ngrams.unique(),
+        ).name(output_name)
+    ).drop("__address_featured", "__street_number_ngrams", "__street_name_ngrams")
     return t
 
 
@@ -262,7 +259,9 @@ class AddressesDimension:
 
     def prepare_for_blocking(self, t: ir.Table) -> ir.Table:
         """Prepares the table for blocking, adding normalized and tokenized columns."""
-        t = _featurize_many(t, cleaned_column=self.column_cleaned)
+        t = _featurize_many(
+            t, input_column=self.column_cleaned, output_column=self.column_featured
+        )
         t = t.cache()
         t = t.mutate(
             _addresses_tokens=_.addresses_featured.map(lambda a: a.street_ngrams)
