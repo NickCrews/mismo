@@ -5,12 +5,12 @@ import csv
 import io
 import logging
 import time
-from typing import TYPE_CHECKING, AsyncIterable, Iterable
+from typing import TYPE_CHECKING, Iterable
 
 import ibis
 from ibis.expr import types as ir
 
-from mismo import _aio, _util
+from mismo import _util
 
 if TYPE_CHECKING:
     import httpx
@@ -112,9 +112,10 @@ def us_census_geocode(
     if n_concurrent is None:
         n_concurrent = _N_CONCURRENT
     t = t.mutate(__row_number=ibis.row_number())
-    normed_and_deduped, restore = _norm_and_dedupe(t)
+    normed = _normed_addresses(t)
+    deduped, restore = _dedupe(normed)
     gc = _geocode(
-        normed_and_deduped,
+        deduped,
         benchmark=benchmark,
         vintage=vintage,
         chunk_size=chunk_size,
@@ -132,26 +133,19 @@ def us_census_geocode(
     return re_joined
 
 
-def _norm_and_dedupe(t: ir.Table) -> tuple[ir.Table, callable]:
-    t = t.select(
-        "__row_number",
-        street=t.street.strip().upper(),
-        city=t.city.strip().upper(),
-        state=t.state.strip().upper(),
-        zipcode=t.zipcode.strip().upper(),
-    )
+def _dedupe(t: ir.Table) -> tuple[ir.Table, callable]:
+    keys = ["street", "city", "state", "zipcode"]
+    api_id = ibis.dense_rank().over(ibis.window(order_by=keys))
     # same as pandas.DataFrame.groupby(keys).ngroup()
-    with_api_id = t.mutate(
-        api_id=ibis.dense_rank().over(order_by=["street", "city", "state", "zipcode"])
-    )
-    deduped = with_api_id.select(
+    with_group_id = t.mutate(api_id=api_id)
+    deduped = with_group_id.select(
         "api_id", "street", "city", "state", "zipcode"
     ).distinct()
     # need to cache this, otherwise if you look at deduped[:100], deduped[100:200],
     # etc, it will recompute deduped each time, and since the order is not guaranteed,
     # you might get api_id 1 both times!
     deduped = deduped.cache()
-    restore_map = with_api_id.select("__row_number", "api_id")
+    restore_map = with_group_id.select("__row_number", "api_id")
 
     def restore(ded: ir.Table) -> ir.Table:
         return restore_map.left_join(ded, "api_id").drop("api_id", "api_id_right")
@@ -167,6 +161,7 @@ def _geocode(
     chunk_size: int,
     n_concurrent: int,
 ) -> ir.Table:
+    t = t.cache()
     sub_tables = chunk_table(t, max_size=chunk_size)
     byte_chunks = (_table_to_csv_bytes(sub) for sub in sub_tables)
     client = _make_client()
@@ -182,6 +177,17 @@ def _geocode(
     result = ibis.union(*tables)
     result = _post_process_table(result)
     return result
+
+
+def _normed_addresses(t: ir.Table) -> ir.Table:
+    t = t.select(
+        "__row_number",
+        street=t.street.strip().upper(),
+        city=t.city.strip().upper(),
+        state=t.state.strip().upper(),
+        zipcode=t.zipcode.strip().upper(),
+    )
+    return t
 
 
 def chunk_table(t: ir.Table, max_size: int) -> Iterable[ir.Table]:
@@ -216,16 +222,15 @@ def _make_requests(
     if sem is None:
         sem = asyncio.Semaphore(_N_CONCURRENT)
 
-    async def _async_make_requests() -> AsyncIterable[str]:
+    async def _async_make_requests() -> list[str]:
         async with client:
             responses = [
                 _make_request(client, sem, chunk_id=i, **req)
                 for i, req in enumerate(requests)
             ]
-            for resp in asyncio.as_completed(responses):
-                yield await resp
+            return await asyncio.gather(*responses)
 
-    yield from _aio.iter_over_async(_async_make_requests())
+    return asyncio.run(_async_make_requests())
 
 
 async def _make_request(
