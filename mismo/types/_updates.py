@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Iterable, Literal
+from typing import TYPE_CHECKING, Any, Iterable, Literal
 
 import ibis
 from ibis.expr import datatypes as dt
@@ -8,6 +8,9 @@ from ibis.expr import types as ir
 
 from mismo import _util, joins
 from mismo.types._table_wrapper import TableWrapper
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 class Filters:
@@ -201,25 +204,71 @@ class Updates(TableWrapper):
         diff_table = joined.select(*[make_diff_col(c) for c in all_columns])
         return cls(diff_table, schema=schema)
 
+    @classmethod
+    def from_before_after(
+        cls,
+        before: Mapping[str, ibis.Value] | ir.StructValue,
+        after: Mapping[str, ibis.Value] | ir.StructValue,
+        *,
+        schema: Literal["exactly", "names", "lax"] = "exactly",
+    ) -> Updates:
+        """Create an Updates object from before and after values.
+
+        Parameters
+        ----------
+        before : Mapping[str, ibis.Value] | ir.StructValue
+            The values before the changes.
+        after : Mapping[str, ibis.Value] | ir.StructValue
+            The values after the changes.
+        schema : Literal["exactly", "names", "lax"]
+            The schema to use for the Updates object.
+
+        Returns
+        -------
+        Updates
+            An Updates object representing the changes.
+        """
+        if isinstance(before, ir.StructValue):
+            before = {col: before[col] for col in before.type().names}
+        if isinstance(after, ir.StructValue):
+            after = {col: after[col] for col in after.type().names}
+
+        all_columns = set(before.keys()) | set(after.keys())
+
+        def make_diff_col(col: str) -> ir.StructColumn:
+            d = {}
+            if col in before:
+                d["before"] = before[col]
+            if col in after:
+                d["after"] = after[col]
+            return ibis.struct(d).name(col)
+
+        diff_table = _util.select(*[make_diff_col(c) for c in all_columns])
+        return cls(diff_table, schema=schema)
+
+    def before_values(self) -> dict[str, ir.Column]:
+        """The values before the changes."""
+        return {
+            col: self[col].before
+            for col in self.columns
+            if "before" in self[col].type().names
+        }
+
+    def after_values(self) -> dict[str, ir.Column]:
+        """The values after the changes."""
+        return {
+            col: self[col].after
+            for col in self.columns
+            if "after" in self[col].type().names
+        }
+
     def before(self) -> ibis.Table:
         """The table before the changes."""
-        return self.select(
-            [
-                self[col].before.name(col)
-                for col in self.columns
-                if "before" in self[col].type().names
-            ]
-        )
+        return self.select(**self.before_values())
 
     def after(self) -> ibis.Table:
         """The table after the changes."""
-        return self.select(
-            [
-                self[col].after.name(col)
-                for col in self.columns
-                if "after" in self[col].type().names
-            ]
-        )
+        return self.select(**self.after_values())
 
     def filter(self, *args, **kwargs):
         return self.__class__(self._t.filter(*args, **kwargs), schema="lax")
