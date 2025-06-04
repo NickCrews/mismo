@@ -175,7 +175,8 @@ def value_resolver(spec: ibis.Value | Deferred | str) -> ValueResolver:
 
 
 def key_pair_resolver(spec) -> KeyPairResolver:
-    if isinstance(spec, KeyPairResolver):
+    # ibis.Deferred thinks it's an instance of everything, so check for that.
+    if isinstance(spec, KeyPairResolver) and not isinstance(spec, ibis.Deferred):
         return spec
     if isinstance(spec, ibis.Value):
         return PairOfIndividualResolver(value_resolver(spec), value_resolver(spec))
