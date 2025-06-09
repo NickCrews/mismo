@@ -230,7 +230,7 @@ def _make_requests(
             ]
             return await asyncio.gather(*responses)
 
-    return asyncio.run(_async_make_requests())
+    return _asyncio_run_with_nest_asyncio(_async_make_requests())
 
 
 async def _make_request(
@@ -331,3 +331,16 @@ def _post_process_table(t: ir.Table) -> ir.Table:
         latitude=lat,
         longitude=lon,
     )
+
+
+def _asyncio_run_with_nest_asyncio(coro):
+    """asyncio.run(), but can handle nested loops as in Jupyter."""
+    try:
+        return asyncio.run(coro)
+    except RuntimeError as e:
+        if "asyncio.run() cannot be called from a running event loop" not in str(e):
+            raise
+        import nest_asyncio
+
+        nest_asyncio.apply()
+        return asyncio.run(coro)
