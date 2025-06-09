@@ -159,7 +159,7 @@ class Diff:
             before=self.before().cache(),
             after=self.after().cache(),
             insertions=self.insertions().cache(),
-            updates=Updates(self.updates().cache(), schema="lax"),
+            updates=Updates(self.updates().cache(), check_schemas="lax"),
             deletions=self.deletions().cache(),
         )
 
@@ -192,7 +192,9 @@ class Diff:
             before=backend.read_parquet(d / "before.parquet"),
             insertions=backend.read_parquet(d / "insertions.parquet"),
             deletions=backend.read_parquet(d / "deletions.parquet"),
-            updates=Updates(backend.read_parquet(d / "updates.parquet"), schema="lax"),
+            updates=Updates(
+                backend.read_parquet(d / "updates.parquet"), check_schemas="lax"
+            ),
         )
 
     def before(self) -> ibis.Table:

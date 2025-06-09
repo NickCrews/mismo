@@ -47,18 +47,11 @@ class Filters:
         def filter_func(table: ir.Table):
             nonlocal subset
             if subset is None:
-                u = Updates(table, schema="lax")
+                u = Updates(table, check_schemas="lax")
                 if u.before().schema() != u.after().schema():
                     return True
                 subset = table.columns
-            preds = [
-                ibis.or_(
-                    table[col].before != table[col].after,
-                    table[col].before.isnull() != table[col].after.isnull(),
-                )
-                for col in subset
-            ]
-            return ibis.and_(*preds)
+            ibis.and_(*(is_changed(table[col]) for col in subset))
 
         return filter_func
 
@@ -87,18 +80,11 @@ class Filters:
         def filter_func(table: ir.Table):
             nonlocal subset
             if subset is None:
-                u = Updates(table, schema="lax")
+                u = Updates(table, check_schemas="lax")
                 if u.before().schema() != u.after().schema():
                     return True
                 subset = table.columns
-            preds = [
-                ibis.or_(
-                    table[col].before != table[col].after,
-                    table[col].before.isnull() != table[col].after.isnull(),
-                )
-                for col in subset
-            ]
-            return ibis.or_(*preds)
+            return ibis.or_(*(is_changed(table[col]) for col in subset))
 
         return filter_func
 
@@ -130,8 +116,21 @@ class Updates(TableWrapper):
         diff_table: ibis.Table,
         /,
         *,
-        schema: Literal["exactly", "names", "lax"] = "exactly",
+        check_schemas: Literal["exactly", "names", "lax"] = "exactly",
     ) -> None:
+        """Create an Updates object from a table of differences.
+
+        Parameters
+        ----------
+        diff_table : ibis.Table
+            A table with columns that are structs with at least 'before' and 'after' fields.
+        check_schemas : Literal["exactly", "names", "lax"]
+            How to check the schemas of the before and after values.
+            - "exactly": both before and after must have the same columns and types.
+            - "names": both before and after must have the same columns, but types can differ.
+            - "lax": no schema checking, just that there is at least one of 'before' or 'after' in each column.
+        """  # noqa: E501
+
         def _check_col(name: str):
             col_type: dt.DataType = diff_table[name].type()
             if not isinstance(col_type, dt.Struct):
@@ -139,7 +138,7 @@ class Updates(TableWrapper):
             fields = set(col_type.names)
             if "before" not in fields and "after" not in fields:
                 return f"Column {name} needs to have at least one of 'before' and 'after' field"  # noqa: E501
-            if schema == "exactly":
+            if check_schemas == "exactly":
                 if "before" not in fields or "after" not in fields:
                     return (
                         f"Column {name} needs to have both 'before' and 'after' fields"
@@ -148,22 +147,28 @@ class Updates(TableWrapper):
                 a_type = col_type.fields["after"]
                 if b_type != a_type:
                     return f"Column {name} needs to have the same type for 'before' ({b_type}) and 'after' ({a_type})"  # noqa: E501
-            elif schema == "names":
+            elif check_schemas == "names":
                 if "before" not in fields or "after" not in fields:
                     return (
                         f"Column {name} needs to have both 'before' and 'after' fields"
                     )
-            elif schema == "lax":
+            elif check_schemas == "lax":
                 pass
             else:
-                raise ValueError(f"Unknown schema {schema}")
+                raise ValueError(f"Unknown schema {check_schemas}")
 
         errors = [_check_col(col_name) for col_name in diff_table.columns]
         errors = [e for e in errors if e is not None]
         if errors:
             raise ValueError("\n".join(errors))
 
+        object.__setattr__(self, "_check_schemas", check_schemas)
         super().__init__(diff_table)
+
+    @property
+    def check_schemas(self) -> Literal["exactly", "names", "lax"]:
+        """The schema checking mode used for this Updates object."""
+        return self._check_schemas
 
     @classmethod
     def from_tables(
@@ -172,7 +177,7 @@ class Updates(TableWrapper):
         after: ibis.Table,
         *,
         join_on: str,
-        schema: Literal["exactly", "names", "lax"] = "exactly",
+        check_schemas: Literal["exactly", "names", "lax"] = "exactly",
     ) -> Updates:
         """Create from two different tables by joining them on a key.
 
@@ -202,7 +207,7 @@ class Updates(TableWrapper):
             return ibis.struct(d).name(col)
 
         diff_table = joined.select(*[make_diff_col(c) for c in all_columns])
-        return cls(diff_table, schema=schema)
+        return cls(diff_table, check_schemas=check_schemas)
 
     @classmethod
     def from_before_after(
@@ -210,7 +215,7 @@ class Updates(TableWrapper):
         before: Mapping[str, ibis.Value] | ir.StructValue,
         after: Mapping[str, ibis.Value] | ir.StructValue,
         *,
-        schema: Literal["exactly", "names", "lax"] = "exactly",
+        check_schemas: Literal["exactly", "names", "lax"] = "exactly",
     ) -> Updates:
         """Create an Updates object from before and after values.
 
@@ -220,14 +225,17 @@ class Updates(TableWrapper):
             The values before the changes.
         after : Mapping[str, ibis.Value] | ir.StructValue
             The values after the changes.
-        schema : Literal["exactly", "names", "lax"]
-            The schema to use for the Updates object.
+        check_schemas : Literal["exactly", "names", "lax"]
+            How to check the schemas of the before and after values.
+            - "exactly": both before and after must have the same columns and types.
+            - "names": both before and after must have the same columns, but types can differ.
+            - "lax": no schema checking, just that there is at least one of 'before' or 'after' in each column.
 
         Returns
         -------
         Updates
             An Updates object representing the changes.
-        """
+        """  # noqa: E501
         if isinstance(before, ir.StructValue):
             before = {col: before[col] for col in before.type().names}
         if isinstance(after, ir.StructValue):
@@ -244,7 +252,7 @@ class Updates(TableWrapper):
             return ibis.struct(d).name(col)
 
         diff_table = _util.select(*[make_diff_col(c) for c in all_columns])
-        return cls(diff_table, schema=schema)
+        return cls(diff_table, check_schemas=check_schemas)
 
     def before_values(self) -> dict[str, ir.Column]:
         """The values before the changes."""
@@ -270,11 +278,17 @@ class Updates(TableWrapper):
         """The table after the changes."""
         return self.select(**self.after_values())
 
+    def is_changed(self, column: str, /) -> ibis.ir.BooleanColumn:
+        (val,) = self.bind(column)
+        return is_changed(val)
+
     def filter(self, *args, **kwargs):
-        return self.__class__(self._t.filter(*args, **kwargs), schema="lax")
+        return self.__class__(
+            self._t.filter(*args, **kwargs), check_schemas=self.check_schemas
+        )
 
     def cache(self):
-        return self.__class__(self._t.cache(), schema="lax")
+        return self.__class__(self._t.cache(), check_schemas=self.check_schemas)
 
     def apply_to(
         self,
@@ -329,3 +343,10 @@ class Updates(TableWrapper):
         t = t.select(self.after().columns)
         t = t.union(self.after(), distinct=False)
         return t
+
+
+def is_changed(val: ibis.Value, /) -> ibis.ir.BooleanColumn:
+    return ibis.or_(
+        val.before != val.after,
+        val.before.isnull() != val.after.isnull(),
+    )
