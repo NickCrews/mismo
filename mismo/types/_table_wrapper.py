@@ -23,4 +23,7 @@ class TableWrapper(ibis.Table):
         object.__setattr__(self, "_t", t)
 
     def __getattr__(self, key: str):
-        return getattr(self._t, key)
+        try:
+            object.__getattr__(self, key)
+        except AttributeError:
+            return getattr(self._t, key)
