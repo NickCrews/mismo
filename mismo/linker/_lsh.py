@@ -9,7 +9,7 @@ from ibis.expr import types as ir
 
 from mismo._util import get_column
 from mismo.arrays import array_choice
-from mismo.linker import _linker
+from mismo.linker import _common
 
 
 def minhash_lsh_keys(
@@ -41,7 +41,7 @@ def minhash_lsh_keys(
     return result
 
 
-class MinhashLshLinker(_linker.Linker):
+class MinhashLshLinker(_common.Linker):
     """A [Linker][mismo.Linker] that uses Minhash LSH to block record pairs that have high Jaccard similarity.
 
     See [the how-to guide](../howto/lsh.ipynb) for more information.
