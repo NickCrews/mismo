@@ -279,6 +279,7 @@ class Updates(TableWrapper):
         return self.select(**self.after_values())
 
     def is_changed(self, column: str, /) -> ibis.ir.BooleanColumn:
+        """Is column.before different from column.after? Never returns NULL."""
         (val,) = self.bind(column)
         return is_changed(val)
 
@@ -346,7 +347,8 @@ class Updates(TableWrapper):
 
 
 def is_changed(val: ibis.Value, /) -> ibis.ir.BooleanColumn:
+    """Is val.before different from val.after? Never returns NULL."""
     return ibis.or_(
-        val.before != val.after,
+        (val.before != val.after).fill_null(False),
         val.before.isnull() != val.after.isnull(),
     )
