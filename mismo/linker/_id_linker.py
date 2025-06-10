@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Iterable, Literal
 
 import ibis
 from ibis.expr import types as ir
 
 from mismo import _resolve
 from mismo.linkage._linkage import Linkage, LinksTable
+from mismo.linker._key_linker import KeyLinker
 
 
 class IDLinker:
@@ -42,7 +43,7 @@ class IDLinker:
 
     def __init__(
         self,
-        labels: str | ibis.Deferred | Any,
+        labels: Iterable[str | ibis.Deferred | Any],
         *,
         when_null: Literal["nonmatch", "indefinite"],
         when_not_equal: Literal["nonmatch", "indefinite"],
@@ -74,14 +75,13 @@ class IDLinker:
                 f"when_not_equal should be either 'nonmatch' or 'indefinite'. Got {when_not_equal}"  # noqa: E501
             )
 
-        self.labels = labels
+        self.resolvers = tuple(_resolve.key_pair_resolvers(labels))
         self.when_null = when_null
         self.when_not_equal = when_not_equal
 
     def match_condition(self, a: ibis.Table, b: ibis.Table) -> ir.BooleanColumn:
         """Select any pairs where we know they are a match (ie the labels are equal)."""
-        label_a, label_b = _resolve.resolve_column_pair(self.labels, a, b)
-        return label_a == label_b
+        return KeyLinker(self.resolvers).__join_condition__(a, b)
 
     def match_linkage(self, left: ibis.Table, right: ibis.Table) -> Linkage:
         if right is left:
@@ -118,7 +118,7 @@ class IDLinker:
         #     ~self.match_condition(a, b),
         #     ~self.nonmatch_condition(a, b),
         # )
-        label_a, label_b = _resolve.resolve_column_pair(self.labels, a, b)
+        label_a, label_b = _resolve.key_pair_resolver(self.resolvers)(a, b)
         conditions = [label_a == label_b]
         if self.when_not_equal == "indefinite":
             conditions.append((label_a != label_b).fill)
@@ -138,4 +138,4 @@ class IDLinker:
         return Linkage(left=left, right=right, links=links)
 
     def __repr__(self) -> str:
-        return f"IDLinker(labels={self.labels}, when_null={self.when_null}, when_not_equal={self.when_not_equal})"  # noqa: E501
+        return f"IDLinker(labels={self.resolvers}, when_null={self.when_null}, when_not_equal={self.when_not_equal})"  # noqa: E501

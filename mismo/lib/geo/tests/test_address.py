@@ -30,7 +30,6 @@ from mismo.lib import geo
                 "addresses": [
                     {
                         "street1": "132 MAIN ST",
-                        "street2": "APT 1B",
                         "city": "SPRINGFIELD",
                         "state": None,
                         "postal_code": "62701",
@@ -44,7 +43,6 @@ from mismo.lib import geo
                     },
                     {
                         "street1": "1 1ST AVE",
-                        "street2": None,
                         "city": "SPRINGFIELD",
                         "state": None,
                         "postal_code": "62701",
@@ -81,7 +79,6 @@ from mismo.lib import geo
                 "addresses": [
                     {
                         "street1": "132 MAIN ST",
-                        "street2": None,
                         "city": None,
                         "state": "IL IL",
                         "postal_code": "62701",
@@ -119,7 +116,6 @@ from mismo.lib import geo
                         "postal_code": None,
                         "state": None,
                         "street1": None,
-                        "street2": None,
                         "street_name": None,
                         "street_ngrams": None,
                         "street_number": None,
@@ -142,7 +138,11 @@ def test_addresses_dimension(addresses, expected, table_factory):
     address_type = "array<struct<street1: string, street2: string, city: string, state: string, postal_code: string, country: string>>"  # noqa: E501
     t = table_factory({"addresses": [addresses]}, schema={"addresses": address_type})
     dim = geo.AddressesDimension("addresses")
-    result = dim.prepare(t).addresses_featured.execute().iloc[0]
+    result = (
+        dim.prepare_for_blocking(dim.prepare_for_fast_linking(t))
+        .addresses_featured.execute()
+        .iloc[0]
+    )
 
     def setify(x):
         return set(x) if x is not None else None

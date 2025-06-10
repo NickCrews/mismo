@@ -6,7 +6,7 @@ import ibis
 
 from mismo import joins
 from mismo.linkage._linkage import Linkage
-from mismo.linker._linker import Linker, infer_task
+from mismo.linker._common import Linker, infer_task
 from mismo.types import LinksTable
 
 

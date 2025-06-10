@@ -1,25 +1,14 @@
 from __future__ import annotations
 
-from typing import ClassVar, Literal, Protocol, runtime_checkable
+from typing import ClassVar, Literal
 
 import ibis
 
 from mismo.linkage import _linkage
-from mismo.linker import _join_linker
+from mismo.linker import _common, _join_linker
 
 
-@runtime_checkable
-class Linker(Protocol):
-    """
-    A Protocol that takes two tables of records and produces a [Linkage][mismo.Linkage].
-    """
-
-    def __call__(self, left: ibis.Table, right: ibis.Table) -> _linkage.Linkage:
-        """Given two tables, return a Linkage."""
-        raise NotImplementedError
-
-
-class FullLinker(Linker):
+class FullLinker(_common.Linker):
     """
     A [Linker][mismo.Linker] that yields all possible pairs (MxN of them).
     """
@@ -37,7 +26,7 @@ class FullLinker(Linker):
         return self._linker(left, right)
 
 
-class EmptyLinker(Linker):
+class EmptyLinker(_common.Linker):
     """A [Linker][mismo.Linker] that yields no pairs."""
 
     def __init__(self, *, task: Literal["dedupe", "link"] | None = None):
@@ -53,7 +42,7 @@ class EmptyLinker(Linker):
         return self._linker(left, right)
 
 
-class UnnestLinker(Linker):
+class UnnestLinker(_common.Linker):
     """A [Linker][mismo.Linker] that unnests a column before linking."""
 
     def __init__(self, column: str, *, task: Literal["dedupe", "link"] | None = None):
@@ -68,7 +57,7 @@ class UnnestLinker(Linker):
 
 
 class _LinkerLinkage:
-    _linker_cls: ClassVar[type[Linker]]
+    _linker_cls: ClassVar[type[_common.Linker]]
 
     def __init__(
         self,
@@ -114,11 +103,3 @@ class UnnestLinkage(_LinkerLinkage):
     """A Linkage that unnests a column before linking."""
 
     _linker_cls = UnnestLinker
-
-
-def infer_task(
-    task: Literal["dedupe", "link"] | None, left: ibis.Table, right: ibis.Table
-) -> Literal["dedupe", "link"]:
-    if task is None:
-        task = "dedupe" if left is right else "link"
-    return task
