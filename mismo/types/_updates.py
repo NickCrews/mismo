@@ -51,7 +51,7 @@ class Filters:
                 if u.before().schema() != u.after().schema():
                     return True
                 subset = table.columns
-            ibis.and_(*(is_changed(table[col]) for col in subset))
+            return ibis.and_(*(is_changed(table[col]) for col in subset))
 
         return filter_func
 
@@ -200,9 +200,11 @@ class Updates(TableWrapper):
             col_l = col + "_l"
             col_r = col + "_r"
             if col_l in joined.columns:
-                d["before"] = joined[col_l]
+                # need to do this cast because nonnull dtypes
+                # become nullable after the join.
+                d["before"] = joined[col_l].cast(before.schema()[col])
             if col_r in joined.columns:
-                d["after"] = joined[col_r]
+                d["after"] = joined[col_r].cast(after.schema()[col])
             assert d, f"Column {col} not found in either before or after"
             return ibis.struct(d).name(col)
 

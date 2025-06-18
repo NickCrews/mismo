@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ibis
 from ibis import _
 import pytest
 
@@ -23,6 +24,16 @@ def updates(table_factory):
         }
     )
     return Updates.from_tables(before, after, join_on="id")
+
+
+def test_different_schemas(table_factory):
+    before = table_factory({"id": [1, 2, 3]}, schema={"id": "int64"})
+    after = table_factory({"id": [1, 2, 3]}, schema={"id": "!int64"})
+    with pytest.raises(ValueError):
+        Updates.from_tables(before, after, join_on="id")
+    u = Updates.from_tables(before, after, join_on="id", check_schemas="names")
+    assert dict(u.before().schema()) == dict(ibis.schema({"id": "int64"}))
+    assert dict(u.after().schema()) == dict(ibis.schema({"id": "!int64"}))
 
 
 def test_any_different(updates: Updates):
