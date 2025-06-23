@@ -620,8 +620,8 @@ def _street1_pattern() -> str:
             r"(?P<AddressNumber>\d+(?:\.\d+|\S+)?)",
             rf"(?:\s+(?P<StreetNamePreDirectional>{DIRECTIONALS_PATTERN}))?",
             r"\s+",
-            r"(?P<StreetName>\S+\s+\S+\s+\S+\s+\S+|\S+\s+\S+\s+\S+|\S+\s+\S+|\S+)",
-            rf"(?:\s+(?P<StreetNamePostType>{STREET_NAME_POST_TYPE_PATTERN}))",
+            r"(?P<StreetName>(?:\S+\s+){0,3}?\S+)",  # 1 to 4 words, prefering fewer
+            rf"(?:\s+(?P<StreetNamePostType>{STREET_NAME_POST_TYPE_PATTERN}))?",
             rf"(?:\s+(?P<StreetNamePostDirectional>{DIRECTIONALS_PATTERN}))?",
             r"\s*",
             "$",

@@ -11,9 +11,33 @@ from mismo.lib import geo
     [
         ("GENERAL DELIVERY", None),
         ("BARRACKS ST UNIT 2", None),
-        ("4602 CR 673", None),
-        ("6473 FM 1798", None),
-        pytest.param(
+        (
+            "4602 CR 673",
+            {
+                "AddressNumber": "4602",
+                "StreetNamePreDirectional": "",
+                "StreetName": "CR 673",
+                "StreetNamePostType": "",
+                "StreetNamePostDirectional": "",
+                "USPSBoxGroupType": "",
+                "USPSBoxGroupID": "",
+                "USPSBoxID": "",
+            },
+        ),
+        (
+            "6473 FM 1798",
+            {
+                "AddressNumber": "6473",
+                "StreetNamePreDirectional": "",
+                "StreetName": "FM 1798",
+                "StreetNamePostType": "",
+                "StreetNamePostDirectional": "",
+                "USPSBoxGroupType": "",
+                "USPSBoxGroupID": "",
+                "USPSBoxID": "",
+            },
+        ),
+        (
             "1 1ST",
             {
                 "AddressNumber": "1",
@@ -25,10 +49,32 @@ from mismo.lib import geo
                 "USPSBoxGroupID": "",
                 "USPSBoxID": "",
             },
-            marks=pytest.mark.xfail(
-                raises=AssertionError,
-                reason="We don't currently handle inputs with no street type",
-            ),
+        ),
+        (
+            "123 MAIN",
+            {
+                "AddressNumber": "123",
+                "StreetName": "MAIN",
+                "StreetNamePostDirectional": "",
+                "StreetNamePostType": "",
+                "StreetNamePreDirectional": "",
+                "USPSBoxGroupType": "",
+                "USPSBoxGroupID": "",
+                "USPSBoxID": "",
+            },
+        ),
+        (
+            "123 S MAIN WEST",
+            {
+                "AddressNumber": "123",
+                "StreetName": "MAIN",
+                "StreetNamePostDirectional": "WEST",
+                "StreetNamePostType": "",
+                "StreetNamePreDirectional": "S",
+                "USPSBoxGroupType": "",
+                "USPSBoxGroupID": "",
+                "USPSBoxID": "",
+            },
         ),
         (
             "1 1ST ST",
