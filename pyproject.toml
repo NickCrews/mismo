@@ -25,6 +25,10 @@ dependencies = [
     # "ibis-framework[duckdb] @ git+https://github.com/ibis-project/ibis.git@42f45fe59da492897f0449468a3036384be34214",
     # Needed for Self, which was added in 4.0.0 according to
     # https://github.com/python/typing_extensions/blob/82d512ae1082b9c7c82678771746753a583cc64b/CHANGELOG.md
+    
+    # Minimum version of sqlglot that has the flags option for regex_extract:
+    # https://github.com/tobymao/sqlglot/pull/4326
+    "sqlglot>=25.29.0",
     "typing-extensions>=4.0.0 ; python_version < \"3.11\"",
 ]
 
