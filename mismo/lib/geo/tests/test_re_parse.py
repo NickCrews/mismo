@@ -102,6 +102,20 @@ from mismo.lib import geo
                 "USPSBoxID": "",
             },
         ),
+        # Mixed case is also detected
+        (
+            "7100 Ridge Manor ln",
+            {
+                "AddressNumber": "7100",
+                "StreetNamePreDirectional": "",
+                "StreetName": "Ridge Manor",
+                "StreetNamePostType": "ln",
+                "StreetNamePostDirectional": "",
+                "USPSBoxGroupType": "",
+                "USPSBoxGroupID": "",
+                "USPSBoxID": "",
+            },
+        ),
         (
             "1101B ODIN ST",
             {
@@ -130,6 +144,19 @@ from mismo.lib import geo
         ),
         (
             "PO BOX 651",
+            {
+                "AddressNumber": "",
+                "StreetNamePreDirectional": "",
+                "StreetName": "",
+                "StreetNamePostType": "",
+                "StreetNamePostDirectional": "",
+                "USPSBoxGroupType": "",
+                "USPSBoxGroupID": "",
+                "USPSBoxID": "651",
+            },
+        ),
+        (
+            "p.o. Box 651",
             {
                 "AddressNumber": "",
                 "StreetNamePreDirectional": "",
