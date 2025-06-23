@@ -660,13 +660,11 @@ class ParsedStreet1(ir.StructValue):
 
 
 def parse_street1_re(s: ir.StringValue) -> ParsedStreet1:
-    """Parse an *UPPERCASE* street1 address into its components.
+    """Parse a street1 address into its components.
 
-    The input string MUST be in all uppercase.
-
-    If a componenet is not present, it will be the empty string.
+    If a component is not present, it will be the empty string.
     """
-    result = text.re_extract_struct(s, _street1_pattern())
+    result = text.re_extract_struct(s, _street1_pattern(), case_insensitive=True)
     # Doing this nullif makes this take 6x longer,
     # since duckdb doesn't do clever subexpression elimination
     # See https://github.com/duckdb/duckdb/discussions/14649
