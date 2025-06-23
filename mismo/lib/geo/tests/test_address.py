@@ -33,9 +33,16 @@ from mismo.lib import geo
                         "city": "SPRINGFIELD",
                         "state": None,
                         "postal_code": "62701",
-                        "street_ngrams": [
-                            "123",
-                            "MAIN",
+                        "street_trigrams": [
+                            "132",
+                            "32 ",
+                            "2 M",
+                            " MA",
+                            "MAI",
+                            "AIN",
+                            "IN ",
+                            "N S",
+                            " ST",
                         ],
                         "street_name": "MAIN",
                         "street_number": "132",
@@ -46,9 +53,14 @@ from mismo.lib import geo
                         "city": "SPRINGFIELD",
                         "state": None,
                         "postal_code": "62701",
-                        "street_ngrams": [
-                            "1",
+                        "street_trigrams": [
+                            "1 1",
+                            " 1S",
                             "1ST",
+                            "ST ",
+                            "T A",
+                            " AV",
+                            "AVE",
                         ],
                         "street_name": "1ST",
                         "street_number": "1",
@@ -56,10 +68,22 @@ from mismo.lib import geo
                     },
                 ],
                 "addresses_keywords": [
-                    "123",
-                    "MAIN",
-                    "1",
+                    " 1S",
+                    " AV",
+                    " MA",
+                    " ST",
+                    "1 1",
+                    "132",
                     "1ST",
+                    "2 M",
+                    "32 ",
+                    "AIN",
+                    "AVE",
+                    "IN ",
+                    "MAI",
+                    "N S",
+                    "ST ",
+                    "T A",
                 ],
             },
             id="multi",
@@ -82,9 +106,16 @@ from mismo.lib import geo
                         "city": None,
                         "state": "IL IL",
                         "postal_code": "62701",
-                        "street_ngrams": [
-                            "123",
-                            "MAIN",
+                        "street_trigrams": [
+                            "132",
+                            "32 ",
+                            "2 M",
+                            " MA",
+                            "MAI",
+                            "AIN",
+                            "IN ",
+                            "N S",
+                            " ST",
                         ],
                         "street_name": "MAIN",
                         "street_number": "132",
@@ -92,8 +123,15 @@ from mismo.lib import geo
                     }
                 ],
                 "addresses_keywords": [
-                    "123",
-                    "MAIN",
+                    "132",
+                    "32 ",
+                    "2 M",
+                    " MA",
+                    "MAI",
+                    "AIN",
+                    "IN ",
+                    "N S",
+                    " ST",
                 ],
             },
             id="single-weird-state",
@@ -117,7 +155,7 @@ from mismo.lib import geo
                         "state": None,
                         "street1": None,
                         "street_name": None,
-                        "street_ngrams": None,
+                        "street_trigrams": None,
                         "street_number": None,
                         "street_number_sorted": None,
                     },
@@ -149,10 +187,10 @@ def test_addresses_dimension(addresses, expected, table_factory):
 
     if result["addresses"] is not None:
         for address in result["addresses"]:
-            address["street_ngrams"] = setify(address["street_ngrams"])
+            address["street_trigrams"] = setify(address["street_trigrams"])
     if expected["addresses"] is not None:
         for address in expected["addresses"]:
-            address["street_ngrams"] = setify(address["street_ngrams"])
+            address["street_trigrams"] = setify(address["street_trigrams"])
     expected["addresses_keywords"] = setify(expected["addresses_keywords"])
     result["addresses_keywords"] = setify(result["addresses_keywords"])
     assert result == expected

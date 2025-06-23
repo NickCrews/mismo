@@ -89,7 +89,7 @@ def _featurize(
                 ),
             )
         )
-    ).drop("_parsed")
+    )
     t = t.mutate(
         __address_featured=_structs.mutate(
             t.__address_featured,
@@ -98,37 +98,15 @@ def _featurize(
             .join(""),
         )
     )
-    ngrams = 4
-    t = t.mutate(
-        __street_number_ngrams=text.ngrams(
-            t.__address_featured.street_number_sorted, ngrams
-        ),
-        __street_name_ngrams=text.ngrams(t.__address_featured.street_name, ngrams),
-    )
-    t = t.mutate(
-        __address_featured=_structs.mutate(
-            t.__address_featured,
-            street_ngrams=(
-                ibis.array(
-                    [
-                        t.__address_featured.street_number_sorted,
-                        t.__address_featured.street_name,
-                    ]
-                )
-                .concat(
-                    t.__street_number_ngrams,
-                    t.__street_name_ngrams,
-                )
-                .filter(lambda x: x.notnull())  # noqa: E711
-            ),
-        )
-    )
     t = t.mutate(
         _structs.mutate(
             t.__address_featured,
-            street_ngrams=t.__address_featured.street_ngrams.unique(),
+            street_trigrams=text.ngrams(t._cleaned.street1, 3).unique(),
         ).name(output_name)
-    ).drop("__address_featured", "__street_number_ngrams", "__street_name_ngrams")
+    ).drop(
+        "_parsed",
+        "__address_featured",
+    )
     return t
 
 
@@ -264,7 +242,7 @@ class AddressesDimension:
         )
         t = t.cache()
         t = t.mutate(
-            _addresses_tokens=_.addresses_featured.map(lambda a: a.street_ngrams)
+            _addresses_tokens=_.addresses_featured.map(lambda a: a.street_trigrams)
             .flatten()
             .unique()
         )
