@@ -90,6 +90,15 @@ def test_from_before_after(after, before, updates, insertions, deletions):
     assert_tables_equal(expected_updates, diff.updates(), order_by="id")
 
 
+def test_from_before_after_no_join(after, before):
+    diff = Diff.from_before_after(before, after, join_on=False)
+    assert diff.updates().count().execute() == 0
+    assert_tables_equal(before, diff.before(), order_by="id")
+    assert_tables_equal(after, diff.after(), order_by="id")
+    assert_tables_equal(after, diff.insertions(), order_by="id")
+    assert_tables_equal(before, diff.deletions(), order_by="id")
+
+
 def test_from_deltas(after, before, updates, insertions, deletions):
     diff = Diff.from_deltas(
         before=before, updates=updates, insertions=insertions, deletions=deletions

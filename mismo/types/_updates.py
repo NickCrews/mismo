@@ -176,7 +176,7 @@ class Updates(TableWrapper):
         before: ibis.Table,
         after: ibis.Table,
         *,
-        join_on: str,
+        join_on: str | Literal[False],
         check_schemas: Literal["exactly", "names", "lax"] = "exactly",
     ) -> Updates:
         """Create from two different tables by joining them on a key.

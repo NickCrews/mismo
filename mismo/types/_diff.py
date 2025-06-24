@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 from pathlib import Path
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 import ibis
 
@@ -134,7 +134,7 @@ class Diff:
         before: ibis.Table,
         after: ibis.Table,
         *,
-        join_on: str,
+        join_on: str | Literal[False],
     ) -> _typing.Self:
         """Create from a before and after table."""
         # We have to be careful here.
@@ -142,8 +142,12 @@ class Diff:
         # Then is this a deletion and insertion, or an update?
         # We have to rely on the join key to determine this,
         # using set-based difference(), intersection(), etc would not work.
-        insertions = after.anti_join(before, join_on)
-        deletions = before.anti_join(after, join_on)
+        if join_on is False:
+            insertions = after
+            deletions = before
+        else:
+            insertions = after.anti_join(before, join_on)
+            deletions = before.anti_join(after, join_on)
         updates = Updates.from_tables(before, after, join_on=join_on)
         return cls._new(
             before=before,
