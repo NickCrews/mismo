@@ -233,6 +233,60 @@ from mismo.lib import geo
                 "USPSBoxID": "",
             },
         ),
+        # periods after abbreviations are ignored
+        (
+            "100 MC CARREY ST.",
+            {
+                "AddressNumber": "100",
+                "StreetNamePreDirectional": "",
+                "StreetName": "MC CARREY",
+                "StreetNamePostType": "ST",
+                "StreetNamePostDirectional": "",
+                "USPSBoxGroupType": "",
+                "USPSBoxGroupID": "",
+                "USPSBoxID": "",
+            },
+        ),
+        (
+            "100 MC CARREY ST. W",
+            {
+                "AddressNumber": "100",
+                "StreetNamePreDirectional": "",
+                "StreetName": "MC CARREY",
+                "StreetNamePostType": "ST",
+                "StreetNamePostDirectional": "W",
+                "USPSBoxGroupType": "",
+                "USPSBoxGroupID": "",
+                "USPSBoxID": "",
+            },
+        ),
+        (
+            "100 MC CARREY ST. W.",
+            {
+                "AddressNumber": "100",
+                "StreetNamePreDirectional": "",
+                "StreetName": "MC CARREY",
+                "StreetNamePostType": "ST",
+                "StreetNamePostDirectional": "W",
+                "USPSBoxGroupType": "",
+                "USPSBoxGroupID": "",
+                "USPSBoxID": "",
+            },
+        ),
+        # But a perdiod in the middle of a street name is not ignored
+        (
+            "100 St. Johann Loop",
+            {
+                "AddressNumber": "100",
+                "StreetNamePreDirectional": "",
+                "StreetName": "St. Johann",
+                "StreetNamePostType": "Loop",
+                "StreetNamePostDirectional": "",
+                "USPSBoxGroupType": "",
+                "USPSBoxGroupID": "",
+                "USPSBoxID": "",
+            },
+        ),
         # I kid you not this is a legal street type
         (
             "1015 OTTER RUN",
@@ -343,7 +397,21 @@ from mismo.lib import geo
                 "USPSBoxID": "",
             },
         ),
-        # with decimal
+        # with decimal 1
+        (
+            "MILE 1.8 DYEA RD",
+            {
+                "AddressNumber": "1.8",
+                "StreetName": "DYEA",
+                "StreetNamePostDirectional": "",
+                "StreetNamePostType": "RD",
+                "StreetNamePreDirectional": "",
+                "USPSBoxGroupType": "",
+                "USPSBoxGroupID": "",
+                "USPSBoxID": "",
+            },
+        ),
+        # with decimal 2
         (
             "MILE 15.3 ALYESKA HWY",
             {
