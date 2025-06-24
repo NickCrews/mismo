@@ -36,6 +36,14 @@ def test_different_schemas(table_factory):
     assert dict(u.after().schema()) == dict(ibis.schema({"id": "!int64"}))
 
 
+def test_from_tables_no_join(table_factory):
+    before = table_factory({"id": [1, 2]}, schema={"id": "int64"})
+    after = table_factory({"id": [3, 4]}, schema={"id": "!int64"})
+    u = Updates.from_tables(before, after, join_on=False, check_schemas="names")
+    assert u.count().execute() == 0
+    assert u.schema() == ibis.schema({"id": "struct<before: int64, after: !int64>"})
+
+
 def test_any_different(updates: Updates):
     actual = updates.filter(updates.filters.any_different())
     actual_ids = set(actual.after().id.execute())
