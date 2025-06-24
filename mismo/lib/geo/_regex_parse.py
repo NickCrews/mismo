@@ -618,11 +618,11 @@ def _street1_pattern() -> str:
             r"\s*",
             r"(?:MILE\s+)?",
             r"(?P<AddressNumber>\d+(?:\.\d+|\S+)?)",
-            rf"(?:\s+(?P<StreetNamePreDirectional>{DIRECTIONALS_PATTERN}))?",
+            rf"(?:\s+(?P<StreetNamePreDirectional>{DIRECTIONALS_PATTERN})\.?)?",
             r"\s+",
             r"(?P<StreetName>(?:\S+\s+){0,3}?\S+)",  # 1 to 4 words, prefering fewer
-            rf"(?:\s+(?P<StreetNamePostType>{STREET_NAME_POST_TYPE_PATTERN}))?",
-            rf"(?:\s+(?P<StreetNamePostDirectional>{DIRECTIONALS_PATTERN}))?",
+            rf"(?:\s+(?P<StreetNamePostType>{STREET_NAME_POST_TYPE_PATTERN})\.?)?",
+            rf"(?:\s+(?P<StreetNamePostDirectional>{DIRECTIONALS_PATTERN})\.?)?",
             r"\s*",
             "$",
         ]

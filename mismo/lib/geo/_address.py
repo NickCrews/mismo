@@ -39,7 +39,7 @@ def _norm_field(s: ir.StringValue) -> ir.StringValue:
         s.strip()
         .upper()
         .re_replace(r"\s+", " ")  # collapse whitespace
-        .re_replace(r"[^0-9A-Z ]", "")
+        .re_replace(r"[^0-9A-Z\.\- ]", "")
         .nullif("")
     )
 
@@ -87,7 +87,7 @@ def _featurize(
                 street_number=_norm_field(
                     _._parsed.AddressNumber + "" + _._parsed.USPSBoxID
                 ),
-                is_pobox=_._parsed.USPSBoxID.notnull(),
+                is_pobox=_._parsed.USPSBoxID != "",
             )
         )
     )
@@ -105,7 +105,7 @@ def _featurize(
             street_trigrams=text.ngrams(t._cleaned.street1, 3).unique(),
         ).name(output_name)
     ).drop(
-        "_parsed",
+        # "_parsed",
         "__address_featured",
     )
     return t
