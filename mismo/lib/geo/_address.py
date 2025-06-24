@@ -87,6 +87,7 @@ def _featurize(
                 street_number=_norm_field(
                     _._parsed.AddressNumber + "" + _._parsed.USPSBoxID
                 ),
+                is_pobox=_._parsed.USPSBoxID.notnull(),
             )
         )
     )
