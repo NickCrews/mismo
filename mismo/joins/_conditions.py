@@ -258,6 +258,11 @@ Examples
 
 class LeftRightDeferredCondition:
     def __init__(self, condition: Deferred):
+        if _resolve.variables_names(condition) != {"left", "right"}:
+            raise ValueError(
+                f"{self.__class__.__name__} must only contain 'left' and 'right'"
+                "variables, eg `mismo.left.last_name == mismo.right.family_name`."
+            )
         self.condition = condition
 
     @join_condition.register
@@ -265,11 +270,10 @@ class LeftRightDeferredCondition:
     def _try(obj: Any) -> LeftRightDeferredCondition:
         if not isinstance(obj, Deferred):
             raise NotImplementedError
-        if _resolve.variables_names(obj) == {"left", "right"}:
+        try:
             return LeftRightDeferredCondition(obj)
-        raise NotImplementedError(
-            "Deferred join conditions must only contain 'left' and 'right' variables."
-        )
+        except ValueError as e:
+            raise NotImplementedError() from e
 
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
