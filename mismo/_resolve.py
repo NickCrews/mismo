@@ -304,20 +304,20 @@ def variables_names(deferred: Deferred | Resolver) -> set[str]:
 
     The builtin deferred variable `ibis._` has the name "_".
 
-    >>> variables_names(ibis._.foo + ibis._.fill_null(5))
-    {"_"}
+    >>> sorted(variables_names(ibis._.foo + ibis._.fill_null(5)))
+    ['_']
 
     The `mismo.left` and `mismo.right` variables have the names "left" and "right".
 
-    >>> variables_names(mismo.left.foo + mismo.right.bar + ibis._.baz)
-    {"left", "right", "_"}
+    >>> sorted(variables_names(mismo.left.foo + mismo.right.bar + ibis._.baz))
+    ['_', 'left', 'right']
 
     We don't really use this anywhere in mismo, but just so you see how it works,
     you can create your own deferred variables with names.
 
     >>> from ibis.common.deferred import var
-    >>> variables_names(ibis._.foo + var("bar").baz.fill_null(8))
-    {"_", "bar"}
+    >>> sorted(variables_names(ibis._.foo + var("bar").baz.fill_null(8)))
+    ['_', 'bar']
     """
     resolver = _resolver(deferred)
     if not isinstance(resolver, Resolver):
