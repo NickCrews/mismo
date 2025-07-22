@@ -30,6 +30,7 @@ def select(*values: ibis.Value | Any, **named_values: ibis.Value | Any) -> ibis.
 
     Examples
     --------
+    >>> ibis.options.interactive = True
     >>> t = ibis.memtable({"a": [1, 2, 3], "b": [4, 5, 6]})
     >>> select(t.a.name("aa"), b2=_.b * 2, x=3)
     ┏━━━━━━━┳━━━━━━━┳━━━━━━┓
