@@ -11,17 +11,20 @@ from mismo.tests.util import assert_tables_equal
 @pytest.fixture
 def inp(table_factory):
     records = [
-        ("a", 1),
-        ("b", 1),
-        ("b", 1),
-        ("c", 3),
-        ("b", 2),
-        ("c", 3),
-        (None, 4),
-        ("c", 3),
+        (1, "a", 1),
+        (2, "b", 1),
+        (3, "b", 1),
+        (4, "c", 3),
+        (5, "b", 2),
+        (6, "c", 3),
+        (7, None, 4),
+        (8, "c", 3),
     ]
-    letters, nums = zip(*records)
-    t = table_factory({"letter": letters, "num": nums})
+    # letters, nums = zip(*records)
+    # t = table_factory({"letter": letters, "num": nums})
+    t = table_factory(
+        records, schema={"record_id": "int64", "letter": "string", "num": "int64"}
+    )
     return t
 
 
@@ -36,13 +39,19 @@ def test_counts_letters(inp, table_factory, key):
     linker = KeyLinker(key)
     expected = table_factory(
         {
+            "record_id": [0, 1, 2],
             "letter": ["c", "b", "a"],
             "expected_keys": [3, 3, 1],
             "expected_pairs_link": [9, 9, 1],
             "expected_pairs_dedupe": [3, 3, 0],
         }
     )
-    c = linker.key_counts(inp)
+    c = linker.key_counts_left(inp)
+    assert_tables_equal(c, expected.select("letter", n=_.expected_keys))
+    assert c.n_total() == 7
+    # we need the CountsTable instance to be indistinguishable from a regular Table
+    assert isinstance(c, ibis.Table)
+    c = linker.key_counts_right(inp)
     assert_tables_equal(c, expected.select("letter", n=_.expected_keys))
     assert c.n_total() == 7
     # we need the CountsTable instance to be indistinguishable from a regular Table
@@ -76,6 +85,7 @@ def test_counts_letters_num(inp, table_factory, keys):
     linker = KeyLinker(keys)
     expected = table_factory(
         {
+            "record_id": [0, 1, 2, 3],
             "letter": ["c", "b", "b", "a"],
             "num": [3, 1, 2, 1],
             "expected_keys": [3, 2, 1, 1],
@@ -83,7 +93,12 @@ def test_counts_letters_num(inp, table_factory, keys):
             "expected_pairs_dedupe": [3, 1, 0, 0],
         }
     )
-    c = linker.key_counts(inp)
+    c = linker.key_counts_left(inp)
+    assert_tables_equal(c, expected.select("letter", "num", n=_.expected_keys))
+    assert c.n_total() == 7
+    # we need the CountsTable instance to be indistinguishable from a regular Table
+    assert isinstance(c, ibis.Table)
+    c = linker.key_counts_right(inp)
     assert_tables_equal(c, expected.select("letter", "num", n=_.expected_keys))
     assert c.n_total() == 7
     # we need the CountsTable instance to be indistinguishable from a regular Table

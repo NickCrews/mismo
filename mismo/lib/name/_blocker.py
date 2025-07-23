@@ -90,7 +90,9 @@ class NameBlocker:
         keys = self.name_keys()
         link_tables = [
             linker.KeyLinker(
-                (key_left, key_right), max_pairs=self.max_pairs, task=self.task
+                (key_left, key_right),
+                max_pairs=self.max_pairs,
+                task=self.task,
             )(left, right).links.select("record_id_l", "record_id_r")
             for key_left, key_right in keys
         ]

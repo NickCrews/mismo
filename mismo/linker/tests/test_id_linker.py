@@ -26,6 +26,7 @@ def b(table_factory):
     )
 
 
+@pytest.mark.xfail(raises=NotImplementedError)
 @pytest.mark.parametrize(
     "when_not_equal_val, when_null_val, expected_data",
     [

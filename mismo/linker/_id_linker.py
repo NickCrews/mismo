@@ -114,22 +114,7 @@ class IDLinker:
 
     def indefinite_condition(self, a: ibis.Table, b: ibis.Table) -> ir.BooleanValue:
         """Select any pairs where they are not a match and they are not a non-match."""
-        # return ibis.and_(
-        #     ~self.match_condition(a, b),
-        #     ~self.nonmatch_condition(a, b),
-        # )
-        label_a, label_b = _resolve.key_pair_resolver(self.resolvers)(a, b)
-        conditions = [label_a == label_b]
-        if self.when_not_equal == "indefinite":
-            conditions.append((label_a != label_b).fill)
-        # conditions = []
-        # if self.when_not_equal == "indefinite":
-        #     conditions.append(label_a != label_b)
-        # if self.when_null == "indefinite":
-        #     conditions.append(label_a.isnull() | label_b.isnull())
-        # if not conditions:
-        #     return ibis.literal(False)
-        # return ibis.or_(*conditions)
+        raise NotImplementedError()
 
     def indefinite_linkage(self, left: ibis.Table, right: ibis.Table) -> Linkage:
         if right is left:

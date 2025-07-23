@@ -19,8 +19,10 @@ class Linker(Protocol):
 
 
 def infer_task(
-    task: Literal["dedupe", "link"] | None, left: ibis.Table, right: ibis.Table
+    *, task: Literal["dedupe", "link"] | None, left: ibis.Table, right: ibis.Table
 ) -> Literal["dedupe", "link"]:
-    if task is None:
-        task = "dedupe" if left is right else "link"
-    return task
+    if task is not None:
+        return task
+    if left.equals(right):
+        return "dedupe"
+    return "link"

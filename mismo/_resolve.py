@@ -12,22 +12,10 @@ from mismo import _funcs, _util
 
 
 @runtime_checkable
-class KeyPairResolver(Protocol):
-    """
-    A callable, that given two Tables, resolves the pair of columns to use as join keys.
-    """
-
-    def __call__(
-        self, left: ibis.Table, right: ibis.Table
-    ) -> tuple[ibis.Value, ibis.Value]:
-        """Given two tables, resolve to the pair of columns to use as join keys."""
-
-
-@runtime_checkable
 class ValueResolver(Protocol):
     """A callable, that given a Table, resolves to a single column."""
 
-    def __call__(self, t: ibis.Table) -> ibis.Value:
+    def __call__(self, t: ibis.Table) -> ibis.Column:
         """Given a Table, resolve to a single column."""
 
 
@@ -42,7 +30,7 @@ class DeferredResolver(ValueResolver):
         self.deferred = deferred
         self.name = name
 
-    def __call__(self, t: ibis.Table) -> ibis.Value:
+    def __call__(self, t: ibis.Table) -> ibis.Column:
         raw = self.deferred.resolve(**{self.name: t})
         return _resolve(t, raw)
 
@@ -59,7 +47,7 @@ class LiteralResolver(ValueResolver):
     def __init__(self, value: ibis.Value) -> None:
         self.value = value
 
-    def __call__(self, t: ibis.Table) -> ibis.Value:
+    def __call__(self, t: ibis.Table) -> ibis.Column:
         """Resolve a literal value."""
         resolved = t.bind(self.value)
         if len(resolved) != 1:
@@ -96,58 +84,15 @@ class StrResolver(ValueResolver):
 class FuncResolver(ValueResolver):
     def __init__(
         self,
-        func: Callable[[ibis.Table], ibis.Value],
+        func: Callable[[ibis.Table], ibis.Column],
     ) -> None:
         self.func = func
 
-    def __call__(self, t: ibis.Table) -> ibis.Value:
+    def __call__(self, t: ibis.Table) -> ibis.Column:
         return self.func(t)
 
     def __repr__(self):
         return f"FuncResolver({self.func!r})"
-
-
-class PairOfIndividualResolver(KeyPairResolver):
-    def __init__(
-        self,
-        left_resolver: ValueResolver,
-        right_resolver: ValueResolver,
-    ) -> None:
-        self.left_resolver = left_resolver
-        self.right_resolver = right_resolver
-
-    def __call__(
-        self, left: ibis.Table, right: ibis.Table
-    ) -> tuple[ibis.Value, ibis.Value]:
-        le = self.left_resolver(left)
-        ri = self.right_resolver(right)
-        return le, ri
-
-    def __repr__(self):
-        return (
-            f"PairOfIndividualResolver({self.left_resolver!r}, {self.right_resolver!r})"
-        )
-
-    def __str__(self):
-        return f"{self.left_resolver!s} == {self.right_resolver!s}"
-
-
-class BinaryFuncResolver(KeyPairResolver):
-    def __init__(
-        self,
-        func: Callable[[ibis.Table, ibis.Table], tuple[ibis.Value, ibis.Value]],
-    ) -> None:
-        self.func = func
-
-    def __call__(
-        self, left: ibis.Table, right: ibis.Table
-    ) -> tuple[ibis.Value, ibis.Value]:
-        resolved = self.func(left, right)
-        new_resolver = key_pair_resolver(resolved)
-        return new_resolver(left, right)
-
-    def __repr__(self):
-        return f"BinaryFuncResolver({self.func!r})"
 
 
 def _resolve(t: ir.Table, spec) -> ir.Value:
@@ -174,22 +119,17 @@ def value_resolver(spec: ibis.Value | Deferred | str) -> ValueResolver:
     raise ValueError(f"Cannot resolve {spec} to a single column.")
 
 
-def key_pair_resolver(spec) -> KeyPairResolver:
-    # ibis.Deferred thinks it's an instance of everything, so check for that.
-    if isinstance(spec, KeyPairResolver) and not isinstance(spec, ibis.Deferred):
-        return spec
+def key_pair_resolver(spec) -> tuple[ValueResolver, ValueResolver]:
     if isinstance(spec, ibis.Value):
-        return PairOfIndividualResolver(value_resolver(spec), value_resolver(spec))
+        return (value_resolver(spec), value_resolver(spec))
     if isinstance(spec, ibis.Deferred):
         if variables_names(spec) == {"_"}:
-            return PairOfIndividualResolver(value_resolver(spec), value_resolver(spec))
+            return (value_resolver(spec), value_resolver(spec))
         raise ValueError(f"Deferred objects must represent a single column, got {spec}")
     if isinstance(spec, str):
-        return PairOfIndividualResolver(value_resolver(spec), value_resolver(spec))
+        return (value_resolver(spec), value_resolver(spec))
     if _funcs.is_unary(spec):
-        return PairOfIndividualResolver(value_resolver(spec), value_resolver(spec))
-    if _funcs.is_binary(spec):
-        return BinaryFuncResolver(spec)
+        return (value_resolver(spec), value_resolver(spec))
     parts = _util.promote_list(spec)
     if len(parts) != 2:
         raise ValueError(
@@ -208,7 +148,7 @@ def key_pair_resolver(spec) -> KeyPairResolver:
     else:
         right_resolver = value_resolver(keyr)
 
-    return PairOfIndividualResolver(left_resolver, right_resolver)
+    return (left_resolver, right_resolver)
 
 
 def _get_name(d: Deferred, allowed_names: set[str]) -> str:
@@ -226,16 +166,18 @@ def _get_name(d: Deferred, allowed_names: set[str]) -> str:
     return actual_name
 
 
-def key_pair_resolvers(x) -> list[KeyPairResolver]:
+def key_pair_resolvers(x) -> list[tuple[ValueResolver, ValueResolver]]:
     """
     Given a spec or iterable of specs, return a list of KeyPairResolvers.
     """
     if (deferred_resolvers := _parse_and_of_equals(x)) is not None:
         return deferred_resolvers
+    if isinstance(x, tuple) and len(x) == 2:
+        return [key_pair_resolver(x)]
     return [key_pair_resolver(spec) for spec in _util.promote_list(x)]
 
 
-def _parse_and_of_equals(x) -> list[PairOfIndividualResolver] | None:
+def _parse_and_of_equals(x) -> list[tuple[DeferredResolver, DeferredResolver]] | None:
     """Look for the special case of an `and` of equalities, like `left.col1 == right.col2 & left.col3 == right.col4 & ...`"""  # noqa: E501
     if not isinstance(x, ibis.Deferred):
         return None
@@ -251,7 +193,7 @@ class BadDeferredError(ValueError):
 
 def _traverse_deferred_resolvers(
     resolver: Resolver,
-) -> Generator[PairOfIndividualResolver, None, None]:
+) -> Generator[tuple[DeferredResolver, DeferredResolver], None, None]:
     if not isinstance(resolver, BinaryOperator):
         return
     if resolver.func == operator.and_:
@@ -273,7 +215,7 @@ def _traverse_deferred_resolvers(
             raise BadDeferredError(
                 f"Expected an equality between left and right, got {resolver}"
             )
-        yield PairOfIndividualResolver(
+        yield (
             DeferredResolver(Deferred(left_resolver), name="left"),
             DeferredResolver(Deferred(right_resolver), name="right"),
         )

@@ -5,36 +5,57 @@ import pytest
 
 @pytest.fixture
 def name_table(table_factory):
-    names = [
-        None,
+    records = [
         {
-            "given": "Alice",
-            "surname": "Anderson",
+            "record_id": "null",
+            "name": None,
         },
         {
-            "given": "A",
-            "surname": "Anderson",
-            "suffix": "PhD",
+            "record_id": "alice_anderson",
+            "name": {
+                "given": "Alice",
+                "surname": "Anderson",
+            },
         },
         {
-            "given": "Bob",
-            "surname": "Baker",
+            "record_id": "a_anderson_phd",
+            "name": {
+                "given": "A",
+                "surname": "Anderson",
+                "suffix": "PhD",
+            },
         },
         {
-            "given": "Robert",
-            "middle": "b",
-            "surname": "Baker",
-            "suffix": "Jr.",
+            "record_id": "bob_baker",
+            "name": {
+                "given": "Bob",
+                "surname": "Baker",
+            },
         },
         {
-            "prefix": "Mr",
-            "given": "Charles",
-            "surname": "Carter",
-            "nickname": "Charlie",
+            "name": {
+                "record_id": "robert_b_baker_jr",
+                "given": "Robert",
+                "middle": "b",
+                "surname": "Baker",
+                "suffix": "Jr.",
+            },
         },
         {
-            "given": "  CHARLES",
-            "surname": " CARTER.",
+            "record_id": "mr_charles_carter",
+            "name": {
+                "prefix": "Mr",
+                "given": "Charles",
+                "surname": "Carter",
+                "nickname": "Charlie",
+            },
+        },
+        {
+            "record_id": "charles_carter",
+            "name": {
+                "given": "  CHARLES",
+                "surname": " CARTER.",
+            },
         },
     ]
     base = {
@@ -45,5 +66,11 @@ def name_table(table_factory):
         "suffix": None,
         "nickname": None,
     }
-    names = [{**base, **name} if name is not None else None for name in names]
-    return table_factory({"name": names, "record_id": range(len(names))})
+    records = [
+        {
+            **r,
+            "name": {**base, **(r["name"])} if r["name"] is not None else None,
+        }
+        for r in records
+    ]
+    return table_factory(records)
