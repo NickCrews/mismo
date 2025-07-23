@@ -10,6 +10,28 @@ import pytest
 from mismo import _util
 
 
+def test_select():
+    t = ibis.table({"n": "int64", "s": "string"})
+    assert _util.select(t).schema() == t.schema()
+    assert _util.select(t.n).schema() == ibis.schema({"n": "int64"})
+    assert _util.select(t.s, s2=_.s).schema() == ibis.schema(
+        {"s": "string", "s2": "string"}
+    )
+    assert _util.select(t, s2=_.s).schema() == ibis.schema(
+        {"n": "int64", "s": "string", "s2": "string"}
+    )
+
+    with pytest.raises(ValueError):
+        # 0 relations
+        _util.select()
+    with pytest.raises(ValueError):
+        # 0 relations
+        _util.select("s", s2=_.s)
+    with pytest.raises(ValueError):
+        # multipled relations
+        _util.select(t.n, t.select("n").n)
+
+
 @pytest.mark.parametrize(
     "x,expected",
     [
