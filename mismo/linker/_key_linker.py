@@ -202,7 +202,7 @@ class KeyLinker(Linker):
     ) -> ir.BooleanValue:
         keys_left, keys_right = self.__keys__(left, right)
         clauses = (kl == kr for kl, kr in zip(keys_left, keys_right, strict=True))
-        task = infer_task(self.task, left, right)
+        task = infer_task(task=self.task, left=left, right=right)
         if task == "dedupe":
             clauses = (*clauses, left.record_id < right.record_id)
         if self.max_pairs is not None:
@@ -245,6 +245,9 @@ class KeyLinker(Linker):
 
     def linkage(self, left: ibis.Table, right: ibis.Table) -> Linkage:
         """The linkage between the two tables."""
+        # Is this the right place to be calling .view()?
+        if right is left:
+            right = right.view()
         return Linkage.from_join_condition(left=left, right=right, condition=self)
 
     def __call__(self, left, right):
@@ -255,11 +258,18 @@ class KeyLinker(Linker):
     ) -> list[tuple[ir.Column, ir.Column]]:
         lkeys = []
         rkeys = []
-        for resolver in self.resolvers:
-            keyl, keyr = resolver(left, right)
-            lkeys.append(keyl)
-            rkeys.append(keyr)
+        for resolver_l, resolver_r in self.resolvers:
+            lkeys.append(resolver_l(left))
+            rkeys.append(resolver_r(right))
         return tuple(lkeys), tuple(rkeys)
+
+    def key_counts_left(self, left: ibis.Table, /) -> KeyCountsTable:
+        keys = [resolver(left) for resolver, _ in self.resolvers]
+        return key_counts(left.select(*keys))
+
+    def key_counts_right(self, right: ibis.Table, /) -> KeyCountsTable:
+        keys = [resolver(right) for _, resolver in self.resolvers]
+        return key_counts(right.select(*keys))
 
     def pair_counts(
         self,
@@ -298,17 +308,33 @@ class KeyLinker(Linker):
         >>> ibis.options.interactive = True
         >>> import mismo
         >>> records = [
-        ...     ("a", 1),
-        ...     ("b", 1),
-        ...     ("b", 1),
-        ...     ("c", 3),
-        ...     ("b", 2),
-        ...     ("c", 3),
-        ...     (None, 4),
-        ...     ("c", 3),
+        ...     (1, "a", 1),
+        ...     (2, "b", 1),
+        ...     (3, "b", 1),
+        ...     (4, "c", 3),
+        ...     (5, "b", 2),
+        ...     (6, "c", 3),
+        ...     (7, None, 4),
+        ...     (8, "c", 3),
         ... ]
-        >>> letters, nums = zip(*records)
-        >>> t = ibis.memtable({"letter": letters, "num": nums})
+        >>> t = ibis.memtable(
+        ...     records, schema={"record_id": int, "letter": str, "num": int}
+        ... ).cache()
+        >>> t
+        ┏━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+        ┃ record_id ┃ letter ┃ num   ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+        │ int64     │ string │ int64 │
+        ├───────────┼────────┼───────┤
+        │         1 │ a      │     1 │
+        │         2 │ b      │     1 │
+        │         3 │ b      │     1 │
+        │         4 │ c      │     3 │
+        │         5 │ b      │     2 │
+        │         6 │ c      │     3 │
+        │         7 │ NULL   │     4 │
+        │         8 │ c      │     3 │
+        └───────────┴────────┴───────┘
 
         If we joined t with itself using this blocker in a dedupe task,
         we would end up with
@@ -404,8 +430,11 @@ class KeyLinksTable(LinksTable):
         )
 
 
-def key_counts(*keys: ibis.Value | ibis.Deferred | Any) -> KeyCountsTable:
-    t = _util.select(*keys)
+def key_counts(
+    key_or_table: ibis.Table | ibis.Value | ibis.Deferred,
+    *keys: ibis.Value | ibis.Deferred | Any,
+) -> KeyCountsTable:
+    t = _util.select(key_or_table, *keys)
     t = t.drop_null(how="any")
     t = t.group_by(t.columns).agg(n=_.count()).order_by(_.n.desc())
     return KeyCountsTable(t)
@@ -419,14 +448,16 @@ def pair_counts(
     task: Literal["dedupe", "link"] | None = None,
 ) -> PairCountsTable:
     resolvers = _resolve.key_pair_resolvers(key_pairs)
-    key_pairs = [resolver(left, right) for resolver in resolvers]
-    keys_left, keys_right = zip(*key_pairs)
-    task = infer_task(task, left, right)
-    kcl = key_counts(*keys_left)
-    kcr = key_counts(*keys_right)
+    keys_left = [resolver(left) for resolver, _ in resolvers]
+    keys_right = [resolver(right) for _, resolver in resolvers]
+    kcl = key_counts(left.select(*keys_left))
+    kcr = key_counts(right.select(*keys_right))
+    task = infer_task(task=task, left=left, right=right)
     if task == "dedupe":
         by_key = kcl.mutate(n=(_.n * (_.n - 1) / 2).cast(int))
     else:
+        if kcl.equals(kcr):
+            kcr = kcr.view()
         condition = ibis.and_(
             *(
                 kcl[a] == kcr[b]

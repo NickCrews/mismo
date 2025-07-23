@@ -37,7 +37,7 @@ class JoinLinker(Linker):
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
     ) -> ibis.ir.BooleanValue:
-        task = infer_task(self.task, left, right)
+        task = infer_task(task=self.task, left=left, right=right)
         pred = self.condition.__join_condition__(left, right)
         if task == "dedupe":
             pred = pred & (left.record_id < right.record_id)

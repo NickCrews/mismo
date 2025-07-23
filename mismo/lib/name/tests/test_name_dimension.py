@@ -9,7 +9,8 @@ from mismo.lib.name import NameDimension, NameMatchLevel
 
 def test_name_dimension(name_table):
     dim = NameDimension("name")
-    name_table = dim.prepare(name_table)
+    name_table = dim.prepare_for_blocking(name_table)
+    name_table = dim.prepare_for_fast_linking(name_table)
     real_pairs = [
         (1, 2),
         (1, 3),
