@@ -25,7 +25,9 @@ class NotSet:
 NOT_SET = NotSet
 
 
-def select(*values: ibis.Value | Any, **named_values: ibis.Value | Any) -> ibis.Table:
+def select(
+    *values: ibis.Value | ibis.Table | Any, **named_values: ibis.Value | Any
+) -> ibis.Table:
     """Like Table.select(), but you don't need to reference the table.
 
     Examples
@@ -43,9 +45,20 @@ def select(*values: ibis.Value | Any, **named_values: ibis.Value | Any) -> ibis.
     │     3 │    12 │    3 │
     └───────┴───────┴──────┘
     """
-    exprs_values = (v for v in values if isinstance(v, ir.Expr))
-    exprs_named_values = (v for v in named_values.values() if isinstance(v, ir.Expr))
-    exprs = [*exprs_values, *exprs_named_values]
+
+    def to_ibis_values(x):
+        if isinstance(x, ibis.Value):
+            return [x]
+        if isinstance(x, ibis.Table):
+            return [x[c] for c in x.columns]
+        # literal values like plain old 5 or "my string" are ignored
+        return []
+
+    exprs = []
+    for v in values:
+        exprs.extend(to_ibis_values(v))
+    for v in named_values.values():
+        exprs.extend(to_ibis_values(v))
     parent_relations = {}
     for v in exprs:
         for r in v.op().relations:
