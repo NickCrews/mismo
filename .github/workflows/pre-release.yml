@@ -1,0 +1,60 @@
+name: PyPI Pre-Release
+
+on:
+  schedule:
+    # weekly on Sunday
+    - cron: "4 23 * * 0"
+
+  # as needed by clicking through the github actions UI
+  workflow_dispatch:
+
+# we do not want more than one pre-release workflow executing at the same time, ever
+concurrency:
+  group: pre-release
+  # cancelling in the middle of a release would create incomplete releases
+  # so cancel-in-progress is false
+  cancel-in-progress: false
+
+jobs:
+  pre-release:
+    if: github.repository_owner == 'NickCrews'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: install python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v6.3.1
+
+      - uses: extractions/setup-just@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump ibis version
+        id: get-version
+        run: echo "value=$(just set-version)" | tee -a "$GITHUB_OUTPUT"
+
+      - name: build wheel and source dist
+        run: uv build
+        if: contains(steps.get-version.outputs.value, '.dev')
+
+      - name: publish pre-release wheel to test pypi index
+        if: contains(steps.get-version.outputs.value, '.dev')
+        uses: pypa/gh-action-pypi-publish@e9ccbe5a211ba3e8363f472cae362b56b104e796
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          # no need for attestations here, no one should be installing ibis from test-pypi
+          attestations: false
+
+      - name: publish pre-release wheel to pypi
+        if: contains(steps.get-version.outputs.value, '.dev')
+        uses: pypa/gh-action-pypi-publish@e9ccbe5a211ba3e8363f472cae362b56b104e796

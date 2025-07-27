@@ -39,3 +39,5 @@ from mismo.types import LinkCountsTable as LinkCountsTable
 from mismo.types import LinkedTable as LinkedTable
 from mismo.types import LinksTable as LinksTable
 from mismo.types import Updates as Updates
+
+__version__ = "0.1.0"

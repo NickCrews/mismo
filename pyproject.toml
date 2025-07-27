@@ -110,7 +110,6 @@ testpaths = ["mismo"]
 [tool.coverage.run]
 branch = true
 parallel = true
-omit = ["mismo/__about__.py"]
 
 [tool.coverage.report]
 exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
