@@ -48,6 +48,37 @@ benchcmp number *args:
 upgrade:
     uv lock --upgrade
 
+# compute the next dev version number, eg 0.0.1.dev823
+# Copied from https://github.com/ibis-project/ibis/commit/9e602af3d4847e9ce112045ba11248b7770931fc
+@compute-dev-version:
+    #!/usr/bin/env -S uv run --script
+    # /// script
+    # requires-python = ">=3.11"
+    # dependencies=["dunamai==1.22.0"]
+    # ///
+    from dunamai import Version
+    version = Version.from_git(latest_tag=True, pattern="default-unprefixed")
+    if version.distance:
+        version = version.bump(index=-1)
+        format = "{base}.dev{distance}"
+    else:
+        format = None
+    print(version.serialize(format=format))
+
+# allow setting a specific version, or compute dev version if not provided
+set-version vsn='':
+    #!/usr/bin/env bash
+
+    version={{vsn}}
+    if [ -z "$version" ]; then
+        version="$(just compute-dev-version)"
+    fi
+    uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version "$version" > /dev/null
+    sed "s/__version__ = .*/__version__ = \"$version\"/g" mismo/__init__.py > mismo/__init__.py.tmp
+    mv mismo/__init__.py.tmp mismo/__init__.py
+    uv lock > /dev/null
+    echo "$version"
+
 #install libpostal to the system, a dependency for the pypostal python package 
 install-libpostal datadir="/tmp/postal":
     #!/usr/bin/env bash
