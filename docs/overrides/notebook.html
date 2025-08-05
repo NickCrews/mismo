@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <iframe src="https://notebooksharing.space/jupyterlite/notebooks?fromURL={{config.site_url}}{{ page.file.dest_uri.replace("/index.html", "") }}/{{page.file.dest_uri.replace("/index.html", "").split("/").pop()}}.ipynb"
+  width="100%"
+  height="800px"
+  frameborder="1">
+</iframe>
+{% endblock %}

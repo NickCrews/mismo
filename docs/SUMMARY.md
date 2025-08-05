@@ -1,6 +1,6 @@
 * [Home](index.md)
-* Examples
-    * [Patent Deduplication](examples/patent_deduplication.ipynb)
+* [Examples](examples/patent_deduplication.ipynb)
+    * [Address Linkage](examples/address_linkage.ipynb)
 * Concepts
     * [Goals and Alternatives](concepts/goals_and_alternatives.md)
     * [Fellegi-Sunter Model](concepts/fs.md)
