@@ -2,6 +2,13 @@
 
 - Small, composable components that are easy to understand and extend.
 - Use standard data structures like Ibis tables whenever possible.
+  Expose these as transparent dataclasses that the user is free to
+  reach into directly. The opposite of this would be a heavily
+  object-oriented API where all the internal state is intentionally
+  hidden from the user: I find this sort of API leaves the user
+  with no escape hatch to do the thing they need to do.
+  See [this excellent talk by Casey Muratori](https://youtu.be/ZQ5_u8Lgvyk?si=2jOjskkD8Yi5yjyG&t=2911)
+  for more on this.
 - Use pure functions and immutable data structures whenever possible.
 - Have some built-in algorithms such as a splink-inspired Fellegi-Sunter
   model so you can get going out of the box, but also leave the door open
@@ -25,6 +32,10 @@
   to different datasets, eg if you have a linkage job you need to run nightly.
   This also makes it easier to save and load model specifications, 
   share them with others, and adjust them for doing A/B testing.
+
+  This is similar to how in ibis, you define abstract expressions that aren't
+  bound to any concrete data, and then only at execution time do you
+  need to have the backend and data available.
 - Python-first approach. Instead of configuring using JSON, the majority of
   the implementation logic should be in python. This prevents dead ends and makes
   things much more extendable. I found with splink that the JSON representation
