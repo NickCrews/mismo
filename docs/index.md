@@ -19,4 +19,4 @@ records from tables that don't have a unique identifier.
 
 ## Example
 
-See the [example notebook](examples/patent_deduplication.ipynb).
+See the [example notebooks](examples/).
