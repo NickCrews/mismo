@@ -172,8 +172,6 @@ def key_pair_resolvers(x) -> list[tuple[ValueResolver, ValueResolver]]:
     """
     if (deferred_resolvers := _parse_and_of_equals(x)) is not None:
         return deferred_resolvers
-    if isinstance(x, tuple) and len(x) == 2:
-        return [key_pair_resolver(x)]
     return [key_pair_resolver(spec) for spec in _util.promote_list(x)]
 
 
