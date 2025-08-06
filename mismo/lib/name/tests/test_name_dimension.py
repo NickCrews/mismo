@@ -17,7 +17,7 @@ def test_name_dimension(name_table):
         (3, 4),
         (5, 6),
     ]
-    links = mismo.FullLinkage(name_table, name_table).links.filter(
+    links = mismo.full_linkage(name_table, name_table).links.filter(
         ibis.array([_.record_id_l, _.record_id_r]).isin(real_pairs)
     )
     compared = dim.compare(links)
