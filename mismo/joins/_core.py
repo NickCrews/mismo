@@ -143,11 +143,9 @@ def rename_all_joins(
 def remove_condition_overlap(
     conditions: Iterable[ir.BooleanValue],
 ) -> list[ir.BooleanValue]:
-    """Remove overlapping conditions from a list of conditions.
-
-    This transforms each condition so that it doesn't generate any pairs
-    that are already covered by previous conditions.
     """
+    Constrain each condition to not generate any pairs that are already created by previous conditions.
+    """  # noqa: E501
     result = []
     priors = []
     for condition in conditions:
