@@ -25,14 +25,14 @@ from mismo.joins import join as join
 from mismo.joins import left as left
 from mismo.joins import right as right
 from mismo.linkage import Linkage as Linkage
-from mismo.linker import EmptyLinkage as EmptyLinkage
 from mismo.linker import EmptyLinker as EmptyLinker
-from mismo.linker import FullLinkage as FullLinkage
 from mismo.linker import FullLinker as FullLinker
 from mismo.linker import IDLinker as IDLinker
 from mismo.linker import JoinLinker as JoinLinker
 from mismo.linker import KeyLinker as KeyLinker
 from mismo.linker import Linker as Linker
+from mismo.linker import empty_linkage as empty_linkage
+from mismo.linker import full_linkage as full_linkage
 from mismo.types import Diff as Diff
 from mismo.types import DiffStats as DiffStats
 from mismo.types import LinkCountsTable as LinkCountsTable

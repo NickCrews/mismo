@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import ClassVar, Literal
+from typing import Literal
 
 import ibis
 
@@ -26,12 +26,34 @@ class FullLinker(_common.Linker):
         return self._linker(left, right)
 
 
+def full_linkage(
+    left: ibis.Table,
+    right: ibis.Table,
+    *,
+    task: Literal["dedupe", "link"] | None = None,
+) -> _linkage.Linkage:
+    """
+    Create a linkage with all (M x N) possible pairs of the two tables.
+
+    Parameters
+    ----------
+    left
+        The left table to link.
+    right
+        The right table to link.
+    task
+        The task type, either "dedupe" or "link".
+        If None, will be inferred from whether the left and right tables are the same.
+    """
+    return FullLinker(task=task)(left, right)
+
+
 class EmptyLinker(_common.Linker):
     """A [Linker][mismo.Linker] that yields no pairs."""
 
-    def __init__(self, *, task: Literal["dedupe", "link"] | None = None):
-        self.task = task
-        self._linker = _join_linker.JoinLinker(False, on_slow="ignore", task=task)
+    def __init__(self):
+        # The task doesn't matter here, since we won't be linking anything.
+        self._linker = _join_linker.JoinLinker(False, on_slow="ignore", task="link")
 
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
@@ -40,6 +62,20 @@ class EmptyLinker(_common.Linker):
 
     def __call__(self, left: ibis.Table, right: ibis.Table) -> _linkage.Linkage:
         return self._linker(left, right)
+
+
+def empty_linkage(left: ibis.Table, right: ibis.Table) -> _linkage.Linkage:
+    """
+    Create a Linkage with no pairs. This is useful for testing or as a placeholder.
+
+    Parameters
+    ----------
+    left
+        The left table to link.
+    right
+        The right table to link.
+    """
+    return EmptyLinker()(left, right)
 
 
 class UnnestLinker(_common.Linker):
@@ -54,52 +90,3 @@ class UnnestLinker(_common.Linker):
         left = left.mutate(left[self.column].unnest().name(self.column))
         right = left.mutate(right[self.column].unnest().name(self.column))
         return self._linker.__call__(left, right)
-
-
-class _LinkerLinkage:
-    _linker_cls: ClassVar[type[_common.Linker]]
-
-    def __init__(
-        self,
-        left: ibis.Table,
-        right: ibis.Table,
-        *,
-        task: Literal["dedupe", "link"] | None = None,
-    ):
-        self.task = task
-        self._linkage = self._linker_cls(task=task)(left, right)
-
-    @property
-    def left(self) -> ibis.Table:
-        return self._linkage.left
-
-    @property
-    def right(self) -> ibis.Table:
-        return self._linkage.right
-
-    @property
-    def links(self) -> ibis.Table:
-        return self._linkage.links
-
-    def cache(self):
-        return self
-
-
-class FullLinkage(_LinkerLinkage):
-    """
-    A Linkage that fully joins two tables, yielding all possible pairs (MxN of them).
-    """
-
-    _linker_cls = FullLinker
-
-
-class EmptyLinkage(_LinkerLinkage):
-    """A Linkage that yields no pairs."""
-
-    _linker_cls = EmptyLinker
-
-
-class UnnestLinkage(_LinkerLinkage):
-    """A Linkage that unnests a column before linking."""
-
-    _linker_cls = UnnestLinker

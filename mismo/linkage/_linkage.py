@@ -97,9 +97,7 @@ class Linkage:
     def cache(self) -> _typing.Self:
         """Cache left, right, and links for faster subsequent access."""
         return self.__class__(
-            left=self.left.cache(),
-            right=self.right.cache(),
-            links=self.links.cache(),
+            left=self.left.cache(), right=self.right.cache(), links=self.links.cache()
         )
 
     def to_parquets(self, directory: str | Path, /, *, overwrite: bool = False) -> None:
