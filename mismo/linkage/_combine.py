@@ -146,7 +146,7 @@ class HasJoinConditionLinkage(HasJoinCondition, Protocol):
 class AndJoinConditionsLinkage(CombinedLinkage[HasJoinConditionLinkage]):
     def __init__(self, sublinkages: Iterable[HasJoinConditionLinkage]):
         if not self.is_match(sublinkages):
-            raise NotImplementedError
+            return NotImplemented
         flattened = []
         for sub in sublinkages:
             if isinstance(sub, AndJoinConditionsLinkage):

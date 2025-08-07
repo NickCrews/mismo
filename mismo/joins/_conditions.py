@@ -27,44 +27,45 @@ class HasJoinCondition(Protocol):
         pass
 
 
-class join_condition:
+class JoinConditionRegistry(
+    _registry.Registry[Callable[..., HasJoinCondition], HasJoinCondition]
+):
+    """A registry for HasJoinCondition factory functions"""
+
+
+_join_condition_registry = JoinConditionRegistry()
+
+
+@_join_condition_registry.register
+def _already_has_join_condition(obj: Any) -> HasJoinCondition:
+    """If the object already has a `__join_condition__` method, return it as is."""
+    if isinstance(obj, HasJoinCondition):
+        return obj
+    return NotImplemented
+
+
+def join_condition(obj: Any) -> HasJoinCondition:
     """
-    A flexible factory function to create a [HasJoinCondition][mismo.HasJoinCondition].
+    Create a [HasJoinCondition][mismo.HasJoinCondition] from an object.
 
     Parameters
     ----------
-    x
+    obj
         The object to create a join condition from.
         This can be anything that ibis understands as join condition,
         such as a boolean, an ibis.ir.BooleanValue expression, a `str`,
-        an ibis.Deferred, etc
+        an ibis.Deferred, etc.
         It also supports other types,
         such as `lambda left, right: <one of the above>`.
 
-        You can also register your own implementations with the
-        `join_condition.register()` method. See that for details.
-
     Returns
     -------
-        The first matching HasJoinCondition in the registry.
-        For example, if you pass a boolean,
-        it will return a `BooleanJoinCondition` instance,
-        which just wraps the boolean.
+        An object that follows the [HasJoinCondition][mismo.HasJoinCondition] protocol.
     """
+    return _join_condition_registry(obj)
 
-    _registry = _registry.Registry[Callable[..., HasJoinCondition], HasJoinCondition]()
 
-    def __new__(cls, x: Any) -> HasJoinCondition:
-        if isinstance(x, HasJoinCondition):
-            return x
-        return cls._registry(x)
-
-    @classmethod
-    def register(
-        cls, func: Callable[..., HasJoinCondition]
-    ) -> Callable[..., HasJoinCondition]:
-        """Register a function as a join condition."""
-        return cls._registry.register(func)
+join_condition.register = _join_condition_registry.register
 
 
 class BooleanJoinCondition:
@@ -75,7 +76,7 @@ class BooleanJoinCondition:
     @staticmethod
     def _try(obj: Any) -> BooleanJoinCondition:
         if not isinstance(obj, (bool, ir.BooleanValue)):
-            raise NotImplementedError
+            return NotImplemented
         return BooleanJoinCondition(obj)
 
     def __join_condition__(
@@ -96,9 +97,9 @@ class FuncJoinCondition:
     def _try(obj: Any) -> FuncJoinCondition:
         # Deffered's think they are callable, so guard against that.
         if isinstance(obj, ibis.Deferred):
-            raise NotImplementedError()
+            return NotImplemented
         if not callable(obj):
-            raise NotImplementedError
+            return NotImplemented
         return FuncJoinCondition(obj)
 
     def __join_condition__(
@@ -120,6 +121,8 @@ class AndJoinCondition:
     @staticmethod
     def _try(obj: Any) -> AndJoinCondition:
         tuple_subconditions = _try_iterable(obj)
+        if tuple_subconditions is None:
+            return NotImplemented
         return AndJoinCondition(tuple_subconditions)
 
     def __join_condition__(
@@ -145,10 +148,12 @@ class MultiKeyJoinCondition:
     @join_condition.register
     def _try(obj: Any) -> MultiKeyJoinCondition:
         subconditions = _try_iterable(obj)
+        if subconditions is None:
+            return NotImplemented
         resolved = [join_condition(c) for c in subconditions]
         for sub in resolved:
             if not isinstance(sub, KeyJoinCondition):
-                raise NotImplementedError
+                return NotImplemented
         return MultiKeyJoinCondition(resolved)
 
     def __join_condition__(
@@ -197,7 +202,7 @@ class KeyJoinCondition:
         try:
             return KeyJoinCondition(obj)
         except BadKeyJoinCondition:
-            raise NotImplementedError
+            return NotImplemented
 
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
@@ -269,11 +274,11 @@ class LeftRightDeferredCondition:
     @staticmethod
     def _try(obj: Any) -> LeftRightDeferredCondition:
         if not isinstance(obj, Deferred):
-            raise NotImplementedError
+            return NotImplemented
         try:
             return LeftRightDeferredCondition(obj)
-        except ValueError as e:
-            raise NotImplementedError() from e
+        except ValueError:
+            return NotImplemented
 
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
@@ -284,10 +289,12 @@ class LeftRightDeferredCondition:
         return f"{self.__class__.__name__}({self.condition!r})"
 
 
-def _try_iterable(obj: Any) -> tuple:
+def _try_iterable(obj: Any) -> tuple | None:
+    if isinstance(obj, (str, bytes, bytearray, Deferred)):
+        return None
     try:
         return tuple(c for c in obj)
     except TypeError as e:
         if "is not iterable" in str(e):
-            raise NotImplementedError
+            return None
         raise
