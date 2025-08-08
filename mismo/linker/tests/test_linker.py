@@ -35,3 +35,11 @@ def test_empty_blocker(t1: ir.Table, t2: ir.Table):
     assert "record_id_r" in links.columns
     n = links.count().execute()
     assert n == 0
+
+
+def test_empty_blocker_self(t1: ir.Table):
+    links = EmptyLinker()(t1, t1).links
+    assert "record_id_l" in links.columns
+    assert "record_id_r" in links.columns
+    n = links.count().execute()
+    assert n == 0
