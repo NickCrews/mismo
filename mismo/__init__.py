@@ -4,6 +4,7 @@ from mismo import arrays as arrays
 from mismo import cluster as cluster
 from mismo import compare as compare
 from mismo import eda as eda
+from mismo import exceptions as exceptions
 from mismo import fs as fs
 from mismo import joins as joins
 from mismo import lib as lib
@@ -17,7 +18,6 @@ from mismo import types as types
 from mismo import vector as vector
 from mismo._counts_table import CountsTable as CountsTable
 from mismo._datasets import Datasets as Datasets
-from mismo._errors import UnsupportedBackendError as UnsupportedBackendError
 from mismo._explain import explain as explain
 from mismo._n_naive import n_naive_comparisons as n_naive_comparisons
 from mismo._recipe import PRecipe as PRecipe
