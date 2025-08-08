@@ -25,8 +25,9 @@ class CountsTable(TableWrapper):
     There will also be variable number of other columns that act as identifiers.
 
     You won't create this directly, it will be returned to you
-    from eg [KeyLinker.key_counts()][mismo.KeyLinker.key_counts] or
-    [KeyLinker.pair_counts()][mismo.KeyLinker.pair_counts].
+    from eg [KeyLinker.key_counts_left][mismo.KeyLinker.key_counts_left],
+    [KeyLinker.key_counts_right][mismo.KeyLinker.key_counts_right],
+    or [KeyLinker.pair_counts][mismo.KeyLinker.pair_counts].
     """
 
     n: ir.IntegerColumn

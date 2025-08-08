@@ -21,12 +21,26 @@ class JoinLinker(Linker):
         *,
         task: Literal["dedupe", "link"] | None = None,
         on_slow: Literal["error", "warn", "ignore"] = "error",
-    ):
+    ) -> None:
+        """Create from a join condition.
+
+        Parameters
+        ----------
+        condition
+            The join condition.
+        task
+            The task to perform. If `None`, the task will be inferred as
+            "dedupe" if the two tables passed to __call__ are the same,
+            otherwise it will be inferred as "link".
+        on_slow
+            What to do if the join is slow. See [mismo.joins.check_join_algorithm][].
+        """
         self.condition = joins.join_condition(condition)
         self.task = task
         self.on_slow = on_slow
 
     def __call__(self, left: ibis.Table, right: ibis.Table) -> Linkage:
+        """Create a linkage from the join condition."""
         task = infer_task(task=self.task, left=left, right=right)
         if left is right:
             right = right.view()
@@ -41,6 +55,7 @@ class JoinLinker(Linker):
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
     ) -> ibis.ir.BooleanValue:
+        """Create a join condition."""
         pred = self.condition.__join_condition__(left, right)
         joins.check_join_algorithm(left, right, pred, on_slow=self.on_slow)
         return pred

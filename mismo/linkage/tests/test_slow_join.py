@@ -34,8 +34,8 @@ import mismo
     "on_slow,result",
     [
         ("ignore", None),
-        ("warn", mismo.joins.SlowJoinWarning),
-        ("error", mismo.joins.SlowJoinError),
+        ("warn", mismo.exceptions.SlowJoinWarning),
+        ("error", mismo.exceptions.SlowJoinError),
     ],
 )
 def test_warn_slow_join(
@@ -46,9 +46,9 @@ def test_warn_slow_join(
 
     if result is None:
         f()
-    elif is_slow and result is mismo.joins.SlowJoinWarning:
-        with pytest.warns(mismo.joins.SlowJoinWarning):
+    elif is_slow and result is mismo.exceptions.SlowJoinWarning:
+        with pytest.warns(mismo.exceptions.SlowJoinWarning):
             f()
-    elif is_slow and result is mismo.joins.SlowJoinError:
-        with pytest.raises(mismo.joins.SlowJoinError):
+    elif is_slow and result is mismo.exceptions.SlowJoinError:
+        with pytest.raises(mismo.exceptions.SlowJoinError):
             f()

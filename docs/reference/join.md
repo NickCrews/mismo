@@ -1,5 +1,8 @@
 ## Join Utilities
 
+::: mismo.HasJoinCondition
+::: mismo.join_condition
+::: mismo.IntoHasJoinCondition
 ::: mismo.join
 ::: mismo.left
 ::: mismo.right
@@ -15,7 +18,9 @@ a join algorithm.
 
 ::: mismo.joins.get_join_algorithm
 ::: mismo.joins.check_join_algorithm
+::: mismo.joins.JoinAlgorithm
+::: mismo.joins.SlowJoinAlgorithm
 ::: mismo.joins.JOIN_ALGORITHMS
 ::: mismo.joins.SLOW_JOIN_ALGORITHMS
-::: mismo.joins.SlowJoinError
-::: mismo.joins.SlowJoinWarning
+::: mismo.exceptions.SlowJoinError
+::: mismo.exceptions.SlowJoinWarning

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import ibis
 from ibis.expr import types as ir
@@ -15,16 +14,7 @@ if TYPE_CHECKING:
 def join(
     left: ibis.Table,
     right: ibis.Table,
-    predicates: Any
-    | str
-    | bool
-    | ibis.Deferred
-    | Sequence[
-        bool
-        | ibis.ir.BooleanColumn
-        | str
-        | tuple[str | ibis.Column | ibis.Deferred, str | ibis.Column | ibis.Deferred]
-    ] = (),
+    predicates: _conditions.IntoHasJoinCondition = (),
     how: str = "inner",
     *,
     lname: str = "{name}",

@@ -1,0 +1,3 @@
+# Exceptions
+
+::: mismo.exceptions

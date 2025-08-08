@@ -1,6 +1,6 @@
 * [Home](index.md)
-* [Examples](examples/patent_deduplication.ipynb)
-    * [Address Linkage](examples/address_linkage.ipynb)
+* Examples
+    * [Patent Deduplication](examples/patent_deduplication.ipynb)
 * Concepts
     * [Goals and Alternatives](concepts/goals_and_alternatives.md)
     * [Fellegi-Sunter Model](concepts/fs.md)
@@ -25,4 +25,5 @@
         * [Human Names](reference/lib/name.md)
         * [Emails](reference/lib/email.md)
         * [Phones](reference/lib/phone.md)
+    * [Exceptions](reference/exceptions.md)
 * [Contribute](contributing.md)
