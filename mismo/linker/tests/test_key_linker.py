@@ -37,23 +37,6 @@ def letter_blocked_ids(table_factory):
     )
 
 
-# @pytest.mark.parametrize(
-#     "key,name,expected_name",
-#     [
-#         ("letter", None, "(letter)"),
-#         (_.letter, None, "(_.letter)"),
-#         ("letter", "my_name", "my_name"),
-#     ],
-# )
-# def test_KeyBlocker_name(
-#     table_factory, t1: ir.Table, t2: ir.Table, key, name, expected_name
-# ):
-#     blocker = mismo.KeyLinker(key, name=name)
-#     assert blocker.name == expected_name
-#     expected = letter_blocked_ids(table_factory)
-#     assert_tables_equal(expected, blocker(t1, t2)["record_id_l", "record_id_r"])
-
-
 @pytest.mark.parametrize(
     "keys,expected_maker",
     [
