@@ -9,7 +9,7 @@ import mismo
 from mismo import _upset, joins
 from mismo.joins import HasJoinCondition
 from mismo.linkage._linkage import Linkage
-from mismo.linker._common import Linker
+from mismo.linker._common import Linker, infer_task
 from mismo.types._links_table import LinksTable
 
 if TYPE_CHECKING:
@@ -55,6 +55,9 @@ class OrLinker(Linker):
     # because an OR join condition results in inefficient loop joins.
 
     def __call__(self, left: ibis.Table, right: ibis.Table) -> Linkage:
+        task = infer_task(task=None, left=left, right=right)
+        if left is right:
+            right = right.view()
         if not self._join_conditions:
             return mismo.empty_linkage(left, right)
         conditions = [
@@ -63,6 +66,8 @@ class OrLinker(Linker):
         for c in conditions:
             joins.check_join_algorithm(left, right, c, on_slow=self.on_slow)
         conditions = joins.remove_condition_overlap(conditions)
+        if task == "dedupe":
+            conditions = [c & (left.record_id < right.record_id) for c in conditions]
         sub_links = [LinksTable.from_join_condition(left, right, c) for c in conditions]
         links = mismo.UnionTable(sub_links)
         return Linkage(left=left, right=right, links=links)
