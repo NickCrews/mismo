@@ -29,6 +29,7 @@ from mismo.lib import geo
             {
                 "addresses": [
                     {
+                        "is_pobox": False,
                         "street1": "132 MAIN ST",
                         "city": "SPRINGFIELD",
                         "state": None,
@@ -49,6 +50,7 @@ from mismo.lib import geo
                         "street_number_sorted": "123",
                     },
                     {
+                        "is_pobox": False,
                         "street1": "1 1ST AVE",
                         "city": "SPRINGFIELD",
                         "state": None,
@@ -102,6 +104,7 @@ from mismo.lib import geo
             {
                 "addresses": [
                     {
+                        "is_pobox": False,
                         "street1": "132 MAIN ST",
                         "city": None,
                         "state": "IL IL",
@@ -151,6 +154,7 @@ from mismo.lib import geo
                 "addresses": [
                     {
                         "city": None,
+                        "is_pobox": None,
                         "postal_code": None,
                         "state": None,
                         "street1": None,
