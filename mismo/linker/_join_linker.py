@@ -27,20 +27,21 @@ class JoinLinker(Linker):
         self.on_slow = on_slow
 
     def __call__(self, left: ibis.Table, right: ibis.Table) -> Linkage:
+        task = infer_task(task=self.task, left=left, right=right)
         if left is right:
             right = right.view()
         # Run this to check early for slow joins
         self.__join_condition__(left, right)
-        links = LinksTable.from_join_condition(left, right, self)
+        condition = self.__join_condition__(left, right)
+        if task == "dedupe":
+            condition = condition & (left.record_id < right.record_id)
+        links = LinksTable.from_join_condition(left, right, condition)
         return Linkage(left=left, right=right, links=links)
 
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
     ) -> ibis.ir.BooleanValue:
-        task = infer_task(task=self.task, left=left, right=right)
         pred = self.condition.__join_condition__(left, right)
-        if task == "dedupe":
-            pred = pred & (left.record_id < right.record_id)
         joins.check_join_algorithm(left, right, pred, on_slow=self.on_slow)
         return pred
 
