@@ -45,4 +45,4 @@ from mismo.types import LinksTable as LinksTable
 from mismo.types import UnionTable as UnionTable
 from mismo.types import Updates as Updates
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
