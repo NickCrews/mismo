@@ -19,6 +19,7 @@ from mismo._counts_table import CountsTable as CountsTable
 from mismo._datasets import Datasets as Datasets
 from mismo._errors import UnsupportedBackendError as UnsupportedBackendError
 from mismo._explain import explain as explain
+from mismo._n_naive import n_naive_comparisons as n_naive_comparisons
 from mismo._recipe import PRecipe as PRecipe
 from mismo.joins import HasJoinCondition as HasJoinCondition
 from mismo.joins import join as join

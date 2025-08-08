@@ -25,8 +25,10 @@ def n_naive_comparisons(
         The number of comparisons.
     """
     if right is None:
+        # dedupe
         return _get_len(left) * (_get_len(left) - 1) // 2
     else:
+        # link
         return _get_len(left) * _get_len(right)
 
 
