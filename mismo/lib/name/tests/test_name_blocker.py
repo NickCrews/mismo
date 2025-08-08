@@ -17,6 +17,7 @@ def test_name_blocker_with_column(name_table):
         ("bob_baker", "robert_b_baker_jr"),
         ("charles_carter", "mr_charles_carter"),
     }
+    expected = set((a, b) if a < b else (b, a) for a, b in expected)
     assert record_ids == expected
 
 
