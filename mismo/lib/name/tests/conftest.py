@@ -7,7 +7,7 @@ import pytest
 def name_table(table_factory):
     records = [
         {
-            "record_id": "null",
+            "record_id": "<null>",
             "name": None,
         },
         {
@@ -33,8 +33,8 @@ def name_table(table_factory):
             },
         },
         {
+            "record_id": "robert_b_baker_jr",
             "name": {
-                "record_id": "robert_b_baker_jr",
                 "given": "Robert",
                 "middle": "b",
                 "surname": "Baker",
