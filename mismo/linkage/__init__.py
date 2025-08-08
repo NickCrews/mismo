@@ -9,4 +9,3 @@ from mismo.linkage._combine import union as union
 from mismo.linkage._linkage import Linkage as Linkage
 from mismo.linkage._linkage import filter_links as filter_links
 from mismo.linkage._sample import sample_all_links as sample_all_links
-from mismo.linkage._upset_block import upset_chart as upset_chart
