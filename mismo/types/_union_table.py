@@ -43,7 +43,7 @@ class UnionTable(TableWrapper):
         return UnionTable(t.mutate(*args, **kwargs) for t in self.tables)
 
     # skip type hints to inherit from the grandparent ibis.Table
-    def rename(self, method, **substitutions):
+    def rename(self, method=None, /, **substitutions):
         return UnionTable(t.rename(method, **substitutions) for t in self.tables)
 
     # skip type hints to inherit from the grandparent ibis.Table
