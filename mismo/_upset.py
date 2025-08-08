@@ -1,9 +1,46 @@
 from __future__ import annotations
 
-from typing import Any, Iterable
+from collections.abc import Iterable
+from itertools import combinations
+from typing import Any
 
 import altair as alt
 import pandas as pd
+
+
+def combos(set_names: Iterable[str]) -> frozenset[frozenset[str]]:
+    """
+    Computes all non-empty subsets of a given iterable of set names.
+
+    Args:
+        set_names: An iterable of strings, where each string is a set name.
+
+    Returns:
+        A frozenset of frozensets, where each set represents a unique combination
+        of the input set names. For example, given ['A', 'B'], it will
+        return {{'A'}, {'B'}, {'A', 'B'}}.
+    """
+    s = list(set_names)
+    result = []
+    for r in range(1, len(s) + 1):
+        result.extend(frozenset(combo) for combo in combinations(s, r))
+    return frozenset(result)
+
+
+assert combos(["A", "B"]) == frozenset(
+    {frozenset({"A"}), frozenset({"B"}), frozenset({"A", "B"})}
+)
+assert combos(["A", "B", "C"]) == frozenset(
+    {
+        frozenset({"A"}),
+        frozenset({"B"}),
+        frozenset({"C"}),
+        frozenset({"A", "B"}),
+        frozenset({"A", "C"}),
+        frozenset({"B", "C"}),
+        frozenset({"A", "B", "C"}),
+    }
+)
 
 
 def upset_chart(data: Any) -> alt.Chart:
