@@ -32,6 +32,7 @@ from mismo.linker import IDLinker as IDLinker
 from mismo.linker import JoinLinker as JoinLinker
 from mismo.linker import KeyLinker as KeyLinker
 from mismo.linker import Linker as Linker
+from mismo.linker import OrLinker as OrLinker
 from mismo.linker import empty_linkage as empty_linkage
 from mismo.linker import full_linkage as full_linkage
 from mismo.types import Diff as Diff
@@ -39,6 +40,7 @@ from mismo.types import DiffStats as DiffStats
 from mismo.types import LinkCountsTable as LinkCountsTable
 from mismo.types import LinkedTable as LinkedTable
 from mismo.types import LinksTable as LinksTable
+from mismo.types import UnionTable as UnionTable
 from mismo.types import Updates as Updates
 
 __version__ = "0.1.0"
