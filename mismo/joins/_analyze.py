@@ -7,7 +7,8 @@ import warnings
 import ibis
 from ibis.expr import types as ir
 
-from mismo import _errors, _explain, _util
+from mismo import _explain
+from mismo.exceptions import SlowJoinError, SlowJoinWarning, UnsupportedBackendError
 
 JOIN_ALGORITHMS = frozenset(
     {
@@ -37,23 +38,6 @@ SLOW_JOIN_ALGORITHMS = frozenset(
         "CROSS_PRODUCT",
     }
 )
-
-
-class _SlowJoinMixin:
-    def __init__(self, condition, algorithm: str) -> None:
-        self.condition = condition
-        self.algorithm = algorithm
-        super().__init__(
-            f"The join '{_util.get_name(self.condition)}' uses the {algorithm} algorithm and is likely to be slow."  # noqa: E501
-        )
-
-
-class SlowJoinWarning(_SlowJoinMixin, UserWarning):
-    """Warning for slow join algorithms."""
-
-
-class SlowJoinError(_SlowJoinMixin, ValueError):
-    """Error for slow join algorithms."""
 
 
 def get_join_algorithm(left: ir.Table, right: ir.Table, condition) -> str:
@@ -107,7 +91,7 @@ def check_join_algorithm(
         return
     try:
         alg = get_join_algorithm(left, right, condition)
-    except _errors.UnsupportedBackendError as e:
+    except UnsupportedBackendError as e:
         warnings.warn(
             "We can only check the join algorithm for DuckDB backends. You passed"
             f" an expression with a {type(e.args[0])} backend."

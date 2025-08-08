@@ -141,7 +141,7 @@ def rename_all_joins(
 
 
 def remove_condition_overlap(
-    conditions: Iterable[ir.BooleanValue],
+    conditions: Iterable[ir.BooleanValue | bool],
 ) -> list[ir.BooleanValue]:
     """
     Constrain each condition to not generate any pairs that are already created by previous conditions.
@@ -149,6 +149,8 @@ def remove_condition_overlap(
     result = []
     priors = []
     for condition in conditions:
+        if isinstance(condition, bool):
+            condition = ibis.literal(condition)
         modified = ibis.and_(condition, *[~prior for prior in priors])
         priors.append(condition)
         result.append(modified)

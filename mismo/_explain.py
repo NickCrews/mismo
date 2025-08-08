@@ -3,7 +3,7 @@ from __future__ import annotations
 import ibis
 from ibis.backends.duckdb import Backend as DuckDBBackend
 
-from mismo._errors import UnsupportedBackendError
+from mismo.exceptions import UnsupportedBackendError
 
 
 def explain(duckdb_expr: ibis.Expr | str, *, analyze: bool = False) -> str:
