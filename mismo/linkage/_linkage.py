@@ -85,7 +85,7 @@ class Linkage:
             A Table of records, with at least a column 'record_id'.
         condition
             A join condition, such as a boolean expression or an ibis expression.
-            See [join_condition][mismo.join_condition] for more details.
+            See [mismo.join_condition][] for more details.
 
         Returns
         -------

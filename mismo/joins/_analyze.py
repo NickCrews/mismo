@@ -10,34 +10,33 @@ from ibis.expr import types as ir
 from mismo import _explain
 from mismo.exceptions import SlowJoinError, SlowJoinWarning, UnsupportedBackendError
 
-JOIN_ALGORITHMS = frozenset(
-    {
-        # If the duckdb analyzer can see the condition is always false (eg you pass 1=2)
-        "EMPTY_RESULT",  # O(1)
-        "LEFT_DELIM_JOIN",  # ??
-        "RIGHT_DELIM_JOIN",  # ??
-        "BLOCKWISE_NL_JOIN",  # O(n*m)
-        "NESTED_LOOP_JOIN",  # O(n*m)
-        "HASH_JOIN",  # O(n)
-        "PIECEWISE_MERGE_JOIN",  # O(m*log(n))
-        "IE_JOIN",  # O(n*log(n))
-        "ASOF_JOIN",  # ??
-        "CROSS_PRODUCT",  # O(n*m)
-        "POSITIONAL_JOIN",  # O(n)
-    }
-)
+JoinAlgorithm = Literal[
+    "EMPTY_RESULT",  # O(1)
+    "LEFT_DELIM_JOIN",  # ??
+    "RIGHT_DELIM_JOIN",  # ??
+    "BLOCKWISE_NL_JOIN",  # O(n*m)
+    "NESTED_LOOP_JOIN",  # O(n*m)
+    "HASH_JOIN",  # O(n)
+    "PIECEWISE_MERGE_JOIN",  # O(m*log(n))
+    "IE_JOIN",  # O(n*log(n))
+    "ASOF_JOIN",  # ??
+    "CROSS_PRODUCT",  # O(n*m)
+    "POSITIONAL_JOIN",  # O(n)
+]
+
+JOIN_ALGORITHMS = frozenset(JoinAlgorithm.__args__)
 """Based on all the JOIN operators in
 [https://github.com/duckdb/duckdb/blob/b0b1562e293718ee9279c9621cefe4cb5dc01ef9/src/common/enums/physical_operator_type.cpp#L56]()
 (very good) explanation of these at [https://duckdb.org/2022/05/27/iejoin.html]()
 """
 
-SLOW_JOIN_ALGORITHMS = frozenset(
-    {
-        "NESTED_LOOP_JOIN",
-        "BLOCKWISE_NL_JOIN",
-        "CROSS_PRODUCT",
-    }
-)
+SlowJoinAlgorithm = Literal[
+    "NESTED_LOOP_JOIN",
+    "BLOCKWISE_NL_JOIN",
+    "CROSS_PRODUCT",
+]
+
+SLOW_JOIN_ALGORITHMS = frozenset(SlowJoinAlgorithm.__args__)
 
 
 def get_join_algorithm(left: ir.Table, right: ir.Table, condition) -> str:

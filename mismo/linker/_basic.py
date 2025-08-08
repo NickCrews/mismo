@@ -10,7 +10,10 @@ from mismo.linker import _common, _join_linker
 
 class FullLinker(_common.Linker):
     """
-    A [Linker][mismo.Linker] that yields all possible pairs (MxN of them).
+    A [Linker][mismo.Linker] that yields all possible pairs.
+
+    This will be N x M pairs for linking tasks,
+    and N x (M-1) pairs for deduplication tasks.
     """
 
     def __init__(self, *, task: Literal["dedupe", "link"] | None = None):

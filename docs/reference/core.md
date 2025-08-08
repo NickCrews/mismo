@@ -9,6 +9,7 @@ of the framework
 ::: mismo.LinkedTable
 ::: mismo.LinksTable
 ::: mismo.CountsTable
+::: mismo.UnionTable
 
 ## Linkers
 Utilities and classes for the blocking phase of record linkage, where
@@ -22,6 +23,9 @@ becomes intractable for datasets much larger than a few thousand.
 ::: mismo.EmptyLinker
 ::: mismo.JoinLinker
 ::: mismo.KeyLinker
+::: mismo.KeyLinker.key_counts_left
+::: mismo.KeyLinker.key_counts_right
+::: mismo.OrLinker
 ::: mismo.linkage.sample_all_links
 
 ## Comparing tables

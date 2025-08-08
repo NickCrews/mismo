@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Any, Callable, Protocol, runtime_checkable
+from typing import Any, Callable, Protocol, TypeAlias, Union, runtime_checkable
 
 import ibis
 from ibis import Deferred
@@ -24,7 +24,33 @@ class HasJoinCondition(Protocol):
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
     ) -> ir.BooleanValue | bool:
+        """
+        Given a left and right table, return something that `ibis.join()` understands.
+        """
         pass
+
+
+IntoHasJoinCondition: TypeAlias = Union[
+    HasJoinCondition,
+    bool,
+    ibis.ir.BooleanValue,
+    str,
+    ibis.Deferred,
+    Callable[[ibis.Table, ibis.Table], HasJoinCondition | bool | ibis.ir.BooleanValue],
+    Iterable[
+        HasJoinCondition,
+        bool,
+        ibis.ir.BooleanValue,
+        str,
+        ibis.Deferred,
+        Callable[
+            [ibis.Table, ibis.Table], HasJoinCondition | bool | ibis.ir.BooleanValue
+        ],
+    ],
+]
+"""
+An object that can be converted into a HasJoinCondition with mismo.join_condition()
+"""
 
 
 class JoinConditionRegistry(
@@ -44,7 +70,7 @@ def _already_has_join_condition(obj: Any) -> HasJoinCondition:
     return NotImplemented
 
 
-def join_condition(obj: Any) -> HasJoinCondition:
+def join_condition(obj: IntoHasJoinCondition) -> HasJoinCondition:
     """
     Create a [HasJoinCondition][mismo.HasJoinCondition] from an object.
 
@@ -56,7 +82,7 @@ def join_condition(obj: Any) -> HasJoinCondition:
         such as a boolean, an ibis.ir.BooleanValue expression, a `str`,
         an ibis.Deferred, etc.
         It also supports other types,
-        such as `lambda left, right: <one of the above>`.
+        such as `lambda left, right: <one of the above>`,
 
     Returns
     -------

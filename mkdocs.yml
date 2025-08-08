@@ -42,6 +42,8 @@ plugins:
             docstring_style: numpy
             docstring_section_style: spacy
             heading_level: 3
+            separate_signature: true
+            show_overloads: True
             show_signature_annotations: true
             show_root_full_path: true
             show_root_heading: true
@@ -50,6 +52,7 @@ plugins:
             show_source: false
             show_symbol_type_heading: true
             show_symbol_type_toc: true
+            signature_crossrefs: true
   - search
 markdown_extensions:
   - admonition
