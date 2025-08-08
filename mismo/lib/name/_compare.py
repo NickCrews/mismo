@@ -59,10 +59,10 @@ class NameMatchLevel(MatchLevel):
     """The given and surnames both match."""
     NICKNAMES = 3
     """The given names match with nicknames, and the surnames match."""
-    TYPO = 5
-    """The given names are the same (forgiving typos), and the surnames match."""
     INITIALS = 4
     """The first letter of the given name matches, and the surnames match."""
+    TYPO = 5
+    """The given names are the same (forgiving typos), and the surnames match."""
     ELSE = 6
     """None of the above."""
 
