@@ -202,9 +202,6 @@ class KeyLinker(Linker):
     ) -> ir.BooleanValue:
         keys_left, keys_right = self.__keys__(left, right)
         clauses = (kl == kr for kl, kr in zip(keys_left, keys_right, strict=True))
-        task = infer_task(task=self.task, left=left, right=right)
-        if task == "dedupe":
-            clauses = (*clauses, left.record_id < right.record_id)
         if self.max_pairs is not None:
             too_common_left, too_common_right = self.too_common_of_records(left, right)
             clauses = [
@@ -213,6 +210,17 @@ class KeyLinker(Linker):
                 # right.record_id.notin(too_common_right.record_id),
             ]
         return ibis.and_(*clauses)
+
+    def __call__(self, left: ibis.Table, right: ibis.Table) -> Linkage:
+        """The linkage between the two tables."""
+        # Is this the right place to be calling .view()?
+        task = infer_task(task=self.task, left=left, right=right)
+        if right is left:
+            right = right.view()
+        condition = self.__join_condition__(left, right)
+        if task == "dedupe":
+            condition = condition & (left.record_id < right.record_id)
+        return Linkage.from_join_condition(left=left, right=right, condition=condition)
 
     def too_common_of_records(
         self, left: ibis.Table, right: ibis.Table
@@ -242,16 +250,6 @@ class KeyLinker(Linker):
         left = left.filter(_[key_name].isin(too_big[key_name])).drop(key_name)
         right = right.filter(_[key_name].isin(too_big[key_name])).drop(key_name)
         return left, right
-
-    def linkage(self, left: ibis.Table, right: ibis.Table) -> Linkage:
-        """The linkage between the two tables."""
-        # Is this the right place to be calling .view()?
-        if right is left:
-            right = right.view()
-        return Linkage.from_join_condition(left=left, right=right, condition=self)
-
-    def __call__(self, left, right):
-        return self.linkage(left, right)
 
     def __keys__(
         self, left: ibis.Table, right: ibis.Table

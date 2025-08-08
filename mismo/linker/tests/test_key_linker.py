@@ -51,10 +51,29 @@ def letter_blocked_ids(table_factory):
         pytest.param((_.letter, _.int + 1), blocked_on_letter_int, id="tuple_deferred"),
     ],
 )
-def test_KeyBlocker_keys(t1: ir.Table, t2: ir.Table, keys, expected_maker):
+def test_KeyLinker_keys(t1: ir.Table, t2: ir.Table, keys, expected_maker):
     linkage = KeyLinker(keys)(t1, t2)
     blocked_ids = linkage.links.select("record_id_l", "record_id_r")
     expected = expected_maker(t1, t2)
+    assert_tables_equal(blocked_ids, expected)
+
+
+def test_deduplication(table_factory):
+    t = table_factory(
+        {
+            "record_id": [0, 1, 2, 3, 4],
+            "letter": ["a", "b", "a", "b", None],
+        }
+    )
+    expected = table_factory(
+        {
+            "record_id_l": [0, 1],
+            "record_id_r": [2, 3],
+        }
+    )
+    linker = KeyLinker("letter")
+    linkage = linker(t, t)
+    blocked_ids = linkage.links.select("record_id_l", "record_id_r")
     assert_tables_equal(blocked_ids, expected)
 
 
