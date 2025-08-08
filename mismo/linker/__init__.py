@@ -9,3 +9,4 @@ from mismo.linker._common import Linker as Linker
 from mismo.linker._id_linker import IDLinker as IDLinker
 from mismo.linker._join_linker import JoinLinker as JoinLinker
 from mismo.linker._key_linker import KeyLinker as KeyLinker
+from mismo.linker._or_linker import OrLinker as OrLinker
