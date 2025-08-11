@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import Iterable
+from typing import TYPE_CHECKING, Iterable
 
-import altair as alt
 import ibis
 from ibis import _
 from ibis.expr import types as ir
@@ -10,6 +9,9 @@ from ibis.expr import types as ir
 from mismo._util import get_column
 from mismo.arrays import array_choice
 from mismo.linker import _common
+
+if TYPE_CHECKING:
+    import altair as alt
 
 
 def minhash_lsh_keys(
@@ -145,6 +147,8 @@ def plot_lsh_curves(
     -------
     The plot of the LSH curve.
     """
+    import altair as alt
+
     if band_params is None:
         band_params = [
             (2, 10),

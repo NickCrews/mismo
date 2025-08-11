@@ -3,9 +3,8 @@ from __future__ import annotations
 from json import dumps, loads
 import math
 from pathlib import Path
-from typing import Iterable, Iterator, overload
+from typing import TYPE_CHECKING, Iterable, Iterator, overload
 
-import altair as alt
 import ibis
 from ibis.expr import types as ir
 
@@ -14,6 +13,9 @@ from mismo.compare import LevelComparer
 
 from .._typing import Self
 from ._util import odds_to_log_odds, odds_to_prob
+
+if TYPE_CHECKING:
+    import altair as alt
 
 
 class LevelWeights:

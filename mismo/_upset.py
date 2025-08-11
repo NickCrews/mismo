@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from itertools import combinations
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import altair as alt
 import pandas as pd
+
+if TYPE_CHECKING:
+    import altair as alt
 
 
 def combos(set_names: Iterable[str]) -> frozenset[frozenset[str]]:
@@ -64,6 +66,8 @@ def upset_chart(data: Any) -> alt.Chart:
     Chart
         An Altair chart.
     """
+    import altair as alt
+
     df = _to_df(data)
     longer = _pivot_longer(df)
     sets = (
@@ -184,6 +188,8 @@ def _pivot_longer(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _intersection_plot(base: alt.Chart, sets: Iterable[str], x) -> alt.Chart:
+    import altair as alt
+
     sets = list(sets)
     intersection_base = base.transform_filter(alt.datum.set == sets[0]).encode(
         x=x,
@@ -200,6 +206,8 @@ def _intersection_plot(base: alt.Chart, sets: Iterable[str], x) -> alt.Chart:
 
 
 def _matrix_plot(base: alt.Chart, sets: Iterable[str], x, y) -> alt.Chart:
+    import altair as alt
+
     sets = list(sets)
     matrix_circle_bg = base.mark_circle(size=100, color="lightgray", opacity=1).encode(
         x=x,
@@ -214,6 +222,8 @@ def _matrix_plot(base: alt.Chart, sets: Iterable[str], x, y) -> alt.Chart:
 
 
 def _set_plot(base: alt.Chart, y) -> alt.Chart:
+    import altair as alt
+
     set_base = base.transform_filter(alt.datum.is_intersect).encode(
         x=alt.X("sum(intersection_size):Q", title="Number of Pairs"),
         y=y.axis(None),

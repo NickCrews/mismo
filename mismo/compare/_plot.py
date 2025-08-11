@@ -2,23 +2,25 @@ from __future__ import annotations
 
 import colorsys
 from itertools import product
-from typing import Iterable
+from typing import TYPE_CHECKING, Iterable
 
-import altair as alt
 import ibis
 from ibis import _
 from ibis.expr import types as ir
-import ipywidgets
 import pandas as pd
 
 from mismo.compare._match_level import LevelComparer
-from mismo.fs._plot import LOG_ODDS_COLOR_SCALE
+from mismo.fs._plot import log_odds_color_scale
 from mismo.fs._util import odds_to_log_odds
 from mismo.fs._weights import Weights
 
+if TYPE_CHECKING:
+    import altair as alt
+    import ipywidgets
+
 
 def compared_dashboard(
-    compared: ir.Table,
+    compared: ibis.Table,
     comparers: Iterable[LevelComparer],
     weights: Weights | None = None,
     *,
@@ -48,6 +50,9 @@ def compared_dashboard(
     ipywidgets.VBox
         The dashboard.
     """
+    import altair as alt
+    import ipywidgets
+
     cols = [comp.name for comp in comparers]
     compared = compared.mutate(
         vector_id=ibis.literal(":").join(
@@ -96,6 +101,8 @@ def _compared_chart(
     *,
     width: int = 500,
 ) -> alt.Chart:
+    import altair as alt
+
     cols = [comp.name for comp in comparers]
 
     vector_counts = compared.group_by(cols + ["vector_id"]).agg(n_pairs=_.count())
@@ -109,7 +116,7 @@ def _compared_chart(
         hist_color = alt.Color(
             "log_odds",
             title="Odds",
-            scale=LOG_ODDS_COLOR_SCALE,
+            scale=log_odds_color_scale(),
             legend=alt.Legend(labelExpr=10**alt.datum.value),
         )
         hist_extra_tooltips = [alt.Tooltip("odds", title="Odds", format=",")]
@@ -250,6 +257,8 @@ def _vector_grid_data(
 
 
 def _make_level_color_scale(comparers: Iterable[LevelComparer]) -> alt.Scale:
+    import altair as alt
+
     domain = []
     range = []
     hues = _frange(0, 1, len(comparers))
@@ -273,6 +282,8 @@ def _level_uid(comparer: LevelComparer, level: str) -> str:
 
 # TODO: make this work as a filter for the above histogram
 def _make_legend_plot(longer: ir.Table, color_map):
+    import altair as alt
+
     levels = longer.group_by(["comparer", "level"]).agg(
         id=_.id.first(),
         level_idx=_.level_idx.first(),

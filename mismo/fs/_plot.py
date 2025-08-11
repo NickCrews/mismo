@@ -1,18 +1,22 @@
 from __future__ import annotations
 
-from typing import Iterable
+from typing import TYPE_CHECKING, Iterable
 
-import altair as alt
 import pandas as pd
 
 from ._weights import ComparerWeights
 
-LOG_ODDS_COLOR_SCALE = alt.Scale(
-    domainMid=0,
-    domainMin=-3,
-    domainMax=3,
-    scheme="redyellowgreen",
-)
+if TYPE_CHECKING:
+    import altair as alt
+
+
+def log_odds_color_scale() -> alt.Scale:
+    return alt.Scale(
+        domainMid=0,
+        domainMin=-3,
+        domainMax=3,
+        scheme="redyellowgreen",
+    )
 
 
 def plot_weights(weights: ComparerWeights | Iterable[ComparerWeights]) -> alt.Chart:
@@ -50,6 +54,8 @@ def plot_weights(weights: ComparerWeights | Iterable[ComparerWeights]) -> alt.Ch
 
 
 def _plot_comparer_weights(cw: ComparerWeights) -> alt.Chart:
+    import altair as alt
+
     t = _comp_weights_to_table(cw)
     mu_width = 200
     ms = _subplot(
@@ -87,7 +93,7 @@ def _plot_comparer_weights(cw: ComparerWeights) -> alt.Chart:
         alt.Color(
             "log_odds",
             title="Log Odds",
-            scale=LOG_ODDS_COLOR_SCALE,
+            scale=log_odds_color_scale(),
             legend=None,
         ),
         False,
@@ -117,6 +123,8 @@ def _comp_weights_to_table(comparer_weights: ComparerWeights) -> pd.DataFrame:
 
 
 def _subplot(t, x, color, use_y_axis, width):
+    import altair as alt
+
     axis = alt.Axis() if use_y_axis else None
     y = alt.Y("level", title=None, sort=alt.EncodingSortField("level_order"), axis=axis)
     t = t.copy()

@@ -20,7 +20,7 @@ lint:
 
 # run tests
 test *FILES:
-    uv run --group dev pytest {{FILES}}
+    uv run --group dev --all-extras pytest {{FILES}}
 
 # include --dev-addr localhost:8001 to avoid conflicts with other mkdocs instances
 # serve docs for live editing

@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-import altair as alt
+from typing import TYPE_CHECKING
+
 import ibis
 from ibis import _
 from ibis.expr import types as ir
-import ipywidgets
+
+if TYPE_CHECKING:
+    import altair as alt
+    import ipywidgets
 
 
 def distribution_chart(vals: ir.Column, *, limit: int | None = None) -> alt.Chart:
@@ -24,6 +28,8 @@ def distribution_chart(vals: ir.Column, *, limit: int | None = None) -> alt.Char
     alt.Chart
         The histogram.
     """
+    import altair as alt
+
     if limit is None:
         limit = 100
     counts = _make_counts(vals)
@@ -117,6 +123,9 @@ def distribution_dashboard(
     ipywidgets.VBox
         The dashboard.
     """
+    import altair as alt
+    import ipywidgets
+
     if column is None:
         column = records.columns[0]
     limit_max = int(records.count().execute())
