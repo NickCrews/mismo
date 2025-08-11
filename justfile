@@ -6,39 +6,39 @@ default:
 
 # initialize development environment (but don't activate it)
 install:
-    uv sync --all-extras
+    uv sync --all-extras --all-groups
 
 # format code
 fmt:
-    uv run ruff check --fix mismo docs
-    uv run ruff format mismo docs
+    uv run --group lint ruff check --fix mismo docs
+    uv run --group lint ruff format mismo docs
 
 # lint code
 lint:
-    uv run ruff check mismo docs
-    uv run ruff format --check mismo docs
+    uv run --group lint ruff check mismo docs
+    uv run --group lint ruff format --check mismo docs
 
 # run tests
 test *FILES:
-    uv run pytest {{FILES}}
+    uv run --group dev pytest {{FILES}}
 
 # include --dev-addr localhost:8001 to avoid conflicts with other mkdocs instances
 # serve docs for live editing
 docs:
-    PYDEVD_DISABLE_FILE_VALIDATION=1 uv run mkdocs serve --dev-addr localhost:8001
+    PYDEVD_DISABLE_FILE_VALIDATION=1 uv run --group docs mkdocs serve --dev-addr localhost:8001
 
 # build docs to the site/ directory
 docs-build:
-    PYDEVD_DISABLE_FILE_VALIDATION=1 uv run mkdocs build
+    PYDEVD_DISABLE_FILE_VALIDATION=1 uv run --group docs mkdocs build
 
 # publish docs
 docs-publish:
-    uv run mkdocs gh-deploy --force
+    uv run --group docs mkdocs gh-deploy --force
 
 # run the timing benchmark suite
 # just bench -k test_benchmark_us_census_geocode[100]
 bench *args:
-    uv run pytest --benchmark-only --benchmark-enable --benchmark-autosave --benchmark-group-by=func {{args}}
+    uv run --group dev pytest --benchmark-only --benchmark-enable --benchmark-autosave --benchmark-group-by=func {{args}}
 
 # run timing benchmarks and compare with a previous run
 benchcmp number *args:

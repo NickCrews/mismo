@@ -2,7 +2,6 @@ site_name: Mismo
 site_url: https://nickcrews.github.io/mismo/
 repo_url: https://github.com/nickcrews/mismo/
 theme:
-  custom_dir: docs/overrides
   name: material
   features:
     - content.code.annotate
@@ -21,13 +20,10 @@ theme:
 plugins:
   - git-revision-date-localized
   - literate-nav
-  - meta
-  - mkdocs-jupyter:
-      execute: false
-      ignore:
-        - "*.py"
-      include_source: true
-      allow_errors: false
+  - jupyterlite:
+      enabled: True
+      notebook_patterns:
+        - "**/*.ipynb"
   - mkdocstrings:
       enable_inventory: true
       handlers:

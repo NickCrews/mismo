@@ -25,7 +25,6 @@ dependencies = [
     # "ibis-framework[duckdb] @ git+https://github.com/ibis-project/ibis.git@42f45fe59da492897f0449468a3036384be34214",
     # Needed for Self, which was added in 4.0.0 according to
     # https://github.com/python/typing_extensions/blob/82d512ae1082b9c7c82678771746753a583cc64b/CHANGELOG.md
-    
     # Minimum version of sqlglot that has the flags option for regex_extract:
     # https://github.com/tobymao/sqlglot/pull/4326
     "sqlglot>=25.29.0",
@@ -52,18 +51,12 @@ Documentation = "https://nickcrews.github.io/mismo"
 Issues = "https://github.com/NickCrews/mismo/issues"
 Source = "https://github.com/NickCrews/mismo"
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "doublemetaphone>=1.1",
     "duckdb>=1.1.1",
     "httpx>=0.27.2",
     "ibis-framework[duckdb,examples]>=9.5.0",
-    "mkdocs-git-revision-date-localized-plugin>=1.2.9",
-    "mkdocs-jupyter>=0.25.0",
-    "mkdocs-literate-nav>=0.6.1",
-    "mkdocs-material>=9.5.39",
-    "mkdocstrings[python]>=0.26.1",
-    "mypy>=1.11.2",
     "nicknames>=0.1.10",
     "pre-commit>=4.0.0",
     "pytest>=8.3.3",
@@ -73,9 +66,19 @@ dev-dependencies = [
     "pytest-repeat>=0.9.4",
     "pytest-xdist>=3.6.1",
     "recordlinkage>=0.16",
-    "ruff>=0.6.9",
     "scikit-learn>=1.5.2",
     "tabulate>=0.9.0", # Allows for printing tables in markdown
+]
+lint = [
+  "mypy>=1.11.2",
+  "ruff>=0.6.9",
+]
+docs = [
+    "mkdocs-git-revision-date-localized-plugin>=1.2.9",
+    "mkdocs-jupyterlite>=0.1.1",
+    "mkdocs-literate-nav>=0.6.1",
+    "mkdocs-material>=9.5.39",
+    "mkdocstrings[python]>=0.26.1",
 ]
 
 [tool.uv.sources]
