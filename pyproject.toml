@@ -93,7 +93,6 @@ addopts = [
   "--benchmark-skip",
   "--benchmark-group-by=name",
   "--benchmark-sort=name",
-  "--doctest-modules",
   # tell pytest-xdist to run in multiple processes
   "-n=auto",
 ]

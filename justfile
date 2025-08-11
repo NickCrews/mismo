@@ -20,7 +20,12 @@ lint:
 
 # run tests
 test *FILES:
-    uv run --group dev --all-extras pytest {{FILES}}
+    #!/usr/bin/env bash
+    if [ "$(uname)" != "MINGW64_NT" ] && [ "$(uname)" != "MSYS_NT" ]; then
+        uv run --group dev --all-extras pytest --doctest-modules {{FILES}}
+    else
+        uv run --group dev --all-extras pytest {{FILES}}
+    fi
 
 # include --dev-addr localhost:8001 to avoid conflicts with other mkdocs instances
 # serve docs for live editing
