@@ -21,10 +21,12 @@ lint:
 # run tests
 test *FILES:
     #!/usr/bin/env bash
-    if [ "$(uname | tr '[:upper:]' '[:lower:]')" != "windowsnt" ] && [ "$(uname)" != "MSYS_NT" ]; then
-        uv run --group test --all-extras pytest --doctest-modules {{FILES}}
-    else
+    # In windows github actions, the uname command returns "MSYS_NT-10.0-20348"
+    # Search for "MSYS_NT"
+    if [ "$(uname | tr '[:upper:] [:lower:]' | grep 'msys_nt')" ]; then
         uv run --group test --all-extras pytest {{FILES}}
+    else
+        uv run --group test --all-extras pytest --doctest-modules {{FILES}}
     fi
 
 # include --dev-addr localhost:8001 to avoid conflicts with other mkdocs instances

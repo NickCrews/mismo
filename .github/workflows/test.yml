@@ -31,8 +31,6 @@ jobs:
             python-version: '3.9'
 
     steps:
-      - name: print uname
-        run: echo $(uname)
       - uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
