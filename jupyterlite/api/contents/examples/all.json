@@ -1,0 +1,43 @@
+{
+  "content": [
+    {
+      "content": null,
+      "created": "2025-08-12T17:55:20.294700Z",
+      "format": null,
+      "hash": null,
+      "hash_algorithm": null,
+      "last_modified": "2025-08-12T17:55:17.393741Z",
+      "mimetype": null,
+      "name": "patent_deduplication.ipynb",
+      "path": "examples/patent_deduplication.ipynb",
+      "size": 513270,
+      "type": "notebook",
+      "writable": true
+    },
+    {
+      "content": null,
+      "created": "2025-08-12T17:55:20.292701Z",
+      "format": null,
+      "hash": null,
+      "hash_algorithm": null,
+      "last_modified": "2025-08-12T17:55:17.392741Z",
+      "mimetype": null,
+      "name": "address_linkage.ipynb",
+      "path": "examples/address_linkage.ipynb",
+      "size": 324384,
+      "type": "notebook",
+      "writable": true
+    }
+  ],
+  "created": "2025-08-12T17:55:20.293700Z",
+  "format": "json",
+  "hash": null,
+  "hash_algorithm": null,
+  "last_modified": "2025-08-12T17:55:20.293700Z",
+  "mimetype": null,
+  "name": "examples",
+  "path": "examples",
+  "size": null,
+  "type": "directory",
+  "writable": true
+}
