@@ -944,7 +944,7 @@ name = "exceptiongroup"
 version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0b/9f/a65090624ecf468cdca03533906e7c69ed7588582240cfe7cc9e770b50eb/exceptiongroup-1.3.0.tar.gz", hash = "sha256:b241f5885f560bc56a59ee63ca4c6a8bfa46ae4ad651af316d4e81817bb9fd88", size = 29749, upload-time = "2025-05-10T17:42:51.123Z" }
 wheels = [
@@ -2274,7 +2274,7 @@ wheels = [
 
 [[package]]
 name = "mkdocs-jupyterlite"
-version = "0.3.0"
+version = "0.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "gitmatch" },
@@ -2283,9 +2283,9 @@ dependencies = [
     { name = "jupyterlite-pyodide-kernel" },
     { name = "mkdocs" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e9/e7/adb78d9d42bfd36e00eb1e2db9309928a24938efddd9694e8ff251e66793/mkdocs_jupyterlite-0.3.0.tar.gz", hash = "sha256:b5f407777a4a682fbf40282b012e303da1c5cf93e427f7a84f9f4bb6a480d8ac", size = 140699, upload-time = "2025-08-12T01:38:39.212Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d5/47/0f03c4e8112a7ad4db08fc6149a23b48f2872a21b2c9e31fc6d5af2cc2d3/mkdocs_jupyterlite-0.3.1.tar.gz", hash = "sha256:938de53da8885baa91d1692a40f2b37f7a21275a2018836bb12261b4323a802d", size = 140709, upload-time = "2025-08-12T16:13:02.144Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c3/21/2b7bc28717e9edaf4c08a0eb811bec51be82ea9b45501d73a9a91e409b8a/mkdocs_jupyterlite-0.3.0-py3-none-any.whl", hash = "sha256:ce65f38e5f8ec5e01712da59831d0f9fa057f21258e107b21013989efb82e4d5", size = 8958, upload-time = "2025-08-12T01:38:37.991Z" },
+    { url = "https://files.pythonhosted.org/packages/3d/f6/695e4276e59551f3a90e41782e0f9334c2c2c2a27964e11d48bd20d99607/mkdocs_jupyterlite-0.3.1-py3-none-any.whl", hash = "sha256:199de09a867f7e7927a134360f7363c72184b5b08fd9570c451ceab2394f9f4e", size = 8966, upload-time = "2025-08-12T16:13:00.985Z" },
 ]
 
 [[package]]
