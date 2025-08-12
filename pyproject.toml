@@ -104,6 +104,8 @@ addopts = [
 filterwarnings = [
   # fail on any warnings that are not explicitly matched below
   "error",
+  # spacy 3.8.7 uses some deprecated API from click for it's CLI
+  "ignore:Importing 'parser.split_arg_string' is deprecated:DeprecationWarning",
 ]
 doctest_optionflags = [
   "NORMALIZE_WHITESPACE",
