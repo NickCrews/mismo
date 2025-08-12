@@ -6,7 +6,7 @@ default:
 
 # initialize development environment (but don't activate it)
 install:
-    uv sync --all-extras --all-groups
+    uv sync --all-extras --group dev
 
 # format code
 fmt:
@@ -21,10 +21,10 @@ lint:
 # run tests
 test *FILES:
     #!/usr/bin/env bash
-    if [ "$(uname)" != "MINGW64_NT" ] && [ "$(uname)" != "MSYS_NT" ]; then
-        uv run --group dev --all-extras pytest --doctest-modules {{FILES}}
+    if [ "$(uname | tr '[:upper:]' '[:lower:]')" != "windowsnt" ] && [ "$(uname)" != "MSYS_NT" ]; then
+        uv run --group test --all-extras pytest --doctest-modules {{FILES}}
     else
-        uv run --group dev --all-extras pytest {{FILES}}
+        uv run --group test --all-extras pytest {{FILES}}
     fi
 
 # include --dev-addr localhost:8001 to avoid conflicts with other mkdocs instances
@@ -43,7 +43,7 @@ docs-publish:
 # run the timing benchmark suite
 # just bench -k test_benchmark_us_census_geocode[100]
 bench *args:
-    uv run --group dev pytest --benchmark-only --benchmark-enable --benchmark-autosave --benchmark-group-by=func {{args}}
+    uv run --group test pytest --benchmark-only --benchmark-enable --benchmark-autosave --benchmark-group-by=func {{args}}
 
 # run timing benchmarks and compare with a previous run
 benchcmp number *args:

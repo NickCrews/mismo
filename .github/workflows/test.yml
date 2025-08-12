@@ -73,7 +73,9 @@ jobs:
           python-version: "3.11"
 
       - name: Install UV
-        run: curl -LsSf https://astral.sh/uv/0.4.18/install.sh | sh
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.8"
 
       - uses: extractions/setup-just@v3
         with:
