@@ -61,10 +61,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.13
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.13"
 
       - name: Install UV
         uses: astral-sh/setup-uv@v6
@@ -75,16 +75,13 @@ jobs:
         with:
           just-version: "1.14" # optional semver specification, otherwise latest
 
-      - name: Install dev environment
-        run: just install
-
       - name: Run linters
-        run: uv run just lint
+        run: just lint
 
       - name: Build docs
-        run: uv run just docs-build
+        run: just docs-build
       
       - name: Publish docs
         if: github.repository == 'NickCrews/mismo' && github.ref == 'refs/heads/main'  && github.event_name == 'push'
-        run: uv run just docs-publish
+        run: just docs-publish
 
