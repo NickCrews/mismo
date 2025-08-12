@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.14'",
@@ -2063,6 +2063,12 @@ dev = [
     { name = "duckdb" },
     { name = "httpx" },
     { name = "ibis-framework", extra = ["duckdb", "examples"] },
+    { name = "mkdocs-git-revision-date-localized-plugin" },
+    { name = "mkdocs-jupyterlite" },
+    { name = "mkdocs-literate-nav" },
+    { name = "mkdocs-material" },
+    { name = "mkdocstrings", extra = ["python"] },
+    { name = "mypy" },
     { name = "nicknames" },
     { name = "pre-commit" },
     { name = "pytest" },
@@ -2072,6 +2078,7 @@ dev = [
     { name = "pytest-repeat" },
     { name = "pytest-xdist" },
     { name = "recordlinkage" },
+    { name = "ruff" },
     { name = "scikit-learn" },
     { name = "tabulate" },
 ]
@@ -2085,6 +2092,23 @@ docs = [
 lint = [
     { name = "mypy" },
     { name = "ruff" },
+]
+test = [
+    { name = "doublemetaphone" },
+    { name = "duckdb" },
+    { name = "httpx" },
+    { name = "ibis-framework", extra = ["duckdb", "examples"] },
+    { name = "nicknames" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-benchmark" },
+    { name = "pytest-cov" },
+    { name = "pytest-randomly" },
+    { name = "pytest-repeat" },
+    { name = "pytest-xdist" },
+    { name = "recordlinkage" },
+    { name = "scikit-learn" },
+    { name = "tabulate" },
 ]
 
 [package.metadata]
@@ -2108,6 +2132,12 @@ dev = [
     { name = "duckdb", specifier = ">=1.1.1" },
     { name = "httpx", specifier = ">=0.27.2" },
     { name = "ibis-framework", extras = ["duckdb", "examples"], specifier = ">=9.5.0" },
+    { name = "mkdocs-git-revision-date-localized-plugin", specifier = ">=1.2.9" },
+    { name = "mkdocs-jupyterlite", specifier = ">=0.1.1" },
+    { name = "mkdocs-literate-nav", specifier = ">=0.6.1" },
+    { name = "mkdocs-material", specifier = ">=9.5.39" },
+    { name = "mkdocstrings", extras = ["python"], specifier = ">=0.26.1" },
+    { name = "mypy", specifier = ">=1.11.2" },
     { name = "nicknames", specifier = ">=0.1.10" },
     { name = "pre-commit", specifier = ">=4.0.0" },
     { name = "pytest", specifier = ">=8.3.3" },
@@ -2117,6 +2147,7 @@ dev = [
     { name = "pytest-repeat", specifier = ">=0.9.4" },
     { name = "pytest-xdist", specifier = ">=3.6.1" },
     { name = "recordlinkage", specifier = ">=0.16" },
+    { name = "ruff", specifier = ">=0.6.9" },
     { name = "scikit-learn", specifier = ">=1.5.2" },
     { name = "tabulate", specifier = ">=0.9.0" },
 ]
@@ -2130,6 +2161,23 @@ docs = [
 lint = [
     { name = "mypy", specifier = ">=1.11.2" },
     { name = "ruff", specifier = ">=0.6.9" },
+]
+test = [
+    { name = "doublemetaphone", specifier = ">=1.1" },
+    { name = "duckdb", specifier = ">=1.1.1" },
+    { name = "httpx", specifier = ">=0.27.2" },
+    { name = "ibis-framework", extras = ["duckdb", "examples"], specifier = ">=9.5.0" },
+    { name = "nicknames", specifier = ">=0.1.10" },
+    { name = "pre-commit", specifier = ">=4.0.0" },
+    { name = "pytest", specifier = ">=8.3.3" },
+    { name = "pytest-benchmark", specifier = ">=4.0.0" },
+    { name = "pytest-cov", specifier = ">=5.0.0" },
+    { name = "pytest-randomly", specifier = ">=3.16.0" },
+    { name = "pytest-repeat", specifier = ">=0.9.4" },
+    { name = "pytest-xdist", specifier = ">=3.6.1" },
+    { name = "recordlinkage", specifier = ">=0.16" },
+    { name = "scikit-learn", specifier = ">=1.5.2" },
+    { name = "tabulate", specifier = ">=0.9.0" },
 ]
 
 [[package]]
