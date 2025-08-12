@@ -38,6 +38,6 @@ jobs:
 
       - uses: extractions/setup-just@v3
         with:
-          just-version: "1.14" # optional semver specification, otherwise latest
+          just-version: "1.42.4" # optional semver specification, otherwise latest
       
       - run: just docs-publish

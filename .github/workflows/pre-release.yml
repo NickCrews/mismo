@@ -39,6 +39,7 @@ jobs:
 
       - uses: extractions/setup-just@v3
         env:
+          just-version: "1.42.4"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Bump ibis version

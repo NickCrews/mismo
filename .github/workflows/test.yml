@@ -39,7 +39,7 @@ jobs:
 
       - uses: extractions/setup-just@v3
         with:
-          just-version: "1.14" # optional semver specification, otherwise latest
+          just-version: "1.42.4" # optional semver specification, otherwise latest
 
       - name: Install libpostal
         run: |
@@ -73,7 +73,7 @@ jobs:
 
       - uses: extractions/setup-just@v3
         with:
-          just-version: "1.14" # optional semver specification, otherwise latest
+          just-version: "1.42.4" # optional semver specification, otherwise latest
 
       - name: Run linters
         run: just lint
