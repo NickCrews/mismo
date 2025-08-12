@@ -9,16 +9,26 @@ version = "0.2.2"
 readme = "README.md"
 requires-python = ">=3.10" # ibis>=9.1 requires python >=3.10
 license = { text = "LGPL-3.0-or-later" }
-keywords = []
 authors = [{ name = "Nick Crews", email = "nicholas.b.crews@gmail.com" }]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
+]
+keywords = [
+  "record linkage",
+  "entity resolution",
+  "fuzzy linking",
+  "machine learning",
+  "ibis",
+  "sql",
+  "splink",
+  "duckdb",
 ]
 dependencies = [
     "ibis-framework>=9.1.0",
@@ -47,6 +57,7 @@ spacy = [
 ]
 
 [project.urls]
+Homepage = "https://github.com/NickCrews/mismo"
 Documentation = "https://nickcrews.github.io/mismo"
 Issues = "https://github.com/NickCrews/mismo/issues"
 Source = "https://github.com/NickCrews/mismo"
