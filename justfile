@@ -81,8 +81,6 @@ set-version vsn='':
         version="$(just compute-dev-version)"
     fi
     uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version "$version" > /dev/null
-    sed "s/__version__ = .*/__version__ = \"$version\"/g" mismo/__init__.py > mismo/__init__.py.tmp
-    mv mismo/__init__.py.tmp mismo/__init__.py
     uv lock > /dev/null
     echo "$version"
 
