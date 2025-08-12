@@ -1,22 +1,22 @@
-name: PyPI Pre-Release
+name: Release to PyPI
 
 on:
   schedule:
-    # weekly on Sunday
+    # weekly on Sunday. This will 
     - cron: "4 23 * * 0"
 
   # as needed by clicking through the github actions UI
   workflow_dispatch:
 
-# we do not want more than one pre-release workflow executing at the same time, ever
+# we do not want more than one release workflow executing at the same time, ever
 concurrency:
-  group: pre-release
+  group: release
   # cancelling in the middle of a release would create incomplete releases
   # so cancel-in-progress is false
   cancel-in-progress: false
 
 jobs:
-  pre-release:
+  release:
     if: github.repository_owner == 'NickCrews'
     runs-on: ubuntu-latest
     permissions:
@@ -48,16 +48,11 @@ jobs:
 
       - name: build wheel and source dist
         run: uv build
-        if: contains(steps.get-version.outputs.value, '.dev')
 
-      - name: publish pre-release wheel to test pypi index
-        if: contains(steps.get-version.outputs.value, '.dev')
+      - name: publish wheel to pypi
         uses: pypa/gh-action-pypi-publish@e9ccbe5a211ba3e8363f472cae362b56b104e796
-        with:
-          repository-url: https://test.pypi.org/legacy/
-          # no need for attestations here, no one should be installing ibis from test-pypi
-          attestations: false
 
-      - name: publish pre-release wheel to pypi
-        if: contains(steps.get-version.outputs.value, '.dev')
-        uses: pypa/gh-action-pypi-publish@e9ccbe5a211ba3e8363f472cae362b56b104e796
+      - name: create GH release
+        run: gh release create v${{ steps.get-version.outputs.value }} dist/* --title "Release v${{ steps.get-version.outputs.value }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
