@@ -81,9 +81,6 @@ jobs:
         with:
           just-version: "1.14" # optional semver specification, otherwise latest
 
-      - name: Install libpostal
-        run: just install-libpostal
-
       - name: Install dev environment
         run: just install
 
