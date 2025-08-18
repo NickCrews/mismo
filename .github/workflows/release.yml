@@ -23,7 +23,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -50,7 +50,7 @@ jobs:
         run: uv build
 
       - name: publish wheel to pypi
-        uses: pypa/gh-action-pypi-publish@e9ccbe5a211ba3e8363f472cae362b56b104e796
+        uses: pypa/gh-action-pypi-publish@d417ba7e7683fa9104c42abe611c1f2c93c0727d
 
       - name: create GH release
         run: gh release create v${{ steps.get-version.outputs.value }} dist/* --title "Release v${{ steps.get-version.outputs.value }}"
