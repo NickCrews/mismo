@@ -107,9 +107,9 @@ def load_patents(*, backend: ibis.BaseBackend | None = None) -> Linkage:
         A [Linkage](mismo.Linkage), where both `left` and `right` are the tables
         of records. Each one has the following schema:
 
-        - record_id: int64
+        - record_id: uint32
           A unique ID for each row in the table.
-        - label_true: int64
+        - label_true: uint32
           The manually labeled, true ID of the inventor.
         - name_true: str
           The manually labeled, true name of the inventor.
@@ -131,7 +131,7 @@ def load_patents(*, backend: ibis.BaseBackend | None = None) -> Linkage:
     ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     ┃ record_id ┃ label_true ┃ name_true            ┃ name                                             ┃ latitude ┃ longitude ┃ coauthors                                       ┃ classes                                         ┃
     ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-    │ int64     │ int64      │ string               │ string                                           │ float64  │ float64   │ string                                          │ string                                          │
+    │ uint32    │ uint32     │ string               │ string                                           │ float64  │ float64   │ string                                          │ string                                          │
     ├───────────┼────────────┼──────────────────────┼──────────────────────────────────────────────────┼──────────┼───────────┼─────────────────────────────────────────────────┼─────────────────────────────────────────────────┤
     │      2909 │     402600 │ AGILENT TECHNOLOGIES │ * AGILENT TECHNOLOGIES, INC.                     │     0.00 │  0.000000 │ KONINK PHILIPS ELECTRONICS N V**DAVID E  SNYDE… │ A61N**A61B                                      │
     │      3574 │     569309 │ AKZO NOBEL           │ * AKZO NOBEL N.V.                                │     0.00 │  0.000000 │ TSJERK  HOEKSTRA**ANDRESS K  JOHNSON**TERESA M… │ G01N**B01L**C11D**G02F**F16L                    │
@@ -145,8 +145,26 @@ def load_patents(*, backend: ibis.BaseBackend | None = None) -> Linkage:
     # In order to guarantee row order, could either use
     # parallel=False kwarg, but I'd rather just have them sorted
     # by record_id
+
+    schema = {
+        "record_id": "uint32",
+        "label_true": "uint32",
+        "name_true": "string",
+        "name": "string",
+        "latitude": "float64",
+        "longitude": "float64",
+        "coauthors": "string",
+        "classes": "string",
+    }
+
     path = _DATASETS_DIR / "patstat/patents.csv"
-    records = backend.read_csv(path).order_by("record_id").cache()
+    records = (
+        backend.read_csv(path)
+        .select(*schema.keys())
+        .cast(schema)
+        .order_by("record_id")
+        .cache()
+    )
     return _linkage_from_labels(records)
 
 
