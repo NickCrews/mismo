@@ -31,7 +31,7 @@ class KeyLinker(Linker):
     ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┓
     ┃ record_id ┃ name                         ┃ latitude ┃
     ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━┩
-    │ int64     │ string                       │ float64  │
+    │ uint32    │ string                       │ float64  │
     ├───────────┼──────────────────────────────┼──────────┤
     │      2909 │ * AGILENT TECHNOLOGIES, INC. │     0.00 │
     │      3574 │ * AKZO NOBEL N.V.            │     0.00 │
