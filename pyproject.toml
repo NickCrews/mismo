@@ -55,7 +55,7 @@ metrics = [
   "scikit-learn>=1.5.2",
 ]
 playdata = [
-  "recordlinkage>=0.16",
+  # No longer needed - FEBRL datasets are now vendored in as CSV files
 ]
 
 [project.urls]
