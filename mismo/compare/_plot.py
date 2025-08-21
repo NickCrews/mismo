@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Iterable
 import ibis
 from ibis import _
 from ibis.expr import types as ir
-import pandas as pd
 
 from mismo.compare._match_level import LevelComparer
 from mismo.fs._plot import log_odds_color_scale
@@ -17,6 +16,7 @@ from mismo.fs._weights import Weights
 if TYPE_CHECKING:
     import altair as alt
     import ipywidgets
+    import pandas as pd
 
 
 def compared_dashboard(
@@ -234,6 +234,8 @@ def _frange(start, stop, n):
 def _vector_grid_data(
     comparers: Iterable[LevelComparer], vector_data: pd.DataFrame
 ) -> pd.DataFrame:
+    import pandas as pd
+
     records = []
     for levels in product(*(c.levels for c in comparers)):
         vector_id = ":".join(levels)

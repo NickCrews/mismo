@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Iterable
 
-import pandas as pd
-
 from ._weights import ComparerWeights
 
 if TYPE_CHECKING:
@@ -55,11 +53,25 @@ def plot_weights(weights: ComparerWeights | Iterable[ComparerWeights]) -> alt.Ch
 
 def _plot_comparer_weights(cw: ComparerWeights) -> alt.Chart:
     import altair as alt
+    import pandas as pd
 
-    t = _comp_weights_to_table(cw)
+    records = []
+    for i, lw in enumerate(cw):
+        records.append(
+            {
+                "level": lw.name,
+                "m": lw.m,
+                "u": lw.u,
+                "odds": lw.odds,
+                "log_odds": lw.log_odds,
+                "level_order": i,
+            }
+        )
+    df = pd.DataFrame(records)
+
     mu_width = 200
     ms = _subplot(
-        t,
+        df,
         alt.X(
             "m",
             title=["Proportion of Pairs", "Amongst Matches"],
@@ -71,7 +83,7 @@ def _plot_comparer_weights(cw: ComparerWeights) -> alt.Chart:
         mu_width,
     )
     us = _subplot(
-        t,
+        df,
         alt.X(
             "u",
             title=["Proportion of Pairs", "Amongst Non-Matches"],
@@ -83,7 +95,7 @@ def _plot_comparer_weights(cw: ComparerWeights) -> alt.Chart:
         mu_width,
     )
     odds = _subplot(
-        t,
+        df,
         alt.X(
             "log_odds",
             title="Odds",
@@ -104,22 +116,6 @@ def _plot_comparer_weights(cw: ComparerWeights) -> alt.Chart:
         title=alt.Title(text=f"Weights for Comparer '{cw.name}'", anchor="middle")
     )
     return together
-
-
-def _comp_weights_to_table(comparer_weights: ComparerWeights) -> pd.DataFrame:
-    records = []
-    for i, lw in enumerate(comparer_weights):
-        records.append(
-            {
-                "level": lw.name,
-                "m": lw.m,
-                "u": lw.u,
-                "odds": lw.odds,
-                "log_odds": lw.log_odds,
-                "level_order": i,
-            }
-        )
-    return pd.DataFrame(records)
 
 
 def _subplot(t, x, color, use_y_axis, width):

@@ -4,10 +4,9 @@ from collections.abc import Iterable
 from itertools import combinations
 from typing import TYPE_CHECKING, Any
 
-import pandas as pd
-
 if TYPE_CHECKING:
     import altair as alt
+    import pandas as pd
 
 
 def combos(set_names: Iterable[str]) -> frozenset[frozenset[str]]:
@@ -103,6 +102,8 @@ def upset_chart(data: Any) -> alt.Chart:
 
 
 def _to_df(data) -> pd.DataFrame:
+    import pandas as pd
+
     if isinstance(data, pd.DataFrame):
         return data
     try:
@@ -175,6 +176,8 @@ def _pivot_longer(df: pd.DataFrame) -> pd.DataFrame:
     54               12             204224                    1      Classes Exact         False          3
     55               13             303104                    1      Classes Exact         False          3
     """  # noqa: E501
+    import pandas as pd
+
     sets = [c for c in df.columns if c != "intersection_size"]
     df["intersection_id"] = range(len(df))
     df["intersection_degree"] = df[sets].sum(axis=1)
