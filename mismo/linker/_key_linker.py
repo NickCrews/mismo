@@ -25,7 +25,8 @@ class KeyLinker(Linker):
     >>> from ibis import _
     >>> import mismo
     >>> ibis.options.interactive = True
-    >>> t = mismo.playdata.load_patents()["record_id", "name", "latitude"]
+    >>> linkage = mismo.playdata.load_patents()
+    >>> t = linkage.left.select("record_id", "name", "latitude")
     >>> t.head()
     ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┓
     ┃ record_id ┃ name                         ┃ latitude ┃
