@@ -19,13 +19,14 @@ __all__ = [
 _DATASETS_DIR = Path(__file__).parent / "_data/_datasets"
 
 
-def _wrap_febrl(loader_name: str) -> tuple[ir.Table, ir.Table]:
-    with _util.optional_import("recordlinkage"):
-        from recordlinkage import datasets as rlds
-
-    loader = getattr(rlds, loader_name)
-    pdf, links_multi_index = loader(return_links=True)
-    pdf = pdf.reset_index(drop=False)
+def _febrl_load_data(filename: str, backend: ibis.BaseBackend | None = None) -> ir.Table:
+    """Internal function for loading FEBRL data from CSV files."""
+    if backend is None:
+        backend = ibis
+    
+    filepath = _DATASETS_DIR / "febrl" / filename
+    
+    # Read CSV with proper dtypes to match the original behavior
     schema = {
         "rec_id": "str",
         "given_name": "str",
@@ -39,19 +40,55 @@ def _wrap_febrl(loader_name: str) -> tuple[ir.Table, ir.Table]:
         "soc_sec_id": "int32",  # 7 digits long, never null, no leading 0s
         "date_of_birth": "str",  # contains some BS dates like 19371233
     }
-    t = ibis.memtable(pdf)
+    
+    t = backend.read_csv(filepath)
     t = t.cast(schema)
     t = t.rename(record_id="rec_id")
     t = t.order_by("record_id")
     t = t.cache()
+    
+    return t
 
-    links_df = links_multi_index.to_frame(
-        index=False, name=["record_id_l", "record_id_r"]
-    )
-    links = ibis.memtable(links_df)
-    links = links.order_by(["record_id_l", "record_id_r"])
-    links = links.cache()
-    return (t, links)
+
+def _febrl_links(data: ir.Table) -> ir.Table:
+    """Get the links of a FEBRL dataset.
+    
+    The links are generated based on the record ID pattern.
+    Records with the same base number (extracted from rec-{number}-org or rec-{number}-dup-{x})
+    are considered duplicates.
+    """
+    # Extract the base key from record IDs using regex
+    # For example: rec-223-org -> 223, rec-10-dup-0 -> 10
+    keys_expr = data["record_id"].re_extract(r"rec-(\d+)", 1).name("key")
+    
+    # Create a helper table with record_id, key, and row number
+    helper = data.select([
+        data["record_id"],
+        keys_expr,
+        ibis.row_number().over().name("row_num")
+    ])
+    
+    # Self-join on the key to find all pairs
+    links = helper.alias("l").join(
+        helper.alias("r"), 
+        helper.alias("l")["key"] == helper.alias("r")["key"]
+    ).filter(
+        # Only keep upper triangular pairs (to avoid duplicates and self-links)
+        helper.alias("l")["row_num"] > helper.alias("r")["row_num"]
+    ).select([
+        helper.alias("l")["record_id"].name("record_id_l"),
+        helper.alias("r")["record_id"].name("record_id_r")
+    ]).order_by(["record_id_l", "record_id_r"]).cache()
+    
+    return links
+
+
+def _load_febrl_dataset(dataset_num: int) -> tuple[ir.Table, ir.Table]:
+    """Load a FEBRL dataset by number (1, 2, or 3)."""
+    filename = f"dataset{dataset_num}.csv"
+    data = _febrl_load_data(filename)
+    links = _febrl_links(data)
+    return data, links
 
 
 def load_febrl1() -> tuple[ir.Table, ir.Table]:
@@ -60,7 +97,7 @@ def load_febrl1() -> tuple[ir.Table, ir.Table]:
     The Freely Extensible Biomedical Record Linkage (Febrl) package is distributed
     with a dataset generator and four datasets generated with the generator.
     """
-    return _wrap_febrl("load_febrl1")
+    return _load_febrl_dataset(1)
 
 
 def load_febrl2() -> tuple[ir.Table, ir.Table]:
@@ -69,7 +106,7 @@ def load_febrl2() -> tuple[ir.Table, ir.Table]:
     The Freely Extensible Biomedical Record Linkage (Febrl) package is distributed
     with a dataset generator and four datasets generated with the generator.
     """
-    return _wrap_febrl("load_febrl2")
+    return _load_febrl_dataset(2)
 
 
 def load_febrl3() -> tuple[ir.Table, ir.Table]:
@@ -78,7 +115,7 @@ def load_febrl3() -> tuple[ir.Table, ir.Table]:
     The Freely Extensible Biomedical Record Linkage (Febrl) package is distributed
     with a dataset generator and four datasets generated with the generator.
     """
-    return _wrap_febrl("load_febrl3")
+    return _load_febrl_dataset(3)
 
 
 # Don't bother wrapping load_febrl4 because it has a different API,
