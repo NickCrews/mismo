@@ -35,31 +35,35 @@ def sample_all_links(
     >>> import ibis
     >>> import mismo
     >>> ibis.options.interactive = True
-    >>> t, _labels = mismo.playdata.load_febrl1()
-    >>> t.head(5)
-    ┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
-    ┃ record_id    ┃ given_name ┃ surname    ┃ street_number ┃ address_1         ┃ … ┃
-    ┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
-    │ string       │ string     │ string     │ string        │ string            │ … │
-    ├──────────────┼────────────┼────────────┼───────────────┼───────────────────┼───┤
-    │ rec-0-dup-0  │ thomas     │ rokobaro   │ 12            │ herschell circuit │ … │
-    │ rec-0-org    │ flynn      │ rokobaro   │ 12            │ herschell circuit │ … │
-    │ rec-1-dup-0  │ karli      │ alderson   │ 144           │ nulsen circuit    │ … │
-    │ rec-1-org    │ karli      │ alderson   │ 144           │ nulsen circuit    │ … │
-    │ rec-10-dup-0 │ kayla      │ harrington │ NULL          │ maltby circuit    │ … │
-    └──────────────┴────────────┴────────────┴───────────────┴───────────────────┴───┘
-    >>> mismo.linkage.sample_all_links(t, t, max_pairs=7)  # doctest: +SKIP
-    ┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
-    ┃ record_id_l   ┃ record_id_r   ┃
-    ┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
-    │ string        │ string        │
-    ├───────────────┼───────────────┤
-    │ rec-226-dup-0 │ rec-396-org   │
-    │ rec-232-dup-0 │ rec-402-dup-0 │
-    │ rec-259-dup-0 │ rec-61-org    │
-    │ rec-293-dup-0 │ rec-41-dup-0  │
-    │ rec-448-org   │ rec-25-org    │
-    └───────────────┴───────────────┘
+    >>> linkage = mismo.playdata.load_febrl1()
+    >>> linkage.left.head(5).select("record_id", "label_true", "given_name", "surname")
+    ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┓
+    ┃ record_id ┃ label_true ┃ given_name ┃ surname  ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━┩
+    │ uint16    │ uint16     │ string     │ string   │
+    ├───────────┼────────────┼────────────┼──────────┤
+    │         0 │          0 │ thomas     │ rokobaro │
+    │         1 │          0 │ flynn      │ rokobaro │
+    │         2 │          1 │ karli      │ alderson │
+    │         3 │          1 │ karli      │ alderson │
+    │         4 │          2 │ alexandra  │ britten  │
+    └───────────┴────────────┴────────────┴──────────┘
+    >>> mismo.linkage.sample_all_links(
+    ...     linkage.left, linkage.left, max_pairs=7
+    ... )  # doctest: +SKIP
+    ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
+    ┃ record_id_l ┃ record_id_r ┃
+    ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
+    │ uint16      │ uint16      │
+    ├─────────────┼─────────────┤
+    │         427 │         163 │
+    │         511 │         182 │
+    │         767 │         186 │
+    │         665 │         232 │
+    │         340 │         317 │
+    │          14 │         432 │
+    │         323 │         671 │
+    └─────────────┴─────────────┘
     """  # noqa: E501
     left = left.cache()
     right = right.cache()

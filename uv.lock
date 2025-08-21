@@ -2077,7 +2077,7 @@ requires-dist = [
     { name = "sqlglot", specifier = ">=25.29.0" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.0.0" },
 ]
-provides-extras = ["viz", "postal", "spacy", "metrics", "playdata"]
+provides-extras = ["viz", "postal", "spacy", "metrics"]
 
 [package.metadata.requires-dev]
 dev = [
