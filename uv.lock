@@ -2056,6 +2056,12 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+metrics = [
+    { name = "scikit-learn" },
+]
+playdata = [
+    { name = "recordlinkage" },
+]
 postal = [
     { name = "postal", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
 ]
@@ -2090,9 +2096,7 @@ dev = [
     { name = "pytest-randomly" },
     { name = "pytest-repeat" },
     { name = "pytest-xdist" },
-    { name = "recordlinkage" },
     { name = "ruff" },
-    { name = "scikit-learn" },
     { name = "tabulate" },
 ]
 docs = [
@@ -2119,8 +2123,6 @@ test = [
     { name = "pytest-randomly" },
     { name = "pytest-repeat" },
     { name = "pytest-xdist" },
-    { name = "recordlinkage" },
-    { name = "scikit-learn" },
     { name = "tabulate" },
 ]
 
@@ -2132,12 +2134,14 @@ requires-dist = [
     { name = "ibis-framework", specifier = ">=9.1.0" },
     { name = "ipywidgets", marker = "extra == 'viz'", specifier = ">=7.5.1" },
     { name = "postal", marker = "(sys_platform == 'darwin' and extra == 'postal') or (sys_platform == 'linux' and extra == 'postal')", specifier = ">=1.1.7" },
+    { name = "recordlinkage", marker = "extra == 'playdata'", specifier = ">=0.16" },
+    { name = "scikit-learn", marker = "extra == 'metrics'", specifier = ">=1.5.2" },
     { name = "solara", marker = "extra == 'viz'", specifier = ">=1.32.1" },
     { name = "spacy", marker = "extra == 'spacy'", specifier = ">=3.8.2" },
     { name = "sqlglot", specifier = ">=25.29.0" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.0.0" },
 ]
-provides-extras = ["viz", "postal", "spacy"]
+provides-extras = ["viz", "postal", "spacy", "metrics", "playdata"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -2159,9 +2163,7 @@ dev = [
     { name = "pytest-randomly", specifier = ">=3.16.0" },
     { name = "pytest-repeat", specifier = ">=0.9.4" },
     { name = "pytest-xdist", specifier = ">=3.6.1" },
-    { name = "recordlinkage", specifier = ">=0.16" },
     { name = "ruff", specifier = ">=0.6.9" },
-    { name = "scikit-learn", specifier = ">=1.5.2" },
     { name = "tabulate", specifier = ">=0.9.0" },
 ]
 docs = [
@@ -2188,8 +2190,6 @@ test = [
     { name = "pytest-randomly", specifier = ">=3.16.0" },
     { name = "pytest-repeat", specifier = ">=0.9.4" },
     { name = "pytest-xdist", specifier = ">=3.6.1" },
-    { name = "recordlinkage", specifier = ">=0.16" },
-    { name = "scikit-learn", specifier = ">=1.5.2" },
     { name = "tabulate", specifier = ">=0.9.0" },
 ]
 

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ibis.expr import types as ir
-import numpy as np
 
 from mismo._util import optional_import
+
+if TYPE_CHECKING:
+    import numpy as np
 
 
 def adjusted_mutual_info_score(
