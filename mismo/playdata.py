@@ -5,7 +5,8 @@ from pathlib import Path
 import ibis
 from ibis.expr import types as ir
 
-from mismo import _util
+from mismo.joins._conditions import left, right
+from mismo.linkage._linkage import Linkage
 
 __all__ = [
     "load_febrl1",
@@ -19,16 +20,19 @@ __all__ = [
 _DATASETS_DIR = Path(__file__).parent / "_data/_datasets"
 
 
-def _febrl_load_data(filename: str, backend: ibis.BaseBackend | None = None) -> ir.Table:
+def _febrl_load_data(
+    dataset_num: int, backend: ibis.BaseBackend | None = None
+) -> Linkage:
     """Internal function for loading FEBRL data from CSV files."""
     if backend is None:
         backend = ibis
-    
-    filepath = _DATASETS_DIR / "febrl" / filename
-    
+
+    filepath = _DATASETS_DIR / "febrl" / f"dataset{dataset_num}.csv"
+
     # Read CSV with proper dtypes to match the original behavior
     schema = {
-        "rec_id": "str",
+        "record_id": "uint16",
+        "label_true": "uint16",
         "given_name": "str",
         "surname": "str",
         "street_number": "str",  # keep as string for leading 0s
@@ -40,90 +44,56 @@ def _febrl_load_data(filename: str, backend: ibis.BaseBackend | None = None) -> 
         "soc_sec_id": "int32",  # 7 digits long, never null, no leading 0s
         "date_of_birth": "str",  # contains some BS dates like 19371233
     }
-    
-    t = backend.read_csv(filepath)
-    t = t.cast(schema)
-    t = t.rename(record_id="rec_id")
-    t = t.order_by("record_id")
-    t = t.cache()
-    
-    return t
+    records = backend.read_csv(filepath)
+    records = records.cast(schema)
+    records = records.cache()
+    return _linkage_from_labels(records)
 
 
-def _febrl_links(data: ir.Table) -> ir.Table:
-    """Get the links of a FEBRL dataset.
-    
-    The links are generated based on the record ID pattern.
-    Records with the same base number (extracted from rec-{number}-org or rec-{number}-dup-{x})
-    are considered duplicates.
-    """
-    # Extract the base key from record IDs using regex
-    # For example: rec-223-org -> 223, rec-10-dup-0 -> 10
-    keys_expr = data["record_id"].re_extract(r"rec-(\d+)", 1).name("key")
-    
-    # Create a helper table with record_id, key, and row number
-    helper = data.select([
-        data["record_id"],
-        keys_expr,
-        ibis.row_number().over().name("row_num")
-    ])
-    
-    # Self-join on the key to find all pairs
-    links = helper.alias("l").join(
-        helper.alias("r"), 
-        helper.alias("l")["key"] == helper.alias("r")["key"]
-    ).filter(
-        # Only keep upper triangular pairs (to avoid duplicates and self-links)
-        helper.alias("l")["row_num"] > helper.alias("r")["row_num"]
-    ).select([
-        helper.alias("l")["record_id"].name("record_id_l"),
-        helper.alias("r")["record_id"].name("record_id_r")
-    ]).order_by(["record_id_l", "record_id_r"]).cache()
-    
-    return links
+def _linkage_from_labels(records: ir.Table) -> Linkage:
+    """Create a Linkage object from left and right tables using label_true."""
+    condition = ibis.and_(
+        left.label_true == right.label_true,
+        left.record_id < right.record_id,
+    )
+    return Linkage.from_join_condition(
+        left=records, right=records.view(), condition=condition
+    )
 
 
-def _load_febrl_dataset(dataset_num: int) -> tuple[ir.Table, ir.Table]:
-    """Load a FEBRL dataset by number (1, 2, or 3)."""
-    filename = f"dataset{dataset_num}.csv"
-    data = _febrl_load_data(filename)
-    links = _febrl_links(data)
-    return data, links
-
-
-def load_febrl1() -> tuple[ir.Table, ir.Table]:
+def load_febrl1(*, backend: ibis.BaseBackend | None = None) -> Linkage:
     """Load the FEBRL 1 dataset.
 
     The Freely Extensible Biomedical Record Linkage (Febrl) package is distributed
     with a dataset generator and four datasets generated with the generator.
     """
-    return _load_febrl_dataset(1)
+    return _febrl_load_data(1, backend=backend)
 
 
-def load_febrl2() -> tuple[ir.Table, ir.Table]:
+def load_febrl2(*, backend: ibis.BaseBackend | None = None) -> Linkage:
     """Load the FEBRL 2 dataset.
 
     The Freely Extensible Biomedical Record Linkage (Febrl) package is distributed
     with a dataset generator and four datasets generated with the generator.
     """
-    return _load_febrl_dataset(2)
+    return _febrl_load_data(2, backend=backend)
 
 
-def load_febrl3() -> tuple[ir.Table, ir.Table]:
+def load_febrl3(*, backend: ibis.BaseBackend | None = None) -> Linkage:
     """Load the FEBRL 3 dataset.
 
     The Freely Extensible Biomedical Record Linkage (Febrl) package is distributed
     with a dataset generator and four datasets generated with the generator.
     """
-    return _load_febrl_dataset(3)
+    return _febrl_load_data(3, backend=backend)
 
 
 # Don't bother wrapping load_febrl4 because it has a different API,
 # could add that later if it's needed.
 
 
-def load_patents(backend: ibis.BaseBackend | None = None) -> ir.Table:
-    """Load the PATSTAT dataset
+def load_patents(*, backend: ibis.BaseBackend | None = None) -> Linkage:
+    """Load the PATSTAT dataset.
 
     This represents a dataset of patents, and the task is to determine which
     patents came from the same inventor.
@@ -133,8 +103,9 @@ def load_patents(backend: ibis.BaseBackend | None = None) -> ir.Table:
 
     Returns
     -------
-    Table
-        An Ibis Table with the following schema:
+    Linkage
+        A [Linkage](mismo.Linkage), where both `left` and `right` are the tables
+        of records. Each one has the following schema:
 
         - record_id: int64
           A unique ID for each row in the table.
@@ -149,14 +120,14 @@ def load_patents(backend: ibis.BaseBackend | None = None) -> ir.Table:
         - longitude: float64
         - coauthor: str
           A list of coauthors on the patent, separated by "**"
-        - class_: str
+        - classes: str
           A list of 4-character IPC technical codes, separated by "**"
 
     Examples
     --------
     >>> import ibis
     >>> ibis.options.interactive = True
-    >>> load_patents().order_by("record_id").head()  # doctest: +SKIP
+    >>> load_patents().left.head()  # doctest: +SKIP
     ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     ┃ record_id ┃ label_true ┃ name_true            ┃ name                                             ┃ latitude ┃ longitude ┃ coauthors                                       ┃ classes                                         ┃
     ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -169,30 +140,30 @@ def load_patents(backend: ibis.BaseBackend | None = None) -> ir.Table:
     │      3780 │     656303 │ ALCATEL              │ * ALCATEL N.V.                                   │    52.35 │  4.916667 │ ZILAN  MANFRED**JOSIANE  RAMOS**DUANE LYNN  MO… │ H03G**B05D**H04L**H04B**C03B**C03C**G02B**H01B  │
     └───────────┴────────────┴──────────────────────┴──────────────────────────────────────────────────┴──────────┴───────────┴─────────────────────────────────────────────────┴─────────────────────────────────────────────────┘
     """  # noqa E501
-    path = _DATASETS_DIR / "patstat/patents.csv"
     if backend is None:
         backend = ibis
     # In order to guarantee row order, could either use
     # parallel=False kwarg, but I'd rather just have them sorted
     # by record_id
-    return backend.read_csv(path).order_by("record_id").cache()
+    path = _DATASETS_DIR / "patstat/patents.csv"
+    records = backend.read_csv(path).order_by("record_id").cache()
+    return _linkage_from_labels(records)
 
 
-def rldata_schema() -> dict:
-    return {
-        "record_id": "int64",
-        "label_true": "int64",
-        "fname_c1": "string",
-        "fname_c2": "string",
-        "lname_c1": "string",
-        "lname_c2": "string",
-        "by": "int64",
-        "bm": "int64",
-        "bd": "int64",
-    }
+_RLDATA_SCHEMA = {
+    "record_id": "int64",
+    "label_true": "int64",
+    "fname_c1": "string",
+    "fname_c2": "string",
+    "lname_c1": "string",
+    "lname_c2": "string",
+    "by": "int64",
+    "bm": "int64",
+    "bd": "int64",
+}
 
 
-def load_rldata500(backend: ibis.BaseBackend | None = None) -> ir.Table:
+def load_rldata500(*, backend: ibis.BaseBackend | None = None) -> Linkage:
     """Synthetic personal information dataset with 500 rows
 
     This is a synthetic dataset with noisy names and dates of birth, with the task being
@@ -208,8 +179,9 @@ def load_rldata500(backend: ibis.BaseBackend | None = None) -> ir.Table:
 
     Returns
     -------
-    Table
-        An Ibis Table with the following schema:
+    Linkage
+        A [Linkage](mismo.Linkage), where both `left` and `right` are the tables
+        of records. Each one has the following schema:
 
         - record_id: int64
           A unique ID for each row in the table.
@@ -234,7 +206,7 @@ def load_rldata500(backend: ibis.BaseBackend | None = None) -> ir.Table:
     --------
     >>> import ibis
     >>> ibis.options.interactive = True
-    >>> load_rldata500().head()  # doctest: +SKIP
+    >>> load_rldata500().left.head()  # doctest: +SKIP
     ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┓
     ┃ record_id ┃ label_true ┃ fname_c1 ┃ fname_c2 ┃ lname_c1 ┃ lname_c2 ┃ by    ┃ bm    ┃ bd    ┃
     ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━┩
@@ -247,20 +219,19 @@ def load_rldata500(backend: ibis.BaseBackend | None = None) -> ir.Table:
     │         4 │         72 │ RALF     │ NULL     │ KRUEGER  │ NULL     │  1966 │     1 │    13 │
     └───────────┴────────────┴──────────┴──────────┴──────────┴──────────┴───────┴───────┴───────┘
     """  # noqa: E501
-    path = _DATASETS_DIR / "rldata/RLdata500.csv"
-    schema = rldata_schema()
     if backend is None:
         backend = ibis
-    return (
-        backend.read_csv(path)
-        .cast(schema)
-        .select(*schema.keys())
+    records = (
+        backend.read_csv(_DATASETS_DIR / "rldata/RLdata500.csv")
+        .select(*_RLDATA_SCHEMA.keys())
+        .cast(_RLDATA_SCHEMA)
         .order_by("record_id")
         .cache()
     )
+    return _linkage_from_labels(records)
 
 
-def load_rldata10000(backend: ibis.BaseBackend | None = None) -> ir.Table:
+def load_rldata10000(*, backend: ibis.BaseBackend | None = None) -> Linkage:
     """Synthetic personal information dataset with 10000 rows
 
     This is a synthetic dataset with noisy names and dates of birth, with the task being
@@ -276,8 +247,9 @@ def load_rldata10000(backend: ibis.BaseBackend | None = None) -> ir.Table:
 
     Returns
     -------
-    Table
-        An Ibis Table with the following schema:
+    Linkage
+        A [Linkage](mismo.Linkage), where both `left` and `right` are the tables
+        of records. Each one has the following schema:
 
         - record_id: int64
           A unique ID for each row in the table.
@@ -302,7 +274,7 @@ def load_rldata10000(backend: ibis.BaseBackend | None = None) -> ir.Table:
     --------
     >>> import ibis
     >>> ibis.options.interactive = True
-    >>> load_rldata10000().head()  # doctest: +SKIP
+    >>> load_rldata10000().left.head()  # doctest: +SKIP
     ┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┓
     ┃ record_id ┃ label_true ┃ fname_c1 ┃ fname_c2 ┃ lname_c1   ┃ lname_c2 ┃ by    ┃ bm    ┃ bd    ┃
     ┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━┩
@@ -315,14 +287,13 @@ def load_rldata10000(backend: ibis.BaseBackend | None = None) -> ir.Table:
     │         4 │       1994 │ UWE      │ NULL     │ KELLER     │ NULL     │  2000 │     7 │     5 │
     └───────────┴────────────┴──────────┴──────────┴────────────┴──────────┴───────┴───────┴───────┘
     """  # noqa: E501
-    path = _DATASETS_DIR / "rldata/RLdata10000.csv"
-    schema = rldata_schema()
     if backend is None:
         backend = ibis
-    return (
-        backend.read_csv(path)
-        .cast(schema)
-        .select(*schema.keys())
+    records = (
+        backend.read_csv(_DATASETS_DIR / "rldata/RLdata10000.csv")
+        .select(*_RLDATA_SCHEMA.keys())
+        .cast(_RLDATA_SCHEMA)
         .order_by("record_id")
         .cache()
     )
+    return _linkage_from_labels(records)

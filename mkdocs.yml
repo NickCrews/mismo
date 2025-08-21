@@ -24,6 +24,12 @@ plugins:
       enabled: True
       notebook_patterns:
         - "**/*.ipynb"
+      wheels:
+        # Run a shell command that dynamically
+        # builds/fetches/creates 0 to N .whl files in the given {wheels_dir}
+        # (which will be replaced by this plugin with a real, temporary directory).
+        - command: "uv build --out-dir {wheels_dir}"
+
   - mkdocstrings:
       enable_inventory: true
       handlers:
