@@ -79,21 +79,22 @@ def location_comparer():
 
 def test_train_comparer_from_labels(backend, name_comparer):
     """Test that finding the weights for a Comparer works."""
-    patents = playdata.load_patents(backend)
+    patents = playdata.load_patents(backend=backend)
     (weights,) = fs.train_using_labels(
-        [name_comparer], patents, patents, max_pairs=100_000
+        [name_comparer], patents.left, patents.right, max_pairs=100_000
     )
     _check_name_weights(weights)
 
 
 def test_train_comparer_from_pairs(backend, name_comparer):
     """Test that finding the weights for a Comparer works."""
-    patents = playdata.load_patents(backend)
-    pairs = patents.join(
-        patents.view(), "label_true", lname="{name}_l", rname="{name}_r"
-    )
+    patents = playdata.load_patents(backend=backend)
     (weights,) = fs.train_using_pairs(
-        [name_comparer], patents, patents, true_pairs=pairs, max_pairs=100_000
+        [name_comparer],
+        patents.left,
+        patents.left,
+        true_pairs=patents.links,
+        max_pairs=100_000,
     )
     _check_name_weights(weights)
 
@@ -123,11 +124,11 @@ def _check_name_weights(weights):
 # platforms and/or duckdb versions.
 # At this point this just checks that there are no errors raised
 def test_train_comparions_using_em(backend, name_comparer, location_comparer):
-    patents = playdata.load_patents(backend)
+    patents = playdata.load_patents(backend=backend)
     weights = fs.train_using_em(
         [name_comparer, location_comparer],
-        patents,
-        patents,
+        patents.left,
+        patents.right,
         max_pairs=100_000,
     )
     assert len(weights) == 2
