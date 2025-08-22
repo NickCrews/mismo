@@ -42,13 +42,8 @@ class CountsTable(TableWrapper):
         raw = self.n.sum().execute()
         return int(raw) if raw is not None else 0
 
-    def chart(self, *, n_most_common: int = 50, n_least_common: int = 10) -> alt.Chart:
-        return _counts_chart(
-            self,
-            hist_spec=self._HIST_SPEC,
-            n_most_common=n_most_common,
-            n_least_common=n_least_common,
-        )
+    def chart(self) -> alt.Chart:
+        return _counts_chart(self, hist_spec=self._HIST_SPEC)
 
 
 class KeyCountsTable(CountsTable):
@@ -63,38 +58,33 @@ class PairCountsTable(CountsTable):
     )
 
 
-def _counts_chart(
-    counts: CountsTable,
-    *,
-    hist_spec: _HistSpec,
-    n_most_common: int,
-    n_least_common: int,
-):
+def _counts_chart(counts: CountsTable, *, hist_spec: _HistSpec):
     import altair as alt
 
+    n_total = counts.n_total()
     key_cols = [c for c in counts.columns if c != "n"]
     val = "(" + ibis.literal(", ").join(counts[c].cast(str) for c in key_cols) + ")"
     key_and_n = counts.mutate(val.name("key"), "n")
     key_and_n = key_and_n.filter(_.n > 0)
-    most_common = key_and_n.order_by(_.n.desc()).head(n_most_common)
-    least_common = key_and_n.order_by(_.n.asc()).head(n_least_common)
-    subset = ibis.union(most_common, least_common, distinct=False).cache()
-    n_keys_shown = subset.count().execute()
+    frac = key_and_n.n / n_total if n_total > 0 else 0
+    key_and_n = key_and_n.mutate(
+        frac=frac,
+        explanation=(
+            "Out of the "
+            + f"{n_total:_}, "
+            + key_and_n.n.cast(str)
+            + " ("
+            + (frac * 100).cast(int).cast(str)
+            + "%) had the key of "
+            + key_and_n.key.cast(str)
+        ),
+    )
     n_keys_total = key_and_n.count().execute()
     key_title = "(" + ", ".join(key_cols) + ")"
-    chart = (
-        alt.Chart(subset)
-        .properties(
-            title=alt.TitleParams(
-                hist_spec.chart_title,
-                subtitle=[
-                    hist_spec.chart_subtitle.format(n_total=counts.n_total()),
-                    f"Showing the {n_keys_shown:_} most and least common keys out of {n_keys_total:_}",  # noqa: E501
-                ],
-                anchor="middle",
-            ),
-            width=alt.Step(10),
-        )
+    scrubber_selection = alt.selection_interval(encodings=["x"], empty=True)
+    width = 800
+    zoomin = (
+        alt.Chart(key_and_n, width=width)
         .mark_bar()
         .encode(
             alt.X("key:O", title=key_title, sort="-y"),
@@ -105,8 +95,43 @@ def _counts_chart(
             ),
             tooltip=[
                 alt.Tooltip("n:Q", title=hist_spec.n_title, format=","),
+                alt.Tooltip("frac:Q", title="Fraction", format=".2%"),
                 *[alt.Tooltip(col) for col in key_cols],
+                alt.Tooltip("explanation", title="Explanation"),
             ],
         )
+        .transform_filter(scrubber_selection)
     )
-    return chart
+    scrubber = (
+        alt.Chart(
+            key_and_n,
+            width=width,
+            height=50,
+            title=alt.Title(
+                text="<Drag to select>",
+                dy=30,
+                anchor="middle",
+                fontSize=12,
+                color="gray",
+            ),
+        )
+        .mark_area(interpolate="step-after")
+        .encode(
+            alt.X("key:O", sort="-y", axis=None),
+            alt.Y("n:Q", title=None, axis=None),
+        )
+        .add_params(scrubber_selection)
+    )
+    together = scrubber & zoomin
+    together = together.resolve_scale(color="independent")
+    together = together.properties(
+        title=alt.Title(
+            hist_spec.chart_title,
+            subtitle=[
+                hist_spec.chart_subtitle.format(n_total=n_total),
+                f"{n_keys_total:_} keys total",
+            ],
+            anchor="middle",
+        )
+    )
+    return together
