@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
 
 def log_odds_color_scale() -> alt.Scale:
+    import altair as alt
+
     return alt.Scale(
         domainMid=0,
         domainMin=-3,
@@ -44,6 +46,8 @@ def plot_weights(weights: ComparerWeights | Iterable[ComparerWeights]) -> alt.Ch
     alt.Chart
         The plot.
     """
+    import altair as alt
+
     if isinstance(weights, ComparerWeights):
         weights = [weights]
     subplots = [_plot_comparer_weights(cw) for cw in weights]
