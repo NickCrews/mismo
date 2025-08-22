@@ -396,7 +396,7 @@ class LinkCountsTable(TableWrapper):
                 + "%) had "
                 + self.n_links.cast(str)
                 + " links."
-            ),  # noqa: E501
+            ),
         )
         scrubber_selection = alt.selection_interval(encodings=["x"], empty=True)
         width = 800
@@ -452,6 +452,5 @@ class LinkCountsTable(TableWrapper):
                 anchor="middle",
                 fontSize=14,
             ),
-            # width=800,
         )
         return together
