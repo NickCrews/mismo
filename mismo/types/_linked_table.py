@@ -384,19 +384,24 @@ class LinkCountsTable(TableWrapper):
         else:
             subtitle = "eg 'there were 1000 records with 0 links, 500 with 1 link, 100 with 2 links, ...'"  # noqa: E501
 
+        frac_records = self.n_records / total_records if total_records > 0 else 0
         t = self.mutate(
-            frac_records=_.n_records / total_records if total_records > 0 else 0
+            frac_records=frac_records,
+            explanation=(
+                "Out of the "
+                + f"{total_records:_} records, "
+                + self.n_records.cast(str)
+                + " ("
+                + (frac_records * 100).cast(int).cast(str)
+                + "%) had "
+                + self.n_links.cast(str)
+                + " links."
+            ),  # noqa: E501
         )
-        chart = (
-            alt.Chart(t)
-            .properties(
-                title=alt.TitleParams(
-                    "Number of Records by Link Count",
-                    subtitle=subtitle,
-                    anchor="middle",
-                ),
-                width=alt.Step(12) if self.count().execute() <= 20 else alt.Step(8),
-            )
+        scrubber_selection = alt.selection_interval(encodings=["x"], empty=True)
+        width = 800
+        zoomin = (
+            alt.Chart(t, width=width)
             .mark_bar()
             .encode(
                 # if we ever change this sorting, keep the subtitle example
@@ -413,21 +418,40 @@ class LinkCountsTable(TableWrapper):
                         "frac_records:Q", title="Fraction of Records", format=".2%"
                     ),
                     alt.Tooltip("n_links:O", title=key_title),
+                    alt.Tooltip("explanation", title="Explanation"),
                 ],
             )
+            .transform_filter(scrubber_selection)
         )
-        return chart
-
-
-def _n_links_by_id(ids: ir.Table, links: ir.Table) -> ibis.Table:
-    n_links_by_id = links.group_by(record_id="record_id_l").aggregate(
-        n_links=_.record_id_r.nunique()
-    )
-    # The above misses records with no entries in the links table (eg unlinked records)
-    records_not_linked = (
-        ids.distinct().filter(_.record_id.notin(links.record_id_l)).mutate(n_links=0)
-    )
-    # the default of 0 is an int8, which isn't unionable with the int64 of other table
-    records_not_linked = records_not_linked.cast(n_links_by_id.schema())
-    n_links_by_id = ibis.union(n_links_by_id, records_not_linked)
-    return n_links_by_id
+        scrubber = (
+            alt.Chart(
+                t,
+                title=alt.Title(
+                    text="<Drag to select>",
+                    dy=30,
+                    anchor="middle",
+                    fontSize=12,
+                    color="gray",
+                ),
+                width=width,
+                height=50,
+            )
+            .mark_area(interpolate="step-after")
+            .encode(
+                alt.X("n_links:O", sort="x", axis=None),
+                alt.Y("n_records:Q", title=None, axis=None),
+            )
+            .add_params(scrubber_selection)
+        )
+        together = scrubber & zoomin
+        together = together.resolve_scale(color="independent")
+        together = together.properties(
+            title=alt.Title(
+                "Number of Records by Link Count",
+                subtitle=subtitle,
+                anchor="middle",
+                fontSize=14,
+            ),
+            # width=800,
+        )
+        return together
