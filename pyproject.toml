@@ -1,7 +1,7 @@
 [project]
 name = "mismo"
 description = "The SQL/Ibis powered sklearn of record linkage."
-version = "0.2.2"
+version = "0.2.3"
 readme = "README.md"
 requires-python = ">=3.10" # ibis>=9.1 requires python >=3.10
 license = { text = "LGPL-3.0-or-later" }
