@@ -243,15 +243,14 @@ def _bin_lat_lon(
     km_per_lat, km_per_lon = _km_per_degree(lat)
     step_size_lat = grid_size_km / km_per_lat
     step_size_lon = grid_size_km / km_per_lon
-
-    result = ibis.struct(
-        {
-            # once https://github.com/ibis-project/ibis/pull/10353 is fixed
-            # we can use lat // step_size_lat
-            "lat_hash": (lat / step_size_lat).floor().cast(int),
-            "lon_hash": (lon / step_size_lon).floor().cast(int),
-        }
-    )
+    if ibis.__version__ >= "10.0.0":
+        # See https://github.com/ibis-project/ibis/pull/10353
+        lat_hash = lat // step_size_lat
+        lon_hash = lon // step_size_lon
+    else:
+        lat_hash = (lat / step_size_lat).floor().cast(int)
+        lon_hash = (lon / step_size_lon).floor().cast(int)
+    result = ibis.struct({"lat_hash": lat_hash, "lon_hash": lon_hash})
     both_null = lat.isnull() & lon.isnull()
     return both_null.ifelse(ibis.null(), result)
 
