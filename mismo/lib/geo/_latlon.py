@@ -9,6 +9,8 @@ from ibis import Deferred
 from ibis.expr import types as ir
 
 from mismo import _util, linkage, types
+from mismo._counts_table import KeyCountsTable, PairCountsTable
+from mismo.linker._key_linker import KeyLinker
 
 
 def distance_km(
@@ -149,6 +151,13 @@ class CoordinateBlocker:
     """The column in the right tables containing the latitude coordinates."""
     right_lon: str | Deferred | Callable[[ir.Table], ir.FloatingColumn] | None = None
     """The column in the right tables containing the longitude coordinates."""
+    max_pairs: int | None = None
+    """The maximum number of pairs that any single block of coordinates can contain.
+    
+    eg if you have 1000 records all with the same coordinates, this would
+    naively result in ~(1000 * 1000) / 2 = 500_000 pairs.
+    If we set max_pairs to less than this, this group of records will be skipped.
+    """
 
     def __post_init__(self):
         ok_subsets = [
@@ -181,57 +190,91 @@ class CoordinateBlocker:
                 + f"\nYou provided:\n{present}"
             )
 
-    def _get_cols(
-        self, left: ir.Table, right: ir.Table
-    ) -> tuple[
-        ir.FloatingColumn, ir.FloatingColumn, ir.FloatingColumn, ir.FloatingColumn
-    ]:
+    def _left_coord(
+        self, left: ir.Table
+    ) -> tuple[ir.FloatingColumn, ir.FloatingColumn]:
         if self.coord is not None:
-            left
             left_coord = _util.get_column(left, self.coord, on_many="struct")
-            right_coord = _util.get_column(right, self.coord, on_many="struct")
-            return (left_coord.lat, left_coord.lon, right_coord.lat, right_coord.lon)
+            return (left_coord.lat, left_coord.lon)
         if self.left_coord is not None:
             left_coord = _util.get_column(left, self.left_coord, on_many="struct")
             left_lat = left_coord.lat
             left_lon = left_coord.lon
+        if self.lat is not None:
+            left_lat = _util.get_column(left, self.lat)
+        if self.lon is not None:
+            left_lon = _util.get_column(left, self.lon)
+        if self.left_lat is not None:
+            left_lat = _util.get_column(left, self.left_lat)
+        if self.left_lon is not None:
+            left_lon = _util.get_column(left, self.left_lon)
+        return left_lat, left_lon
+
+    def _right_coord(
+        self, right: ir.Table
+    ) -> tuple[ir.FloatingColumn, ir.FloatingColumn]:
+        if self.coord is not None:
+            right_coord = _util.get_column(right, self.coord, on_many="struct")
+            return (right_coord.lat, right_coord.lon)
         if self.right_coord is not None:
             right_coord = _util.get_column(right, self.right_coord, on_many="struct")
             right_lat = right_coord.lat
             right_lon = right_coord.lon
         if self.lat is not None:
-            left_lat = _util.get_column(left, self.lat)
             right_lat = _util.get_column(right, self.lat)
         if self.lon is not None:
-            left_lon = _util.get_column(left, self.lon)
             right_lon = _util.get_column(right, self.lon)
-        if self.left_lat is not None:
-            left_lat = _util.get_column(left, self.left_lat)
-        if self.left_lon is not None:
-            left_lon = _util.get_column(left, self.left_lon)
         if self.right_lat is not None:
             right_lat = _util.get_column(right, self.right_lat)
         if self.right_lon is not None:
             right_lon = _util.get_column(right, self.right_lon)
-        return left_lat, left_lon, right_lat, right_lon
+        return right_lat, right_lon
 
-    def __join_condition__(self, left: ir.Table, right: ir.Table) -> ir.BooleanValue:
-        left_lat, left_lon, right_lat, right_lon = self._get_cols(left, right)
+    def _join_keys(
+        self, left: ir.Table | ibis.Deferred, right: ir.Table | ibis.Deferred
+    ) -> tuple[tuple[ir.Column, ir.Column], tuple[ir.Column, ir.Column]]:
+        left_lat, left_lon = self._left_coord(left)
+        right_lat, right_lon = self._right_coord(right)
         # We have to use a grid size of ~3x the precision to avoid
         # two points falling right on either side of a grid cell boundary
         grid_size = self.distance_km * 3
-        left_hashed = _bin_lat_lon(left_lat, left_lon, grid_size)
-        right_hashed = _bin_lat_lon(right_lat, right_lon, grid_size)
-        return left_hashed == right_hashed
+        left_lat_key, left_lon_key = _bin_lat_lon(left_lat, left_lon, grid_size)
+        right_lat_key, right_lon_key = _bin_lat_lon(right_lat, right_lon, grid_size)
+        return (
+            left_lat_key.name("lat_binned"),
+            right_lat_key.name("lat_binned"),
+        ), (
+            left_lon_key.name("lon_binned"),
+            right_lon_key.name("lon_binned"),
+        )
+
+    @property
+    def _key_linker(self) -> KeyLinker:
+        import mismo
+
+        lat_key, lon_key = self._join_keys(ibis._, ibis._)
+        return mismo.KeyLinker([lat_key, lon_key], max_pairs=self.max_pairs)
+
+    def __join_condition__(self, left: ir.Table, right: ir.Table) -> ir.BooleanValue:
+        return self._key_linker.__join_condition__(left, right)
 
     def __call__(self, left: ir.Table, right: ir.Table) -> linkage.Linkage:
         links = types.LinksTable.from_join_condition(left, right, self)
         return linkage.Linkage(left=left, right=right, links=links)
 
+    def key_counts_left(self, left: ibis.Table, /) -> KeyCountsTable:
+        return self._key_linker.key_counts_left(left)
+
+    def key_counts_right(self, right: ibis.Table, /) -> KeyCountsTable:
+        return self._key_linker.key_counts_right(right)
+
+    def pair_counts(self, left: ibis.Table, right: ibis.Table) -> PairCountsTable:
+        return self._key_linker.pair_counts(left, right)
+
 
 def _bin_lat_lon(
     lat: ir.FloatingValue, lon: ir.FloatingValue, grid_size_km: float | int
-) -> ir.StructValue:
+) -> tuple[ir.IntegerValue, ir.IntegerValue]:
     """Bin a latitude or longitude to a grid of a given precision.
 
     Say you have two coordinates, (lat1, lon1) and (lat2, lon2), and you
@@ -250,9 +293,10 @@ def _bin_lat_lon(
     else:
         lat_hash = (lat / step_size_lat).floor().cast(int)
         lon_hash = (lon / step_size_lon).floor().cast(int)
-    result = ibis.struct({"lat_hash": lat_hash, "lon_hash": lon_hash})
     both_null = lat.isnull() & lon.isnull()
-    return both_null.ifelse(ibis.null(), result)
+    lat_result = both_null.ifelse(ibis.null(), lat_hash)
+    lon_result = both_null.ifelse(ibis.null(), lon_hash)
+    return lat_result, lon_result
 
 
 def _km_per_degree(lat: ir.FloatingValue) -> tuple[float, ir.FloatingValue]:
