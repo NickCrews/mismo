@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from ibis.expr import types as ir
 
@@ -14,7 +14,7 @@ def adjusted_mutual_info_score(
     labels_true: ir.Table,
     labels_pred: ir.Table,
     *,
-    average_method: str = "arithmetic",
+    average_method: Literal["arithmetic", "geometric", "min", "max"] = "arithmetic",
 ) -> float:
     """Adjusted Mutual Information between two clusterings.
 
@@ -119,9 +119,7 @@ def homogeneity_completeness_v_measure(
     )
 
 
-def mutual_info_score(
-    labels_true: ir.Table, labels_pred: ir.Table, *, contingency: Any = None
-) -> float:
+def mutual_info_score(labels_true: ir.Table, labels_pred: ir.Table) -> float:
     """Compute the mutual information between two clusterings.
 
     The two input tables must have columns "record_id" and "label",
@@ -132,11 +130,14 @@ def mutual_info_score(
     with optional_import("scikit-learn"):
         from sklearn import metrics as _metrics
     labels_true, labels_pred = _to_numpy_labels(labels_true, labels_pred)
-    return _metrics.mutual_info_score(labels_true, labels_pred, contingency=contingency)
+    return _metrics.mutual_info_score(labels_true, labels_pred)
 
 
 def normalized_mutual_info_score(
-    labels_true: ir.Table, labels_pred: ir.Table, *, average_method: str = "arithmetic"
+    labels_true: ir.Table,
+    labels_pred: ir.Table,
+    *,
+    average_method: Literal["arithmetic", "geometric", "min", "max"] = "arithmetic",
 ) -> float:
     """Compute the normalized mutual information between two clusterings.
 
