@@ -20,7 +20,7 @@ jobs:
     if: github.repository_owner == 'NickCrews'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       id-token: write
     steps:
       - uses: actions/checkout@v5
@@ -53,6 +53,8 @@ jobs:
         uses: pypa/gh-action-pypi-publish@d417ba7e7683fa9104c42abe611c1f2c93c0727d
 
       - name: create GH release
+        # even if publish to pypi failed, we want to create a release on GitHub
+        if: always()
         run: gh release create v${{ steps.get-version.outputs.value }} dist/* --title "Release v${{ steps.get-version.outputs.value }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
