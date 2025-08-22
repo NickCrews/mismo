@@ -17,6 +17,8 @@ theme:
     - search.highlight
     - search.share
     - search.suggest
+extra_css:
+  - extra.css
 plugins:
   - git-revision-date-localized
   - literate-nav
