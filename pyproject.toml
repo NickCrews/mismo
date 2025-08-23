@@ -41,7 +41,10 @@ dependencies = [
 viz = [
   "altair>=5.0.0",
   "ipywidgets>=7.5.1",
-  "solara>=1.32.1",
+  # Don't need the full solara package, since we only use from within jupyter,
+  # and if we install the full package it needs `watchfiles` and other
+  # packages that don't work in pyodide.
+  "solara-ui>=1.51.0",
   "anywidget>=0.9.18",
 ]
 postal = [
