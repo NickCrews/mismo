@@ -58,8 +58,8 @@ def distance_km(
 
 
 @dataclasses.dataclass(frozen=True)
-class CoordinateBlocker:
-    """Blocks two locations together if they are within a certain distance.
+class CoordinateLinker:
+    """Links two locations together if they are within a certain distance.
 
     This isn't precise, and can include pairs that are actually up to about 2x
     larger than the given threshold.
@@ -108,7 +108,6 @@ class CoordinateBlocker:
     ... )
     >>> blocker = CoordinateBlocker(
     ...     distance_km=1,
-    ...     name="within_1_km",
     ...     left_coord="latlon",
     ...     right_lat="latitude",
     ...     right_lon="longitude",
@@ -131,8 +130,6 @@ class CoordinateBlocker:
     """
     The (approx) max distance in kilometers that two coords will be blocked together.
     """
-    name: str | None = None
-    """The name of the blocker."""
     coord: str | Deferred | Callable[[ir.Table], ir.StructColumn] | None = None
     """The column in both tables containing the `struct<lat: float, lon: float>` coordinates."""  # noqa: E501
     lat: str | Deferred | Callable[[ir.Table], ir.FloatingColumn] | None = None

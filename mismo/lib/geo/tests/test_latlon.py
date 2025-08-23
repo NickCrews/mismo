@@ -5,7 +5,7 @@ from ibis import _
 import numpy as np
 import pytest
 
-from mismo.lib.geo import CoordinateBlocker, distance_km
+from mismo.lib.geo import CoordinateLinker, distance_km
 
 
 @pytest.mark.parametrize(
@@ -79,7 +79,7 @@ def test_coordinate_blocker(table_factory, coord1, coord2, km, expected, kwargs)
             "record_id": [53],
         }
     )
-    blocker = CoordinateBlocker(distance_km=km, **kwargs)
+    blocker = CoordinateLinker(distance_km=km, **kwargs)
     linkage = blocker(t1, t2)
     n_blocked = linkage.links.count().execute()
     if expected:
@@ -101,4 +101,4 @@ def test_coordinate_blocker(table_factory, coord1, coord2, km, expected, kwargs)
 def test_coordinate_blocker_error(kwarg_names):
     kwargs = {name: "x" for name in kwarg_names}
     with pytest.raises(ValueError):
-        CoordinateBlocker(distance_km=1, **kwargs)
+        CoordinateLinker(distance_km=1, **kwargs)

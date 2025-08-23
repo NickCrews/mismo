@@ -1,11 +1,11 @@
 # Geospatial API
 
-This contains utilities, blockers, and comparers relevant to geospatial data.
+This contains utilities, Linkers, and comparers relevant to geospatial data.
 
 
 ## Coordinates
 
-::: mismo.lib.geo.CoordinateBlocker
+::: mismo.lib.geo.CoordinateLinker
 ::: mismo.lib.geo.distance_km
 
 ## Addresses
