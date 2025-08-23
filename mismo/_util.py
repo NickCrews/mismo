@@ -115,6 +115,9 @@ def get_column(
         If "struct", return a StructColumn containing all the columns.
     """
     cols = bind(t, ref)
+    if isinstance(t, ibis.Deferred):
+        # This is by definition a single column
+        return cols[0]
     if len(cols) != 1:
         if on_many == "error":
             raise ValueError(f"Expected 1 column, got {len(cols)}")

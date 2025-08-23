@@ -74,7 +74,7 @@ class CoordinateLinker:
     Examples
     --------
     >>> import ibis
-    >>> from mismo.lib.geo import CoordinateBlocker
+    >>> from mismo.lib.geo import CoordinateLinker
     >>> ibis.options.interactive = True
     >>> conn = ibis.duckdb.connect()
     >>> left = conn.create_table(
@@ -106,13 +106,13 @@ class CoordinateLinker:
     ...         },
     ...     ],
     ... )
-    >>> blocker = CoordinateBlocker(
+    >>> linker = CoordinateLinker(
     ...     distance_km=1,
     ...     left_coord="latlon",
     ...     right_lat="latitude",
     ...     right_lon="longitude",
     ... )
-    >>> blocker(left, right).links
+    >>> linker(left, right).links
     ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
     ┃ record_id_l ┃ latlon_l                      ┃ record_id_r ┃ latitude_r ┃ longitude_r ┃
     ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
