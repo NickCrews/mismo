@@ -384,7 +384,11 @@ class LinkCountsTable(TableWrapper):
         else:
             subtitle = "eg 'there were 1000 records with 0 links, 500 with 1 link, 100 with 2 links, ...'"  # noqa: E501
 
-        frac_records = self.n_records / total_records if total_records > 0 else 0
+        frac_records: ir.StringValue = (
+            (self.n_records / total_records * 100).cast(int).cast(str)
+            if total_records > 0
+            else ibis.literal("0")
+        )
         t = self.mutate(
             frac_records=frac_records,
             explanation=(
@@ -392,7 +396,7 @@ class LinkCountsTable(TableWrapper):
                 + f"{total_records:_} records, "
                 + self.n_records.cast(str)
                 + " ("
-                + (frac_records * 100).cast(int).cast(str)
+                + frac_records
                 + "%) had "
                 + self.n_links.cast(str)
                 + " links."
