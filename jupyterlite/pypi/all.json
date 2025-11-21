@@ -1,0 +1,28 @@
+{
+  "mismo": {
+    "releases": {
+      "0.2.6": [
+        {
+          "comment_text": "",
+          "digests": {
+            "md5": "429df69f4592bb6593da6f53b2a13539",
+            "sha256": "5b774f61f8204cd05ccd10a14603fd19bd3f6a649aa9b9a8ccdec384b327a9cb"
+          },
+          "downloads": -1,
+          "filename": "mismo-0.2.6-py3-none-any.whl",
+          "has_sig": false,
+          "md5_digest": "429df69f4592bb6593da6f53b2a13539",
+          "packagetype": "bdist_wheel",
+          "python_version": "py3",
+          "requires_python": ">=3.10",
+          "size": 1074165,
+          "upload_time": "2025-11-21T17:39:48.159919Z",
+          "upload_time_iso_8601": "2025-11-21T17:39:48.159919Z",
+          "url": "./mismo-0.2.6-py3-none-any.whl",
+          "yanked": false,
+          "yanked_reason": null
+        }
+      ]
+    }
+  }
+}
