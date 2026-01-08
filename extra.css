@@ -1,0 +1,10 @@
+
+/*
+Override mkdocs-material's max-width for the content so the notebooks
+are wide enough that JupyterLite uses the desktop layout.
+
+See https://github.com/NickCrews/mkdocs-jupyterlite/blob/0394a4ab41f402b977b2e762bf1b402f84460ddf/docs/extra.css
+*/
+.md-main__inner.md-grid {
+    max-width: 70rem;
+}
