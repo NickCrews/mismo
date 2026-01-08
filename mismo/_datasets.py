@@ -5,6 +5,8 @@ from typing import Callable, Iterable, Mapping, Sequence
 import ibis
 from ibis.expr import types as ir
 
+from mismo import _util
+
 
 class Datasets:
     """An ordered, dict-like collection of tables of records.
@@ -73,7 +75,7 @@ class Datasets:
     def map(self, f: ibis.Deferred | Callable[[str, ir.Table], ir.Table]) -> ir.Table:
         """Return a new Datasets with all tables transformed by `f`."""
         if isinstance(f, ibis.Deferred):
-            return self.__class__({name: f.bind(t) for name, t in self.items()})
+            return self.__class__({name: _util.bind(f, t) for name, t in self.items()})
         else:
             return self.__class__({name: f(name, t) for name, t in self.items()})
 

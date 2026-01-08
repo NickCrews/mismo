@@ -282,8 +282,8 @@ class Updates(TableWrapper):
 
     def is_changed(self, column: str, /) -> ibis.ir.BooleanColumn:
         """Is column.before different from column.after? Never returns NULL."""
-        (val,) = self.bind(column)
-        return is_changed(val)
+        resolved_col = _util.bind_one(self._t, column)
+        return is_changed(resolved_col)
 
     def filter(self, *args, **kwargs):
         return self.__class__(

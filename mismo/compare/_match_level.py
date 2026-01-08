@@ -373,7 +373,7 @@ class LevelComparer:
         if representation is None:
             representation = self.representation
 
-        cases = [(pairs.bind(c)[0], level) for c, level in self.cases]
+        cases = [(_util.bind_one(pairs, c), level) for c, level in self.cases]
         if representation == "string":
             cases = [(c, level.as_string()) for c, level in cases]
         elif representation == "integer":

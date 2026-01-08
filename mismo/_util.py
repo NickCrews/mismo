@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 from collections.abc import Sequence
 from contextlib import contextmanager
-from typing import Any, Callable, Iterable, Literal, Mapping, TypeVar
+from typing import Any, Callable, Iterable, Literal, Mapping, TypeVar, overload
 import uuid
 import warnings
 
@@ -89,12 +89,38 @@ def cases(
         return builder.else_(else_).end()
 
 
-def bind(t: ir.Table, ref: Any) -> tuple[ir.Value]:
-    """Reference into a table to get Columns and Scalars."""
-    # ibis's bind() can't handle bind(_, "column_name")
-    if isinstance(ref, str):
-        return (t[ref],)
-    return t.bind(ref)
+@overload
+def bind(t: ibis.Table, ref: Any, /) -> tuple[ibis.Column, ...]: ...
+@overload
+def bind(t: ibis.Deferred, ref: Any, /) -> tuple[ibis.Deferred]: ...
+
+
+def bind(t: ibis.Deferred | ibis.Table, ref: Any) -> tuple[ibis.Column, ...]:
+    """Reference into a table to get Columns and Scalars.
+
+    ibis._.bind(ref) does not work because it returns another Deferred.
+
+    Also, per https://github.com/ibis-project/ibis/pull/11746,
+    in some versions of ibis, .bind() returns a generator, not a tuple,
+    so this function always returns a tuple.
+    """
+    if isinstance(t, ibis.Table):
+        return tuple(t.bind(ref))
+    return (t[ref],)
+
+
+@overload
+def bind_one(t: ibis.Table, ref: Any, /) -> ibis.Column: ...
+@overload
+def bind_one(t: ibis.Deferred, ref: Any, /) -> ibis.Deferred: ...
+
+
+def bind_one(t: ibis.Deferred | ibis.Table, ref: Any) -> ibis.Column | ibis.Deferred:
+    """Like bind(), but ensure that exactly one column is returned."""
+    cols = bind(t, ref)
+    if len(cols) != 1:
+        raise ValueError(f"Expected 1 column, got {len(cols)} from {ref}")
+    return cols[0]
 
 
 def get_column(

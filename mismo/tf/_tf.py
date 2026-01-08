@@ -52,7 +52,7 @@ class ColumnStats:
         self,
         table: ibis.Table,
         *,
-        column: str | ibis.Deferred | ibis.Column = None,
+        column: str | ibis.Deferred | ibis.Column | None = None,
         name_as: str | None = None,
         default: Literal["1/N"] | int | float = "1/N",
     ) -> ibis.Table:
@@ -70,7 +70,7 @@ class ColumnStats:
         else:
             default = ibis.literal(default, "float64")
 
-        table_column = table.bind(column)[0]
+        table_column = _util.bind_one(table, column)
 
         unique_name = _util.unique_name("join_key")
         # TODO: this could be factored out into a join_lookup() function

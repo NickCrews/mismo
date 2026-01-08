@@ -72,7 +72,7 @@ def _featurize(
     # for every time it appears in the SQL. See https://github.com/duckdb/duckdb/discussions/14649.
     # So, if we did one .mutate(), we would end up with like literally 100 regex
     # evaluations in the SQL, which is 100x slower than evaluating the regex once.
-    input_column = t.bind(input_column)[0]
+    input_column = _util.bind_one(t, input_column)
     t = t.mutate(_parsed=parse_street1_re(input_column.street1), _cleaned=input_column)
     t = t.mutate(
         __address_featured=ibis.struct(

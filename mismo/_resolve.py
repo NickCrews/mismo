@@ -49,7 +49,7 @@ class LiteralResolver(ValueResolver):
 
     def __call__(self, t: ibis.Table) -> ibis.Column:
         """Resolve a literal value."""
-        resolved = t.bind(self.value)
+        resolved = _util.bind(t, self.value)
         if len(resolved) != 1:
             raise ValueError(
                 f"Expected 1 column, got {len(resolved)} from {self.value}"
