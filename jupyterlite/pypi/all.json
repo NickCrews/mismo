@@ -5,19 +5,19 @@
         {
           "comment_text": "",
           "digests": {
-            "md5": "d7ed741643829724cc6fc4415ceda9a8",
-            "sha256": "049170fc04eebaf43a30162fd276ec8b9d8e814fb1fadecafa595a5bd4dec56d"
+            "md5": "a6b53eb734083b13710da20f34a030a2",
+            "sha256": "de0a0184268fec9dcb725ec1d271d3b984808ba9e28e6dd1dba3953502adb0e2"
           },
           "downloads": -1,
           "filename": "mismo-0.2.6-py3-none-any.whl",
           "has_sig": false,
-          "md5_digest": "d7ed741643829724cc6fc4415ceda9a8",
+          "md5_digest": "a6b53eb734083b13710da20f34a030a2",
           "packagetype": "bdist_wheel",
           "python_version": "py3",
           "requires_python": ">=3.10",
-          "size": 1074400,
-          "upload_time": "2026-01-08T18:28:55.787355Z",
-          "upload_time_iso_8601": "2026-01-08T18:28:55.787355Z",
+          "size": 1074358,
+          "upload_time": "2026-01-08T18:33:10.614015Z",
+          "upload_time_iso_8601": "2026-01-08T18:33:10.614015Z",
           "url": "./mismo-0.2.6-py3-none-any.whl",
           "yanked": false,
           "yanked_reason": null

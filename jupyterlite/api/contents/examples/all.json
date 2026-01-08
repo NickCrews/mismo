@@ -2,11 +2,11 @@
   "content": [
     {
       "content": null,
-      "created": "2026-01-08T18:28:58.767348Z",
+      "created": "2026-01-08T18:33:14.291029Z",
       "format": null,
       "hash": null,
       "hash_algorithm": null,
-      "last_modified": "2026-01-08T18:28:55.789355Z",
+      "last_modified": "2026-01-08T18:33:10.616015Z",
       "mimetype": null,
       "name": "patent_deduplication.ipynb",
       "path": "examples/patent_deduplication.ipynb",
@@ -16,11 +16,11 @@
     },
     {
       "content": null,
-      "created": "2026-01-08T18:28:58.766348Z",
+      "created": "2026-01-08T18:33:14.289030Z",
       "format": null,
       "hash": null,
       "hash_algorithm": null,
-      "last_modified": "2026-01-08T18:28:55.788355Z",
+      "last_modified": "2026-01-08T18:33:10.615015Z",
       "mimetype": null,
       "name": "address_linkage.ipynb",
       "path": "examples/address_linkage.ipynb",
@@ -29,11 +29,11 @@
       "writable": true
     }
   ],
-  "created": "2026-01-08T18:28:58.766348Z",
+  "created": "2026-01-08T18:33:14.291029Z",
   "format": "json",
   "hash": null,
   "hash_algorithm": null,
-  "last_modified": "2026-01-08T18:28:58.766348Z",
+  "last_modified": "2026-01-08T18:33:14.291029Z",
   "mimetype": null,
   "name": "examples",
   "path": "examples",
