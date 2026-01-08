@@ -32,7 +32,7 @@ class DeferredResolver(ValueResolver):
 
     def __call__(self, t: ibis.Table) -> ibis.Column:
         raw = self.deferred.resolve(**{self.name: t})
-        return _resolve(t, raw)
+        return _util.bind_one(t, raw)
 
     def __repr__(self) -> str:
         if self.name == "_":
@@ -93,13 +93,6 @@ class FuncResolver(ValueResolver):
 
     def __repr__(self):
         return f"FuncResolver({self.func!r})"
-
-
-def _resolve(t: ir.Table, spec) -> ir.Value:
-    values = t.bind(spec)
-    if len(values) != 1:
-        raise ValueError(f"Expected 1 column, got {len(values)} from {spec}")
-    return values[0]
 
 
 def value_resolver(spec: ibis.Value | Deferred | str) -> ValueResolver:
