@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from abc import ABCMeta
-from typing import Iterable, Iterator, Literal, Type, TypeVar, overload
+from collections.abc import Iterable, Iterator
+from typing import Generic, Literal, Type, TypeVar, overload
 
 import ibis
 from ibis.expr import types as ir
@@ -320,7 +321,7 @@ def _is_stringy(v):
 MatchLevelT = TypeVar("MatchLevelT", bound=MatchLevel)
 
 
-class LevelComparer:
+class LevelComparer(Generic[MatchLevelT]):
     """
     Assigns a MatchLevel to record pairs based on one dimension, e.g. *name*
     """
