@@ -90,12 +90,12 @@ def cases(
 
 
 @overload
-def bind(t: ibis.Table, ref: Any, /) -> tuple[ibis.Column, ...]: ...
+def bind(t: ibis.Table, ref: Any, /) -> tuple[ibis.Value, ...]: ...
 @overload
 def bind(t: ibis.Deferred, ref: Any, /) -> tuple[ibis.Deferred]: ...
 
 
-def bind(t: ibis.Deferred | ibis.Table, ref: Any) -> tuple[ibis.Column, ...]:
+def bind(t: ibis.Deferred | ibis.Table, ref: Any) -> tuple[ibis.Value, ...]:
     """Reference into a table to get Columns and Scalars.
 
     ibis._.bind(ref) does not work because it returns another Deferred.
@@ -110,17 +110,17 @@ def bind(t: ibis.Deferred | ibis.Table, ref: Any) -> tuple[ibis.Column, ...]:
 
 
 @overload
-def bind_one(t: ibis.Table, ref: Any, /) -> ibis.Column: ...
+def bind_one(t: ibis.Table, ref: Any, /) -> ibis.Value: ...
 @overload
 def bind_one(t: ibis.Deferred, ref: Any, /) -> ibis.Deferred: ...
 
 
-def bind_one(t: ibis.Deferred | ibis.Table, ref: Any) -> ibis.Column | ibis.Deferred:
-    """Like bind(), but ensure that exactly one column is returned."""
-    cols = bind(t, ref)
-    if len(cols) != 1:
-        raise ValueError(f"Expected 1 column, got {len(cols)} from {ref}")
-    return cols[0]
+def bind_one(t: ibis.Deferred | ibis.Table, ref: Any) -> ibis.Value | ibis.Deferred:
+    """Like bind(), but ensure that exactly one value is returned."""
+    vals = bind(t, ref)
+    if len(vals) != 1:
+        raise ValueError(f"Expected 1 value, got {len(vals)} from {ref}")
+    return vals[0]
 
 
 def get_column(
