@@ -6,17 +6,16 @@ from typing import Any, Callable, Generator, Protocol, runtime_checkable
 import ibis
 from ibis import Deferred
 from ibis.common.deferred import BinaryOperator, Resolver, Variable
-from ibis.expr import types as ir
 
 from mismo import _funcs, _util
 
 
 @runtime_checkable
 class ValueResolver(Protocol):
-    """A callable, that given a Table, resolves to a single column."""
+    """A callable, that given a Table, resolves to a single Value."""
 
-    def __call__(self, t: ibis.Table) -> ibis.Column:
-        """Given a Table, resolve to a single column."""
+    def __call__(self, t: ibis.Table) -> ibis.Value:
+        """Given a Table, resolve to a single Value."""
 
 
 class DeferredResolver(ValueResolver):
@@ -30,7 +29,7 @@ class DeferredResolver(ValueResolver):
         self.deferred = deferred
         self.name = name
 
-    def __call__(self, t: ibis.Table) -> ibis.Column:
+    def __call__(self, t: ibis.Table) -> ibis.Value:
         raw = self.deferred.resolve(**{self.name: t})
         return _util.bind_one(t, raw)
 
@@ -44,17 +43,13 @@ class DeferredResolver(ValueResolver):
 
 
 class LiteralResolver(ValueResolver):
+    """A resolver that always returns the literal value given."""
+
     def __init__(self, value: ibis.Value) -> None:
         self.value = value
 
-    def __call__(self, t: ibis.Table) -> ibis.Column:
-        """Resolve a literal value."""
-        resolved = _util.bind(t, self.value)
-        if len(resolved) != 1:
-            raise ValueError(
-                f"Expected 1 column, got {len(resolved)} from {self.value}"
-            )
-        return resolved[0]
+    def __call__(self, t: ibis.Table) -> ibis.Value:
+        return _util.bind_one(t, self.value)
 
     def __repr__(self) -> str:
         return f"LiteralResolver({self.value!r})"
@@ -84,11 +79,11 @@ class StrResolver(ValueResolver):
 class FuncResolver(ValueResolver):
     def __init__(
         self,
-        func: Callable[[ibis.Table], ibis.Column],
+        func: Callable[[ibis.Table], ibis.Value],
     ) -> None:
         self.func = func
 
-    def __call__(self, t: ibis.Table) -> ibis.Column:
+    def __call__(self, t: ibis.Table) -> ibis.Value:
         return self.func(t)
 
     def __repr__(self):
@@ -164,7 +159,7 @@ def key_pair_resolvers(x) -> list[tuple[ValueResolver, ValueResolver]]:
     Given a spec or iterable of specs, return a list of KeyPairResolvers.
     """
     if (deferred_resolvers := _parse_and_of_equals(x)) is not None:
-        return deferred_resolvers
+        return deferred_resolvers  # ty:ignore[invalid-return-type]
     return [key_pair_resolver(spec) for spec in _util.promote_list(x)]
 
 
@@ -174,7 +169,7 @@ def _parse_and_of_equals(x) -> list[tuple[DeferredResolver, DeferredResolver]] |
         return None
     if variables_names(x) != {"left", "right"}:
         return None
-    resolver = _resolver(x)
+    resolver = _to_resolver(x)
     return list(_traverse_deferred_resolvers(resolver))
 
 
@@ -218,13 +213,20 @@ def _traverse_deferred_resolvers(
         )
 
 
-def _resolver(x: Any) -> Resolver | None:
-    """Get the resolver from an object, if it has one."""
+@runtime_checkable
+class HasResolver(Protocol):
+    _resolver: Resolver
+
+
+def _to_resolver(x: Resolver | HasResolver | Deferred) -> Resolver:
     if isinstance(x, Resolver):
         return x
-    if hasattr(x, "_resolver"):
+    if isinstance(x, HasResolver):
         return x._resolver
-    return None
+    raise TypeError(
+        "Expected a Resolver or something with `_resolver`,"
+        f" got {type(x).__name__} instead."
+    )
 
 
 def variables_names(deferred: Deferred | Resolver) -> set[str]:
@@ -252,7 +254,7 @@ def variables_names(deferred: Deferred | Resolver) -> set[str]:
     >>> sorted(variables_names(ibis._.foo + var("bar").baz.fill_null(8)))
     ['_', 'bar']
     """
-    resolver = _resolver(deferred)
+    resolver = _to_resolver(deferred)
     if not isinstance(resolver, Resolver):
         raise TypeError(
             f"Expected a Deferred or Resolver, got {type(deferred).__name__} instead."
