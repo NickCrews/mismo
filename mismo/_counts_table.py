@@ -7,7 +7,7 @@ import ibis
 from ibis import _
 from ibis.expr import types as ir
 
-from mismo.types._table_wrapper import TableWrapper
+from mismo.types._wrapper import TableWrapper
 
 if TYPE_CHECKING:
     import altair as alt

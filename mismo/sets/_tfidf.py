@@ -166,7 +166,7 @@ def add_array_value_counts(
     │ NULL                         │ NULL                             │
     └──────────────────────────────┴──────────────────────────────────┘
     """  # noqa: E501
-    t = t.mutate(__terms=_util.get_column(t, column))
+    t = t.mutate(__terms=_util.bind_one(t, column))
     normalized = (
         t.select("__terms")
         .distinct()

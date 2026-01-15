@@ -110,8 +110,8 @@ def array_filter_isin_other(
         The table with a new column named following `result_format` with the
         filtered array.
     """  # noqa E501
-    array_col = _util.get_column(t, array)
-    t = t.mutate(__array=array_col, __id=ibis.row_number())
+    array_val = _util.bind_one(t, array)
+    t = t.mutate(__array=array_val, __id=ibis.row_number())
     temp = t.select("__id", __unnested=_.__array.unnest())
     # When we re-.collect() items below, the order matters,
     # but the .filter() can mess up the order, so we need to
@@ -131,7 +131,7 @@ def array_filter_isin_other(
             [], _.__filtered
         )
     ).drop("__array")
-    result_name = result_format.format(name=array_col.get_name())
+    result_name = result_format.format(name=array_val.get_name())
     return re_joined.rename({result_name: "__filtered"})
 
 

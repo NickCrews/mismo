@@ -9,7 +9,7 @@ from ibis import _
 from ibis.expr import types as ir
 
 from mismo import _util
-from mismo.types._table_wrapper import TableWrapper
+from mismo.types._wrapper import TableWrapper
 
 T = TypeVar("T", bound=ir.Column)
 
@@ -52,9 +52,9 @@ class ColumnStats:
         self,
         table: ibis.Table,
         *,
-        column: str | ibis.Deferred | ibis.Column | None = None,
+        column: str | ibis.Deferred | ibis.Value | None = None,
         name_as: str | None = None,
-        default: Literal["1/N"] | int | float = "1/N",
+        default: Literal["1/N"] | int | float | ibis.Scalar = "1/N",
     ) -> ibis.Table:
         """Add frequency columns to the given table."""
         if name_as is None:
@@ -62,14 +62,14 @@ class ColumnStats:
         if column is None:
             column = self.name
 
+        default_resolved: ibis.Scalar
         if default == "1/N" or default == "1/n":
             n_total = table.count().as_scalar()
-            default = (1 / n_total).cast("float64")
+            default_resolved = (1 / n_total).cast("float64")
         elif isinstance(default, ibis.Scalar):
-            default = default.cast("float64")
+            default_resolved = default.cast("float64")  # ty:ignore[invalid-assignment]
         else:
-            default = ibis.literal(default, "float64")
-
+            default_resolved = ibis.literal(default, "float64")
         table_column = _util.bind_one(table, column)
 
         unique_name = _util.unique_name("join_key")
@@ -82,7 +82,7 @@ class ColumnStats:
             .as_table()
             .distinct()
             .anti_join(stats_raw, unique_name)
-            .mutate(default.name(name_as))
+            .mutate(default_resolved.name(name_as))
         )
         stats = ibis.union(stats_raw, filler)
         assert stats.columns == (unique_name, name_as)
@@ -93,6 +93,8 @@ class ColumnStats:
 
 
 class TermFrequencyModel:
+    columns: dict[str, ir.Column]
+
     def __init__(
         self,
         columns: ibis.Table
@@ -102,7 +104,7 @@ class TermFrequencyModel:
         /,
     ):
         if isinstance(columns, Mapping):
-            self.columns = columns
+            self.columns = dict(columns)
         elif isinstance(columns, ibis.Table):
             self.columns = {col: columns[col] for col in columns.columns}
         elif isinstance(columns, ibis.Column):

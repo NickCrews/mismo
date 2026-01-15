@@ -6,7 +6,7 @@ import ibis
 from ibis import _
 from ibis.expr import types as ir
 
-from mismo._util import get_column
+from mismo._util import bind_one
 from mismo.arrays import array_choice
 from mismo.linker import _common
 
@@ -79,8 +79,8 @@ class MinhashLshLinker(_common.Linker):
 
     def __call__(self, left: ir.Table, right: ir.Table) -> ir.Table:
         """Block two tables using Minhash LSH."""
-        left_terms = get_column(left, self.terms_column)
-        right_terms = get_column(right, self.terms_column)
+        left_terms = bind_one(left, self.terms_column)
+        right_terms = bind_one(right, self.terms_column)
         keys_name = self.keys_column.format(terms_column=left_terms.get_name())
         left = left.mutate(
             minhash_lsh_keys(

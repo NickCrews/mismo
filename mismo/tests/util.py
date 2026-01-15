@@ -4,6 +4,7 @@ from typing import Literal
 
 import ibis
 from ibis.expr import types as ir
+from ibis.tests.util import assert_equal as ibis_assert_equal
 import pandas as pd
 import pytest
 
@@ -45,6 +46,10 @@ def assert_tables_equal(
     left_records = [make_record_approx(record) for record in left_records]
     right_records = [make_record_approx(record) for record in right_records]
     assert left_records == right_records
+
+
+def assert_equal(left: ibis.Value, right: ibis.Value) -> None:
+    ibis_assert_equal(left, right)
 
 
 def make_record_approx(record: dict) -> dict:

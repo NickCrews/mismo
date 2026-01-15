@@ -89,13 +89,28 @@ def cases(
         return builder.else_(else_).end()
 
 
-@overload
-def bind(t: ibis.Table, ref: Any, /) -> tuple[ibis.Value, ...]: ...
-@overload
-def bind(t: ibis.Deferred, ref: Any, /) -> tuple[ibis.Deferred]: ...
+IntoValue = str | int | ibis.Deferred | ibis.Value | Callable[[ibis.Table], ibis.Value]
 
 
-def bind(t: ibis.Deferred | ibis.Table, ref: Any) -> tuple[ibis.Value, ...]:
+@overload
+def bind(
+    t: ibis.Table,
+    ref: IntoValue | Iterable[IntoValue] | Mapping[str, IntoValue],
+    /,
+) -> tuple[ibis.Value, ...]: ...
+@overload
+def bind(
+    t: ibis.Deferred,
+    ref: IntoValue | Iterable[IntoValue] | Mapping[str, IntoValue],
+    /,
+) -> tuple[ibis.Deferred]: ...
+
+
+def bind(
+    t: ibis.Deferred | ibis.Table,
+    ref: IntoValue | Iterable[IntoValue] | Mapping[str, IntoValue],
+    /,
+) -> tuple[ibis.Value, ...]:
     """Reference into a table to get Columns and Scalars.
 
     ibis._.bind(ref) does not work because it returns another Deferred.
@@ -110,47 +125,19 @@ def bind(t: ibis.Deferred | ibis.Table, ref: Any) -> tuple[ibis.Value, ...]:
 
 
 @overload
-def bind_one(t: ibis.Table, ref: Any, /) -> ibis.Value: ...
+def bind_one(t: ibis.Table, ref: IntoValue, /) -> ibis.Value: ...
 @overload
-def bind_one(t: ibis.Deferred, ref: Any, /) -> ibis.Deferred: ...
+def bind_one(t: ibis.Deferred, ref: IntoValue, /) -> ibis.Deferred: ...
 
 
-def bind_one(t: ibis.Deferred | ibis.Table, ref: Any) -> ibis.Value | ibis.Deferred:
+def bind_one(
+    t: ibis.Deferred | ibis.Table, ref: IntoValue, /
+) -> ibis.Value | ibis.Deferred:
     """Like bind(), but ensure that exactly one value is returned."""
     vals = bind(t, ref)
     if len(vals) != 1:
         raise ValueError(f"Expected 1 value, got {len(vals)} from {ref}")
     return vals[0]
-
-
-def get_column(
-    t: ir.Table, ref: Any, *, on_many: Literal["error", "struct"] = "error"
-) -> ir.Column:
-    """Get a column from a table using some sort of reference to the column.
-
-    ref can be a string, a Deferred, a callable, an ibis selector, etc.
-
-    Parameters
-    ----------
-    t :
-        The table
-    ref :
-        The reference to the column
-    on_many :
-        What to do if ref returns multiple columns. If "error", raise an error.
-        If "struct", return a StructColumn containing all the columns.
-    """
-    cols = bind(t, ref)
-    if isinstance(t, ibis.Deferred):
-        # This is by definition a single column
-        return cols[0]
-    if len(cols) != 1:
-        if on_many == "error":
-            raise ValueError(f"Expected 1 column, got {len(cols)}")
-        if on_many == "struct":
-            return ibis.struct({c.get_name(): c for c in cols})
-        raise ValueError(f"on_many must be 'error' or 'struct'. Got {on_many}")
-    return cols[0]
 
 
 def ensure_ibis(
