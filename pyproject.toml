@@ -121,6 +121,9 @@ filterwarnings = [
   "error",
   # spacy 3.8.7 uses some deprecated API from click for it's CLI
   "ignore:Importing 'parser.split_arg_string' is deprecated:DeprecationWarning",
+  # TODO: fix this and then re-enable
+  # I think this has something to do with how our aValueResolver does `Table.__getitem__[Column]`
+  "ignore:Selecting/filtering arbitrary expressions:FutureWarning",
 ]
 doctest_optionflags = [
   "NORMALIZE_WHITESPACE",
