@@ -63,7 +63,8 @@ class Diff:
         # before and after may have different schemas.
 
         # only keep updates that actually change something
-        updates = updates.filter(updates.filters.any_changed())
+        any_changed = ibis.or_(*[updates[col].is_changed() for col in updates.columns])
+        updates = updates.filter(any_changed)
 
         obj = super().__new__(cls)
         obj.__init__()

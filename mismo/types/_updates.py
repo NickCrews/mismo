@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Literal, Protocol
+from typing import TYPE_CHECKING, Any, Literal, Protocol
 
 import ibis
 from ibis.expr import datatypes as dt
@@ -12,90 +12,9 @@ from mismo.types._wrapper import StructWrapper, TableWrapper
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-
-class Filters:
-    """A simple namespace for filter functions."""
-
-    @staticmethod
-    def all_changed(
-        subset: str | Iterable[str] | None = None, /
-    ) -> Callable[[ir.Table], Literal[True] | ir.BooleanValue]:
-        """
-        Make a Updates filter function that gives rows where all columns are different.
-
-        Parameters
-        ----------
-        subset : str | Iterable[str] | None
-            The columns to consider.
-
-            If None, and the schemas of the before and after tables are different,
-            then we return True (ie, keep all rows), because by definition
-            every row is different, since the schemas are different.
-
-            If None, and the schemas of the before and after tables are the same,
-            then we consider all columns in both before and after tables.
-
-            If you joined on an eg id column, you almost definitely want to exclude it here.
-
-        Examples
-        --------
-        >>> u = Updates.from_tables(before, after, join_on="id")  # doctest: +SKIP
-        >>> u.filter(u.filters.all_changed(["name", "age"]))  # doctest: +SKIP
-        >>> u.filter(
-        ...     u.filters.all_changed([c for c in u.columns if c != "my_id"])
-        ... )  # doctest: +SKIP
-        """  # noqa: E501
-
-        def filter_func(table: ir.Table, /) -> ir.BooleanValue | Literal[True]:
-            nonlocal subset
-            if subset is None:
-                u = Updates(table, check_schemas="lax")
-                if u.before().schema() != u.after().schema():
-                    return True
-                subset = table.columns
-            if isinstance(subset, str):
-                subset = [subset]
-            return ibis.and_(*(~identical_to(table[col]) for col in subset))
-
-        return filter_func
-
-    @staticmethod
-    def any_changed(
-        subset: str | Iterable[str] | None = None, /
-    ) -> Callable[[ir.Table], ir.BooleanValue | Literal[True]]:
-        """Make a Updates filter function that gives rows where any column's `after` is different
-        from its `before`.
-
-        Parameters
-        ----------
-        subset : str | Iterable[str] | None
-            The columns to consider.
-
-            If None, and the schemas of the before and after tables are different,
-            then we return True (ie, keep all rows), because by definition
-            every row is different, since the schemas are different.
-
-            If None, and the schemas of the before and after tables are the same,
-            then we consider all columns in both before and after tables.
-
-        Examples
-        --------
-        >>> u = Updates.from_tables(before, after, join_on="id")  # doctest: +SKIP
-        >>> u.filter(u.filters.any_changed(["name", "age"]))  # doctest: +SKIP
-        """
-
-        def filter_func(table: ir.Table, /) -> ir.BooleanValue | Literal[True]:
-            nonlocal subset
-            if subset is None:
-                u = Updates(table, check_schemas="lax")
-                if u.before().schema() != u.after().schema():
-                    return True
-                subset = table.columns
-            if isinstance(subset, str):
-                subset = [subset]
-            return ibis.or_(*(~identical_to(table[col]) for col in subset))
-
-        return filter_func
+ValueChangeType = Literal[
+    "remained_null", "became_null", "became_nonnull", "changed", "unchanged"
+]
 
 
 class UpdatedColumn(StructWrapper):
@@ -115,18 +34,67 @@ class UpdatedColumn(StructWrapper):
 
     def __init__(self, x: ir.StructValue, /) -> None:
         super().__init__(x)
-        if "before" not in x.type().names:
+        if "before" not in x.type().names:  # ty:ignore[unresolved-attribute]
             object.__setattr__(self, "before", None)
-        if "after" not in x.type().names:
+        if "after" not in x.type().names:  # ty:ignore[unresolved-attribute]
             object.__setattr__(self, "after", None)
+        if self.before is None and self.after is None:
+            raise ValueError(
+                "UpdatedColumn must have at least one of 'before' or 'after'"
+            )
 
-    def is_changed(self) -> ir.BooleanValue | Literal[False]:
+    def is_changed(self) -> ir.BooleanValue | Literal[True]:
         """Is `before` different from `after`?
 
         If this column does not have both before and after fields, returns False,
         because that implies the schema has changed.
         """
-        return identical_to(self)
+        return is_changed(self)
+
+    def schema_change(self) -> Literal["added", "removed", "type_changed", "unchanged"]:
+        """Was this column added, removed, have its type changed, or unchanged in the update?"""  # noqa: E501
+        if self.before is None and self.after is not None:
+            return "added"
+        elif self.before is not None and self.after is None:
+            return "removed"
+        else:
+            if self.before.type() != self.after.type():  # ty:ignore[possibly-missing-attribute]
+                return "type_changed"
+            else:
+                return "unchanged"
+
+    def value_change(self) -> ibis.StringValue:
+        """How did the value change?
+
+        Returns one of:
+
+        - "remained_null": both before and after are null
+        - "became_null": before was not null, after is null
+        - "became_nonnull": before was null, after is not null
+        - "changed": both before and after are not null, but different
+        - "unchanged": both before and after are identical
+
+        Throws
+        ------
+        ValueError
+            If the column was added or removed (ie does not have both before and after fields).
+            Check this first with `schema_change()`.
+        """  # noqa: E501
+        if self.schema_change() in ("added", "removed"):
+            raise ValueError(
+                "Cannot determine value change for columns that were added or removed"
+            )
+        before_is_null = self.before.isnull()
+        after_is_null = self.after.isnull()
+        return (
+            ibis.cases(
+                (before_is_null & after_is_null, "remained_null"),
+                (~before_is_null & after_is_null, "became_null"),
+                (before_is_null & ~after_is_null, "became_nonnull"),
+                (identical_to(self), "unchanged"),
+                else_="changed",
+            ),
+        )
 
 
 class Updates(TableWrapper):
@@ -141,15 +109,6 @@ class Updates(TableWrapper):
     If a column only has an 'after' field, it means this column was added.
     If a column has both 'before' and 'after' fields, it means this column was present in both tables.
     """  # noqa: E501
-
-    filters = Filters
-    """A set of filters for convenience.
-    
-    Examples
-    --------
-    >>> u = Updates.from_tables(before, after, join_on="id")  # doctest: +SKIP
-    >>> u.filter(u.filters.all_changed(["name", "age"]))  # doctest: +SKIP
-    """
 
     def __init__(
         self,
@@ -407,3 +366,15 @@ def identical_to(val: HasBeforeAfter, /) -> ibis.ir.BooleanValue | Literal[False
     if (before := val.before) is None or (after := val.after) is None:
         return False
     return before.identical_to(after)
+
+
+def is_changed(val: HasBeforeAfter, /) -> ir.BooleanValue | Literal[True]:
+    """Is `before` different from `after`?
+
+    If this column does not have both before and after fields, returns False,
+    because that implies the schema has changed.
+    """
+    is_ident = identical_to(val)
+    if is_ident is False:
+        return True
+    return ~is_ident

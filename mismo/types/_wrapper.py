@@ -46,7 +46,5 @@ class StructWrapper(ibis.ir.StructValue):
     def __init__(self, wrapped: ibis.ir.StructValue, /) -> None:
         object.__setattr__(self, "__wrapped__", wrapped)
 
-    def __getattribute__(self, key: str) -> ibis.Value:
-        if key == "__wrapped__":
-            return object.__getattribute__(self, key)
-        return getattr(self.__wrapped__, key)
+    def __getattr__(self, name: str, /) -> ibis.Value:
+        return getattr(self.__wrapped__, name)

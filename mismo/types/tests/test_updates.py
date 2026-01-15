@@ -45,31 +45,20 @@ def test_from_tables_no_join(table_factory):
 
 
 def test_any_different(updates: Updates):
-    actual = updates.filter(updates.filters.any_changed())
+    # actual = updates.filter(updates.filters.any_changed())
+    any_changed = ibis.or_(*[updates[col].is_changed() for col in updates.columns])
+    actual = updates.filter(any_changed)
     actual_ids = set(actual.after().id.execute())
     expected_ids = {3, 4}
     assert actual_ids == expected_ids
 
 
-def test_any_different_subset(updates: Updates):
-    actual = updates.filter(updates.filters.any_changed(["name"]))
-    actual_ids = set(actual.after().id.execute())
-    expected_ids = {4}
-    assert actual_ids == expected_ids
-
-
 def test_all_different(updates: Updates):
-    actual = updates.filter(updates.filters.all_changed())
+    all_different = (updates[col].is_changed() for col in updates.columns)
+    actual = updates.filter(*all_different)
     actual_ids = set(actual.after().id.execute())
     # the ids are the same lol
     expected_ids = set()
-    assert actual_ids == expected_ids
-
-
-def test_all_different_subset(updates: Updates):
-    actual = updates.filter(updates.filters.all_changed(["name", "age"]))
-    actual_ids = set(actual.after().id.execute())
-    expected_ids = {4}
     assert actual_ids == expected_ids
 
 
