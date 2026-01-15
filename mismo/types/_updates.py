@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable, Literal
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Literal, Protocol
 
 import ibis
 from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 
-from mismo import _util, joins
+from mismo import _typing, _util, joins
 from mismo.types._table_wrapper import TableWrapper
 
 if TYPE_CHECKING:
@@ -17,7 +17,9 @@ class Filters:
     """A simple namespace for filter functions."""
 
     @staticmethod
-    def all_different(subset: Iterable[str] | None = None):
+    def all_different(
+        subset: Iterable[str] | None = None, /
+    ) -> Callable[[ir.Table], Literal[True] | ir.BooleanValue]:
         """
         Make a Updates filter function that gives rows where all columns are different.
 
@@ -44,7 +46,7 @@ class Filters:
         ... )  # doctest: +SKIP
         """  # noqa: E501
 
-        def filter_func(table: ir.Table):
+        def filter_func(table: ir.Table, /) -> ir.BooleanValue | Literal[True]:
             nonlocal subset
             if subset is None:
                 u = Updates(table, check_schemas="lax")
@@ -56,7 +58,9 @@ class Filters:
         return filter_func
 
     @staticmethod
-    def any_different(subset: Iterable[str] | None = None):
+    def any_different(
+        subset: Iterable[str] | None = None, /
+    ) -> Callable[[ir.Table], ir.BooleanValue | Literal[True]]:
         """Make a Updates filter function that gives rows where any column is different.
 
         Parameters
@@ -77,7 +81,7 @@ class Filters:
         >>> u.filter(u.filters.any_different(["name", "age"]))  # doctest: +SKIP
         """
 
-        def filter_func(table: ir.Table):
+        def filter_func(table: ir.Table, /) -> ir.BooleanValue | Literal[True]:
             nonlocal subset
             if subset is None:
                 u = Updates(table, check_schemas="lax")
@@ -280,17 +284,17 @@ class Updates(TableWrapper):
         """The table after the changes."""
         return self.select(**self.after_values())
 
-    def is_changed(self, column: str, /) -> ibis.ir.BooleanColumn:
+    def is_changed(self, column: str, /) -> ibis.ir.BooleanValue:
         """Is column.before different from column.after? Never returns NULL."""
-        resolved_col = _util.bind_one(self._t, column)
+        resolved_col: HasBeforeAfter = _util.bind_one(self._t, column)
         return is_changed(resolved_col)
 
-    def filter(self, *args, **kwargs):
+    def filter(self, *args, **kwargs) -> _typing.Self:
         return self.__class__(
             self._t.filter(*args, **kwargs), check_schemas=self.check_schemas
         )
 
-    def cache(self):
+    def cache(self) -> _typing.Self:
         return self.__class__(self._t.cache(), check_schemas=self.check_schemas)
 
     def apply_to(
@@ -341,16 +345,21 @@ class Updates(TableWrapper):
                     f"default value {already_there} already exist in the input table"
                 )
 
-            t = t.mutate(defaults)
+            t = t.mutate(defaults)  # ty:ignore[invalid-argument-type]
 
         t = t.select(self.after().columns)
         t = t.union(self.after(), distinct=False)
         return t
 
 
-def is_changed(val: ibis.Value, /) -> ibis.ir.BooleanColumn:
+class HasBeforeAfter(Protocol):
+    before: ibis.Value
+    after: ibis.Value
+
+
+def is_changed(val: HasBeforeAfter, /) -> ibis.ir.BooleanValue:
     """Is val.before different from val.after? Never returns NULL."""
     return ibis.or_(
-        (val.before != val.after).fill_null(False),
+        (val.before != val.after).fill_null(False),  # ty:ignore[invalid-argument-type]
         val.before.isnull() != val.after.isnull(),
     )
