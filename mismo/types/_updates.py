@@ -86,15 +86,13 @@ class UpdatedColumn(StructWrapper):
             )
         before_is_null = self.before.isnull()
         after_is_null = self.after.isnull()
-        return (
-            ibis.cases(
-                (before_is_null & after_is_null, "remained_null"),
-                (~before_is_null & after_is_null, "became_null"),
-                (before_is_null & ~after_is_null, "became_nonnull"),
-                (identical_to(self), "unchanged"),
-                else_="changed",
-            ),
-        )
+        return ibis.cases(
+            (before_is_null & after_is_null, "remained_null"),
+            (~before_is_null & after_is_null, "became_null"),
+            (before_is_null & ~after_is_null, "became_nonnull"),
+            (identical_to(self), "unchanged"),
+            else_="changed",
+        ).name("value_change")
 
 
 class Updates(TableWrapper):
