@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 import dataclasses
 import math
-from typing import Callable
+from typing import Callable, Literal, TypedDict
 
 import ibis
-from ibis import Deferred
 from ibis.expr import types as ir
 
 from mismo import _util, linkage, types
@@ -55,6 +55,61 @@ def distance_km(
     R_earth = 6371.0  # km
     # parens for optimization, to make sure the division happens on the python side
     return (R_earth * 2) * a.sqrt().asin()
+
+
+Coordinates = Mapping[Literal["lat", "lon"], ir.FloatingColumn]
+CoordinatesMapping = Mapping[Literal["lat", "lon"], _util.IntoValue]
+
+
+class CoordinatesDict(TypedDict):
+    lat: ir.FloatingColumn
+    lon: ir.FloatingColumn
+
+
+IntoCoordinates = (
+    str
+    | ibis.Deferred
+    | Coordinates
+    | CoordinatesMapping
+    | Callable[[ir.Table], "IntoCoordinates"]
+)
+
+
+def default_resolver() -> CoordinatesMapping:
+    return {"lat": "lat", "lon": "lon"}
+
+
+def get_coordinate_pair(
+    table: ir.Table,
+    mapping: IntoCoordinates,
+) -> CoordinatesDict:
+    """Get the coordinates from a table.
+
+    Parameters
+    ----------
+    table
+        The table to get the coordinates from.
+    mapping
+        A mapping of column names to use for the coordinates,
+        or a function that takes a table and returns the coordinate pair.
+
+    Returns
+    -------
+    coordinates
+        The coordinates.
+    """
+    if callable(mapping):
+        called = mapping(table)
+        return get_coordinate_pair(table, called)
+
+    if isinstance(mapping, str) or isinstance(mapping, ibis.Deferred):
+        coords_col = _util.bind_one(table, mapping)
+        lat: ir.FloatingColumn = coords_col["lat"]  # ty:ignore[not-subscriptable]
+        lon: ir.FloatingColumn = coords_col["lon"]  # ty:ignore[not-subscriptable]
+    else:
+        lat: ir.FloatingColumn = _util.bind_one(table, mapping["lat"])  # ty:ignore[invalid-assignment]
+        lon: ir.FloatingColumn = _util.bind_one(table, mapping["lon"])  # ty:ignore[invalid-assignment]
+    return CoordinatesDict(lat=lat, lon=lon)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -108,9 +163,8 @@ class CoordinateLinker:
     ... )
     >>> linker = CoordinateLinker(
     ...     distance_km=1,
-    ...     left_coord="latlon",
-    ...     right_lat="latitude",
-    ...     right_lon="longitude",
+    ...     left_resolver="latlon",
+    ...     right_resolver={"lat": "latitude", "lon": "longitude"},
     ... )
     >>> linker(left, right).links
     ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
@@ -130,24 +184,6 @@ class CoordinateLinker:
     """
     The (approx) max distance in kilometers that two coords will be blocked together.
     """
-    coord: str | Deferred | Callable[[ir.Table], ir.StructColumn] | None = None
-    """The column in both tables containing the `struct<lat: float, lon: float>` coordinates."""  # noqa: E501
-    lat: str | Deferred | Callable[[ir.Table], ir.FloatingColumn] | None = None
-    """The column in both tables containing the latitude coordinates."""
-    lon: str | Deferred | Callable[[ir.Table], ir.FloatingColumn] | None = None
-    """The column in both tables containing the longitude coordinates."""
-    left_coord: str | Deferred | Callable[[ir.Table], ir.StructColumn] | None = None
-    """The column in the left tables containing the `struct<lat: float, lon: float>` coordinates."""  # noqa: E501
-    right_coord: str | Deferred | Callable[[ir.Table], ir.StructColumn] | None = None
-    """The column in the right tables containing the `struct<lat: float, lon: float>` coordinates."""  # noqa: E501
-    left_lat: str | Deferred | Callable[[ir.Table], ir.FloatingColumn] | None = None
-    """The column in the left tables containing the latitude coordinates."""
-    left_lon: str | Deferred | Callable[[ir.Table], ir.FloatingColumn] | None = None
-    """The column in the left tables containing the longitude coordinates."""
-    right_lat: str | Deferred | Callable[[ir.Table], ir.FloatingColumn] | None = None
-    """The column in the right tables containing the latitude coordinates."""
-    right_lon: str | Deferred | Callable[[ir.Table], ir.FloatingColumn] | None = None
-    """The column in the right tables containing the longitude coordinates."""
     max_pairs: int | None = None
     """The maximum number of pairs that any single block of coordinates can contain.
     
@@ -155,102 +191,59 @@ class CoordinateLinker:
     naively result in ~(1000 * 1000) / 2 = 500_000 pairs.
     If we set max_pairs to less than this, this group of records will be skipped.
     """
+    left_resolver: IntoCoordinates = dataclasses.field(default_factory=default_resolver)
+    """A specification of how to get the lat and lon values from the left table.
+    
+    Can be:
+    - A `str` or `ibis.Deferred`, which are assumed to point to a column
+      containing a struct with `lat` and `lon` fields.
+    - A `Mapping` of `{"lat": ..., "lon": ...}` where the values are
+      column names or `ibis.Deferred` expressions.
+    - A callable that takes a table and returns one of the above.
+    """
+    right_resolver: IntoCoordinates = dataclasses.field(
+        default_factory=default_resolver
+    )
+    """See `left_resolver`, but for the right table."""
 
-    def __post_init__(self):
-        ok_subsets = [
-            {"coord"},
-            {"left_coord", "right_coord"},
-            {"left_coord", "right_lat", "right_lon"},
-            {"left_lat", "left_lon", "right_coord"},
-            {"left_lat", "left_lon", "right_lat", "right_lon"},
-            {"lat", "lon"},
-            {"lat", "right_lat", "right_lon"},
-            {"left_lat", "left_lon", "lon"},
-        ]
-        options = [
-            "coord",
-            "left_coord",
-            "right_coord",
-            "lat",
-            "lon",
-            "left_lat",
-            "left_lon",
-            "right_lat",
-            "right_lon",
-        ]
-        present = {k for k in options if getattr(self, k) is not None}
-        if present not in ok_subsets:
-            ok_subsets_str = "\n".join("- " + str(s) for s in ok_subsets)
-            raise ValueError(
-                "You must specify exactly one of the following subsets of options:\n"
-                + ok_subsets_str
-                + f"\nYou provided:\n{present}"
-            )
-
-    def _left_coord(
-        self, left: ir.Table
-    ) -> tuple[ir.FloatingColumn, ir.FloatingColumn]:
-        if self.coord is not None:
-            left_coord = _util.get_column(left, self.coord, on_many="struct")
-            return (left_coord.lat, left_coord.lon)
-        if self.left_coord is not None:
-            left_coord = _util.get_column(left, self.left_coord, on_many="struct")
-            left_lat = left_coord.lat
-            left_lon = left_coord.lon
-        if self.lat is not None:
-            left_lat = _util.get_column(left, self.lat)
-        if self.lon is not None:
-            left_lon = _util.get_column(left, self.lon)
-        if self.left_lat is not None:
-            left_lat = _util.get_column(left, self.left_lat)
-        if self.left_lon is not None:
-            left_lon = _util.get_column(left, self.left_lon)
-        return left_lat, left_lon
-
-    def _right_coord(
-        self, right: ir.Table
-    ) -> tuple[ir.FloatingColumn, ir.FloatingColumn]:
-        if self.coord is not None:
-            right_coord = _util.get_column(right, self.coord, on_many="struct")
-            return (right_coord.lat, right_coord.lon)
-        if self.right_coord is not None:
-            right_coord = _util.get_column(right, self.right_coord, on_many="struct")
-            right_lat = right_coord.lat
-            right_lon = right_coord.lon
-        if self.lat is not None:
-            right_lat = _util.get_column(right, self.lat)
-        if self.lon is not None:
-            right_lon = _util.get_column(right, self.lon)
-        if self.right_lat is not None:
-            right_lat = _util.get_column(right, self.right_lat)
-        if self.right_lon is not None:
-            right_lon = _util.get_column(right, self.right_lon)
-        return right_lat, right_lon
-
-    def _join_keys(
-        self, left: ir.Table | ibis.Deferred, right: ir.Table | ibis.Deferred
-    ) -> tuple[tuple[ir.Column, ir.Column], tuple[ir.Column, ir.Column]]:
-        left_lat, left_lon = self._left_coord(left)
-        right_lat, right_lon = self._right_coord(right)
+    def hash_coord(
+        self, coord: CoordinatesDict, /
+    ) -> tuple[ir.IntegerValue, ir.IntegerValue]:
+        lat, lon = coord["lat"], coord["lon"]
         # We have to use a grid size of ~3x the precision to avoid
         # two points falling right on either side of a grid cell boundary
         grid_size = self.distance_km * 3
-        left_lat_key, left_lon_key = _bin_lat_lon(left_lat, left_lon, grid_size)
-        right_lat_key, right_lon_key = _bin_lat_lon(right_lat, right_lon, grid_size)
-        return (
-            left_lat_key.name("lat_binned"),
-            right_lat_key.name("lat_binned"),
-        ), (
-            left_lon_key.name("lon_binned"),
-            right_lon_key.name("lon_binned"),
-        )
+        lat_key, lon_key = _bin_lat_lon(lat, lon, grid_size)
+        return lat_key, lon_key
+
+    def hash_left(self, t: ir.Table, /) -> tuple[ir.IntegerValue, ir.IntegerValue]:
+        coords = get_coordinate_pair(t, self.left_resolver)
+        return self.hash_coord(coords)
+
+    def hash_right(self, t: ir.Table, /) -> tuple[ir.IntegerValue, ir.IntegerValue]:
+        coords = get_coordinate_pair(t, self.right_resolver)
+        return self.hash_coord(coords)
 
     @property
     def _key_linker(self) -> KeyLinker:
         import mismo
 
-        lat_key, lon_key = self._join_keys(ibis._, ibis._)
-        return mismo.KeyLinker([lat_key, lon_key], max_pairs=self.max_pairs)
+        def lat_key_left(t: ir.Table) -> ir.IntegerValue:
+            return self.hash_left(t)[0]
+
+        def lon_key_left(t: ir.Table) -> ir.IntegerValue:
+            return self.hash_left(t)[1]
+
+        def lat_key_right(t: ir.Table) -> ir.IntegerValue:
+            return self.hash_right(t)[0]
+
+        def lon_key_right(t: ir.Table) -> ir.IntegerValue:
+            return self.hash_right(t)[1]
+
+        return mismo.KeyLinker(
+            [(lat_key_left, lat_key_right), (lon_key_left, lon_key_right)],
+            max_pairs=self.max_pairs,
+        )
 
     def __join_condition__(self, left: ir.Table, right: ir.Table) -> ir.BooleanValue:
         return self._key_linker.__join_condition__(left, right)

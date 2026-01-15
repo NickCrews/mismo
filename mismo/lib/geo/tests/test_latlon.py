@@ -52,16 +52,18 @@ def test_distance_km(lat1, lon1, lat2, lon2, expected):
 @pytest.mark.parametrize(
     "kwargs",
     [
-        {"coord": "coord"},
-        {"left_coord": "coord", "right_coord": _.coord},
-        {"left_coord": "coord", "right_lat": _.coord.lat, "right_lon": _.coord.lon},
-        {"lat": _.coord.lat, "lon": _.coord.lon},
-        {
-            "left_lat": _.coord.lat,
-            "left_lon": _.coord.lon,
-            "right_lat": _.coord.lat,
-            "right_lon": _.coord.lon,
-        },
+        pytest.param(
+            {"right_resolver": {"lat": _.coord.lat, "lon": _.coord.lon}},
+            id="dict_of_deferred",
+        ),
+        pytest.param(
+            {"right_resolver": lambda t: {"lat": t.coord.lat, "lon": t.coord.lon}},
+            id="callable",
+        ),
+        pytest.param(
+            {"right_resolver": "coord"},
+            id="coord_name",
+        ),
     ],
 )
 def test_coordinate_blocker(table_factory, coord1, coord2, km, expected, kwargs):
@@ -69,7 +71,8 @@ def test_coordinate_blocker(table_factory, coord1, coord2, km, expected, kwargs)
     lat2, lon2 = coord2
     t1 = table_factory(
         {
-            "coord": [{"lat": lat1, "lon": lon1}],
+            "lat": [lat1],
+            "lon": [lon1],
             "record_id": [42],
         }
     )
@@ -86,19 +89,3 @@ def test_coordinate_blocker(table_factory, coord1, coord2, km, expected, kwargs)
         assert n_blocked == 1
     else:
         assert n_blocked == 0
-
-
-@pytest.mark.parametrize(
-    "kwarg_names",
-    [
-        {"coord", "left_coord"},
-        {"coord", "lat"},
-        {"coord", "lat", "lon"},
-        {"lat", "right_lat"},
-        {"left_coord", "right_coord", "left_lat"},
-    ],
-)
-def test_coordinate_blocker_error(kwarg_names):
-    kwargs = {name: "x" for name in kwarg_names}
-    with pytest.raises(ValueError):
-        CoordinateLinker(distance_km=1, **kwargs)
