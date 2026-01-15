@@ -402,7 +402,13 @@ class LinkCountsTable(TableWrapper):
                 + " links."
             ),
         )
-        scrubber_selection = alt.selection_interval(encodings=["x"], empty=True)
+        scrubber_selection = alt.selection_interval(
+            encodings=["x"],
+            empty=True,
+            # Ensure a unique name to avoid conflicts with other LinkCountsTable charts.
+            # https://github.com/vega/altair/issues/3891
+            name=_util.unique_name(),
+        )
         width = 800
         zoomin = (
             alt.Chart(t, width=width)
