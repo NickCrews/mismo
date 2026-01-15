@@ -7,7 +7,7 @@ from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 
 from mismo import _typing, _util, joins
-from mismo.types._table_wrapper import TableWrapper
+from mismo.types._wrapper import StructWrapper, TableWrapper
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -17,18 +17,18 @@ class Filters:
     """A simple namespace for filter functions."""
 
     @staticmethod
-    def all_different(
-        subset: Iterable[str] | None = None, /
+    def all_changed(
+        subset: str | Iterable[str] | None = None, /
     ) -> Callable[[ir.Table], Literal[True] | ir.BooleanValue]:
         """
         Make a Updates filter function that gives rows where all columns are different.
 
         Parameters
         ----------
-        subset : Iterable[str] | None
+        subset : str | Iterable[str] | None
             The columns to consider.
 
-            If None, and the schemas of the before and after tables are dufferent,
+            If None, and the schemas of the before and after tables are different,
             then we return True (ie, keep all rows), because by definition
             every row is different, since the schemas are different.
 
@@ -40,9 +40,9 @@ class Filters:
         Examples
         --------
         >>> u = Updates.from_tables(before, after, join_on="id")  # doctest: +SKIP
-        >>> u.filter(u.filters.all_different(["name", "age"]))  # doctest: +SKIP
+        >>> u.filter(u.filters.all_changed(["name", "age"]))  # doctest: +SKIP
         >>> u.filter(
-        ...     u.filters.all_different([c for c in u.columns if c != "my_id"])
+        ...     u.filters.all_changed([c for c in u.columns if c != "my_id"])
         ... )  # doctest: +SKIP
         """  # noqa: E501
 
@@ -53,22 +53,25 @@ class Filters:
                 if u.before().schema() != u.after().schema():
                     return True
                 subset = table.columns
-            return ibis.and_(*(is_changed(table[col]) for col in subset))
+            if isinstance(subset, str):
+                subset = [subset]
+            return ibis.and_(*(~identical_to(table[col]) for col in subset))
 
         return filter_func
 
     @staticmethod
-    def any_different(
-        subset: Iterable[str] | None = None, /
+    def any_changed(
+        subset: str | Iterable[str] | None = None, /
     ) -> Callable[[ir.Table], ir.BooleanValue | Literal[True]]:
-        """Make a Updates filter function that gives rows where any column is different.
+        """Make a Updates filter function that gives rows where any column's `after` is different
+        from its `before`.
 
         Parameters
         ----------
-        subset : Iterable[str] | None
+        subset : str | Iterable[str] | None
             The columns to consider.
 
-            If None, and the schemas of the before and after tables are dufferent,
+            If None, and the schemas of the before and after tables are different,
             then we return True (ie, keep all rows), because by definition
             every row is different, since the schemas are different.
 
@@ -78,7 +81,7 @@ class Filters:
         Examples
         --------
         >>> u = Updates.from_tables(before, after, join_on="id")  # doctest: +SKIP
-        >>> u.filter(u.filters.any_different(["name", "age"]))  # doctest: +SKIP
+        >>> u.filter(u.filters.any_changed(["name", "age"]))  # doctest: +SKIP
         """
 
         def filter_func(table: ir.Table, /) -> ir.BooleanValue | Literal[True]:
@@ -88,9 +91,42 @@ class Filters:
                 if u.before().schema() != u.after().schema():
                     return True
                 subset = table.columns
-            return ibis.or_(*(is_changed(table[col]) for col in subset))
+            if isinstance(subset, str):
+                subset = [subset]
+            return ibis.or_(*(~identical_to(table[col]) for col in subset))
 
         return filter_func
+
+
+class UpdatedColumn(StructWrapper):
+    """A column representing how a single value was updated.
+
+    This has at least one of the following fields:
+
+    - `before`: The value before the update.
+    - `after`: The value after the update.
+    """
+
+    before: ir.Value | None
+    """The value before the update."""
+
+    after: ir.Value | None
+    """The value after the update."""
+
+    def __init__(self, x: ir.StructValue, /) -> None:
+        super().__init__(x)
+        if "before" not in x.type().names:
+            object.__setattr__(self, "before", None)
+        if "after" not in x.type().names:
+            object.__setattr__(self, "after", None)
+
+    def is_changed(self) -> ir.BooleanValue | Literal[False]:
+        """Is `before` different from `after`?
+
+        If this column does not have both before and after fields, returns False,
+        because that implies the schema has changed.
+        """
+        return identical_to(self)
 
 
 class Updates(TableWrapper):
@@ -112,7 +148,7 @@ class Updates(TableWrapper):
     Examples
     --------
     >>> u = Updates.from_tables(before, after, join_on="id")  # doctest: +SKIP
-    >>> u.filter(u.filters.all_different(["name", "age"]))  # doctest: +SKIP
+    >>> u.filter(u.filters.all_changed(["name", "age"]))  # doctest: +SKIP
     """
 
     def __init__(
@@ -168,6 +204,18 @@ class Updates(TableWrapper):
 
         object.__setattr__(self, "_check_schemas", check_schemas)
         super().__init__(diff_table)
+
+    def __getattr__(self, name: str) -> UpdatedColumn:
+        raw = super().__getattr__(name)
+        if name in self.__wrapped__.columns:
+            return UpdatedColumn(raw)
+        return raw
+
+    def __getitem__(self, name: str) -> UpdatedColumn:
+        raw = super().__getitem__(name)
+        if name in self.__wrapped__.columns:
+            return UpdatedColumn(raw)
+        return raw
 
     @property
     def check_schemas(self) -> Literal["exactly", "names", "lax"]:
@@ -284,18 +332,15 @@ class Updates(TableWrapper):
         """The table after the changes."""
         return self.select(**self.after_values())
 
-    def is_changed(self, column: str, /) -> ibis.ir.BooleanValue:
-        """Is column.before different from column.after? Never returns NULL."""
-        resolved_col: HasBeforeAfter = _util.bind_one(self._t, column)
-        return is_changed(resolved_col)
-
     def filter(self, *args, **kwargs) -> _typing.Self:
         return self.__class__(
-            self._t.filter(*args, **kwargs), check_schemas=self.check_schemas
+            self.__wrapped__.filter(*args, **kwargs), check_schemas=self.check_schemas
         )
 
     def cache(self) -> _typing.Self:
-        return self.__class__(self._t.cache(), check_schemas=self.check_schemas)
+        return self.__class__(
+            self.__wrapped__.cache(), check_schemas=self.check_schemas
+        )
 
     def apply_to(
         self,
@@ -353,13 +398,12 @@ class Updates(TableWrapper):
 
 
 class HasBeforeAfter(Protocol):
-    before: ibis.Value
-    after: ibis.Value
+    before: ibis.Value | None
+    after: ibis.Value | None
 
 
-def is_changed(val: HasBeforeAfter, /) -> ibis.ir.BooleanValue:
-    """Is val.before different from val.after? Never returns NULL."""
-    return ibis.or_(
-        (val.before != val.after).fill_null(False),  # ty:ignore[invalid-argument-type]
-        val.before.isnull() != val.after.isnull(),
-    )
+def identical_to(val: HasBeforeAfter, /) -> ibis.ir.BooleanValue | Literal[False]:
+    """Literally `val.before.identical_to(val.after)`"""
+    if (before := val.before) is None or (after := val.after) is None:
+        return False
+    return before.identical_to(after)

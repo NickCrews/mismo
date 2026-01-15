@@ -6,7 +6,7 @@ import ibis
 from ibis import _
 
 from mismo import _typing, _util, joins
-from mismo.types._table_wrapper import TableWrapper
+from mismo.types._wrapper import TableWrapper
 
 if TYPE_CHECKING:
     from mismo.types._linked_table import LinkedTable
@@ -218,4 +218,6 @@ class LinksTable(TableWrapper):
 
     def cache(self) -> LinksTable:
         """Cache the links table."""
-        return LinksTable(self._t.cache(), left=self._left_raw, right=self._right_raw)
+        return LinksTable(
+            self.__wrapped__.cache(), left=self._left_raw, right=self._right_raw
+        )

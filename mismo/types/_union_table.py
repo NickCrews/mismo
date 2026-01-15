@@ -4,7 +4,7 @@ from collections.abc import Iterable
 
 import ibis
 
-from mismo.types._table_wrapper import TableWrapper
+from mismo.types._wrapper import TableWrapper
 
 
 class UnionTable(TableWrapper):

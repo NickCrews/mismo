@@ -45,21 +45,21 @@ def test_from_tables_no_join(table_factory):
 
 
 def test_any_different(updates: Updates):
-    actual = updates.filter(updates.filters.any_different())
+    actual = updates.filter(updates.filters.any_changed())
     actual_ids = set(actual.after().id.execute())
     expected_ids = {3, 4}
     assert actual_ids == expected_ids
 
 
 def test_any_different_subset(updates: Updates):
-    actual = updates.filter(updates.filters.any_different(["name"]))
+    actual = updates.filter(updates.filters.any_changed(["name"]))
     actual_ids = set(actual.after().id.execute())
     expected_ids = {4}
     assert actual_ids == expected_ids
 
 
 def test_all_different(updates: Updates):
-    actual = updates.filter(updates.filters.all_different())
+    actual = updates.filter(updates.filters.all_changed())
     actual_ids = set(actual.after().id.execute())
     # the ids are the same lol
     expected_ids = set()
@@ -67,7 +67,7 @@ def test_all_different(updates: Updates):
 
 
 def test_all_different_subset(updates: Updates):
-    actual = updates.filter(updates.filters.all_different(["name", "age"]))
+    actual = updates.filter(updates.filters.all_changed(["name", "age"]))
     actual_ids = set(actual.after().id.execute())
     expected_ids = {4}
     assert actual_ids == expected_ids

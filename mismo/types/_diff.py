@@ -63,7 +63,7 @@ class Diff:
         # before and after may have different schemas.
 
         # only keep updates that actually change something
-        updates = updates.filter(updates.filters.any_different())
+        updates = updates.filter(updates.filters.any_changed())
 
         obj = super().__new__(cls)
         obj.__init__()

@@ -8,7 +8,7 @@ from ibis.expr import types as ir
 
 from mismo import _common, _typing, _util
 from mismo.types._links_table import LinksTable
-from mismo.types._table_wrapper import TableWrapper
+from mismo.types._wrapper import TableWrapper
 
 if TYPE_CHECKING:
     import altair as alt
