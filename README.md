@@ -9,22 +9,15 @@ Still in alpha stage. Breaking changes will happen frequently
 and with no warning. Once things are more stabilized I
 will come up with a stability policy. Any suggestions as
 to how you want the API to look like would be greatly appreciated.
+I do use this in my work, so at least I do decent job of
+ensuring correctness.
 
 -----
-
-## Installation
-
-I have claimed `mismo` on PyPI, but I won't update it often
-until this is more stable. Until then, install from source:
-
-```console
-python -m pip install "mismo[viz] @ git+https://github.com/NickCrews/mismo@<SOME-SHA-OR-BRANCH>"
-```
 
 ## Goals
 
 Mismo tries to be the sklearn of record linkage, backed by the scalability
-and power of SQL and Ibis. It is made of many small
+and power of SQL and [Ibis](https://ibis-project.org/). It is made of many small
 data structures and functions, each with a well-defined and standard API
 that allows them to be composed together and extended easily.
 None of the other record linkage packages I have seen, such as
@@ -42,11 +35,25 @@ record linkage packages.
   Use DuckDB for prototyping and for jobs up to maybe ~10M records,
   or Spark or other distributed backends for larger tasks, without
   needing to change your code!
-- Use the clean, strong-typed, pythonic, and Dataframe API of Ibis.
+- Use the clean, strong-typed, pythonic, Dataframe APIs of [Ibis](https://ibis-project.org/).
 - Small, modular functions and data structures that are easy to plug together
   and extend.
 - Layered API: Use top-level APIs if your task is common enough that it is
   supported out of the box.
+
+## Installation
+
+[`mismo` is available on PyPI](https://pypi.org/project/mismo/).
+I try to publish semver'ed releases after most changes.
+
+If I forget to do this, then there are also[prereleases on PyPI](https://pypi.org/project/mismo/#history).
+These are published every week by a github action using the HEAD commit of this repo.
+
+You can also install directly from a branch or a specific commit from github:
+
+```console
+uv pip install "mismo[viz] @ git+https://github.com/NickCrews/mismo@<SOME-SHA-OR-BRANCH>"
+```
 
 ## Examples
 
