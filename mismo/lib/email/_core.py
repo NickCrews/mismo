@@ -5,7 +5,7 @@ from typing import Literal
 import ibis
 from ibis.expr import types as ir
 
-from mismo._util import cases, get_column
+from mismo._util import bind_one, cases
 from mismo.arrays import array_combinations, array_min
 from mismo.compare import MatchLevel
 from mismo.linker import UnnestLinker
@@ -164,7 +164,7 @@ class EmailsDimension:
     def prepare_for_fast_linking(self, t: ir.Table) -> ir.Table:
         """Add a column with the parsed and normalized email addresses."""
         return t.mutate(
-            get_column(t, self.column)
+            bind_one(t, self.column)
             .map(
                 lambda email: ParsedEmail(
                     clean_email(email, normalize=True)
