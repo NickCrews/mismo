@@ -48,7 +48,9 @@ viz = [
   "anywidget>=0.9.18",
 ]
 postal = [
-  "postal>=1.1.7; sys_platform == 'linux' or sys_platform == 'darwin'",
+  # pin to below 1.1.11 due to breaking changes in the build system
+  # https://github.com/openvenues/pypostal/commits/df602af33f28c2c9d9dd198de8764244d063734f/
+  "postal>=1.1.7,<1.1.11; sys_platform == 'linux' or sys_platform == 'darwin'",
 ]
 spacy = [
   "en-us-address-ner-sm",

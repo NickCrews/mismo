@@ -129,7 +129,9 @@ def us_census_geocode(
             if col != "__row_number"
         }
     )
-    re_joined = t.inner_join(unduped, "__row_number").drop("__row_number")
+    input_cols = [c for c in t.columns if c != "__row_number"]
+    geocode_cols = [c for c in unduped.columns if c != "__row_number"]
+    re_joined = t.inner_join(unduped, "__row_number").select(*input_cols, *geocode_cols)
     return re_joined
 
 

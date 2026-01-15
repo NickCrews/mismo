@@ -11,6 +11,20 @@ from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
 import pytest
 
+try:
+    # Workaround for https://github.com/explosion/thinc/pull/965
+    import thinc.util
+
+    _original_fix_random_seed = thinc.util.fix_random_seed
+
+    def _patched_fix_random_seed(seed: int = 0) -> None:
+        seed = seed % (2**32)
+        _original_fix_random_seed(seed)
+
+    thinc.util.fix_random_seed = _patched_fix_random_seed
+except ImportError:
+    pass
+
 # we want to have pytest assert introspection in the helpers
 pytest.register_assert_rewrite("mismo.tests.util")
 

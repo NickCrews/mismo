@@ -185,7 +185,8 @@ class LinkedTable(TableWrapper):
             t,
             self_id_to_other_array_vals,
             uname,
-        ).drop(uname)
+        )
+        with_other = with_other.select(*self.columns, *value_names)
         return self.__class__(with_other, other=self.other_, links=self.links_)
 
     def with_n_links(self, /, *, name: str = "n_links") -> _typing.Self:
