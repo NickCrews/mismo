@@ -16,8 +16,7 @@ from mismo.types import LinksTable
 class KeyLinker(Linker):
     """A [Linker][mismo.Linker] that links records wherever they share a key, eg "emails match."
 
-    This is one of the most basic blocking rules, used very often in record linkage.
-    This is what is used in `splink`.
+    This is one of the most basic linking rules, used very often in record linkage.
 
     Examples
     --------
@@ -65,7 +64,7 @@ class KeyLinker(Linker):
     - the latitudes, rounded to 1 decimal place, are the same
 
     >>> linker = mismo.KeyLinker((_["name"][:5].upper(), _.latitude.round(1)))
-    >>> blocker(t, t).order_by("record_id_l", "record_id_r").head()  # doctest: +SKIP
+    >>> linker(t, t).order_by("record_id_l", "record_id_r").head()  # doctest: +SKIP
     ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
     ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l              ┃ name_r              ┃
     ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
@@ -77,49 +76,6 @@ class KeyLinker(Linker):
     │       15041 │       15043 │       0.00 │       0.00 │ * CANON EUROPA N.V  │ * CANON EUROPA NV   │
     │       15042 │       15043 │       0.00 │       0.00 │ * CANON EUROPA N.V. │ * CANON EUROPA NV   │
     └─────────────┴─────────────┴────────────┴────────────┴─────────────────────┴─────────────────────┘
-
-    We can even block on arrays! For example, first let's split each name into
-    significant tokens:
-
-    >>> tokens = _.name.upper().split(" ").filter(lambda x: x.length() > 4)
-    >>> t.select(tokens.name("tokens"))
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ tokens                       ┃
-    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-    │ array<string>                │
-    ├──────────────────────────────┤
-    │ ['AGILENT', 'TECHNOLOGIES,'] │
-    │ ['NOBEL']                    │
-    │ ['NOBEL']                    │
-    │ ['ALCATEL']                  │
-    │ ['ALCATEL']                  │
-    │ ['ALCATEL']                  │
-    │ ['CANON', 'EUROPA']          │
-    │ ['CANON', 'EUROPA']          │
-    │ ['CANON', 'EUROPA']          │
-    │ []                           │
-    │ …                            │
-    └──────────────────────────────┘
-
-    Now, block the tables together wherever two records share a token.
-    Note that this blocked `* SCHLUMBERGER LIMITED` with `* SCHLUMBERGER TECHNOLOGY BV`.
-    because they both share the `SCHLUMBERGER` token.
-
-    >>> linker = mismo.KeyLinker(tokens.unnest())
-    >>> linker(t, t).links.filter(_.name_l != _.name_r).order_by(
-    ...     "record_id_l", "record_id_r"
-    ... ).head()  # doctest: +SKIP
-    ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ record_id_l ┃ record_id_r ┃ latitude_l ┃ latitude_r ┃ name_l                                                     ┃ name_r                                                     ┃
-    ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-    │ int64       │ int64       │ float64    │ float64    │ string                                                     │ string                                                     │
-    ├─────────────┼─────────────┼────────────┼────────────┼────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
-    │        2909 │    13390969 │        0.0 │      52.35 │ * AGILENT TECHNOLOGIES, INC.                               │ Hitachi Global Storage Technologies, Inc. Netherlands B.V  │
-    │        2909 │    13390970 │        0.0 │      52.35 │ * AGILENT TECHNOLOGIES, INC.                               │ Hitachi Global Storage Technologies, Inc. Netherlands B.V. │
-    │        2909 │    13391015 │        0.0 │      52.35 │ * AGILENT TECHNOLOGIES, INC.                               │ Hitachi Global Storage Technologies, Netherland B.V.       │
-    │        2909 │    13391055 │        0.0 │      52.50 │ * AGILENT TECHNOLOGIES, INC.                               │ Hitachi Global Storage Technologies, Netherlands, B.V.     │
-    │        2909 │    13391056 │        0.0 │      52.35 │ * AGILENT TECHNOLOGIES, INC.                               │ Hitachi Global Storage Technologies, Netherlands, B.V.     │
-    └─────────────┴─────────────┴────────────┴────────────┴────────────────────────────────────────────────────────────┴────────────────────────────────────────────────────────────┘
     """  # noqa: E501
 
     def __init__(
@@ -153,13 +109,13 @@ class KeyLinker(Linker):
         max_pairs: int | None = None,
         task: Literal["dedupe", "lookup", "link"] | None = None,
     ) -> None:
-        """Create a KeyBlocker.
+        """Create a KeyLinker.
 
         Parameters
         ----------
         keys:
-            The keys to block on.
-            The tables will be blocked together wherever they share ALL the keys.
+            The keys to link on.
+            The tables will be linked wherever they share ALL the keys.
             Each key can be any of the following:
 
             - A string, which is interpreted as the name of a column in both tables.
