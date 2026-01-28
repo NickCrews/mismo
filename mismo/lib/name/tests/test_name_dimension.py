@@ -28,7 +28,7 @@ def test_name_dimension(name_table, table_factory):
             "name_compared": "int8",
         },
     )
-    links = mismo.full_linkage(name_table, name_table, task="link").links
+    links = mismo.FullLinker()(name_table, name_table, task="link").links
     compared = dim.compare(links)
     compared = compared.semi_join(expected, ["record_id_l", "record_id_r"])
     compared = compared.cache()

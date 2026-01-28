@@ -59,7 +59,7 @@ class OrLinker(Linker):
         if left is right:
             right = right.view()
         if not self._join_conditions:
-            return mismo.empty_linkage(left, right)
+            return mismo.EmptyLinker()(left, right)
         conditions = [
             c.__join_condition__(left, right) for c in self._join_conditions.values()
         ]
