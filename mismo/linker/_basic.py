@@ -45,8 +45,33 @@ class EmptyLinker(_common.Linker):
 class UnnestLinker(_common.Linker):
     """A [Linker][mismo.Linker] that unnests a column before linking.
 
-    We can even block on arrays! For example, first let's split each name into
-    significant tokens:
+    This is useful if you records with sets of tokens that you want to link on,
+    for example:
+    - splitting names into words/tokens and linking where any token matches.
+    - tags, such as product categories, where you want to link where any tag matches.
+
+    This links where ANY of the unnested values match.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> from ibis import _
+    >>> import mismo
+    >>> ibis.options.interactive = True
+    >>> linkage = mismo.playdata.load_patents()
+    >>> t = linkage.left.select("record_id", "name")
+    >>> t.head()
+    ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ record_id ┃ name                         ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ uint32    │ string                       │
+    ├───────────┼──────────────────────────────┤
+    │      2909 │ * AGILENT TECHNOLOGIES, INC. │
+    │      3574 │ * AKZO NOBEL N.V.            │
+    │      3575 │ * AKZO NOBEL NV              │
+    │      3779 │ * ALCATEL N.V.               │
+    │      3780 │ * ALCATEL N.V.               │
+    └───────────┴──────────────────────────────┘
 
     >>> tokens = _.name.upper().split(" ").filter(lambda x: x.length() > 4)
     >>> t.select(tokens.name("tokens"))
