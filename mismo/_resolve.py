@@ -1,7 +1,16 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 import operator
-from typing import Any, Callable, Generator, Protocol, runtime_checkable
+from typing import (
+    Any,
+    Callable,
+    Generator,
+    Protocol,
+    TypeAlias,
+    Union,
+    runtime_checkable,
+)
 
 import ibis
 from ibis import Deferred
@@ -14,7 +23,7 @@ from mismo import _funcs, _util
 class ValueResolver(Protocol):
     """A callable, that given a Table, resolves to a single Value."""
 
-    def __call__(self, t: ibis.Table) -> ibis.Value:
+    def __call__(self, t: ibis.Table, /) -> ibis.Value:
         """Given a Table, resolve to a single Value."""
 
 
@@ -29,7 +38,7 @@ class DeferredResolver(ValueResolver):
         self.deferred = deferred
         self.name = name
 
-    def __call__(self, t: ibis.Table) -> ibis.Value:
+    def __call__(self, t: ibis.Table, /) -> ibis.Value:
         raw = self.deferred.resolve(**{self.name: t})
         return _util.bind_one(t, raw)
 
@@ -45,10 +54,10 @@ class DeferredResolver(ValueResolver):
 class LiteralResolver(ValueResolver):
     """A resolver that always returns the literal value given."""
 
-    def __init__(self, value: ibis.Value) -> None:
+    def __init__(self, value: ibis.Value, /) -> None:
         self.value = value
 
-    def __call__(self, t: ibis.Table) -> ibis.Value:
+    def __call__(self, t: ibis.Table, /) -> ibis.Value:
         return _util.bind_one(t, self.value)
 
     def __repr__(self) -> str:
@@ -59,13 +68,10 @@ class LiteralResolver(ValueResolver):
 
 
 class StrResolver(ValueResolver):
-    def __init__(
-        self,
-        s: str,
-    ) -> None:
+    def __init__(self, s: str, /) -> None:
         self.s = s
 
-    def __call__(self, t: ibis.Table) -> ibis.Column:
+    def __call__(self, t: ibis.Table, /) -> ibis.Column:
         """Resolve a string to a column."""
         return t[self.s]
 
@@ -77,20 +83,25 @@ class StrResolver(ValueResolver):
 
 
 class FuncResolver(ValueResolver):
-    def __init__(
-        self,
-        func: Callable[[ibis.Table], ibis.Value],
-    ) -> None:
+    def __init__(self, func: Callable[[ibis.Table], ibis.Value], /) -> None:
         self.func = func
 
-    def __call__(self, t: ibis.Table) -> ibis.Value:
+    def __call__(self, t: ibis.Table, /) -> ibis.Value:
         return self.func(t)
 
     def __repr__(self):
         return f"FuncResolver({self.func!r})"
 
 
-def value_resolver(spec: ibis.Value | Deferred | str) -> ValueResolver:
+IntoValueResolver: TypeAlias = Union[
+    ibis.Value,
+    ibis.Deferred,
+    str,
+    Callable[[ibis.Table], "IntoValueResolver"],
+]
+
+
+def value_resolver(spec: IntoValueResolver) -> ValueResolver:
     """
     Given a spec, return a ValueResolver that resolves to a single column.
     """
@@ -107,7 +118,23 @@ def value_resolver(spec: ibis.Value | Deferred | str) -> ValueResolver:
     raise ValueError(f"Cannot resolve {spec} to a single column.")
 
 
-def key_pair_resolver(spec) -> tuple[ValueResolver, ValueResolver]:
+IntoKeyPairResolver: TypeAlias = Union[
+    ibis.Value,
+    ibis.Deferred,
+    str,
+    Callable[[ibis.Table], "IntoValueResolver"],
+    Iterable[
+        Union[
+            ibis.Value,
+            ibis.Deferred,
+            str,
+            Callable[[ibis.Table], "IntoValueResolver"],
+        ]
+    ],
+]
+
+
+def key_pair_resolver(spec: IntoKeyPairResolver) -> tuple[ValueResolver, ValueResolver]:
     if isinstance(spec, ibis.Value):
         return (value_resolver(spec), value_resolver(spec))
     if isinstance(spec, ibis.Deferred):
