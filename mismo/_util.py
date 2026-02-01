@@ -380,42 +380,6 @@ def is_iterable(o: Any) -> bool:
         return True
 
 
-def struct_equal(
-    left: ir.StructValue, right: ir.StructValue, *, fields: Iterable[str] | None = None
-) -> ir.BooleanValue:
-    """
-    The specified fields match exactly. If fields is None, all fields are compared.
-    """
-    if fields is None:
-        return left == right
-    return ibis.and_(*(left[f] == right[f] for f in fields))
-
-
-def struct_isnull(
-    struct: ir.StructValue, *, how: Literal["any", "all"], fields: Iterable[str] | None
-) -> ir.BooleanValue:
-    """Are any/all of the specified fields null (or the struct itself is null)?
-
-    If fields is None, all fields are compared."""
-    if fields is None:
-        fields = struct.type().names
-    vals = [struct[f].isnull() for f in fields]
-    if how == "any":
-        return struct.isnull() | ibis.or_(*vals)
-    elif how == "all":
-        return struct.isnull() | ibis.and_(*vals)
-    else:
-        raise ValueError(f"how must be 'any' or 'all'. Got {how}")
-
-
-def struct_join(struct: ir.StructValue, sep: str) -> ir.StringValue:
-    """Join all the fields in a struct with a separator."""
-    regular = ibis.literal(sep).join(
-        [struct[f].fill_null("") for f in struct.type().names]
-    )
-    return struct.isnull().ifelse(None, regular)
-
-
 def join_lookup(
     t: ibis.Table,
     lookup: ibis.Table,
