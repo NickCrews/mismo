@@ -24,7 +24,7 @@ def double_metaphone(s: ir.StringValue) -> ir.ArrayValue[ir.StringValue]:
     >>> double_metaphone(None).execute() is None
     True
     """
-    s = _util.ensure_ibis(s, "string")
+    s = _util.ensure_val(s, "string")
     return _dm_udf(s)
 
 
@@ -103,8 +103,8 @@ def damerau_levenshtein_ratio(
 
 
 def _dist_ratio(s1, s2, dist):
-    s1 = _util.ensure_ibis(s1, "string")
-    s2 = _util.ensure_ibis(s2, "string")
+    s1 = _util.ensure_val(s1, "string")
+    s2 = _util.ensure_val(s2, "string")
     lenmax = ibis.greatest(s1.length(), s2.length())
     return (lenmax - dist(s1, s2)) / lenmax
 

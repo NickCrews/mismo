@@ -63,7 +63,7 @@ def ngrams(string: ir.StringValue, n: int) -> ir.ArrayValue:
     """
     if n < 1:
         raise ValueError("n must be greater than 0")
-    string = _util.ensure_ibis(string, "string")
+    string = _util.ensure_val(string, "string")
     pattern = "." * n
     # if you just do _re_extract_all("abcdef", "..."), you get ["abc", "def"].
     # So to get the "bcd" and the "cde", we need to offset the string

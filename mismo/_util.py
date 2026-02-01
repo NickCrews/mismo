@@ -74,17 +74,19 @@ def select(
 
 
 def cases(
-    *case_result_pairs: tuple[ir.BooleanValue, ir.Value],
+    first_branch: tuple[ir.BooleanValue, ir.Value],
+    *other_branches: tuple[ir.BooleanValue, ir.Value],
     else_: ir.Value | None = None,
 ) -> ir.Value:
-    """A more concise way to write a case statement."""
+    """A compat wrapper to support ibis<10.0.0, which did not have ibis.cases()."""
     try:
         # ibis.cases() was added in ibis 10.0.0
         cases = getattr(ibis, "cases")
-        return cases(*case_result_pairs, else_=else_)
+        return cases(first_branch, *other_branches, else_=else_)
     except AttributeError:
         builder = ibis.case()
-        for case, result in case_result_pairs:
+        builder = builder.when(*first_branch)
+        for case, result in other_branches:
             builder = builder.when(case, result)
         return builder.else_(else_).end()
 
@@ -140,17 +142,17 @@ def bind_one(
     return vals[0]
 
 
-def ensure_ibis(
+def ensure_val(
     val: Any, type: str | dt.DataType | None = None
 ) -> ir.Value | ibis.Deferred:
-    """Ensure that `val` is an ibis expression."""
-    if isinstance(val, ir.Expr) or isinstance(val, ibis.Deferred):
+    """Ensure that `val` is an ibis Value or Deferred."""
+    if isinstance(val, ibis.Value) or isinstance(val, ibis.Deferred):
         return val
     return ibis.literal(val, type=type)
 
 
 def get_name(x) -> str:
-    """Find a suitable string representation of `x` to use as a blocker name."""
+    """Find a suitable string representation of `x`."""
     if isinstance(x, Deferred):
         return x.__repr__()
     try:
@@ -303,8 +305,8 @@ def optional_import(pip_name: str):
     """
     Raises a more helpful ImportError when an optional dep is missing.
 
-    with optional_import():
-        import some_optional_dep
+    with optional_import("scikit-learn"):
+        import sklearn
     """
     try:
         yield
@@ -486,7 +488,9 @@ def _check_collisions(collisions, on_collision, rename_as, columns):
         f()
 
 
-def check_schemas_equal(a: ibis.Schema | ibis.Table, b: ibis.Schema | ibis.Table):
+def check_schemas_equal(
+    a: ibis.Schema | ibis.Table, b: ibis.Schema | ibis.Table, /
+) -> None:
     if isinstance(a, ibis.Table):
         a = a.schema()
     if isinstance(b, ibis.Table):
