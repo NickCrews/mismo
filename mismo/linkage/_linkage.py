@@ -123,7 +123,7 @@ class Linkage:
     ) -> _typing.Self:
         """Create a Linkage by reading parquets from the given directory."""
         if backend is None:
-            backend = ibis
+            backend = ibis.get_backend()
         d = Path(directory)
         return cls(
             left=backend.read_parquet(d / "left.parquet"),
@@ -150,7 +150,7 @@ class Linkage:
             links=links if links is not None else self.links,
         )
 
-    def link_counts_chart(self) -> alt.Chart:
+    def link_counts_chart(self) -> alt.HConcatChart:
         """
         A side by side altair Chart of `left.link_counts().chart()` and `right.link_counts().chart()`.
 
@@ -186,7 +186,7 @@ class Linkage:
         )
 
 
-Linkish = TypeVar("T", bound=LinksTable | Linkage)
+Linkish = TypeVar("Linkish", bound=LinksTable | Linkage)
 
 
 # TODO: IDK if this deserves to be its own function,
@@ -287,4 +287,4 @@ def filter_links(links_or_linkage: Linkish, condition: ir.BooleanValue) -> Linki
             links=filter_links(links_or_linkage.links, condition)
         )
     else:
-        return links_or_linkage.filter(condition)
+        return links_or_linkage.filter(condition)  # ty:ignore[invalid-argument-type, invalid-return-type, possibly-missing-attribute]
