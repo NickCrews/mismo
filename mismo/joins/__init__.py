@@ -7,12 +7,11 @@ from mismo.joins._analyze import SlowJoinAlgorithm as SlowJoinAlgorithm
 from mismo.joins._analyze import check_join_algorithm as check_join_algorithm
 from mismo.joins._analyze import get_join_algorithm as get_join_algorithm
 from mismo.joins._conditions import AndJoinCondition as AndJoinCondition
+from mismo.joins._conditions import BinaryFuncJoinCondition as BinaryFuncJoinCondition
 from mismo.joins._conditions import BooleanJoinCondition as BooleanJoinCondition
-from mismo.joins._conditions import FuncJoinCondition as FuncJoinCondition
 from mismo.joins._conditions import HasJoinCondition as HasJoinCondition
-from mismo.joins._conditions import IntoHasJoinCondition as IntoHasJoinCondition
+from mismo.joins._conditions import IntoJoinCondition as IntoJoinCondition
 from mismo.joins._conditions import KeyJoinCondition as KeyJoinCondition
-from mismo.joins._conditions import MultiKeyJoinCondition as MultiKeyJoinCondition
 from mismo.joins._conditions import join_condition as join_condition
 from mismo.joins._conditions import left as left
 from mismo.joins._conditions import right as right

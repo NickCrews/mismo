@@ -8,13 +8,14 @@ from ibis import Deferred
 from ibis.common.deferred import var
 from ibis.expr import types as ir
 
-from mismo import _registry, _resolve, _util
+from mismo import _funcs, _resolve
+from mismo._resolve import IntoValueResolver, value_resolver
 
 
 @runtime_checkable
 class HasJoinCondition(Protocol):
     """
-    Has `__join_condition__(left: ibis.Table, right: ibis.Table)`, which returns something that `ibis.join()` understands.
+    Has `__join_condition__(left: ibis.Table, right: ibis.Table) -> bool | ibis.ir.BooleanValue`.
 
     There are concrete implementations of this for various types of join conditions.
     For example, `BooleanJoinCondition` wraps a boolean
@@ -23,56 +24,36 @@ class HasJoinCondition(Protocol):
 
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
-    ) -> ir.BooleanValue | bool:
+    ) -> bool | ibis.ir.BooleanValue:
         """
         Given a left and right table, return something that `ibis.join()` understands.
         """
         pass
 
 
-IntoHasJoinCondition: TypeAlias = Union[
+_IntoJoinConditionAtom: TypeAlias = Union[
     HasJoinCondition,
     bool,
     ibis.ir.BooleanValue,
-    str,
-    ibis.Deferred,
-    Callable[[ibis.Table, ibis.Table], HasJoinCondition | bool | ibis.ir.BooleanValue],
-    Iterable[
-        HasJoinCondition,
-        bool,
-        ibis.ir.BooleanValue,
-        str,
-        ibis.Deferred,
-        Callable[
-            [ibis.Table, ibis.Table], HasJoinCondition | bool | ibis.ir.BooleanValue
-        ],
-    ],
+    IntoValueResolver,
+    Callable[[ibis.Table, ibis.Table], HasJoinCondition],
+]
+IntoJoinCondition: TypeAlias = Union[
+    _IntoJoinConditionAtom,
+    Iterable[_IntoJoinConditionAtom],
 ]
 """
-An object that can be converted into a HasJoinCondition with mismo.join_condition()
+An object that `mismo.join_condition()` can convert into a `HasJoinCondition`.
 """
 
 
-class JoinConditionRegistry(
-    _registry.Registry[Callable[..., HasJoinCondition], HasJoinCondition]
-):
-    """A registry for HasJoinCondition factory functions"""
-
-
-_join_condition_registry = JoinConditionRegistry()
-
-
-@_join_condition_registry.register
-def _already_has_join_condition(obj: Any) -> HasJoinCondition:
-    """If the object already has a `__join_condition__` method, return it as is."""
-    if isinstance(obj, HasJoinCondition):
-        return obj
-    return NotImplemented
-
-
-def join_condition(obj: IntoHasJoinCondition) -> HasJoinCondition:
+def join_condition(obj: IntoJoinCondition) -> HasJoinCondition:
     """
     Create a [HasJoinCondition][mismo.HasJoinCondition] from an object.
+
+    The HasJoinCondition protocol defines a single method,
+    `__join_condition__(left: ibis.Table, right: ibis.Table) -> bool | ibis.ir.BooleanValue`,
+    which can be used to resolve a join condition given two tables.
 
     Parameters
     ----------
@@ -87,23 +68,62 @@ def join_condition(obj: IntoHasJoinCondition) -> HasJoinCondition:
     Returns
     -------
         An object that follows the [HasJoinCondition][mismo.HasJoinCondition] protocol.
+
+    Examples
+    --------
+    >>> import mismo
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> t1 = ibis.memtable({"name": ["alice", "alice"], "age": [30, 40]})
+    >>> t2 = ibis.memtable({"name": ["alice", "bob"], "age": [30, 50]})
+    >>> conditioner = mismo.join_condition("name")
+    >>> t1.join(t2, conditioner.__join_condition__(t1, t2))
+    ┏━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┓
+    ┃ name   ┃ age   ┃ age_right ┃
+    ┡━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━┩
+    │ string │ int64 │ int64     │
+    ├────────┼───────┼───────────┤
+    │ alice  │    30 │        30 │
+    │ alice  │    40 │        30 │
+    └────────┴───────┴───────────┘
+
+    Note that for this example, you could have used the `mismo.join()` function,
+    which uses this under the hood:
+    >>> mismo.join(t1, t2, "name")
+    ┏━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┓
+    ┃ name   ┃ age   ┃ age_right ┃
+    ┡━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━┩
+    │ string │ int64 │ int64     │
+    ├────────┼───────┼───────────┤
+    │ alice  │    30 │        30 │
+    │ alice  │    40 │        30 │
+    └────────┴───────┴───────────┘
     """
-    return _join_condition_registry(obj)
-
-
-join_condition.register = _join_condition_registry.register
+    if isinstance(obj, HasJoinCondition):
+        return obj
+    if isinstance(obj, (bool, ir.BooleanValue)):
+        return BooleanJoinCondition(obj)
+    if isinstance(obj, ibis.Deferred):
+        if _resolve.variables_names(obj) == {"left", "right"}:
+            return LeftRightDeferredCondition(obj)
+        return KeyJoinCondition(obj)
+    if isinstance(obj, str):
+        return KeyJoinCondition(obj)
+    if _funcs.is_unary(obj):
+        return KeyJoinCondition(obj)
+    if _funcs.is_binary(obj):
+        return BinaryFuncJoinCondition(obj)
+    tuple_subconditions = _try_iterable(obj)
+    if tuple_subconditions is not None:
+        if len(tuple_subconditions) == 2 and isinstance(obj, tuple):
+            return KeyJoinCondition(obj)
+        return AndJoinCondition(tuple_subconditions)
+    raise TypeError(f"Can't convert object of type {type(obj)} to a HasJoinCondition")
 
 
 class BooleanJoinCondition:
-    def __init__(self, boolean: bool | ir.BooleanValue):
+    def __init__(self, boolean: bool | ir.BooleanValue, /):
         self.boolean = boolean
-
-    @join_condition.register
-    @staticmethod
-    def _try(obj: Any) -> BooleanJoinCondition:
-        if not isinstance(obj, (bool, ir.BooleanValue)):
-            return NotImplemented
-        return BooleanJoinCondition(obj)
 
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
@@ -114,24 +134,15 @@ class BooleanJoinCondition:
         return f"{self.__class__.__name__}({self.boolean!r})"
 
 
-class FuncJoinCondition:
-    def __init__(self, func: Callable[[ibis.Table, ibis.Table], ibis.ir.BooleanValue]):
+class BinaryFuncJoinCondition:
+    def __init__(self, func: Callable[[ibis.Table, ibis.Table], IntoJoinCondition], /):
         self.func = func
-
-    @join_condition.register
-    @staticmethod
-    def _try(obj: Any) -> FuncJoinCondition:
-        # Deffered's think they are callable, so guard against that.
-        if isinstance(obj, ibis.Deferred):
-            return NotImplemented
-        if not callable(obj):
-            return NotImplemented
-        return FuncJoinCondition(obj)
 
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
-    ) -> ibis.ir.BooleanValue:
-        return self.func(left, right)
+    ) -> bool | ibis.ir.BooleanValue:
+        raw = self.func(left, right)
+        return join_condition(raw).__join_condition__(left, right)
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.func!r})"
@@ -143,51 +154,14 @@ class AndJoinCondition:
             join_condition(c) for c in subconditions
         )
 
-    @join_condition.register
-    @staticmethod
-    def _try(obj: Any) -> AndJoinCondition:
-        tuple_subconditions = _try_iterable(obj)
-        if tuple_subconditions is None:
-            return NotImplemented
-        return AndJoinCondition(tuple_subconditions)
-
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
-    ) -> ir.BooleanValue:
+    ) -> bool | ibis.ir.BooleanValue:
         return self.join_condition(left, right)
 
-    def join_condition(self, left: ibis.Table, right: ibis.Table) -> ir.BooleanColumn:
-        conditions = [c.__join_condition__(left, right) for c in self.subconditions]
-        return ibis.and_(*conditions)
-
-
-# KeyJoinCondition needs to be registered afterwards so that it has
-# priority with 2-tuples
-class MultiKeyJoinCondition:
-    """Join where all of the keys match."""
-
-    def __init__(self, subconditions: Iterable[Any]):
-        self.subconditions: tuple[KeyJoinCondition] = tuple(
-            join_condition(c) for c in subconditions
-        )
-
-    @join_condition.register
-    def _try(obj: Any) -> MultiKeyJoinCondition:
-        subconditions = _try_iterable(obj)
-        if subconditions is None:
-            return NotImplemented
-        resolved = [join_condition(c) for c in subconditions]
-        for sub in resolved:
-            if not isinstance(sub, KeyJoinCondition):
-                return NotImplemented
-        return MultiKeyJoinCondition(resolved)
-
-    def __join_condition__(
+    def join_condition(
         self, left: ibis.Table, right: ibis.Table
-    ) -> ir.BooleanValue:
-        return self.join_condition(left, right)
-
-    def join_condition(self, left: ibis.Table, right: ibis.Table) -> ir.BooleanColumn:
+    ) -> bool | ibis.ir.BooleanValue:
         conditions = [c.__join_condition__(left, right) for c in self.subconditions]
         return ibis.and_(*conditions)
 
@@ -208,45 +182,29 @@ class KeyJoinCondition:
             left_spec = right_spec = spec
         elif isinstance(spec, tuple):
             if len(spec) != 2:
-                # This is eg ("name", "age", "address"), raise this so that
-                # AndJoinCondition picks it up.
                 raise BadKeyJoinCondition(spec)
             left_spec, right_spec = spec
+        elif _funcs.is_unary(spec):
+            left_spec = right_spec = spec
         else:
             raise BadKeyJoinCondition(spec)
 
-        if not isinstance(left_spec, (str, Deferred)):
-            raise BadKeyJoinCondition(spec)
-        if not isinstance(right_spec, (str, Deferred)):
-            raise BadKeyJoinCondition(spec)
-        self.left_spec = left_spec
-        self.right_spec = right_spec
-
-    @join_condition.register
-    @staticmethod
-    def _try(obj: Any) -> KeyJoinCondition:
         try:
-            return KeyJoinCondition(obj)
-        except BadKeyJoinCondition:
-            return NotImplemented
+            self.left_resolver = value_resolver(left_spec)
+        except ValueError as e:
+            raise BadKeyJoinCondition(spec) from e
+        try:
+            self.right_resolver = value_resolver(right_spec)
+        except ValueError as e:
+            raise BadKeyJoinCondition(spec) from e
 
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
     ) -> ir.BooleanValue:
         return self.join_condition(left, right)
 
-    def bind_columns(
-        self, left: ibis.Table, right: ibis.Table
-    ) -> list[tuple[ibis.Column, ibis.Column]]:
-        # print(self.left_spec, self.right_spec)
-        l_cols = _util.bind(left, self.left_spec)
-        r_cols = _util.bind(right, self.right_spec)
-        # print(self.left_spec, self.right_spec)
-        return list(zip(l_cols, r_cols, strict=True))
-
-    def join_condition(self, left: ibis.Table, right: ibis.Table) -> ir.BooleanColumn:
-        conditions = [coll == colr for coll, colr in self.bind_columns(left, right)]
-        return ibis.and_(*conditions)
+    def join_condition(self, left: ibis.Table, right: ibis.Table) -> ir.BooleanValue:
+        return self.left_resolver(left) == self.right_resolver(right)
 
 
 left = var("left")
@@ -295,16 +253,6 @@ class LeftRightDeferredCondition:
                 "variables, eg `mismo.left.last_name == mismo.right.family_name`."
             )
         self.condition = condition
-
-    @join_condition.register
-    @staticmethod
-    def _try(obj: Any) -> LeftRightDeferredCondition:
-        if not isinstance(obj, Deferred):
-            return NotImplemented
-        try:
-            return LeftRightDeferredCondition(obj)
-        except ValueError:
-            return NotImplemented
 
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table

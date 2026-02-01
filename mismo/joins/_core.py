@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import ibis
 from ibis.expr import types as ir
@@ -11,11 +11,26 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
 
+JoinHow = Literal[
+    "inner",
+    "left",
+    "right",
+    "outer",
+    "asof",
+    "semi",
+    "anti",
+    "any_inner",
+    "any_left",
+    "cross",
+    "positional",
+]
+
+
 def join(
     left: ibis.Table,
     right: ibis.Table,
-    predicates: _conditions.IntoHasJoinCondition = (),
-    how: str = "inner",
+    predicates: _conditions.IntoJoinCondition = (),
+    how: JoinHow = "inner",
     *,
     lname: str = "{name}",
     rname: str = "{name}_right",

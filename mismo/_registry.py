@@ -57,7 +57,7 @@ class Registry(Generic[F, Ret]):
 
     def register(self, implementation: F) -> F:
         """
-        Register (after existing implementations) a new implementation of the Registry.
+        Register a new implementation, in lower priority to existing implementations.
         """
         self.implementations = (*self.implementations, implementation)
         return implementation
