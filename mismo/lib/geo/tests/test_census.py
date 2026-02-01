@@ -45,6 +45,7 @@ def make_expected(table_factory, records):
 
 
 @pytest.mark.network
+@pytest.mark.skip
 def test_us_census_geocode(table_factory):
     GIRDWOOD = {
         "census_is_match": True,

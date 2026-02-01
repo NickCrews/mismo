@@ -15,15 +15,14 @@ class FullLinker(_common.Linker):
 
     def __init__(self, *, task: Literal["dedupe", "link"] | None = None):
         self.task = task
-        self._linker = _join_linker.JoinLinker(True, on_slow="ignore", task=task)
 
-    def __join_condition__(
-        self, left: ibis.Table, right: ibis.Table
-    ) -> ibis.ir.BooleanValue:
-        return self._linker.__join_condition__(left, right)
+    def __join_condition__(self, left: ibis.Table, right: ibis.Table) -> Literal[True]:
+        return True
 
     def __call__(self, left: ibis.Table, right: ibis.Table) -> _linkage.Linkage:
-        return self._linker(left, right)
+        return _join_linker.JoinLinker(True, on_slow="ignore", task=self.task)(
+            left, right
+        )
 
 
 class EmptyLinker(_common.Linker):
@@ -31,12 +30,11 @@ class EmptyLinker(_common.Linker):
 
     def __init__(self, *, task: Literal["dedupe", "link"] | None = None):
         self.task = task
-        self._linker = _join_linker.JoinLinker(False, on_slow="ignore", task=task)
 
-    def __join_condition__(
-        self, left: ibis.Table, right: ibis.Table
-    ) -> ibis.ir.BooleanValue:
-        return self._linker.__join_condition__(left, right)
+    def __join_condition__(self, left: ibis.Table, right: ibis.Table) -> Literal[False]:
+        return False
 
     def __call__(self, left: ibis.Table, right: ibis.Table) -> _linkage.Linkage:
-        return self._linker(left, right)
+        return _join_linker.JoinLinker(False, on_slow="ignore", task=self.task)(
+            left, right
+        )

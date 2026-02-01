@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Literal
+from typing import Literal
 
 import ibis
 
@@ -15,9 +15,13 @@ class JoinLinker(Linker):
     A [Linker][mismo.Linker] based on a join condition.
     """  # noqa: E501
 
+    condition: joins.HasJoinCondition
+    task: Literal["dedupe", "link"] | None
+    on_slow: Literal["error", "warn", "ignore"]
+
     def __init__(
         self,
-        condition: Callable[[ibis.Table, ibis.Table], ibis.ir.BooleanValue],
+        condition: joins.IntoJoinCondition,
         *,
         task: Literal["dedupe", "link"] | None = None,
         on_slow: Literal["error", "warn", "ignore"] = "error",
@@ -54,7 +58,7 @@ class JoinLinker(Linker):
 
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
-    ) -> ibis.ir.BooleanValue:
+    ) -> bool | ibis.ir.BooleanValue:
         """Create a join condition."""
         pred = self.condition.__join_condition__(left, right)
         joins.check_join_algorithm(left, right, pred, on_slow=self.on_slow)
