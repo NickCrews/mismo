@@ -4,11 +4,11 @@ import re
 from typing import Literal
 import warnings
 
-import ibis
 from ibis.expr import types as ir
 
 from mismo import _explain
 from mismo.exceptions import SlowJoinError, SlowJoinWarning, UnsupportedBackendError
+from mismo.joins._core import join
 
 JoinAlgorithm = Literal[
     "EMPTY_RESULT",  # O(1)
@@ -39,14 +39,18 @@ SlowJoinAlgorithm = Literal[
 SLOW_JOIN_ALGORITHMS = frozenset(SlowJoinAlgorithm.__args__)
 
 
-def get_join_algorithm(left: ir.Table, right: ir.Table, condition) -> str:
-    """Return one of the JOIN_ALGORITHMS for the outermost join in the expression.
+def get_join_algorithm(left: ir.Table, right: ir.Table, condition) -> JoinAlgorithm:
+    """Determine which of the `JOIN_ALGORITHMS` the backend will use for the join.
 
-    If there are multiple joins in the query, this will return the top (outermost) one.
     This only works with expressions bound to a DuckDB backend.
-    Other kinds of expressions will raise NotImplementedError.
+    Other kinds of expressions will raise UnsupportedBackendError.
+
+    Raises
+    ------
+    UnsupportedBackendError
+        If the backend is not DuckDB.
     """
-    j = ibis.join(left, right, condition)
+    j = join(left, right, condition)
     ex = _explain.explain(j)
     return _extract_top_join_alg(ex)
 
@@ -58,7 +62,7 @@ def check_join_algorithm(
     *,
     on_slow: Literal["error", "warn", "ignore"] = "error",
 ) -> None:
-    """Error or warn if the join in the expression is likely to be slow.
+    """Error or warn if the join is likely to be slow, i.e. > O(n*m).
 
     Issues a SlowJoinWarning or raises a SlowJoinError.
 
@@ -106,7 +110,7 @@ def check_join_algorithm(
             warnings.warn(SlowJoinWarning(condition, alg), stacklevel=2)
 
 
-def _extract_top_join_alg(explain_str: str) -> str:
+def _extract_top_join_alg(explain_str: str) -> JoinAlgorithm:
     """Given the output of `EXPLAIN`, return one of the JOIN_ALGORITHMS.
 
     If there are multiple joins in the query, this will return the top (outermost) one.
@@ -146,4 +150,4 @@ def _extract_top_join_alg(explain_str: str) -> str:
         raise ValueError(
             f"Could not find a join algorithm in the explain string: {explain_str}"
         )
-    return match.group(1)
+    return match.group(1)  # ty:ignore[invalid-return-type]
