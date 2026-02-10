@@ -10,6 +10,7 @@ from mismo.text._similarity import (
     damerau_levenshtein_ratio as damerau_levenshtein_ratio,
 )
 from mismo.text._similarity import double_metaphone as double_metaphone
+from mismo.text._similarity import jaccard as jaccard
 from mismo.text._similarity import jaro_similarity as jaro_similarity
 from mismo.text._similarity import jaro_winkler_similarity as jaro_winkler_similarity
 from mismo.text._similarity import levenshtein_ratio as levenshtein_ratio
