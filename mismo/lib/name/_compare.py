@@ -11,7 +11,7 @@ from mismo.text import damerau_levenshtein
 
 def are_match_with_nicknames(
     left: ir.StructValue, right: ir.StructValue
-) -> ir.BooleanValue:
+) -> ir.BooleanValue | bool:
     """The given names match via nickname or alias, and the surname names match."""
     return ibis.and_(
         are_aliases(left.given, right.given),
@@ -19,7 +19,9 @@ def are_match_with_nicknames(
     )
 
 
-def initials_equal(left: ir.StringValue, right: ir.StringValue) -> ir.BooleanValue:
+def initials_equal(
+    left: ir.StringValue, right: ir.StringValue
+) -> ir.BooleanValue | bool:
     """The first letter matches, and at least one is a single letter."""
     return ibis.and_(
         left[0] == right[0],
@@ -29,7 +31,7 @@ def initials_equal(left: ir.StringValue, right: ir.StringValue) -> ir.BooleanVal
 
 def equal_forgiving_typo(
     left: ir.StringValue, right: ir.StringValue
-) -> ir.BooleanValue:
+) -> ir.BooleanValue | bool:
     edit_distance = damerau_levenshtein(left, right)
     return ibis.or_(
         edit_distance <= 1,
@@ -40,7 +42,7 @@ def equal_forgiving_typo(
 
 def _substring_match(
     left: ir.StringValue, right: ir.StringValue, *, min_len: int = 3
-) -> ir.BooleanValue:
+) -> ir.BooleanValue | bool:
     """The shorter string is a substring of the longer string, and at least min_len."""
     return ibis.or_(
         ibis.and_(left.contains(right), right.length() >= min_len),

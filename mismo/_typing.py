@@ -5,6 +5,11 @@ try:
 except ImportError:
     from typing_extensions import Self as Self
 
+try:
+    from typing import TypeIs as TypeIs
+except ImportError:
+    from typing_extensions import TypeIs as TypeIs
+
 
 def get_annotations(o):
     """Access o.__annotations__ across python versions."""

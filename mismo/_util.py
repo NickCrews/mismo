@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import base64
-from collections.abc import Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from contextlib import contextmanager
-from typing import Any, Callable, Iterable, Literal, Mapping, TypeVar, overload
+import datetime
+import decimal
+from typing import Any, Callable, Literal, TypeVar, overload
 import uuid
 import warnings
 
@@ -12,6 +14,8 @@ from ibis import _
 from ibis.common.deferred import Deferred
 from ibis.expr import datatypes as dt
 from ibis.expr import types as ir
+
+from mismo._typing import TypeIs
 
 
 class NotSet:
@@ -73,10 +77,27 @@ def select(
     return parent.to_expr().select(*values, **named_values)
 
 
+IntoLiteral = (
+    str
+    | bytes
+    | int
+    | float
+    | decimal.Decimal
+    | bool
+    | datetime.date
+    | datetime.datetime
+    | datetime.timedelta
+    | uuid.UUID
+    | None
+)
+
+
 def cases(
-    first_branch: tuple[ir.BooleanValue, ir.Value],
-    *other_branches: tuple[ir.BooleanValue, ir.Value],
-    else_: ir.Value | None = None,
+    first_branch: tuple[bool | ir.BooleanValue | ibis.Deferred, IntoLiteral | ir.Value],
+    *other_branches: tuple[
+        bool | ir.BooleanValue | ibis.Deferred, IntoLiteral | ir.Value
+    ],
+    else_: IntoLiteral | ir.Value = None,
 ) -> ir.Value:
     """A compat wrapper to support ibis<10.0.0, which did not have ibis.cases()."""
     try:
@@ -112,7 +133,7 @@ def bind(
     t: ibis.Deferred | ibis.Table,
     ref: IntoValue | Iterable[IntoValue] | Mapping[str, IntoValue],
     /,
-) -> tuple[ibis.Value, ...]:
+) -> tuple[ibis.Value | ibis.Deferred, ...]:
     """Reference into a table to get Columns and Scalars.
 
     ibis._.bind(ref) does not work because it returns another Deferred.
@@ -143,7 +164,7 @@ def bind_one(
 
 
 def ensure_val(
-    val: Any, type: str | dt.DataType | None = None
+    val: ibis.Value | ibis.Deferred | IntoLiteral, type: str | dt.DataType | None = None
 ) -> ir.Value | ibis.Deferred:
     """Ensure that `val` is an ibis Value or Deferred."""
     if isinstance(val, ibis.Value) or isinstance(val, ibis.Deferred):
@@ -344,7 +365,7 @@ def promote_list(val: V | Sequence[V]) -> list[V]:
         return [val]
 
 
-def is_iterable(o: Any) -> bool:
+def is_iterable(o: Any) -> TypeIs[Iterable]:
     """Return whether `o` is iterable and not a :class:`str` or :class:`bytes`.
 
     Parameters
