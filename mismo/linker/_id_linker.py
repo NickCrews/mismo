@@ -86,8 +86,7 @@ class IDLinker:
     def match_linkage(self, left: ibis.Table, right: ibis.Table) -> Linkage:
         if right is left:
             right = right.view()
-        links = LinksTable.from_join_condition(left, right, self.__join_condition__)
-        return Linkage(left=left, right=right, links=links)
+        return Linkage.from_join_condition(left=left, right=right, condition=self)
 
     # def nonmatch_condition(self, a: ibis.Table, b: ibis.Table) -> ir.BooleanValue:
     #     """Select any pairs where we know they are a non-match.
