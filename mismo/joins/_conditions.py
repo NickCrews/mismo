@@ -98,7 +98,7 @@ def join_condition(obj: IntoJoinCondition) -> HasJoinCondition:
     │ alice  │    30 │        30 │
     │ alice  │    40 │        30 │
     └────────┴───────┴───────────┘
-    """
+    """  # noqa: E501
     if isinstance(obj, HasJoinCondition):
         return obj
     if isinstance(obj, (bool, ir.BooleanValue)):

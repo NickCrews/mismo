@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 try:
-    from typing import Self as Self
+    from typing import Self as Self  # ty:ignore[unresolved-import]
 except ImportError:
     from typing_extensions import Self as Self
 
 try:
-    from typing import TypeIs as TypeIs
+    from typing import TypeIs as TypeIs  # ty:ignore[unresolved-import]
 except ImportError:
     from typing_extensions import TypeIs as TypeIs
 

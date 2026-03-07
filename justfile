@@ -13,6 +13,10 @@ fmt:
     uv run --group lint ruff check --fix mismo docs
     uv run --group lint ruff format mismo docs
 
+# typecheck. This currently doesn't pass at all
+typecheck:
+    uv run --group lint ty check
+
 # lint code
 lint:
     uv run --group lint ruff check mismo docs

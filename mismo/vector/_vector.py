@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal, TypeVar
+from typing import Literal, TypeVar, cast
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -10,17 +10,17 @@ import ibis.expr.types as ir
 
 
 @ibis.udf.scalar.builtin(name="array_sum")
-def _array_sum(a) -> float: ...
+def _array_sum(a) -> float: ...  # ty:ignore[empty-body]
 
 
 # for duckdb
 @ibis.udf.scalar.builtin(name="list_dot_product")
-def _array_dot_product(a, b) -> float: ...
+def _array_dot_product(a, b) -> float: ...  # ty:ignore[empty-body]
 
 
 # for duckdb
 @ibis.udf.scalar.builtin(name="list_cosine_similarity")
-def _array_cosine_similarity(a, b) -> float: ...
+def _array_cosine_similarity(a, b) -> float: ...  # ty:ignore[empty-body]
 
 
 T = TypeVar("T", ir.MapValue, ir.ArrayValue)
@@ -190,20 +190,15 @@ def normalize(vec: T, *, metric: Literal["l1", "l2"] = "l2") -> T:
     >>> normalize(ibis.map({"a": 1, "b": 2})).execute()
     {'a': 0.4472135954999579, 'b': 0.8944271909999159}
     """
+    denom = norm(vec, metric=metric)
     if isinstance(vec, ir.ArrayValue):
-        vals = vec
+        return vec.map(lambda x: x / denom)
     elif isinstance(vec, ir.MapValue):
         vals = map_values(vec)
+        normed_vals = vals.map(lambda x: x / denom)
+        return map_(map_keys(vec), normed_vals)
     else:
         raise ValueError(f"Unsupported type {type(vec)}")
-
-    denom = norm(vec, metric=metric)
-    normed_vals = vals.map(lambda x: x / denom)
-
-    if isinstance(vec, ir.ArrayValue):
-        return normed_vals
-    else:
-        return map_(map_keys(vec), normed_vals)
 
 
 def _shared_keys(a: ir.MapValue, b: ir.MapValue) -> ir.ArrayValue:
@@ -230,7 +225,7 @@ def map_keys(m: ir.MapValue) -> ir.ArrayValue:
     if not _need_old_duckdb_workaround():
         return normal
     null = ibis.literal(None, type=dt.Array(value_type=m.type().key_type))
-    return m.isnull().ifelse(null, normal)
+    return cast(ir.ArrayValue, m.isnull().ifelse(null, normal))
 
 
 def map_values(m: ir.MapValue) -> ir.ArrayValue:
@@ -238,8 +233,9 @@ def map_values(m: ir.MapValue) -> ir.ArrayValue:
     normal = m.values()
     if not _need_old_duckdb_workaround():
         return normal
-    null = ibis.literal(None, type=dt.Array(value_type=m.type().value_type))
-    return m.isnull().ifelse(null, normal)
+    t = cast(dt.Map, m.type())
+    null = ibis.literal(None, type=dt.Array(value_type=t.value_type))
+    return cast(ir.ArrayValue, m.isnull().ifelse(null, normal))
 
 
 def map_(keys: ir.ArrayValue, values: ir.ArrayValue) -> ir.MapValue:
@@ -248,13 +244,10 @@ def map_(keys: ir.ArrayValue, values: ir.ArrayValue) -> ir.MapValue:
         return ibis.map(keys, values)
     either_null = keys.isnull() | values.isnull()
     regular = ibis.map(keys, values)
-    null = ibis.literal(
-        None,
-        type=dt.Map(
-            key_type=keys.type().value_type, value_type=values.type().value_type
-        ),
-    )
-    return either_null.ifelse(null, regular)
+    kt = cast(dt.Array, keys.type()).value_type
+    vt = cast(dt.Array, values.type()).value_type
+    null = ibis.literal(None, type=dt.Map(key_type=kt, value_type=vt))
+    return cast(ir.MapValue, either_null.ifelse(null, regular))
 
 
 def _need_old_duckdb_workaround() -> bool:

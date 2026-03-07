@@ -5,7 +5,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from contextlib import contextmanager
 import datetime
 import decimal
-from typing import Any, Callable, Literal, TypeVar, overload
+from typing import Any, Callable, Literal, TypeVar, cast, overload
 import uuid
 import warnings
 
@@ -266,7 +266,7 @@ def row_hash(t: ir.Table, *, seed: int | None = None) -> ir.IntegerColumn:
     fields = {col: t[col].hash() for col in t.columns}
     if seed is not None:
         fields[unique_name()] = ibis.literal(seed)
-    return ibis.struct(fields).hash()
+    return cast(ir.IntegerColumn, ibis.struct(fields).hash())
 
 
 def group_id(
@@ -342,7 +342,7 @@ V = TypeVar("V")
 
 
 def promote_list(val: V | Sequence[V]) -> list[V]:
-    """Ensure that the value is a list.
+    """Ensure that the value is a list. None returns an empty list.
 
     Parameters
     ----------
@@ -408,7 +408,9 @@ def join_lookup(
     lookup: ibis.Table,
     on: str,
     *,
-    defaults: Mapping[str, ir.Expr] | Iterable[ir.Expr] | None = None,
+    defaults: Mapping[str, ir.Value | IntoLiteral]
+    | Iterable[ir.Value | IntoLiteral]
+    | None = None,
     augment_as: str | Callable[[str], str] | Literal[False] = "{name}",
     on_collision: Literal["error", "warn", "ignore"] = "error",
 ) -> ibis.Table:
@@ -453,22 +455,20 @@ def join_lookup(
         If `rename_as` is the special value "{name}", then this parameter is ignored,
         since it is assumed you want to overwrite the columns.
     """
+    dict_of_vals: dict[str, ir.Value]
     if defaults is None:
-        defaults = {col: ibis.null() for col in lookup.columns if col != on}
-    if not isinstance(defaults, Mapping):
-        defaults = {col.get_name(): col for col in defaults}
+        dict_of_vals = {col: ibis.null() for col in lookup.columns if col != on}
+    elif isinstance(defaults, Mapping):
+        dict_of_vals = {col: ensure_val(val) for col, val in defaults.items()}
+    else:
+        vals = [ensure_val(v) for v in defaults]
+        dict_of_vals = {v.get_name(): v for v in vals}
     # Ensure that the types are mergable. eg we want to support passing in
     # {"emails": ibis.literal([])} as a default (which has no concrete type)
-    # First ensure all are expressions:
-    defaults = {
-        col: val if isinstance(val, ir.Expr) else ibis.literal(val)
-        for col, val in defaults.items()
-    }
-    defaults = {col: val.cast(lookup[col].type()) for col, val in defaults.items()}
-
+    casted = {col: val.cast(lookup[col].type()) for col, val in dict_of_vals.items()}
     lookup = ibis.union(
         lookup,
-        t.select(on, **defaults).distinct().anti_join(lookup, on),
+        t.select(on, **casted).distinct().anti_join(lookup, on),
     )
 
     if augment_as is False:

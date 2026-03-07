@@ -85,6 +85,7 @@ test = [
 lint = [
   "mypy>=1.11.2",
   "ruff>=0.6.9",
+  "ty>=0.0.21",
 ]
 docs = [
   "mkdocs-git-revision-date-localized-plugin>=1.2.9",

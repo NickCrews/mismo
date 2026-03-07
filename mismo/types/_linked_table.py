@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, cast
 
 import ibis
 from ibis import _
@@ -385,10 +385,11 @@ class LinkCountsTable(TableWrapper):
         else:
             subtitle = "eg 'there were 1000 records with 0 links, 500 with 1 link, 100 with 2 links, ...'"  # noqa: E501
 
-        frac_records: ir.StringValue = (
+        frac_records: ir.StringValue = cast(
+            ir.StringValue,
             (self.n_records / total_records * 100).cast(int).cast(str)
             if total_records > 0
-            else ibis.literal("0")
+            else ibis.literal("0"),
         )
         t = self.mutate(
             frac_records=frac_records,

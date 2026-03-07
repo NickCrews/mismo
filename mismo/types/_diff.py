@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 from pathlib import Path
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import ibis
 
@@ -35,6 +35,12 @@ class Diff:
     This is able to represent a difference between two tables with different schemas,
     eg if a column is added or removed.
     """
+
+    _before: ibis.Table
+    _after: ibis.Table
+    _insertions: ibis.Table
+    _updates: Updates
+    _deletions: ibis.Table
 
     def __new__(*args, **kwargs):
         raise NotImplementedError(
@@ -191,7 +197,7 @@ class Diff:
     ) -> _typing.Self:
         """Create a Diff by reading parquets from the given directory."""
         if backend is None:
-            backend = ibis
+            backend = ibis.get_backend()
         d = Path(directory)
         return cls.from_deltas(
             before=backend.read_parquet(d / "before.parquet"),
@@ -295,32 +301,32 @@ class DiffStats:
     @functools.cache
     def n_before(self) -> int:
         """Number of rows in `before`."""
-        return int(self._diff.before().count().execute())
+        return int(cast(int, self._diff.before().count().execute()))
 
     @functools.cache
     def n_unchanged(self) -> int:
         """Number of rows that were unchanged between `before` and `after`."""
-        return int(self._diff.unchanged().count().execute())
+        return int(cast(int, self._diff.unchanged().count().execute()))
 
     @functools.cache
     def n_insertions(self) -> int:
         """Number of rows that were in `after` but not in `before`."""
-        return int(self._diff.insertions().count().execute())
+        return int(cast(int, self._diff.insertions().count().execute()))
 
     @functools.cache
     def n_deletions(self) -> int:
         """Number of rows that were in `before` but not in `after`."""
-        return int(self._diff.deletions().count().execute())
+        return int(cast(int, self._diff.deletions().count().execute()))
 
     @functools.cache
     def n_updates(self) -> int:
         """Number of rows that were changed between `before` and `after`."""
-        return int(self._diff.updates().count().execute())
+        return int(cast(int, self._diff.updates().count().execute()))
 
     @functools.cache
     def n_after(self) -> int:
         """Number of rows in `after`."""
-        return int(self._diff.after().count().execute())
+        return int(cast(int, self._diff.after().count().execute()))
 
     def __repr__(self):
         return dedent(f"""
