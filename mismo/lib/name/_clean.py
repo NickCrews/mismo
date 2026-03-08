@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import cast
+
 import ibis
 from ibis.expr import types as ir
 
@@ -27,7 +29,18 @@ def normalize_name_field(field: ir.StringValue) -> ir.StringValue:
     return field
 
 
-def normalize_name(name: ir.StructValue) -> ir.StructValue:
+class NameStruct(ibis.ir.StructValue):
+    """A struct with fields prefix, given, middle, surname, suffix, nickname."""
+
+    prefix: ir.StringValue
+    given: ir.StringValue
+    middle: ir.StringValue
+    surname: ir.StringValue
+    suffix: ir.StringValue
+    nickname: ir.StringValue
+
+
+def normalize_name(name: NameStruct) -> NameStruct:
     """Convert to uppercase, normalize whitespace, and remove non-alphanumeric.
 
     Parameters
@@ -40,15 +53,18 @@ def normalize_name(name: ir.StructValue) -> ir.StructValue:
     name_normed :
         The normalized name.
     """
-    return ibis.struct(
-        {
-            "prefix": normalize_name_field(name.prefix),
-            "given": normalize_name_field(name.given),
-            "middle": normalize_name_field(name.middle),
-            "surname": normalize_name_field(name.surname),
-            "suffix": normalize_name_field(name.suffix),
-            "nickname": normalize_name_field(name.nickname),
-        }
+    return cast(
+        NameStruct,
+        ibis.struct(
+            {
+                "prefix": normalize_name_field(name.prefix),
+                "given": normalize_name_field(name.given),
+                "middle": normalize_name_field(name.middle),
+                "surname": normalize_name_field(name.surname),
+                "suffix": normalize_name_field(name.suffix),
+                "nickname": normalize_name_field(name.nickname),
+            }
+        ),
     )
 
 

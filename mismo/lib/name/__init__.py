@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ._blocker import NameBlocker as NameBlocker
+from ._clean import NameStruct as NameStruct
 from ._clean import normalize_name as normalize_name
 from ._compare import NameComparer as NameComparer
 from ._compare import NameMatchLevel as NameMatchLevel
