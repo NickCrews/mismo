@@ -348,7 +348,7 @@ class LinkCountsTable(TableWrapper):
             )
         super().__init__(t)
 
-    def chart(self) -> alt.Chart:
+    def chart(self, *, selection_param_name: str | None = None) -> alt.Chart:
         """A bar chart of the number of records by the number of links.
 
         ```plaintext
@@ -385,11 +385,9 @@ class LinkCountsTable(TableWrapper):
         else:
             subtitle = "eg 'there were 1000 records with 0 links, 500 with 1 link, 100 with 2 links, ...'"  # noqa: E501
 
-        frac_records: ir.StringValue = cast(
-            ir.StringValue,
-            (self.n_records / total_records * 100).cast(int).cast(str)
-            if total_records > 0
-            else ibis.literal("0"),
+        frac_records: ir.FloatingValue = cast(
+            ir.FloatingValue,
+            self.n_records / total_records if total_records > 0 else ibis.literal(0),
         )
         t = self.mutate(
             frac_records=frac_records,
@@ -398,7 +396,7 @@ class LinkCountsTable(TableWrapper):
                 + f"{total_records:_} records, "
                 + self.n_records.cast(str)
                 + " ("
-                + frac_records
+                + (frac_records * 100).cast(int).cast(str)
                 + "%) had "
                 + self.n_links.cast(str)
                 + " links."
@@ -409,7 +407,7 @@ class LinkCountsTable(TableWrapper):
             empty=True,
             # Ensure a unique name to avoid conflicts with other LinkCountsTable charts.
             # https://github.com/vega/altair/issues/3891
-            name=_util.unique_name(),
+            name=selection_param_name or _util.unique_name(),
         )
         width = 800
         zoomin = (
@@ -451,7 +449,12 @@ class LinkCountsTable(TableWrapper):
             .mark_area(interpolate="step-after")
             .encode(
                 alt.X("n_links:O", sort="x", axis=None),
-                alt.Y("n_records:Q", title=None, axis=None),
+                alt.Y(
+                    "n_records:Q",
+                    title=None,
+                    axis=None,
+                    scale=alt.Scale(type="symlog"),
+                ),
             )
             .add_params(scrubber_selection)
         )

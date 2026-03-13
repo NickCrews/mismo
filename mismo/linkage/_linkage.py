@@ -150,7 +150,7 @@ class Linkage:
             links=links if links is not None else self.links,
         )
 
-    def link_counts_chart(self) -> alt.HConcatChart:
+    def link_counts_chart(self) -> alt.JupyterChart:
         """
         A side by side altair Chart of `left.link_counts().chart()` and `right.link_counts().chart()`.
 
@@ -175,8 +175,8 @@ class Linkage:
         import altair as alt
 
         self.cache()
-        left = self.left.link_counts().chart()
-        right = self.right.link_counts().chart().properties(title="Right Table")
+        left = self.left.link_counts().chart(selection_param_name="left_selection")
+        right = self.right.link_counts().chart(selection_param_name="right_selection")
         subtitle = left.title.subtitle
         left = left.properties(
             title=alt.TitleParams(
@@ -189,11 +189,12 @@ class Linkage:
                 anchor="middle",
             )
         )
-        return alt.hconcat(left, right).properties(
+        chart = alt.hconcat(left, right).properties(
             title=alt.TitleParams(
                 "Number of Records by Link Count", subtitle=subtitle, anchor="middle"
             )
         )
+        return alt.JupyterChart(chart)
 
 
 Linkish = TypeVar("Linkish", bound=LinksTable | Linkage)
