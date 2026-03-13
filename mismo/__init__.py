@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.metadata
 import warnings
 
+from mismo import analysis as analysis
 from mismo import arrays as arrays
 from mismo import cluster as cluster
 from mismo import compare as compare

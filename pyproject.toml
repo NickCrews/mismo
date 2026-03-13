@@ -47,6 +47,10 @@ viz = [
   "solara-ui>=1.51.0",
   "anywidget>=0.9.18",
 ]
+mcp = [
+  "mcp[cli]>=1.0.0",
+  "numpy>=1.24.0",
+]
 postal = [
   # pin to below 1.1.11 due to breaking changes in the build system
   # https://github.com/openvenues/pypostal/commits/df602af33f28c2c9d9dd198de8764244d063734f/
