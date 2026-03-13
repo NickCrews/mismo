@@ -174,11 +174,21 @@ class Linkage:
         """  # noqa: E501
         import altair as alt
 
+        self.cache()
         left = self.left.link_counts().chart()
         right = self.right.link_counts().chart().properties(title="Right Table")
         subtitle = left.title.subtitle
-        left = left.properties(title=alt.TitleParams("Left Table", anchor="middle"))
-        right = right.properties(title=alt.TitleParams("Right Table", anchor="middle"))
+        left = left.properties(
+            title=alt.TitleParams(
+                f"Left Table ({self.left.count().execute():_} records)", anchor="middle"
+            )
+        )
+        right = right.properties(
+            title=alt.TitleParams(
+                f"Right Table ({self.right.count().execute():_} records)",
+                anchor="middle",
+            )
+        )
         return alt.hconcat(left, right).properties(
             title=alt.TitleParams(
                 "Number of Records by Link Count", subtitle=subtitle, anchor="middle"
