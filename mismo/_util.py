@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import base64
-from collections.abc import Iterable, Mapping, Sequence
-from contextlib import contextmanager
 import datetime
 import decimal
-from typing import Any, Callable, Literal, TypeVar, cast, overload
 import uuid
 import warnings
+from collections.abc import Iterable, Mapping, Sequence
+from contextlib import contextmanager
+from typing import Any, Callable, Literal, TypeVar, cast, overload
 
 import ibis
 from ibis import _
@@ -468,7 +468,9 @@ def join_lookup(
     casted = {col: val.cast(lookup[col].type()) for col, val in dict_of_vals.items()}
     lookup = ibis.union(
         lookup,
-        t.select(on, **casted).distinct().anti_join(lookup, on),
+        # We need the final .cast() as a workaround because the anti_join turns non-nullable columns to nullable:
+        # https://github.com/ibis-project/ibis/issues/10416
+        t.select(on, **casted).distinct().anti_join(lookup, on).cast(lookup.schema()),
     )
 
     if augment_as is False:
