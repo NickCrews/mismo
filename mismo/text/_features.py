@@ -24,7 +24,7 @@ def tokenize(text: ir.StringValue) -> ir.ArrayValue:
     True
     """
     stripped = text.strip()
-    return (stripped == "").ifelse([], stripped.re_split(r"\s+"))
+    return (stripped == "").ifelse([], stripped.re_split(r"\s+"))  # ty:ignore[unresolved-attribute]
 
 
 # from https://www.imperva.com/blog/fast-n-grams-extraction-and-analysis-with-sql/
@@ -63,13 +63,14 @@ def ngrams(string: ir.StringValue, n: int) -> ir.ArrayValue:
     """
     if n < 1:
         raise ValueError("n must be greater than 0")
-    string = _util.ensure_val(string, "string")
+    resolved: ibis.ir.StringValue | ibis.Deferred = _util.ensure_val(string, "string")  # ty:ignore[invalid-assignment]
     pattern = "." * n
     # if you just do _re_extract_all("abcdef", "..."), you get ["abc", "def"].
     # So to get the "bcd" and the "cde", we need to offset the string
     # by one and two (in general up to n-1) characters.
-    first, *rest = [_re_extract_all(string[i:], pattern) for i in range(0, n)]
-    return string.isnull().ifelse(ibis.null("array<string>"), first.concat(*rest))
+    first, *rest = [_re_extract_all(resolved[i:], pattern) for i in range(0, n)]
+    result = resolved.isnull().ifelse(ibis.null("array<string>"), first.concat(*rest))
+    return result  # ty:ignore[invalid-return-type]
 
 
 @ibis.udf.scalar.builtin(

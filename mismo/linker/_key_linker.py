@@ -107,7 +107,7 @@ class KeyLinker(Linker):
         ],
         *,
         max_pairs: int | None = None,
-        task: Literal["dedupe", "lookup", "link"] | None = None,
+        task: Literal["dedupe", "link"] | None = None,
     ) -> None:
         """Create a KeyLinker.
 
@@ -150,15 +150,28 @@ class KeyLinker(Linker):
               otherwise "link".
         """  # noqa: E501
         # TODO: support named keys, eg KeyLinker("age", city=_.city.upper())
-        self.resolvers = tuple(_resolve.key_pair_resolvers(keys))
-        self.max_pairs = max_pairs
-        self.task = task
+        self._resolvers = _resolve.key_pair_resolvers(keys)
+        self._max_pairs = max_pairs
+        self._task = task
+
+    @property
+    def resolvers(self) -> list[tuple[_resolve.ValueResolver, _resolve.ValueResolver]]:
+        """The pairs of resolvers that are used to extract the keys from the left and right tables."""  # noqa: E501
+        return self._resolvers.copy()
+
+    @property
+    def max_pairs(self) -> int | None:
+        return self._max_pairs
+
+    @property
+    def task(self) -> Literal["dedupe", "link"] | None:
+        return self._task
 
     def __join_condition__(
         self, left: ibis.Table, right: ibis.Table
-    ) -> ir.BooleanValue:
+    ) -> ir.BooleanValue | bool:
         keys_left, keys_right = self.__keys__(left, right)
-        clauses = (kl == kr for kl, kr in zip(keys_left, keys_right, strict=True))
+        clauses = [kl == kr for kl, kr in zip(keys_left, keys_right, strict=True)]
         if self.max_pairs is not None:
             too_common_left, too_common_right = self.too_common_of_records(left, right)
             clauses = [
@@ -210,13 +223,14 @@ class KeyLinker(Linker):
 
     def __keys__(
         self, left: ibis.Table, right: ibis.Table
-    ) -> list[tuple[ir.Column, ir.Column]]:
+    ) -> tuple[list[ibis.Value], list[ibis.Value]]:
+        """Given the left and right tables, bind self.resolvers to get all the left keys and right keys."""  # noqa: E501
         lkeys = []
         rkeys = []
         for resolver_l, resolver_r in self.resolvers:
             lkeys.append(resolver_l(left))
             rkeys.append(resolver_r(right))
-        return tuple(lkeys), tuple(rkeys)
+        return lkeys, rkeys
 
     def key_counts_left(self, left: ibis.Table, /) -> KeyCountsTable:
         keys = [resolver(left) for resolver, _ in self.resolvers]
@@ -370,8 +384,14 @@ class KeyLinksTable(LinksTable):
         object.__setattr__(self, "_keys", keys)
         object.__setattr__(self, "_task", task)
 
-    def count(self) -> ibis.ir.IntegerScalar:
+    def count(
+        self, *, where: ir.BooleanValue | Deferred | None = None
+    ) -> ir.IntegerScalar:
         """The number of pairs in the links table."""
+        if where is not None:
+            raise NotImplementedError(
+                "Filtering the links table before counting is not yet supported."
+            )
         return (
             pair_counts(
                 left=self.left_,
@@ -413,15 +433,13 @@ def pair_counts(
     else:
         if kcl.equals(kcr):
             kcr = kcr.view()
-        condition = ibis.and_(
-            *(
-                kcl[a] == kcr[b]
-                for a, b in zip(kcl.columns, kcr.columns, strict=True)
-                if a != "n" and b != "n"
-            )
-        )
+        conditions = [
+            kcl[a] == kcr[b]
+            for a, b in zip(kcl.columns, kcr.columns, strict=True)
+            if a != "n" and b != "n"
+        ]
         by_key = (
-            ibis.join(kcl, kcr, condition).mutate(n=_.n * _.n_right).drop("n_right")
+            ibis.join(kcl, kcr, conditions).mutate(n=_.n * _.n_right).drop("n_right")
         )
     by_key = by_key.order_by(_.n.desc())
     return PairCountsTable(by_key)

@@ -30,10 +30,20 @@ class RareLookupFilterer:
         self,
         column_resolvers: Any,
         *,
-        max_frequency: float | Fraction,
+        max_frequency: int | float | Fraction,
     ) -> None:
-        self.column_resolvers = _resolve.key_pair_resolvers(column_resolvers)
-        self.max_frequency = max_frequency
+        self._column_resolvers = _resolve.key_pair_resolvers(column_resolvers)
+        self._max_frequency = max_frequency
+
+    @property
+    def column_resolvers(
+        self,
+    ) -> list[tuple[_resolve.ValueResolver, _resolve.ValueResolver]]:
+        return self._column_resolvers.copy()
+
+    @property
+    def max_frequency(self) -> int | float | Fraction:
+        return self._max_frequency
 
     def rare_needle(
         self,
@@ -41,9 +51,13 @@ class RareLookupFilterer:
         haystack: ibis.Table,
         needle: ibis.Table,
     ) -> ibis.Table:
-        key_pairs = [resolver(haystack, needle) for resolver in self.column_resolvers]
+        key_pairs = [
+            (left(haystack), right(needle)) for left, right in self.column_resolvers
+        ]
         keys_left, keys_right = zip(*key_pairs)
-        needle_columns = {left.get_name(): right for left, right in key_pairs}
+        needle_columns: dict[str, ibis.Value] = {
+            left.get_name(): right for left, right in key_pairs
+        }
         model = _tf.TermFrequencyModel(keys_left)
         freq_name = _util.unique_name("freq")
         with_frequencies = model.add_term_frequencies(
@@ -78,7 +92,13 @@ class AmbiguousHaystackFilterer:
     """
 
     def __init__(self, column_resolvers: Any) -> None:
-        self.column_resolvers = _resolve.key_pair_resolvers(column_resolvers)
+        self._column_resolvers = _resolve.key_pair_resolvers(column_resolvers)
+
+    @property
+    def column_resolvers(
+        self,
+    ) -> list[tuple[_resolve.ValueResolver, _resolve.ValueResolver]]:
+        return self._column_resolvers.copy()
 
     def ambiguous_haystack(
         self,
@@ -89,10 +109,12 @@ class AmbiguousHaystackFilterer:
         # I'm looking for not member of dupe because I assume the set of dupes
         # is going to be smaller than the number of nondupes, and I
         # THINK that would lead to a faster isin check?
-        key_pairs = [resolver(haystack, needle) for resolver in self.column_resolvers]
+        key_pairs = [
+            (left(haystack), right(needle)) for left, right in self.column_resolvers
+        ]
         keys_left, keys_right = zip(*key_pairs)
         n = haystack.count().over(group_by=keys_left)
-        return haystack.filter(n > 1)
+        return haystack.filter(n > 1)  # ty:ignore[unsupported-operator]
 
     def filter_common(
         self, haystack: ibis.Table, needle: ibis.Table

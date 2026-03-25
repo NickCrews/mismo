@@ -35,8 +35,16 @@ class DeferredResolver(ValueResolver):
     ) -> None:
         if name is None:
             name = "_"
-        self.deferred = deferred
-        self.name = name
+        self._deferred = deferred
+        self._name = name
+
+    @property
+    def deferred(self) -> ibis.Deferred:
+        return self._deferred
+
+    @property
+    def name(self) -> str:
+        return self._name
 
     def __call__(self, t: ibis.Table, /) -> ibis.Value:
         raw = self.deferred.resolve(**{self.name: t})
@@ -55,7 +63,11 @@ class LiteralResolver(ValueResolver):
     """A resolver that always returns the literal value given."""
 
     def __init__(self, value: ibis.Value, /) -> None:
-        self.value = value
+        self._value = value
+
+    @property
+    def value(self) -> ibis.Value:
+        return self._value
 
     def __call__(self, t: ibis.Table, /) -> ibis.Value:
         return _util.bind_one(t, self.value)
@@ -69,7 +81,11 @@ class LiteralResolver(ValueResolver):
 
 class StrResolver(ValueResolver):
     def __init__(self, s: str, /) -> None:
-        self.s = s
+        self._s = s
+
+    @property
+    def s(self) -> str:
+        return self._s
 
     def __call__(self, t: ibis.Table, /) -> ibis.Column:
         """Resolve a string to a column."""
@@ -84,7 +100,11 @@ class StrResolver(ValueResolver):
 
 class FuncResolver(ValueResolver):
     def __init__(self, func: Callable[[ibis.Table], ibis.Value], /) -> None:
-        self.func = func
+        self._func = func
+
+    @property
+    def func(self) -> Callable[[ibis.Table], ibis.Value]:
+        return self._func
 
     def __call__(self, t: ibis.Table, /) -> ibis.Value:
         return self.func(t)
@@ -144,7 +164,7 @@ def key_pair_resolver(spec: IntoKeyPairResolver) -> tuple[ValueResolver, ValueRe
     if isinstance(spec, str):
         return (value_resolver(spec), value_resolver(spec))
     if _funcs.is_unary(spec):
-        return (value_resolver(spec), value_resolver(spec))
+        return (value_resolver(spec), value_resolver(spec))  # ty:ignore[invalid-argument-type]
     parts = _util.promote_list(spec)
     if len(parts) != 2:
         raise ValueError(

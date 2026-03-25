@@ -62,14 +62,14 @@ class ColumnStats:
         if column is None:
             column = self.name
 
-        default_resolved: ibis.Scalar
+        default_resolved: ibis.ir.FloatingScalar
         if default == "1/N" or default == "1/n":
             n_total = table.count().as_scalar()
-            default_resolved = (1 / n_total).cast("float64")
+            default_resolved = (1 / n_total).cast("float64")  # ty:ignore[invalid-assignment]
         elif isinstance(default, ibis.Scalar):
             default_resolved = default.cast("float64")  # ty:ignore[invalid-assignment]
         else:
-            default_resolved = ibis.literal(default, "float64")
+            default_resolved = ibis.literal(default, "float64")  # ty:ignore[invalid-assignment]
         table_column = _util.bind_one(table, column)
 
         unique_name = _util.unique_name("join_key")
@@ -123,7 +123,7 @@ class TermFrequencyModel:
         self,
         table: ibis.Table,
         *,
-        columns: dict[str, str | ibis.Deferred | ibis.Column] | None = None,
+        columns: Mapping[str, str | ibis.Deferred | ibis.Value] | None = None,
         name_as: str | None = None,
         default: Literal[0, "1/N"] = "1/N",
     ) -> ibis.Table:

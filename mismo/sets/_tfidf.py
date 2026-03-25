@@ -8,7 +8,7 @@ from ibis.expr import types as ir
 from mismo import _util, vector
 
 
-def document_counts(terms: ir.ArrayColumn) -> ir.Table:
+def document_counts(terms: ir.ArrayValue) -> ir.Table:
     r"""Create a lookup Table from term to number of records containing the term.
 
     Parameters
@@ -73,7 +73,7 @@ def document_counts(terms: ir.ArrayColumn) -> ir.Table:
     return by_term
 
 
-def term_idf(terms: ir.ArrayValue) -> ir.Table:
+def term_idf(terms: ir.ArrayColumn) -> ir.Table:
     r"""Create a lookup Table from term to IDF.
 
     Examples

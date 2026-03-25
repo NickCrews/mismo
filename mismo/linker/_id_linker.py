@@ -79,7 +79,9 @@ class IDLinker:
         self.when_null = when_null
         self.when_not_equal = when_not_equal
 
-    def __join_condition__(self, a: ibis.Table, b: ibis.Table) -> ir.BooleanValue:
+    def __join_condition__(
+        self, a: ibis.Table, b: ibis.Table
+    ) -> ir.BooleanValue | bool:
         """Select any pairs where we know they are a match (ie the labels are equal)."""
         return KeyLinker(self.resolvers).__join_condition__(a, b)
 

@@ -110,13 +110,13 @@ def join_condition(obj: IntoJoinCondition) -> HasJoinCondition:
     if isinstance(obj, str):
         return KeyJoinCondition(obj)
     if _funcs.is_unary(obj):
-        return KeyJoinCondition(obj)
+        return KeyJoinCondition(obj)  # ty:ignore[invalid-argument-type]
     if _funcs.is_binary(obj):
-        return BinaryFuncJoinCondition(obj)
+        return BinaryFuncJoinCondition(obj)  # ty:ignore[invalid-argument-type]
     tuple_subconditions = _try_iterable(obj)
     if tuple_subconditions is not None:
         if len(tuple_subconditions) == 2 and isinstance(obj, tuple):
-            return KeyJoinCondition(obj)
+            return KeyJoinCondition(obj)  # ty:ignore[invalid-argument-type]
         return AndJoinCondition(tuple_subconditions)
     raise TypeError(f"Can't convert object of type {type(obj)} to a HasJoinCondition")
 
@@ -150,7 +150,7 @@ class BinaryFuncJoinCondition:
 
 class AndJoinCondition:
     def __init__(self, subconditions: Iterable[Any]):
-        self.subconditions: tuple[HasJoinCondition] = tuple(
+        self.subconditions: tuple[HasJoinCondition, ...] = tuple(
             join_condition(c) for c in subconditions
         )
 

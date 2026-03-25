@@ -20,4 +20,4 @@ def jaccard(a: ir.ArrayValue, b: ir.ArrayValue) -> ir.FloatingValue:
     """
     intersection = a.intersect(b).length()
     normal = intersection / a.union(b).length()
-    return (intersection == 0).ifelse(0, normal)
+    return (intersection == 0).ifelse(0, normal)  # ty:ignore[unresolved-attribute]
