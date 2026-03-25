@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import ibis
 from ibis import _
@@ -52,9 +52,9 @@ class LinkedTable(TableWrapper):
 
     def with_linked_values(
         self,
-        *values: ibis.Deferred | Callable[[ibis.Table], ir.Value] | None,
+        *values: Any,
         default_agg: ibis.Deferred = _.collect(),
-        **named_values: ibis.Deferred | Callable[[ibis.Table], ir.Value] | None,
+        **named_values: Any,
     ) -> _typing.Self:
         """
         This table, with values from the linked records.

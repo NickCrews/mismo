@@ -29,7 +29,7 @@ def test_struct_wrapper_basic(table_factory):
     assert_equal(wrapped.a, struct_col.a)
     assert_equal(wrapped.b, struct_col.b)
     assert_equal(wrapped["_x"], struct_col["_x"])
-    assert wrapped.to_list() == struct_col.to_list()
+    assert wrapped.to_list() == struct_col.to_list()  # ty: ignore[call-non-callable]
 
 
 def test_table_wrapper_custom_method(table_factory):
@@ -38,7 +38,7 @@ def test_table_wrapper_custom_method(table_factory):
             return "custom_method_called"
 
         # This should override the underlying table's select method
-        def select(self, *args, **kwargs) -> str:
+        def select(self, *args, **kwargs) -> str:  # ty: ignore[invalid-method-override]
             return "select_called"
 
     table = table_factory({"a": [1, 2], "b": [3, 4]})
@@ -56,7 +56,7 @@ def test_struct_wrapper_custom_method(table_factory):
             return "custom_method_called"
 
         # This should override the underlying struct's isnull method
-        def isnull(self) -> str:
+        def isnull(self) -> str:  # ty: ignore[invalid-method-override]
             return "isnull_called"
 
     table = table_factory({"a": [1, 2], "b": [3, 4]})

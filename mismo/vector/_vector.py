@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal, TypeVar, cast
+from typing import Literal, TypeVar, cast, overload
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -102,16 +102,26 @@ def cosine_similarity(a: T, b: T) -> ir.FloatingValue:
     return _array_cosine_similarity(a_vals, b_vals)
 
 
+@overload
+def mul(a: ir.ArrayValue, b: ir.ArrayValue) -> ir.ArrayValue: ...
+
+
+@overload
+def mul(a: ir.MapValue, b: ir.MapValue) -> ir.MapValue: ...
+
+
 def mul(a: T, b: T) -> T:
     """Element-wise multiplication of two vectors"""
     if isinstance(a, ir.ArrayValue) and isinstance(b, ir.ArrayValue):
-        return a.zip(b).map(lambda struct: struct.f1 * struct.f2)
+        return cast(T, a.zip(b).map(lambda struct: struct.f1 * struct.f2))
     elif isinstance(a, ir.MapValue) and isinstance(b, ir.MapValue):
         keys = _shared_keys(a, b)
-        vals = keys.map(lambda k: a[k] * b[k])
+        vals = keys.map(lambda k: a[k].cast("float64") * b[k].cast("float64"))  # ty: ignore[unsupported-operator]
         is_null = vals.isnull()
-        result = map_(keys.fill_null([]), vals.fill_null([]))
-        return is_null.ifelse(ibis.null(), result)
+        empty_keys = ibis.literal([], type=keys.type())
+        empty_vals = ibis.literal([], type=vals.type())
+        result = map_(keys.fill_null(empty_keys), vals.fill_null(empty_vals))
+        return cast(T, is_null.ifelse(ibis.null(), result))
     else:
         raise ValueError(f"Unsupported types {type(a)} and {type(b)}")
 
@@ -159,6 +169,18 @@ def norm(vec: T, *, metric: Literal["l1", "l2"] = "l2") -> ir.FloatingValue:
         raise ValueError(f"Unsupported norm {metric}")
 
 
+@overload
+def normalize(
+    vec: ir.ArrayValue, *, metric: Literal["l1", "l2"] = "l2"
+) -> ir.ArrayValue: ...
+
+
+@overload
+def normalize(
+    vec: ir.MapValue, *, metric: Literal["l1", "l2"] = "l2"
+) -> ir.MapValue: ...
+
+
 def normalize(vec: T, *, metric: Literal["l1", "l2"] = "l2") -> T:
     """Normalize a vector to have unit length.
 
@@ -192,19 +214,20 @@ def normalize(vec: T, *, metric: Literal["l1", "l2"] = "l2") -> T:
     """
     denom = norm(vec, metric=metric)
     if isinstance(vec, ir.ArrayValue):
-        return vec.map(lambda x: x / denom)
+        return cast(T, vec.map(lambda x: x / denom))
     elif isinstance(vec, ir.MapValue):
         vals = map_values(vec)
         normed_vals = vals.map(lambda x: x / denom)
-        return map_(map_keys(vec), normed_vals)
+        return cast(T, map_(map_keys(vec), normed_vals))
     else:
         raise ValueError(f"Unsupported type {type(vec)}")
 
 
 def _shared_keys(a: ir.MapValue, b: ir.MapValue) -> ir.ArrayValue:
     regular = map_keys(a).filter(lambda k: b.contains(k))
-    null = ibis.literal(None, type=dt.Array(value_type=a.type().key_type))
-    return b.isnull().ifelse(null, regular)
+    key_type = cast(dt.Map, a.type()).key_type
+    null = ibis.literal(None, type=dt.Array(value_type=key_type))
+    return cast(ir.ArrayValue, b.isnull().ifelse(null, regular))
 
 
 def _shared_vals(a: T, b: T) -> tuple[ir.ArrayValue, ir.ArrayValue]:
@@ -224,7 +247,8 @@ def map_keys(m: ir.MapValue) -> ir.ArrayValue:
     normal = m.keys()
     if not _need_old_duckdb_workaround():
         return normal
-    null = ibis.literal(None, type=dt.Array(value_type=m.type().key_type))
+    key_type = cast(dt.Map, m.type()).key_type
+    null = ibis.literal(None, type=dt.Array(value_type=key_type))
     return cast(ir.ArrayValue, m.isnull().ifelse(null, normal))
 
 

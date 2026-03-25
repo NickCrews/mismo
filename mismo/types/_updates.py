@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, Protocol
+from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
 
 import ibis
 from ibis.expr import datatypes as dt
@@ -53,12 +53,15 @@ class UpdatedColumn(StructWrapper):
 
     def schema_change(self) -> Literal["added", "removed", "type_changed", "unchanged"]:
         """Was this column added, removed, have its type changed, or unchanged in the update?"""  # noqa: E501
-        if self.before is None and self.after is not None:
+        before = self.before
+        after = self.after
+        if before is None and after is not None:
             return "added"
-        elif self.before is not None and self.after is None:
+        elif before is not None and after is None:
             return "removed"
         else:
-            if self.before.type() != self.after.type():  # ty:ignore[possibly-missing-attribute]
+            assert before is not None and after is not None
+            if before.type() != after.type():
                 return "type_changed"
             else:
                 return "unchanged"
@@ -84,8 +87,11 @@ class UpdatedColumn(StructWrapper):
             raise ValueError(
                 "Cannot determine value change for columns that were added or removed"
             )
-        before_is_null = self.before.isnull()
-        after_is_null = self.after.isnull()
+        before = self.before
+        after = self.after
+        assert before is not None and after is not None
+        before_is_null = before.isnull()
+        after_is_null = after.isnull()
         return ibis.cases(
             (before_is_null & after_is_null, "remained_null"),
             (~before_is_null & after_is_null, "became_null"),
@@ -162,15 +168,19 @@ class Updates(TableWrapper):
         object.__setattr__(self, "_check_schemas", check_schemas)
         super().__init__(diff_table)
 
-    def __getattr__(self, name: str) -> UpdatedColumn:
+    def __getattr__(self, name: str) -> ibis.Column:  # ty: ignore[invalid-method-override]
         raw = super().__getattr__(name)
-        if name in self.__wrapped__.columns:
-            return UpdatedColumn(raw)
+        if name in self.__wrapped__.columns and isinstance(raw, ir.StructValue):
+            return cast(ibis.Column, UpdatedColumn(raw))
         return raw
 
-    def __getitem__(self, name: str) -> UpdatedColumn:
+    def __getitem__(self, name: Any) -> Any:
         raw = super().__getitem__(name)
-        if name in self.__wrapped__.columns:
+        if (
+            isinstance(name, str)
+            and name in self.__wrapped__.columns
+            and isinstance(raw, ir.StructValue)
+        ):
             return UpdatedColumn(raw)
         return raw
 
@@ -204,7 +214,7 @@ class Updates(TableWrapper):
             before, after, join_on, lname="{name}_l", rname="{name}_r", rename_all=True
         )
 
-        def make_diff_col(col: str) -> ir.StructColumn:
+        def make_diff_col(col: str) -> ir.StructValue:
             d = {}
             col_l = col + "_l"
             col_r = col + "_r"
@@ -248,13 +258,15 @@ class Updates(TableWrapper):
             An Updates object representing the changes.
         """  # noqa: E501
         if isinstance(before, ir.StructValue):
-            before = {col: before[col] for col in before.type().names}
+            before_type = cast(dt.Struct, before.type())
+            before = {col: before[col] for col in before_type.fields}
         if isinstance(after, ir.StructValue):
-            after = {col: after[col] for col in after.type().names}
+            after_type = cast(dt.Struct, after.type())
+            after = {col: after[col] for col in after_type.fields}
 
         all_columns = set(before.keys()) | set(after.keys())
 
-        def make_diff_col(col: str) -> ir.StructColumn:
+        def make_diff_col(col: str) -> ir.StructValue:
             d = {}
             if col in before:
                 d["before"] = before[col]
@@ -265,21 +277,29 @@ class Updates(TableWrapper):
         diff_table = _util.select(*[make_diff_col(c) for c in all_columns])
         return cls(diff_table, check_schemas=check_schemas)
 
-    def before_values(self) -> dict[str, ir.Column]:
+    def before_values(self) -> dict[str, ir.Value]:
         """The values before the changes."""
-        return {
-            col: self[col].before
-            for col in self.columns
-            if "before" in self[col].type().names
-        }
+        result: dict[str, ir.Value] = {}
+        for col in self.columns:
+            updated = self[col]
+            if not isinstance(updated, UpdatedColumn):
+                continue
+            col_type = cast(dt.Struct, updated.type())
+            if "before" in col_type.fields and updated.before is not None:
+                result[col] = updated.before
+        return result
 
-    def after_values(self) -> dict[str, ir.Column]:
+    def after_values(self) -> dict[str, ir.Value]:
         """The values after the changes."""
-        return {
-            col: self[col].after
-            for col in self.columns
-            if "after" in self[col].type().names
-        }
+        result: dict[str, ir.Value] = {}
+        for col in self.columns:
+            updated = self[col]
+            if not isinstance(updated, UpdatedColumn):
+                continue
+            col_type = cast(dt.Struct, updated.type())
+            if "after" in col_type.fields and updated.after is not None:
+                result[col] = updated.after
+        return result
 
     def before(self) -> ibis.Table:
         """The table before the changes."""

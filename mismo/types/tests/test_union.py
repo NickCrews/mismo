@@ -168,9 +168,9 @@ def test_union_table_properties_immutable(table1, table2):
     tables = union_table.tables
     assert isinstance(tables, tuple)
     with pytest.raises(AttributeError):
-        union_table.tables = ()
+        union_table.tables = ()  # ty: ignore[invalid-assignment]
     with pytest.raises((TypeError, AttributeError)):
-        tables[0] = table1
+        tables[0] = table1  # ty: ignore[invalid-assignment]
 
 
 def test_union_table_schema_consistency(table1, table_factory):

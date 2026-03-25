@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, cast
 
 import ibis
 
@@ -27,6 +27,8 @@ class OrLinker(Linker):
     - Union the [LinksTable][mismo.LinksTable]s into a single [LinksTable][mismo.LinksTable]
     """  # noqa: E501
 
+    _join_conditions: dict[str, HasJoinCondition]
+
     def __init__(
         self,
         conditions: Iterable[HasJoinCondition] | Mapping[str, HasJoinCondition],
@@ -35,7 +37,8 @@ class OrLinker(Linker):
     ) -> None:
         if isinstance(conditions, Mapping):
             self._join_conditions = {
-                k: joins.join_condition(v) for k, v in conditions.items()
+                k: joins.join_condition(v)
+                for k, v in cast(Mapping[str, HasJoinCondition], conditions).items()
             }
         else:
             self._join_conditions = {
@@ -89,7 +92,10 @@ class OrLinker(Linker):
                 for name in combo
             ]
             no_conditions = [
-                ~self._join_conditions[name].__join_condition__(left, right)
+                cast(
+                    ibis.BooleanValue,
+                    ~self._join_conditions[name].__join_condition__(left, right),
+                )
                 for name in blocker_names
                 if name not in combo
             ]

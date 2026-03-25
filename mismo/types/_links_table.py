@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import ibis
 from ibis import _
@@ -68,8 +68,8 @@ class LinksTable(TableWrapper):
 
     def with_left(
         self,
-        *values: ibis.Deferred | Callable[[ibis.Table], ibis.Value] | None,
-        **named_values: ibis.Deferred | Callable[[ibis.Table], ibis.Value] | None,
+        *values: Any,
+        **named_values: Any,
     ) -> LinksTable:
         """Add columns from the left table to this table of links.
 
@@ -120,8 +120,8 @@ class LinksTable(TableWrapper):
 
     def with_right(
         self,
-        *values: ibis.Deferred | Callable[[ibis.Table], ibis.Value] | None,
-        **named_values: ibis.Deferred | Callable[[ibis.Table], ibis.Value] | None,
+        *values: Any,
+        **named_values: Any,
     ) -> LinksTable:
         """Add columns from the right table to this table of links.
 
