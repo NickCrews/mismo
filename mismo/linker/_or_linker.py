@@ -4,6 +4,7 @@ from collections.abc import Iterable, Mapping
 from typing import TYPE_CHECKING, Literal, cast
 
 import ibis
+from ibis.expr import types as ir
 
 import mismo
 from mismo import _upset, joins
@@ -93,7 +94,7 @@ class OrLinker(Linker):
             ]
             no_conditions = [
                 cast(
-                    ibis.BooleanValue,
+                    ir.BooleanValue,
                     ~self._join_conditions[name].__join_condition__(left, right),
                 )
                 for name in blocker_names

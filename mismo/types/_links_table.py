@@ -17,7 +17,7 @@ class LinksTable(TableWrapper):
 
     This acts like an ibis table, guaranteed to have at least the
     columns record_id_l and record_id_r.
-    It may have more columns, such as `address_match_level`,
+    It may have more columns, such as `address_enum_comparer`,
     that describe the relationship between two records.
 
     In addition to the columns, this table has two properties, `left_` and `right_`,

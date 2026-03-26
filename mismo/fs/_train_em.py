@@ -6,7 +6,7 @@ from typing import Iterable
 from ibis import _
 from ibis.expr import types as ir
 
-from mismo.compare import LevelComparer
+from mismo.compare import EnumComparer
 
 from . import _train
 from ._weights import ComparerWeights, Weights
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def train_using_em(
-    comparers: Iterable[LevelComparer],
+    comparers: Iterable[EnumComparer],
     left: ir.Table,
     right: ir.Table,
     *,
@@ -57,12 +57,12 @@ def train_using_em(
     return weights
 
 
-def _initial_weights(comparers: Iterable[LevelComparer], labels: ir.Table) -> Weights:
+def _initial_weights(comparers: Iterable[EnumComparer], labels: ir.Table) -> Weights:
     return Weights(_initial_comparer_weights(c, labels[c.name]) for c in comparers)
 
 
 def _initial_comparer_weights(
-    comparer: LevelComparer, labels: ir.IntegerColumn
+    comparer: EnumComparer, labels: ir.IntegerColumn
 ) -> ComparerWeights:
     n_levels = len(comparer.levels)
     ms = [1 / n_levels] * n_levels
@@ -71,7 +71,7 @@ def _initial_comparer_weights(
 
 
 def _weights_from_matches_nonmatches(
-    comparers: Iterable[LevelComparer], matches: ir.Table, nonmatches: ir.Table
+    comparers: Iterable[EnumComparer], matches: ir.Table, nonmatches: ir.Table
 ) -> Weights:
     return Weights(
         [
@@ -84,7 +84,7 @@ def _weights_from_matches_nonmatches(
 
 
 def _comparer_weights_from_matches_nonmatches(
-    comparer: LevelComparer,
+    comparer: EnumComparer,
     match_labels: ir.IntegerColumn | ir.StringColumn,
     nonmatch_labels: ir.IntegerColumn | ir.StringColumn,
 ) -> ComparerWeights:

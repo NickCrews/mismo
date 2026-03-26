@@ -73,7 +73,7 @@ def test_clean_phone_number_area_code(inp, expected, area_code):
         pytest.param("  19071234567", "19071234567", "ELSE", id="whitespace"),
     ],
 )
-def test_match_level(a, b, level_str):
+def test_enum_comparer(a, b, level_str):
     ml = phone.match_level(ibis.literal(a), ibis.literal(b))
-    assert ml.as_string().execute() == level_str
-    assert ml.as_integer().execute() == phone.PhoneMatchLevel[level_str]
+    assert phone.PhoneMatchLevel.to_stringy(ml).execute() == level_str
+    assert ml.execute() == int(phone.PhoneMatchLevel[level_str])

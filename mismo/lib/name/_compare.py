@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import ibis
 from ibis.expr import types as ir
+from ibis_enum import IbisEnum
 
 from mismo import _structs, _util
-from mismo.compare import MatchLevel
 from mismo.lib.name._nicknames import are_aliases
 from mismo.text import damerau_levenshtein
 
@@ -50,7 +50,7 @@ def _substring_match(
     )
 
 
-class NameMatchLevel(MatchLevel):
+class NameMatchLevel(IbisEnum):
     """How closely two names match."""
 
     NULL = 0
@@ -78,32 +78,32 @@ def _get_level(le: ir.StructValue, ri: ir.StructValue) -> ir.IntegerValue:
                 _structs.struct_isnull(le, how="any", fields=["given", "surname"]),
                 _structs.struct_isnull(ri, how="any", fields=["given", "surname"]),
             ),
-            NameMatchLevel.NULL.as_integer(),
+            int(NameMatchLevel.NULL),
         ),
-        (_structs.struct_equal(le, ri), NameMatchLevel.EXACT.as_integer()),
+        (_structs.struct_equal(le, ri), int(NameMatchLevel.EXACT)),
         (
             _structs.struct_equal(le, ri, fields=["given", "surname"]),
-            NameMatchLevel.GIVEN_SURNAME.as_integer(),
+            int(NameMatchLevel.GIVEN_SURNAME),
         ),
         (
             are_match_with_nicknames(le, ri),
-            NameMatchLevel.NICKNAMES.as_integer(),
+            int(NameMatchLevel.NICKNAMES),
         ),
         (
             ibis.and_(
                 equal_forgiving_typo(le.given, ri.given),
                 le.surname == ri.surname,
             ),
-            NameMatchLevel.TYPO.as_integer(),
+            int(NameMatchLevel.TYPO),
         ),
         (
             ibis.and_(
                 initials_equal(le.given, ri.given),
                 le.surname == ri.surname,
             ),
-            NameMatchLevel.INITIALS.as_integer(),
+            int(NameMatchLevel.INITIALS),
         ),
-        else_=(NameMatchLevel.ELSE.as_integer()),
+        else_=int(NameMatchLevel.ELSE),
     )
 
 

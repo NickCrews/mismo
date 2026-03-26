@@ -7,8 +7,9 @@ from typing import TYPE_CHECKING, Iterable
 import ibis
 from ibis import _
 from ibis.expr import types as ir
+from ibis_enum import IbisEnum
 
-from mismo.compare._match_level import LevelComparer
+from mismo.compare._enum_comparer import EnumComparer
 from mismo.fs._plot import log_odds_color_scale
 from mismo.fs._util import odds_to_log_odds
 from mismo.fs._weights import Weights
@@ -21,7 +22,7 @@ if TYPE_CHECKING:
 
 def compared_dashboard(
     compared: ibis.Table,
-    comparers: Iterable[LevelComparer],
+    comparers: Iterable[EnumComparer],
     weights: Weights | None = None,
     *,
     width: int = 500,
@@ -38,7 +39,7 @@ def compared_dashboard(
     compared :
         The result of running the blocked table through the supplied `comparers`.
     comparers :
-        The LevelCompareres that were used to compare `compared`.
+        The EnumCompareres that were used to compare `compared`.
     weights :
         The Weights used to score the comparers.
         If provided, the chart will be colored by the odds found from the Weights.
@@ -56,7 +57,7 @@ def compared_dashboard(
     cols = [comp.name for comp in comparers]
     compared = compared.mutate(
         vector_id=ibis.literal(":").join(
-            [c.levels(compared[c.name]).as_string() for c in comparers]
+            [c.levels.to_stringy(compared[c.name]) for c in comparers]
         ),
     )
     chart = _compared_chart(compared, comparers, weights, width=width)
@@ -96,7 +97,7 @@ def compared_dashboard(
 
 def _compared_chart(
     compared: ir.Table,
-    comparers: Iterable[LevelComparer],
+    comparers: Iterable[EnumComparer],
     weights: Weights | None = None,
     *,
     width: int = 500,
@@ -232,22 +233,22 @@ def _frange(start, stop, n):
 
 
 def _vector_grid_data(
-    comparers: Iterable[LevelComparer], vector_data: pd.DataFrame
+    comparers: Iterable[EnumComparer], vector_data: pd.DataFrame
 ) -> pd.DataFrame:
     import pandas as pd
 
     records = []
     for levels in product(*(c.levels for c in comparers)):
-        vector_id = ":".join(levels)
+        vector_id = ":".join(lev.name for lev in levels)
         for comp, level in zip(comparers, levels):
             level_info = {c.name: None for c in comparers}
-            level_info[comp.name] = level
+            level_info[comp.name] = level.name
             records.append(
                 {
                     "vector_id": vector_id,
                     "level_uid": _level_uid(comp, level),
                     "comparer": comp.name,
-                    "level": level,
+                    "level": level.name,
                     **level_info,
                 }
             )
@@ -258,28 +259,29 @@ def _vector_grid_data(
     return result
 
 
-def _make_level_color_scale(comparers: Iterable[LevelComparer]) -> alt.Scale:
+def _make_level_color_scale(comparers: Iterable[EnumComparer]) -> alt.Scale:
     import altair as alt
 
     domain = []
     range = []
+    comparers = list(comparers)
     hues = _frange(0, 1, len(comparers))
     for comp, hue in zip(comparers, hues):
         levels = comp.levels
         shades = _frange(0.9, 0.2, len(levels))
-        for level_name, shade in zip(levels, shades):
+        for level, shade in zip(levels, shades):
             r, g, b = colorsys.hsv_to_rgb(hue, 1, shade)
             r = int(r * 255)
             g = int(g * 255)
             b = int(b * 255)
             hex_color = f"#{r:02x}{g:02x}{b:02x}"
-            domain.append(_level_uid(comp, level_name))
+            domain.append(_level_uid(comp, level))
             range.append(hex_color)
     return alt.Scale(domain=domain, range=range)
 
 
-def _level_uid(comparer: LevelComparer, level: str) -> str:
-    return comparer.name + ":" + level
+def _level_uid(comparer: EnumComparer, level: IbisEnum) -> str:
+    return comparer.name + ":" + level.name
 
 
 # TODO: make this work as a filter for the above histogram

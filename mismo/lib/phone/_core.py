@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import Literal, overload
 
 from ibis.expr import types as ir
+from ibis_enum import IbisEnum
 
 from mismo._util import bind_one, cases
 from mismo.arrays import array_combinations, array_min
-from mismo.compare import MatchLevel
 from mismo.text import damerau_levenshtein
 
 
@@ -82,7 +82,7 @@ def _drop_bogus_numbers(numbers: ir.StringValue) -> ir.StringValue:
     return is_bogus.ifelse(None, numbers)
 
 
-class PhoneMatchLevel(MatchLevel):
+class PhoneMatchLevel(IbisEnum):
     """How closely two phone numbers match."""
 
     EXACT = 0
@@ -98,7 +98,7 @@ def match_level(
     p2: ir.StringValue,
     *,
     native_representation: Literal["integer", "string"] = "integer",
-) -> PhoneMatchLevel:
+) -> ir.IntegerValue | ir.StringValue:
     """Match level of two phone numbers.
 
     Assumes the phone numbers have already been cleaned and normalized.
@@ -116,18 +116,17 @@ def match_level(
         The match level.
     """
 
-    def f(level: MatchLevel):
+    def f(level: PhoneMatchLevel):
         if native_representation == "string":
-            return level.as_string()
-        else:
-            return level.as_integer()
+            return level.name
+        return int(level)
 
     raw = cases(
         (p1 == p2, f(PhoneMatchLevel.EXACT)),
         (damerau_levenshtein(p1, p2) <= 1, f(PhoneMatchLevel.NEAR)),
         else_=f(PhoneMatchLevel.ELSE),
     )
-    return PhoneMatchLevel(raw)
+    return raw
 
 
 class PhonesDimension:
@@ -175,6 +174,6 @@ class PhonesDimension:
         ri = t[self.column_cleaned + "_r"]
         pairs = array_combinations(le, ri)
         min_level = array_min(
-            pairs.map(lambda pair: match_level(pair.l, pair.r).as_integer())
-        ).fill_null(PhoneMatchLevel.ELSE.as_integer())
+            pairs.map(lambda pair: match_level(pair.l, pair.r))
+        ).fill_null(int(PhoneMatchLevel.ELSE))
         return t.mutate(min_level.name(self.column_compared))

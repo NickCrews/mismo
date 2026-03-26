@@ -4,10 +4,11 @@ from typing import Literal
 
 import ibis
 from ibis.expr import types as ir
+from ibis_enum import IbisEnum
 
 from mismo._util import bind_one, cases
 from mismo.arrays import array_combinations, array_min
-from mismo.compare import MatchLevel
+from mismo.linkage._linkage import Linkage
 from mismo.linker import UnnestLinker
 from mismo.text import damerau_levenshtein
 
@@ -69,7 +70,7 @@ class ParsedEmail:
         )
 
 
-class EmailMatchLevel(MatchLevel):
+class EmailMatchLevel(IbisEnum):
     """How closely two email addresses of the form `<user>@<domain>` match.
 
     Case is ignored, and dots and underscores are removed.
@@ -92,7 +93,7 @@ def match_level(
     e2: ir.StructValue | ir.StringValue,
     *,
     native_representation: Literal["integer", "string"] = "integer",
-) -> EmailMatchLevel:
+) -> ir.IntegerValue | ir.StringValue:
     """Match level of two email addresses.
 
     Parameters
@@ -116,11 +117,11 @@ def match_level(
     if isinstance(e2, ir.StringValue):
         e2 = norm_and_parse(e2)
 
-    def f(level: MatchLevel):
+    def f(level: EmailMatchLevel):
         if native_representation == "string":
-            return level.as_string()
+            return level.name
         else:
-            return level.as_integer()
+            return level.value
 
     raw = cases(
         (e1.full == e2.full, f(EmailMatchLevel.FULL_EXACT)),
@@ -129,7 +130,7 @@ def match_level(
         (damerau_levenshtein(e1.user, e2.user) <= 1, f(EmailMatchLevel.USER_NEAR)),
         else_=f(EmailMatchLevel.ELSE),
     )
-    return EmailMatchLevel(raw)
+    return raw
 
 
 class EmailsDimension:
@@ -176,7 +177,7 @@ class EmailsDimension:
     def prepare_for_blocking(self, t: ir.Table) -> ir.Table:
         return t
 
-    def block(self, t1: ir.Table, t2: ir.Table, **kwargs) -> ir.Table:
+    def block(self, t1: ir.Table, t2: ir.Table, **kwargs) -> Linkage:
         linker = UnnestLinker(ibis._[self.column_parsed].full.unnest())
         return linker(t1, t2, **kwargs)
 
@@ -186,6 +187,6 @@ class EmailsDimension:
         ri = t[self.column_parsed + "_r"]
         pairs = array_combinations(le, ri)
         min_level = array_min(
-            pairs.map(lambda pair: match_level(pair.l, pair.r).as_integer())
-        ).fill_null(EmailMatchLevel.ELSE.as_integer())
+            pairs.map(lambda pair: match_level(pair.l, pair.r))
+        ).fill_null(int(EmailMatchLevel.ELSE))
         return t.mutate(min_level.name(self.column_compared))

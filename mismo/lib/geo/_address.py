@@ -3,8 +3,9 @@ from __future__ import annotations
 import ibis
 from ibis import _
 from ibis.expr import types as ir
+from ibis_enum import IbisEnum
 
-from mismo import _structs, _util, arrays, compare, sets, text
+from mismo import _structs, _util, arrays, sets, text
 from mismo.lib.geo._latlon import distance_km
 from mismo.lib.geo._regex_parse import parse_street1_re
 
@@ -111,7 +112,7 @@ def _featurize(
     return t
 
 
-class AddressesMatchLevel(compare.MatchLevel):
+class AddressesMatchLevel(IbisEnum):
     """How closely two addresses match."""
 
     STREET1_AND_CITY_OR_POSTAL = 0
@@ -168,7 +169,7 @@ def match_level(left: ir.StructValue, right: ir.StructValue) -> ir.IntegerValue:
                     lon2=right.longitude,
                 )
                 <= 100,
-                AddressesMatchLevel.WITHIN_100KM.as_integer(),
+                AddressesMatchLevel.WITHIN_100KM.value,
             ),
         ]
     else:
@@ -182,22 +183,22 @@ def match_level(left: ir.StructValue, right: ir.StructValue) -> ir.IntegerValue:
                     left.city == right.city, left.postal_code == right.postal_code
                 ),
             ),
-            AddressesMatchLevel.STREET1_AND_CITY_OR_POSTAL.as_integer(),
+            AddressesMatchLevel.STREET1_AND_CITY_OR_POSTAL.value,
         ),
         (
             _is_possible_typo(left, right),
-            AddressesMatchLevel.POSSIBLE_TYPO.as_integer(),
+            AddressesMatchLevel.POSSIBLE_TYPO.value,
         ),
         (
             ibis.or_(
                 left.postal_code == right.postal_code,
                 ibis.and_(left.city == right.city, left.state == right.state),
             ),
-            AddressesMatchLevel.SAME_REGION.as_integer(),
+            AddressesMatchLevel.SAME_REGION.value,
         ),
         *within_100km_levels,
-        (left.state == right.state, AddressesMatchLevel.SAME_STATE.as_integer()),
-        else_=AddressesMatchLevel.ELSE.as_integer(),
+        (left.state == right.state, AddressesMatchLevel.SAME_STATE.value),
+        else_=AddressesMatchLevel.ELSE.value,
     )
 
 

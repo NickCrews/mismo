@@ -21,9 +21,8 @@
   - `mismo/types/tests/test_union.py`
   - `mismo/types/tests/test_wrapper.py`
 - Fixed `mismo/vector/_vector.py` type signatures/casts around map and array operations.
-- Fixed `mismo/compare/_match_level.py` metaclass/class typing, narrowing, and comparer-case typing.
 - Added targeted test-only `ty: ignore` comments and expression adjustments in:
-  - `mismo/compare/tests/test_match_level.py`
+  - `mismo/compare/tests/test_enum_comparer.py`
 - Fixed `mismo/linker/_or_linker.py` internal mapping/boolean typing.
 
 ## Progress

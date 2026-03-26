@@ -27,6 +27,7 @@ keywords = [
   "duckdb",
 ]
 dependencies = [
+  "ibis-enum>=0.2.0",
   "ibis-framework>=9.1.0",
   # "ibis-framework[duckdb] @ git+https://github.com/ibis-project/ibis.git@42f45fe59da492897f0449468a3036384be34214",
   # Minimum version of sqlglot that has the flags option for regex_extract:

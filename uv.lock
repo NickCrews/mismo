@@ -1475,6 +1475,18 @@ wheels = [
 ]
 
 [[package]]
+name = "ibis-enum"
+version = "0.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "ibis-framework" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4d/79/b957dfc20b1ee14880c56c5874ea54fec849d43f070f6b442bbf15d756f2/ibis_enum-0.2.0.tar.gz", hash = "sha256:a713d518369b5d19fa03634d7ea4df25f980136d48c8dee48c8e08501390c5a3", size = 5753, upload-time = "2026-03-25T23:34:30.347Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0f/19/5dd3e145107a05e689ec5c90d082de9ab207d94de43186159d0e89dc426f/ibis_enum-0.2.0-py3-none-any.whl", hash = "sha256:fdd116a6f1cd2c72de8b3c6f54821116b52851626340895e33dabb81af7f3524", size = 6572, upload-time = "2026-03-25T23:34:29.064Z" },
+]
+
+[[package]]
 name = "ibis-framework"
 version = "12.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2166,6 +2178,7 @@ name = "mismo"
 version = "0.3.0"
 source = { editable = "." }
 dependencies = [
+    { name = "ibis-enum" },
     { name = "ibis-framework" },
     { name = "sqlglot" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'" },
@@ -2251,6 +2264,7 @@ requires-dist = [
     { name = "altair", marker = "extra == 'viz'", specifier = ">=5.0.0" },
     { name = "anywidget", marker = "extra == 'viz'", specifier = ">=0.9.18" },
     { name = "en-us-address-ner-sm", marker = "extra == 'spacy'", url = "https://github.com/NickCrews/spacy-address/releases/download/20241029-205717-sm/en_us_address_ner_sm-0.0.0-py3-none-any.whl" },
+    { name = "ibis-enum", specifier = ">=0.2.0" },
     { name = "ibis-framework", specifier = ">=9.1.0" },
     { name = "ipywidgets", marker = "extra == 'viz'", specifier = ">=7.5.1" },
     { name = "postal", marker = "(sys_platform == 'darwin' and extra == 'postal') or (sys_platform == 'linux' and extra == 'postal')", specifier = ">=1.1.7,<1.1.11" },

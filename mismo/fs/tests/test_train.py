@@ -1,21 +1,22 @@
 from __future__ import annotations
 
 from ibis import _
+from ibis_enum import IbisEnum
 import pytest
 
 from mismo import fs, playdata
-from mismo.compare import LevelComparer, MatchLevel
+from mismo.compare import EnumComparer
 from mismo.lib.geo import distance_km
 
 
 @pytest.fixture
 def name_comparer():
-    class NameMatchLevel(MatchLevel):
+    class NameMatchLevel(IbisEnum):
         EXACT = 0
         CLOSE = 1
         ELSE = 2
 
-    return LevelComparer(
+    return EnumComparer(
         name="name",
         levels=NameMatchLevel,
         cases=[
@@ -28,7 +29,7 @@ def name_comparer():
 
 @pytest.fixture
 def location_comparer():
-    class LocationMatchLevel(MatchLevel):
+    class LocationMatchLevel(IbisEnum):
         EXACT = 0
         WITHIN_10KM = 1
         WITHIN_100KM = 2
@@ -36,7 +37,7 @@ def location_comparer():
         ONE_MISSING = 4
         ELSE = 5
 
-    return LevelComparer(
+    return EnumComparer(
         name="location",
         levels=LocationMatchLevel,
         cases=[

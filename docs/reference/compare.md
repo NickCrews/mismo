@@ -16,14 +16,14 @@ that we no longer want to consider as matched.
 
 Bin record pairs into discrete levels, based on levels of agreement.
 
-Each [LevelComparer](#mismo.compare.LevelComparer) represents a dimension,
+Each [EnumComparer](#mismo.compare.EnumComparer) represents a dimension,
 such as *name*, *location*, *price*, *date*, etc.
-Each one contains many [MatchLevel](#mismo.compare.MatchLevel)s,
+Each one uses an [IbisEnum](#mismo.compare.IbisEnum),
 each of which is a level of aggreement,
 such as *exact*, *misspelling*, *within_1_km*, etc.
 
-::: mismo.compare.MatchLevel
-::: mismo.compare.LevelComparer
+::: mismo.compare.IbisEnum
+::: mismo.compare.EnumComparer
 
 ## Plotting
 

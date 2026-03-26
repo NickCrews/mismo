@@ -9,7 +9,7 @@ import ibis
 from ibis.expr import types as ir
 
 from mismo import _util
-from mismo.compare import LevelComparer
+from mismo.compare import EnumComparer
 
 from .._typing import Self
 from ._util import odds_to_log_odds, odds_to_prob
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class LevelWeights:
-    """Weights for a single [MatchLevel][mismo.compare.MatchLevel].
+    """Weights for a single enum level.
 
     This describes for example "If zipcodes match perfectly, then
     this increases the probability of a match by 10x as compared to if we
@@ -91,7 +91,7 @@ class LevelWeights:
 
 class ComparerWeights:
     """
-    The weights for a single [LevelComparer][mismo.compare.LevelComparer].
+    The weights for a single [EnumComparer][mismo.compare.EnumComparer].
 
     An ordered, dict-like collection of [LevelWeights][mismo.fs.LevelWeights]
     one for each level.
@@ -117,7 +117,7 @@ class ComparerWeights:
     @property
     def name(self) -> str:
         """
-        The name of the LevelComparer these weights are for, eg 'name" or "address".
+        The name of the EnumComparer these weights are for, eg 'name" or "address".
         """
         return self._name
 
@@ -230,7 +230,7 @@ class ComparerWeights:
 
 
 def compare_one(
-    t: ir.Table, level_comparer: LevelComparer, comp_weights: ComparerWeights
+    t: ir.Table, level_comparer: EnumComparer, comp_weights: ComparerWeights
 ) -> tuple[ir.StringValue, ir.FloatingValue]:
     conditions = [level.is_match(t) for level in level_comparer]
     odds = [level_weights.odds for level_weights in comp_weights]
@@ -247,7 +247,7 @@ class Weights:
 
     An unordered, dict-like collection of
     [ComparerWeights][mismo.fs.ComparerWeights],
-    one for each [LevelComparer][mismo.compare.LevelComparer] of the same name.
+    one for each [EnumComparer][mismo.compare.EnumComparer] of the same name.
     """
 
     def __init__(self, comparer_weights: Iterable[ComparerWeights]):
@@ -269,12 +269,12 @@ class Weights:
     def score_compared(self, compared: ir.Table) -> ir.Table:
         """Score already-compared record pairs.
 
-        This assumes that there is already a column one for each LevelComparer
+        This assumes that there is already a column one for each EnumComparer
         that contains the labels for each record pair. For example, if we have
-        a LevelComparer called "address", then we should have a column called
+        a EnumComparer called "address", then we should have a column called
         "address" that contains labels like "exact", "one-letter-off", "same-city", etc.
 
-        For each LevelComparer, we add a column, `{comparer.name}_odds`.
+        For each EnumComparer, we add a column, `{comparer.name}_odds`.
         This is a number that describes how this comparer affects the likelihood
         of a match. For example, an odds of 10 means that this comparer
         increased the likelihood of a match by 10x as compared to if we hadn't
@@ -282,10 +282,10 @@ class Weights:
         For example, the column might be called "name_odds" and have values like
         10, 0.1, 1.
 
-        In addition to these per-LevelComparer columns, we also add a column
+        In addition to these per-EnumComparer columns, we also add a column
         called "odds" which is the overall odds for each record pair.
         We calculate this by starting with the odds of 1 and then multiplying
-        by each LevelComparer's odds to get the overall odds.
+        by each EnumComparer's odds to get the overall odds.
         """
         results = []
         for comparer_weights in self:
@@ -296,7 +296,7 @@ class Weights:
         return self._score(compared, results)
 
     def compare_and_score(
-        self, t: ir.Table, level_comparers: Iterable[LevelComparer]
+        self, t: ir.Table, level_comparers: Iterable[EnumComparer]
     ) -> ir.Table:
         """Compare and score record pairs.
 
@@ -331,7 +331,7 @@ class Weights:
         return result
 
     def plot(self) -> alt.Chart:
-        """Plot the weights for all of the LevelComparers."""
+        """Plot the weights for all of the EnumComparers."""
         from ._plot import plot_weights
 
         return plot_weights(self)

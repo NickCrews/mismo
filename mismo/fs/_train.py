@@ -4,9 +4,10 @@ from typing import Iterable, Type
 
 from ibis import _
 from ibis.expr import types as ir
+from ibis_enum import IbisEnum
 
 from mismo._util import sample_table
-from mismo.compare import LevelComparer, MatchLevel
+from mismo.compare import EnumComparer
 from mismo.linkage import sample_all_links
 from mismo.linker import JoinLinker
 
@@ -14,14 +15,13 @@ from ._weights import ComparerWeights, LevelWeights, Weights
 
 
 def level_proportions(
-    levels: Type[MatchLevel], labels: ir.IntegerColumn | ir.StringColumn
+    levels: Type[IbisEnum], labels: ir.IntegerColumn | ir.StringColumn
 ) -> list[float]:
     """
-    Return the proportion of labels that fall into each [MatchLevel](mismo.compare.MatchLevel).
+    Return the proportion of labels that fall into each enum level.
     """  # noqa: E501
     counts = (
-        levels(labels)
-        .as_integer()
+        levels.to_numericy(labels)
         .name("level")
         .as_table()
         .group_by("level")
@@ -34,7 +34,7 @@ def level_proportions(
     # of M/0 = infinity.
     # If it shows up 0 times among matches, this would lead to an odds of 0/M = 0.
     # To avoid this, for any levels that we didn't see, we pretend we saw them once.
-    int_levels = [levels(lev).as_integer() for lev in levels]
+    int_levels = [int(level) for level in levels]
     for lev in int_levels:
         counts_dict.setdefault(lev, 1)
     n_total = sum(counts_dict.values())
@@ -42,7 +42,7 @@ def level_proportions(
 
 
 def _train_us_using_sampling(
-    comparer: LevelComparer,
+    comparer: EnumComparer,
     left: ir.Table,
     right: ir.Table,
     *,
@@ -53,7 +53,7 @@ def _train_us_using_sampling(
     This is from splink's `estimate_u_using_random_sampling()`
 
     The u parameters represent the proportion of record pairs
-    that fall into each MatchLevel amongst truly non-matching records.
+    that fall into each level amongst truly non-matching records.
 
     This procedure takes a sample of `left` and `right` and generates the cartesian
     product of record pairs.
@@ -77,7 +77,7 @@ def _train_us_using_sampling(
 
 
 def _train_ms_from_pairs(
-    comparer: LevelComparer,
+    comparer: EnumComparer,
     true_pairs: ir.Table,
     *,
     max_pairs: int = 1_000_000_000,
@@ -86,7 +86,7 @@ def _train_ms_from_pairs(
     """Estimate the m weights using the provided matching pairs.
 
     The m parameter represent the proportion of record pairs
-    that fall into each MatchLevel amongst truly matching pairs.
+    that fall into each level amongst truly matching pairs.
 
     This function expects a table with columns `record_id_l` and `record_id_r`.
     Each row represents a pair of matching records. Non-matching pairs should
@@ -116,7 +116,7 @@ def _train_ms_from_pairs(
 
 
 def _train_ms_from_labels(
-    comparer: LevelComparer,
+    comparer: EnumComparer,
     left: ir.Table,
     right: ir.Table,
     *,
@@ -126,7 +126,7 @@ def _train_ms_from_labels(
     """Estimate the m weights using labeled records.
 
     The m parameter represent the proportion of record pairs
-    that fall into each MatchLevel amongst truly matching pairs.
+    that fall into each level amongst truly matching pairs.
 
     This function expects a table of records with a column `label_true`.
     The `label_true` column is used to generate true-match record pairs.
@@ -176,21 +176,21 @@ def _true_pairs_from_labels(left: ir.Table, right: ir.Table) -> ir.Table:
 
 
 def train_using_pairs(
-    comparers: Iterable[LevelComparer],
+    comparers: Iterable[EnumComparer],
     left: ir.Table,
     right: ir.Table,
     *,
     true_pairs: ir.Table,
     max_pairs: int = 1_000_000_000,
 ) -> Weights:
-    """Estimate all Weights for a set of LevelComparers using true pairs.
+    """Estimate all Weights for a set of EnumComparers using true pairs.
 
     The m parameters represent the proportion of record pairs
-    that fall into each MatchLevel amongst truly matching pairs.
+    that fall into each level amongst truly matching pairs.
     This function estimates the m parameters using the provided true pairs.
 
     The u parameters represent the proportion of record pairs
-    that fall into each MatchLevel amongst truly non-matching records.
+    that fall into each level amongst truly non-matching records.
     This function estimates the u parameters using random sampling.
 
     Parameters
@@ -216,7 +216,7 @@ def train_using_pairs(
         The estimated weights for each comparer.
     """
 
-    def f(comparer: LevelComparer) -> ComparerWeights:
+    def f(comparer: EnumComparer) -> ComparerWeights:
         ms = _train_ms_from_pairs(comparer, true_pairs, max_pairs=max_pairs)
         us = _train_us_using_sampling(comparer, left, right, max_pairs=max_pairs)
         return make_weights(comparer, ms, us)
@@ -225,21 +225,21 @@ def train_using_pairs(
 
 
 def train_using_labels(
-    comparers: Iterable[LevelComparer],
+    comparers: Iterable[EnumComparer],
     left: ir.Table,
     right: ir.Table,
     *,
     max_pairs: int = 1_000_000_000,
 ) -> Weights:
-    """Estimate all Weights for a set of LevelComparers using labeled records.
+    """Estimate all Weights for a set of EnumComparers using labeled records.
 
     The m parameters represent the proportion of record pairs
-    that fall into each MatchLevel amongst truly matching pairs.
+    that fall into each level amongst truly matching pairs.
     This function estimates the m parameters using the `label_true` columns
     in the input datasets.
 
     The u parameters represent the proportion of record pairs
-    that fall into each MatchLevel amongst truly non-matching records.
+    that fall into each level amongst truly non-matching records.
     This function estimates the u parameters using random sampling.
 
     Parameters
@@ -260,7 +260,7 @@ def train_using_labels(
         The estimated weights for each comparer.
     """
 
-    def f(comparer: LevelComparer) -> ComparerWeights:
+    def f(comparer: EnumComparer) -> ComparerWeights:
         ms = _train_ms_from_labels(comparer, left, right, max_pairs=max_pairs)
         us = _train_us_using_sampling(comparer, left, right, max_pairs=max_pairs)
         return make_weights(comparer, ms, us)
@@ -269,12 +269,12 @@ def train_using_labels(
 
 
 def make_weights(
-    comparer: LevelComparer, ms: list[float], us: list[float]
+    comparer: EnumComparer, ms: list[float], us: list[float]
 ) -> ComparerWeights:
     levels = comparer.levels
     assert len(ms) == len(us) == len(levels)
     level_weights = [
-        LevelWeights(level, m=m, u=u) for level, m, u in zip(levels, ms, us)
+        LevelWeights(level.name, m=m, u=u) for level, m, u in zip(levels, ms, us)
     ]
     level_weights = [lw for lw in level_weights if lw.name != "else"]
     return ComparerWeights(comparer.name, level_weights)
