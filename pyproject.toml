@@ -55,7 +55,8 @@ postal = [
 ]
 spacy = [
   "en-us-address-ner-sm",
-  "spacy>=3.8.2",
+  # spacy 3.8.14 didn't have wheels for python 3.14: https://github.com/explosion/spaCy/issues/13949
+  "spacy>=3.8.2,!=3.8.14",
 ]
 metrics = [
   "scikit-learn>=1.5.2",
@@ -82,6 +83,8 @@ test = [
   "pytest-repeat>=0.9.4",
   "pytest-xdist>=3.6.1",
   "tabulate>=0.9.0", # Allows for printing tables in markdown
+  # Ensure we include the fix of https://github.com/explosion/thinc/pull/965
+  "thinc>=8.3.13",
 ]
 lint = [
   "mypy>=1.11.2",
