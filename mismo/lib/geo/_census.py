@@ -166,7 +166,6 @@ def _geocode(
     t = t.cache()
     sub_tables = chunk_table(t, max_size=chunk_size)
     byte_chunks = (_table_to_csv_bytes(sub) for sub in sub_tables)
-    client = _make_client()
     sem = asyncio.Semaphore(n_concurrent)
     requests = [
         dict(bytes=b, benchmark=benchmark, vintage=vintage) for b in byte_chunks
@@ -174,7 +173,7 @@ def _geocode(
     logger.debug(
         f"Geocoding {t.count().execute()} addresses in {len(requests)} chunks of size {chunk_size}"  # noqa
     )
-    responses = _make_requests(requests, client=client, sem=sem)
+    responses = _make_requests(requests, sem=sem)
     tables = (_text_to_table(resp_text) for resp_text in responses)
     result = ibis.union(*tables)
     result = _post_process_table(result)
@@ -216,16 +215,13 @@ def _make_client() -> httpx.AsyncClient:
 def _make_requests(
     requests: Iterable[dict],
     *,
-    client: httpx.AsyncClient | None = None,
     sem: asyncio.Semaphore | None = None,
 ):
-    if client is None:
-        client = _make_client()
     if sem is None:
         sem = asyncio.Semaphore(_N_CONCURRENT)
 
     async def _async_make_requests() -> list[str]:
-        async with client:
+        async with _make_client() as client:
             responses = [
                 _make_request(client, sem, chunk_id=i, **req)
                 for i, req in enumerate(requests)
@@ -342,7 +338,7 @@ def _asyncio_run_with_nest_asyncio(coro):
     except RuntimeError as e:
         if "asyncio.run() cannot be called from a running event loop" not in str(e):
             raise
-        import nest_asyncio
+        import mismo._nest_asyncio as nest_asyncio
 
         nest_asyncio.apply()
         return asyncio.run(coro)
