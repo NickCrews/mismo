@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from typing import Literal
+
 import ibis
 from ibis.expr import types as ir
 
 from mismo import _util
+from mismo.sets import jaccard as _jaccard
 
 
 def double_metaphone(s: ir.StringValue) -> ir.ArrayValue[ir.StringValue]:
@@ -109,8 +112,68 @@ def _dist_ratio(s1, s2, dist):
     return (lenmax - dist(s1, s2)) / lenmax
 
 
+def jaccard(
+    s1: ir.StringValue,
+    s2: ir.StringValue,
+    *,
+    tokenize: Literal["by_character", "on_whitespace"],
+) -> ir.FloatingValue:
+    """The Jaccard similarity between two strings.
+
+    This is a measure of the overlap of the number of elements in two sets of unique
+    tokens, where tokenization is defined by `tokenize`. Tokenization by character is
+    most suited for situations where character-level variations are important,
+    such as with typos, short text or languages without clear word boundaries
+    (e.g. Japanese and Chinese).
+    In contrast, word-level similarity is preferred when the semantic content of the
+    text is more important, rather than minor variations in the spelling or syntax.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> from mismo.text import jaccard
+
+    `tokenize='by_character'` replicates the implementation built into duckdb.
+    >>> jaccard(ibis.literal("foo"),
+    ... ibis.literal("foo"), tokenize='by_character').execute()
+    np.float64(1.0)
+    >>> jaccard(ibis.literal("foo"),
+    ... ibis.literal("food"), tokenize='by_character').execute()
+    np.float64(0.6666666666666666)
+    >>> jaccard(ibis.null(str),
+    ... ibis.literal("food"), tokenize='by_character').execute()
+    np.float64(nan)
+
+    word-level similarity can be achieved using `tokenize='on_whitespace'`.
+    >>> jaccard(ibis.literal("Paris is the capital of France"),
+    ... ibis.literal("The largest city in France is Paris"),
+    ... tokenize='on_whitespace').execute()
+    np.float64(0.3)
+
+    In both cases, comparing to an empty string will return a similarity of 0
+    >>> jaccard(ibis.literal("foo"), ibis.literal(""),
+    ... tokenize='on_whitespace').execute()
+    np.float64(0.0)
+    >>> jaccard(ibis.literal("foo"), ibis.literal(""),
+    ... tokenize='by_character').execute()
+    np.float64(0.0)
+
+    """
+    if tokenize == "by_character":
+        reg = ""
+    elif tokenize == "on_whitespace":
+        reg = r"\s+"
+    #
+    s1 = _util.ensure_ibis(s1, "string")
+    s2 = _util.ensure_ibis(s2, "string")
+    t1 = s1.re_split(reg).unique()
+    t2 = s2.re_split(reg).unique()
+    return _jaccard(t1, t2)
+
+
 @ibis.udf.scalar.builtin(name="jaro_similarity")
-def _jaro_similarity(s1: str, s2: str) -> float: ...
+def _jaro_similarity(s1: str, s2: str) -> float:
+    ...
 
 
 def jaro_similarity(s1: ir.StringValue, s2: ir.StringValue) -> ir.FloatingValue:
@@ -145,7 +208,8 @@ def jaro_similarity(s1: ir.StringValue, s2: ir.StringValue) -> ir.FloatingValue:
 
 # TODO: This isn't portable between backends
 @ibis.udf.scalar.builtin(name="jaro_winkler_similarity")
-def _jaro_winkler_similarity(s1: str, s2: str) -> float: ...
+def _jaro_winkler_similarity(s1: str, s2: str) -> float:
+    ...
 
 
 def jaro_winkler_similarity(s1: ir.StringValue, s2: ir.StringValue) -> ir.FloatingValue:
@@ -179,3 +243,9 @@ def jaro_winkler_similarity(s1: ir.StringValue, s2: ir.StringValue) -> ir.Floati
     0.0
     """
     return _jaro_winkler_similarity(s1, s2)
+
+
+if __name__ == "__main__":
+    import doctest
+
+    doctest.testmod()
