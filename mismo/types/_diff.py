@@ -23,7 +23,7 @@ class Diff:
     eg a row in the `before` table corresponds to only 0 or 1 row in the `after` table,
     and vice versa. eg "this row changed in these ways between these two tables".
 
-    To represent more general 0-N relationships, use a [Linkage](mismo.Linkage).
+    To represent more general 0-N relationships, use a [Linkage][mismo.Linkage].
     eg many rows in a "dirty" dataset are linked to a single row in a "clean" dataset.
     Say you have a clean database of records.
     You just got a new batch of dirty data that might contain duplicates.

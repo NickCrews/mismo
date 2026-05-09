@@ -104,7 +104,7 @@ def load_patents(*, backend: ibis.BaseBackend | None = None) -> Linkage:
     Returns
     -------
     Linkage
-        A [Linkage](mismo.Linkage), where both `left` and `right` are the tables
+        A [Linkage][mismo.Linkage], where both `left` and `right` are the tables
         of records. Each one has the following schema:
 
         - record_id: uint32
@@ -198,7 +198,7 @@ def load_rldata500(*, backend: ibis.BaseBackend | None = None) -> Linkage:
     Returns
     -------
     Linkage
-        A [Linkage](mismo.Linkage), where both `left` and `right` are the tables
+        A [Linkage][mismo.Linkage], where both `left` and `right` are the tables
         of records. Each one has the following schema:
 
         - record_id: int64
@@ -266,7 +266,7 @@ def load_rldata10000(*, backend: ibis.BaseBackend | None = None) -> Linkage:
     Returns
     -------
     Linkage
-        A [Linkage](mismo.Linkage), where both `left` and `right` are the tables
+        A [Linkage][mismo.Linkage], where both `left` and `right` are the tables
         of records. Each one has the following schema:
 
         - record_id: int64

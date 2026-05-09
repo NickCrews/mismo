@@ -36,7 +36,7 @@ plugins:
       enable_inventory: true
       handlers:
         python:
-          import:
+          inventories:
             - https://docs.python.org/3/objects.inv
             - https://scikit-learn.org/stable/objects.inv
             # Ibis doesn't export this anymore after switching to quartodoc
