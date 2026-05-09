@@ -2,7 +2,7 @@
 
 ::: mismo.HasJoinCondition
 ::: mismo.join_condition
-::: mismo.IntoHasJoinCondition
+::: mismo.IntoJoinCondition
 ::: mismo.join
 ::: mismo.left
 ::: mismo.right

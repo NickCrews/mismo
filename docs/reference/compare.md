@@ -18,11 +18,10 @@ Bin record pairs into discrete levels, based on levels of agreement.
 
 Each [EnumComparer](#mismo.compare.EnumComparer) represents a dimension,
 such as *name*, *location*, *price*, *date*, etc.
-Each one uses an [IbisEnum](#mismo.compare.IbisEnum),
+Each one uses an [IbisEnum](https://github.com/NickCrews/ibis-enum),
 each of which is a level of aggreement,
 such as *exact*, *misspelling*, *within_1_km*, etc.
 
-::: mismo.compare.IbisEnum
 ::: mismo.compare.EnumComparer
 
 ## Plotting
