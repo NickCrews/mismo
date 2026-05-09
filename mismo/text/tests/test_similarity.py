@@ -44,6 +44,24 @@ def test_levenshtein_ratio(string1, string2, expected):
     "string1,string2,expected",
     [
         ("foo", "foo", 1),
+        ("ab", "ba", 0.5),  # transposition is one edit (vs 2 for plain levenshtein)
+        ("baz", "def", 0),
+        ("", "", np.nan),
+        (None, None, np.nan),
+    ],
+)
+def test_damerau_levenshtein_ratio(string1, string2, expected):
+    result = text.damerau_levenshtein_ratio(string1, string2).execute()
+    if np.isnan(expected):
+        assert np.isnan(result)
+    else:
+        assert result == pytest.approx(expected, 0.001)
+
+
+@pytest.mark.parametrize(
+    "string1,string2,expected",
+    [
+        ("foo", "foo", 1),
         ("foo", "food", 0.942),
         ("bar", "bim", 0.5555),
         ("a", "", 0),

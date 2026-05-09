@@ -51,6 +51,12 @@ def test_tokenize(inp, exp):
         assert result == exp
 
 
+@pytest.mark.parametrize("n", [0, -1, -10])
+def test_ngrams_invalid_n(n):
+    with pytest.raises(ValueError, match="n must be greater than 0"):
+        text.ngrams("abc", n)
+
+
 @pytest.mark.parametrize(
     "inp,expected",
     [

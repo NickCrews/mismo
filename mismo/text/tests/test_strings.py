@@ -22,3 +22,10 @@ def test_norm_whitespace(inp, exp):
     inp = ibis.literal(inp, type="string")
     result = text.norm_whitespace(inp).execute()
     assert result == exp
+
+
+def test_strip_accents_non_duckdb_raises():
+    sqlite_con = ibis.sqlite.connect(":memory:")
+    t = sqlite_con.create_table("t", schema={"s": "string"})
+    with pytest.raises(NotImplementedError):
+        text.strip_accents(t.s)
