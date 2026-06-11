@@ -17,26 +17,20 @@ if TYPE_CHECKING:
 
 # expose this here so we can monkeypatch it in tests
 # The API supports max 10k addresses per request
-_CHUNK_SIZE = 5_000
+_CHUNK_SIZE = 1_000
 _N_CONCURRENT = 16
-# If I use a chunk size of 2k,
-# with 50 concurrent connections, each request takes 20-30 seconds
-# with 100 concurrent connections, each request takes 60-8 seconds
-# This implies to me that there are limited resources on the server.
-# If you make more requests, the same number of cores are serving them,
-# so each request takes longer. But not just linearly,
-# probably because of the overhead of context switching.
-
-# results:
-# 2k chunk size, 25 concurrent requests: ~15s/req, 5.25 min for 500k rows
-# 4k chunk size, 25 concurrent requests: ~30s/req, 5 min for 500k rows
-# 4k chunk size, 15 concurrent requests: ~22s/req, 3.75 min for 500k rows
-# 5k chunk size, 15 concurrent requests: ~??s/req, 3.25 min for 500k rows
-# 5k chunk size, 15 concurrent requests: ~26s/req, 3.5 min for 500k rows
-# 10k chunk size, 15 concurrent requests: ~65s/req, 4 min for 500k rows
-# 5k chunk size, 10 concurrent requests: ~25s/req, 4.5 min for 500k rows
-# 5k chunk size, 20 concurrent requests: ~35s/req, 4.5 min for 500k rows
-# 5k chunk size, 16 concurrent requests: ~30s/req, 3.5 min for 500k rows
+# These were re-tuned 2026-06-11 (previously chunk_size=5000), when the
+# server had gotten ~8x slower than when first tuned: a serial 5k chunk took
+# ~200s, past the 150s read timeout below, and 16 concurrent 5k chunks (80k
+# rows in flight) made the server return 502s outright. 16 concurrent 1k
+# chunks (16k rows in flight) all succeeded in 22-76s with the best
+# throughput of any config tested (~210 rows/s).
+# The server seems to choke on total in-flight rows, not connection count,
+# and throughput scales ~linearly with concurrency up to ~16 in-flight
+# requests per client; beyond that the excess requests just get 502s,
+# so raising _N_CONCURRENT above 16 buys nothing.
+# See bench_census.py (sibling to this file) for the methodology and data;
+# rerun it if these settings start failing again.
 
 
 logger = logging.getLogger(__name__)
@@ -79,12 +73,12 @@ def us_census_geocode(
     vintage:
         The geocoding vintage to use. Default is "Current_Current".
     chunk_size:
-        The number of addresses to geocode in each request. Default is 5000.
+        The number of addresses to geocode in each request. Default is 1000.
         The maximum allowed by the API is 10_000.
-        This number was tuned experimentally, you probably don't need to change ir.
+        This number was tuned experimentally, you probably don't need to change it.
     n_concurrent:
         The number of concurrent requests to make. Default is 16.
-        This number was tuned experimentally, you probably don't need to change ir.
+        This number was tuned experimentally, you probably don't need to change it.
 
     Returns
     -------
