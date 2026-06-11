@@ -56,11 +56,11 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+from dataclasses import dataclass
 import itertools
 import statistics
 import sys
 import time
-from dataclasses import dataclass
 
 import httpx
 

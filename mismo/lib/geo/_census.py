@@ -36,6 +36,69 @@ _N_CONCURRENT = 16
 logger = logging.getLogger(__name__)
 
 
+class _AdaptiveLimiter:
+    """A concurrency limiter whose limit adapts to server overload (AIMD).
+
+    Like TCP congestion control: start optimistic at max_limit, halve the
+    limit when the server signals overload (fast 502s, timeouts), and creep
+    back up by 1 after a full round of successes at the current limit.
+    The census server hard-caps in-flight requests per client (~16 as of
+    2026-06, see bench_census.py) and rejects the excess with 502s rather
+    than queueing. That cap and the server's speed both change over time,
+    so we discover the workable concurrency at runtime instead of
+    hardcoding it.
+    """
+
+    def __init__(self, max_limit: int) -> None:
+        self.max_limit = max_limit
+        self.limit = max_limit
+        self._active = 0
+        self._cond = asyncio.Condition()
+        # Bumped on each backoff. A whole wave of in-flight requests fails
+        # together when the server is overloaded, so each request records
+        # the generation it started in, and only the first failure of a
+        # generation halves the limit.
+        self._generation = 0
+        self._n_successes = 0
+
+    async def acquire(self) -> int:
+        """Wait for a slot, then return the current overload generation."""
+        async with self._cond:
+            await self._cond.wait_for(lambda: self._active < self.limit)
+            self._active += 1
+            return self._generation
+
+    async def release(self) -> None:
+        async with self._cond:
+            self._active -= 1
+            self._cond.notify_all()
+
+    async def on_success(self) -> None:
+        async with self._cond:
+            self._n_successes += 1
+            if self._n_successes >= self.limit and self.limit < self.max_limit:
+                self._n_successes = 0
+                self.limit += 1
+                logger.info(
+                    f"Census server healthy, raising concurrency to {self.limit}"
+                )
+                self._cond.notify_all()
+
+    async def on_overload(self, generation: int) -> None:
+        async with self._cond:
+            if generation != self._generation:
+                # Another failure from the same overload event already
+                # backed off; don't halve again.
+                return
+            self._generation += 1
+            self._n_successes = 0
+            old = self.limit
+            self.limit = max(1, self.limit // 2)
+            logger.warning(
+                f"Census server overloaded, reducing concurrency {old} -> {self.limit}"
+            )
+
+
 def us_census_geocode(
     t: ir.Table,
     format: str = "census_{name}",
@@ -77,7 +140,10 @@ def us_census_geocode(
         The maximum allowed by the API is 10_000.
         This number was tuned experimentally, you probably don't need to change it.
     n_concurrent:
-        The number of concurrent requests to make. Default is 16.
+        The maximum number of concurrent requests to make. Default is 16.
+        The actual concurrency adapts at runtime: it starts here and backs
+        off when the server signals overload (502s, timeouts), then
+        recovers as requests succeed.
         This number was tuned experimentally, you probably don't need to change it.
 
     Returns
@@ -160,14 +226,14 @@ def _geocode(
     t = t.cache()
     sub_tables = chunk_table(t, max_size=chunk_size)
     byte_chunks = (_table_to_csv_bytes(sub) for sub in sub_tables)
-    sem = asyncio.Semaphore(n_concurrent)
+    limiter = _AdaptiveLimiter(n_concurrent)
     requests = [
         dict(bytes=b, benchmark=benchmark, vintage=vintage) for b in byte_chunks
     ]
     logger.debug(
         f"Geocoding {t.count().execute()} addresses in {len(requests)} chunks of size {chunk_size}"  # noqa
     )
-    responses = _make_requests(requests, sem=sem)
+    responses = _make_requests(requests, limiter=limiter)
     tables = (_text_to_table(resp_text) for resp_text in responses)
     result = ibis.union(*tables)
     result = _post_process_table(result)
@@ -209,15 +275,15 @@ def _make_client() -> httpx.AsyncClient:
 def _make_requests(
     requests: Iterable[dict],
     *,
-    sem: asyncio.Semaphore | None = None,
+    limiter: _AdaptiveLimiter | None = None,
 ):
-    if sem is None:
-        sem = asyncio.Semaphore(_N_CONCURRENT)
+    if limiter is None:
+        limiter = _AdaptiveLimiter(_N_CONCURRENT)
 
     async def _async_make_requests() -> list[str]:
         async with _make_client() as client:
             responses = [
-                _make_request(client, sem, chunk_id=i, **req)
+                _make_request(client, limiter, chunk_id=i, **req)
                 for i, req in enumerate(requests)
             ]
             return await asyncio.gather(*responses)
@@ -225,15 +291,25 @@ def _make_requests(
     return _asyncio_run_with_nest_asyncio(_async_make_requests())
 
 
+# Status codes that mean "the server is overloaded", as opposed to
+# "something is wrong with this particular request". As of 2026-06 the
+# census gateway returns a fast 502 for each request beyond its in-flight
+# cap, rather than queueing it. See bench_census.py.
+_OVERLOAD_STATUS_CODES = (429, 502, 503, 504)
+
+
 async def _make_request(
     client: httpx.AsyncClient,
-    sem: asyncio.Semaphore,
+    limiter: _AdaptiveLimiter,
     *,
     chunk_id: int,
     bytes: bytes,
     benchmark: str | None = None,
     vintage: str | None = None,
 ) -> str:
+    with _util.optional_import("httpx"):
+        import httpx
+
     URL = "https://geocoding.geo.census.gov/geocoder/locations/addressbatch"
     data = {
         "benchmark": benchmark or "Public_AR_Current",
@@ -241,28 +317,31 @@ async def _make_request(
     }
     files = {"addressFile": ("addresses.csv", bytes)}
 
-    # Sometimes I get a 502 error:
-    # While attempting to geocode your batch input, the Census Geocoder
-    # working as a gateway to get a response needed to handle the request,
-    # got an invalid response. This may be caused by the fact that the
-    # Census Geocoder is unable to connect to a service it is dependent
-    # response received was invalid. Please verify your batch file and
-    # resubmit your batch query again later.
-
-    # Then if I resubmit the same request, it works. So I don't think the issue
-    # is the format of the request. I think the Census Geocoder is just flaky.
-    # Nothing to do but retry.
-
     async def f():
-        async with sem:
-            logger.debug(f"Geocoding chunk {chunk_id}")
-            start = time.monotonic()
+        generation = await limiter.acquire()
+        logger.debug(f"Geocoding chunk {chunk_id}")
+        start = time.monotonic()
+        try:
             resp = await client.post(URL, data=data, files=files)
-            if resp.status_code != 200:
-                raise RuntimeError(f"Failed to geocode chunk {chunk_id}: {resp.text}")
-            end = time.monotonic()
-            logger.debug(f"Geocoded chunk {chunk_id} in {end - start:.2f} seconds")
-            return resp.text
+        except httpx.TimeoutException:
+            # An overloaded server sometimes accepts a request and then
+            # never answers it (see bench_census.py), so a timeout is an
+            # overload signal too.
+            await limiter.on_overload(generation)
+            raise
+        finally:
+            await limiter.release()
+        if resp.status_code in _OVERLOAD_STATUS_CODES:
+            await limiter.on_overload(generation)
+            raise RuntimeError(
+                f"Census server overloaded on chunk {chunk_id}: HTTP {resp.status_code}"
+            )
+        if resp.status_code != 200:
+            raise RuntimeError(f"Failed to geocode chunk {chunk_id}: {resp.text}")
+        await limiter.on_success()
+        end = time.monotonic()
+        logger.debug(f"Geocoded chunk {chunk_id} in {end - start:.2f} seconds")
+        return resp.text
 
     return await _with_retries(f, chunk_id=chunk_id, max_retries=3)
 
@@ -278,9 +357,13 @@ async def _with_retries(f, *, chunk_id, max_retries: int):
             if i == max_retries - 1:
                 raise RuntimeError(f"Failed to geocode chunk {chunk_id}: {e!r}") from e
             else:
-                # exponential backoff
-                # 0.5, 1, 2, 4, 8
-                await asyncio.sleep(0.5 * 2**i)
+                # exponential backoff: 15, 30, 60, ... seconds.
+                # The server works on timescales of 10-100s per request
+                # (see bench_census.py), so sub-second backoff would retry
+                # straight into the same overload window. The main throttle
+                # is re-acquiring the limiter at its reduced limit; this
+                # sleep just keeps fast-rejected chunks from spinning.
+                await asyncio.sleep(15 * 2**i)
 
 
 def _text_to_table(text: str) -> ir.Table:

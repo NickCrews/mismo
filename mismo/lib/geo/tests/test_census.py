@@ -230,6 +230,59 @@ def test_us_census_geocode(table_factory):
     assert_tables_equal(geocoded, expected, column_order="ignore")
 
 
+@pytest.mark.network
+def test_us_census_geocode_concurrent_chunks(table_factory):
+    """E2E: geocode enough addresses to need several concurrent requests."""
+    records = [
+        {"id": str(i), "street": f"{2100 + i} N 43RD ST", "zipcode": "98103"}
+        for i in range(20)
+    ]
+    inp = make_input(table_factory, records)
+    geocoded = us_census_geocode(inp, chunk_size=5, n_concurrent=4)
+    df = geocoded.to_pandas()
+    assert len(df) == 20
+    matched = df[df.census_is_match]
+    # a real, geocodable block of N 43rd St: most house numbers should match
+    assert len(matched) >= 10
+    assert (matched.census_city == "SEATTLE").all()
+    assert (matched.census_state == "WA").all()
+    assert (matched.census_zipcode == "98103").all()
+    assert matched.census_latitude.between(47, 48).all()
+    assert matched.census_longitude.between(-123, -122).all()
+
+
+@pytest.mark.network
+def test_adaptive_concurrency_survives_server_overload():
+    """E2E: deliberately exceed the census server's in-flight request cap.
+
+    As of 2026-06 the server caps ~16 in-flight requests per client and
+    rejects the excess with fast 502s (see bench_census.py for the data).
+    With more concurrency than that, _make_requests should halve its limit
+    on the 502s, retry the rejected chunks, and still complete every chunk,
+    instead of burning all retries and raising like it used to.
+
+    Slow (several minutes): sends 32 chunks x 1000 rows to the real API.
+    """
+    from mismo.lib.geo._census import _AdaptiveLimiter, _make_requests
+    from mismo.lib.geo.bench_census import make_csv_bytes
+
+    n_chunks = 32
+    limiter = _AdaptiveLimiter(n_chunks)
+    requests = [
+        dict(bytes=make_csv_bytes(1000, salt=i), benchmark=None, vintage=None)
+        for i in range(n_chunks)
+    ]
+    responses = _make_requests(requests, limiter=limiter)
+    assert len(responses) == n_chunks
+    assert all(isinstance(r, str) and r for r in responses)
+    if limiter.limit == n_chunks:
+        pytest.skip(
+            "the server accepted all 32 concurrent requests, so the "
+            "overload backoff path was never exercised this run"
+        )
+    assert limiter.limit < n_chunks
+
+
 @pytest.mark.parametrize(
     "n",
     [
