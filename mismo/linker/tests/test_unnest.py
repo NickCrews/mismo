@@ -25,18 +25,12 @@ def test_unnest_linker_links_on_any_token(t1: ir.Table, t2: ir.Table):
 
 def test_unnest_linker_task_link(table_factory):
     """task='link' disables self-join dedupe so every cross-table match shows."""
-    left = table_factory(
-        {"record_id": [0, 1], "tags": [["a"], ["b"]]}
-    )
-    right = table_factory(
-        {"record_id": [10, 11], "tags": [["a", "b"], ["b"]]}
-    )
+    left = table_factory({"record_id": [0, 1], "tags": [["a"], ["b"]]})
+    right = table_factory({"record_id": [10, 11], "tags": [["a", "b"], ["b"]]})
     linker = UnnestLinker(_.tags, task="link")
     linkage = linker(left, right)
     joined_ids = linkage.links.select("record_id_l", "record_id_r")
-    expected = table_factory(
-        {"record_id_l": [0, 1, 1], "record_id_r": [10, 10, 11]}
-    )
+    expected = table_factory({"record_id_l": [0, 1, 1], "record_id_r": [10, 10, 11]})
     assert_tables_equal(joined_ids, expected)
 
 
