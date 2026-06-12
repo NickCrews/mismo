@@ -42,7 +42,7 @@ jobs:
           just-version: "1.42.4"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Bump ibis version
+      - name: Bump mismo version
         id: get-version
         run: echo "value=$(just set-version)" | tee -a "$GITHUB_OUTPUT"
 
