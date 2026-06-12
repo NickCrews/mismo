@@ -39,8 +39,13 @@ def test_explain_no_backend():
 
 
 def test_explain_unsupported_backend():
+    # explicitly disconnect: a GC'd sqlite3 connection raises an unraisable
+    # exception on python 3.13+, which pytest pins on an arbitrary test
     con = ibis.sqlite.connect(":memory:")
-    con.create_table("t", {"a": [1, 2, 3]})
-    t = con.table("t")
-    with pytest.raises(UnsupportedBackendError):
-        explain(t)
+    try:
+        con.create_table("t", {"a": [1, 2, 3]})
+        t = con.table("t")
+        with pytest.raises(UnsupportedBackendError):
+            explain(t)
+    finally:
+        con.disconnect()

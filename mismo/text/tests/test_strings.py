@@ -25,7 +25,12 @@ def test_norm_whitespace(inp, exp):
 
 
 def test_strip_accents_non_duckdb_raises():
+    # explicitly disconnect: a GC'd sqlite3 connection raises an unraisable
+    # exception on python 3.13+, which pytest pins on an arbitrary test
     sqlite_con = ibis.sqlite.connect(":memory:")
-    t = sqlite_con.create_table("t", schema={"s": "string"})
-    with pytest.raises(NotImplementedError):
-        text.strip_accents(t.s)
+    try:
+        t = sqlite_con.create_table("t", schema={"s": "string"})
+        with pytest.raises(NotImplementedError):
+            text.strip_accents(t.s)
+    finally:
+        sqlite_con.disconnect()
